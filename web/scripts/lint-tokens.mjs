@@ -6,16 +6,14 @@ import { fileURLToPath } from "node:url";
 // fileURLToPath, not `.pathname`: on Windows `.pathname` yields "/D:/..." and the hand-rolled
 // regex strip breaks on any path containing an escaped character.
 const ROOT = fileURLToPath(new URL("../src", import.meta.url));
-// globals.css is infrastructure like tokens.css: every declaration in it is `var(--...)`,
-// never a raw value, but the regexes below can't tell "font-family: var(--font-body)" apart
-// from a hardcoded family name, so it is allow-listed alongside tokens.css rather than
-// reached for a `lint-tokens-allow` escape (Phase 0 ships none).
-const ALLOW = new Set(["styles/tokens.css", "styles/globals.css"]);
+const ALLOW = new Set(["styles/tokens.css"]);
+// A font-family/fontFamily declaration is only a violation when its value isn't a token
+// reference — `var(--font-*)` is the only permitted value anywhere outside tokens.css.
 const PATTERNS = [
   [/#[0-9a-fA-F]{3,8}\b/, "raw hex colour"],
   [/\b(rgb|rgba|hsl|hsla|oklch|oklab)\(/, "raw colour function"],
-  [/font-family\s*:/, "font-family declaration"],
-  [/\bfontFamily\s*:/, "fontFamily style prop"],
+  [/font-family\s*:(?!\s*var\(--font-)/, "font-family declaration"],
+  [/\bfontFamily\s*:(?!\s*["'`]?var\(--font-)/, "fontFamily style prop"],
 ];
 const files = [];
 (function walk(dir) {
