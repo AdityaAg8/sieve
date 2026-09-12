@@ -1,0 +1,52 @@
+[project]
+name = "sieve"
+version = "0.1.0"
+description = "A precision layer for MCP tool-poisoning findings"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "pydantic>=2.9",
+  "pydantic-settings>=2.5",
+  "numpy>=2.0",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+api = ["fastapi", "uvicorn[standard]", "sqlalchemy[asyncio]>=2.0", "alembic", "psycopg[binary]", "sse-starlette", "python-multipart", "httpx"]
+model = ["torch", "transformers", "accelerate", "datasets", "scikit-learn", "onnxruntime", "optimum[onnxruntime]", "huggingface_hub", "sentence-transformers", "scipy"]
+judge = ["anthropic>=1.0"]
+cli = ["typer", "rich"]
+mcp = ["mcp"]
+bench = ["textual", "httpx", "tree-sitter", "tree-sitter-python", "tree-sitter-typescript", "jsonschema"]
+
+[dependency-groups]
+dev = ["pytest", "pytest-asyncio", "pytest-cov", "hypothesis", "ruff", "mypy", "pytest-recording", "respx", "types-requests", "pip-audit", "types-pyyaml"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "S", "SIM"]
+ignore = ["S101"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["sieve"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+  "slow: long-running (model training, ONNX export); run in the `model` CI job",
+  "docker: needs a Docker daemon; skipped in CI",
+  "holdout: opens a sealed holdout file; run once, in Phase 4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["sieve"]
