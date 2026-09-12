@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+
+import { Footer } from "@/components/shell/Footer";
+import { Nav } from "@/components/shell/Nav";
+
+import { Providers } from "./providers";
 import "../styles/globals.css";
 
 // Self-hosted fonts (see web/public/fonts/LICENSES.md for licence details).
@@ -50,7 +55,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${clashDisplay.variable} ${geist.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <Providers>
+          <a
+            href="#main"
+            className="btn btn-secondary bg-bg-0 absolute top-2 left-2 z-50 -translate-y-[200%] focus:translate-y-0"
+          >
+            Skip to content
+          </a>
+          <Nav />
+          <main id="main" className="flex-1">
+            {children}
+          </main>
+          <Footer />
+        </Providers>
+      </body>
     </html>
   );
 }
