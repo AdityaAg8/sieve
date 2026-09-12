@@ -1,0 +1,117 @@
+{
+  "click": {
+    "findings": []
+  },
+  "create_note": {
+    "findings": []
+  },
+  "describe_table": {
+    "findings": []
+  },
+  "export_csv": {
+    "findings": [
+      {
+        "message": "Unintentional and/or unauthorized exposure or exfiltration of sensitive information, such as private or sensitive data, intellectual property, and proprietary algorithms through exploitation of agent tools, integrations, or capabilities, where the agent is manipulated to use legitimate tools for malicious data exfiltration purposes.",
+        "rule_id": "credential_harvesting",
+        "severity": "high"
+      }
+    ]
+  },
+  "fill_form": {
+    "findings": []
+  },
+  "forward_mail": {
+    "findings": [
+      {
+        "message": "Tools that send data to external servers, upload files to remote endpoints, or exfiltrate sensitive information to unauthorized third parties through hidden or undisclosed functionality.",
+        "rule_id": "data_exfiltration",
+        "severity": "high"
+      },
+      {
+        "message": "Explicit attempts to override, replace, or modify the model's system instructions, operational directives, or behavioral guidelines through direct user input, causing the model to follow attacker-controlled instructions instead of its intended programming (e.g., \"Ignore previous instructions\").",
+        "rule_id": "prompt_injection",
+        "severity": "high"
+      }
+    ]
+  },
+  "get_current": {
+    "findings": []
+  },
+  "get_file_info": {
+    "findings": []
+  },
+  "get_forecast": {
+    "findings": []
+  },
+  "get_guidelines": {
+    "findings": []
+  },
+  "list_directory": {
+    "findings": []
+  },
+  "list_folders": {
+    "findings": []
+  },
+  "list_notes": {
+    "findings": []
+  },
+  "list_tables": {
+    "findings": []
+  },
+  "navigate": {
+    "findings": []
+  },
+  "query_docs": {
+    "findings": []
+  },
+  "read_file": {
+    "findings": []
+  },
+  "resolve_library_id": {
+    "findings": []
+  },
+  "run_query": {
+    "findings": []
+  },
+  "screenshot": {
+    "findings": []
+  },
+  "search_city": {
+    "findings": []
+  },
+  "search_docs": {
+    "findings": []
+  },
+  "send_mail": {
+    "findings": []
+  },
+  "set_location": {
+    "findings": []
+  },
+  "sync_notes": {
+    "findings": [
+      {
+        "message": "Explicit attempts to override, replace, or modify the model's system instructions, operational directives, or behavioral guidelines through direct user input, causing the model to follow attacker-controlled instructions instead of its intended programming (e.g., \"Ignore previous instructions\").",
+        "rule_id": "prompt_injection",
+        "severity": "high"
+      }
+    ]
+  },
+  "update_note": {
+    "findings": []
+  },
+  "write_file": {
+    "findings": [
+      {
+        "message": "Unintentional and/or unauthorized exposure or exfiltration of sensitive information, such as private or sensitive data, intellectual property, and proprietary algorithms through exploitation of agent tools, integrations, or capabilities, where the agent is manipulated to use legitimate tools for malicious data exfiltration purposes.",
+        "rule_id": "credential_harvesting",
+        "severity": "high"
+      },
+      {
+        "message": "Explicit attempts to override, replace, or modify the model's system instructions, operational directives, or behavioral guidelines through direct user input, causing the model to follow attacker-controlled instructions instead of its intended programming (e.g., \"Ignore previous instructions\").",
+        "rule_id": "prompt_injection",
+        "severity": "high"
+      }
+    ]
+  }
+}

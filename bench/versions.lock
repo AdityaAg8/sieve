@@ -1,1 +1,2 @@
 # scanner and tool versions pinned for the baseline; L2 fills these in
+cisco_yara=4.8.0  # cisco-ai-mcp-scanner, captured 2026-09-12 (mcp-scanner --analyzers yara --format raw static)

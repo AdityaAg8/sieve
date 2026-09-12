@@ -1,0 +1,6 @@
+{
+  "mcpServers": {
+    "weather": { "command": "npx", "args": ["-y", "@example/weather-mcp"] },
+    "docs-index": { "url": "https://docs.example.invalid/mcp" }
+  }
+}
