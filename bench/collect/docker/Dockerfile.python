@@ -1,0 +1,20 @@
+# Build stage: network, no repository credentials, no source build backend (PRD SC-1).
+# `--only-binary :all:` refuses sdists, so no PyPI build backend executes during install.
+FROM python:3.12-slim AS build
+ARG PACKAGE
+ARG VERSION
+WORKDIR /srv
+RUN python -m pip install --no-cache-dir --no-build-isolation --only-binary :all: \
+    --target /srv/site-packages "${PACKAGE}${VERSION:+==${VERSION}}"
+
+# Capture stage: no network, read-only root, unprivileged. Flags live in `docker_args`.
+FROM python:3.12-slim
+ARG PACKAGE
+ENV PYTHONPATH=/srv/site-packages PYTHONUTF8=1 PYTHONDONTWRITEBYTECODE=1
+ENV MODULE=${PACKAGE}
+COPY --from=build /srv/site-packages /srv/site-packages
+WORKDIR /srv
+USER 65534:65534
+# The exec form does not expand build args, so the module name is passed through ENV
+# and expanded by the shell at start-up.
+ENTRYPOINT ["/bin/sh", "-c", "exec python -m \"$(echo \"$MODULE\" | tr - _)\""]
