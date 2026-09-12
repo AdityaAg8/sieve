@@ -6,13 +6,13 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
   "pydantic>=2.9",
   "pydantic-settings>=2.5",
-  "numpy>=2.0",
+  "numpy>=2.0,<2.4",  # 2.5.x wheels are blocked by Windows Smart App Control on the dev box
   "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
-api = ["fastapi", "uvicorn[standard]", "sqlalchemy[asyncio]>=2.0", "alembic", "psycopg[binary]", "sse-starlette", "python-multipart", "httpx"]
-model = ["torch", "transformers", "accelerate", "datasets", "scikit-learn", "onnxruntime", "optimum[onnxruntime]", "huggingface_hub", "sentence-transformers", "scipy"]
+api = ["fastapi", "uvicorn[standard]", "sqlalchemy[asyncio]>=2.0", "alembic", "psycopg[binary]<3.3.5", "sse-starlette", "python-multipart", "httpx"]
+model = ["torch", "transformers", "accelerate", "datasets", "scikit-learn<1.9.1", "onnxruntime", "optimum[onnxruntime]", "huggingface_hub", "sentence-transformers", "scipy"]
 judge = ["anthropic>=1.0"]
 cli = ["typer", "rich"]
 mcp = ["mcp"]
