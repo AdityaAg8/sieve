@@ -22,7 +22,9 @@ from sieve.eval.metrics import (
 
 Y = ["poisoned", "poisoned", "benign", "imperative_benign", "benign", "imperative_benign"]
 S = [0.9, 0.6, 0.7, 0.2, 0.1, 0.55]
-G = ["s1", "s1", "s2", "s2", "s3", "s3"]
+# Servers must have heterogeneous FPRs, or the cluster statistic has zero variance across
+# resamples and "cluster CI is wider than row CI" can never be demonstrated.
+G = ["s1", "s1", "s2", "s3", "s3", "s2"]
 
 
 def test_confusion_matrix_shape_and_values() -> None:
@@ -126,9 +128,9 @@ def test_paired_bootstrap_diff_sign_follows_the_worse_scorer() -> None:
 def test_mcnemar_exact_hand_checked() -> None:
     assert mcnemar_exact(0, 0) == 1.0
     assert mcnemar_exact(5, 0) == pytest.approx(2 * 0.5**5)  # 0.0625
-    assert mcnemar_exact(0, 5) == pytest.approx(0.0625)      # symmetric
+    assert mcnemar_exact(0, 5) == pytest.approx(0.0625)  # symmetric
     assert mcnemar_exact(1, 1) == 1.0
-    assert mcnemar_exact(6, 1) == pytest.approx(0.125)       # 2 * (C(7,0)+C(7,1)) / 2**7
+    assert mcnemar_exact(6, 1) == pytest.approx(0.125)  # 2 * (C(7,0)+C(7,1)) / 2**7
 
 
 def test_gwet_ac1_hand_checked() -> None:
@@ -140,3 +142,24 @@ def test_gwet_ac1_hand_checked() -> None:
     a = ["a"] * 19 + ["b"]
     b = ["a"] * 19 + ["a"]
     assert gwet_ac1(a, b) > cohens_kappa(a, b)
+
+
+# The three tests below close coverage gaps that the SAC blocker (see lessons.md) had masked:
+# they exercise branches the tests above never reach, following the same "100% is a gate, not
+# an aspiration" rationale as the coverage-only tests earlier in this file.
+
+
+def test_gwet_ac1_single_label_is_perfect_agreement() -> None:
+    assert gwet_ac1(["a", "a"], ["a", "a"]) == 1.0
+
+
+def test_t_low_for_recall_lcb_raises_without_positives() -> None:
+    with pytest.raises(ValueError, match="no positive examples"):
+        t_low_for_recall_lcb(["benign", "benign"], [0.1, 0.2], ["s1", "s1"], target=0.5, n_boot=10)
+
+
+def test_t_low_for_recall_lcb_returns_on_first_candidate_when_target_is_trivial() -> None:
+    # target=0.0 always clears on the highest-scoring candidate, exercising the early-return
+    # success branch (as opposed to the target=1.0/0.5 tests above, which fall through to the
+    # last-candidate fallback given this dataset's cluster structure).
+    assert t_low_for_recall_lcb(Y, S, G, target=0.0, n_boot=50, seed=0) == pytest.approx(0.9)
