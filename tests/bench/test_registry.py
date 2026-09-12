@@ -7,7 +7,12 @@ from pathlib import Path
 
 import httpx
 
-from bench.collect.registry import ServerCandidate, discover, filter_permissive
+from bench.collect.registry import (
+    ServerCandidate,
+    discover,
+    fetch_spdx_license,
+    filter_permissive,
+)
 
 PAGE = Path("tests/bench/data/registry-page.json")
 
@@ -65,3 +70,56 @@ def test_filter_permissive_excludes_mpl_and_gpl() -> None:
         [cand(s) for s in ("MIT", "Apache-2.0", "BSD-3-Clause", "MPL-2.0", "GPL-3.0")]
     )
     assert [c.license for c in kept] == ["MIT", "Apache-2.0", "BSD-3-Clause"]
+
+
+def test_fetch_spdx_license_reads_the_repo_license_endpoint() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/repos/modelcontextprotocol/servers/license"
+        return httpx.Response(200, json={"license": {"spdx_id": "MIT"}})
+
+    cand = ServerCandidate(
+        name="s",
+        repo_url="https://github.com/modelcontextprotocol/servers",
+        package=None,
+        package_registry=None,
+        license=None,
+    )
+    filled = fetch_spdx_license(cand, client=httpx.Client(transport=httpx.MockTransport(handler)))
+    assert filled.license == "MIT"
+
+
+def test_fetch_spdx_license_leaves_none_when_github_has_no_licence() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(404, json={})
+
+    cand = ServerCandidate(
+        name="s",
+        repo_url="https://github.com/x/y",
+        package=None,
+        package_registry=None,
+        license=None,
+    )
+    filled = fetch_spdx_license(cand, client=httpx.Client(transport=httpx.MockTransport(handler)))
+    assert filled.license is None
+
+
+def test_fetch_spdx_license_without_a_repo_is_a_no_op() -> None:
+    cand = ServerCandidate(
+        name="s", repo_url=None, package=None, package_registry=None, license=None
+    )
+    assert fetch_spdx_license(cand).license is None
+
+
+def test_noassertion_is_not_a_licence() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"license": {"spdx_id": "NOASSERTION"}})
+
+    cand = ServerCandidate(
+        name="s",
+        repo_url="https://github.com/x/y",
+        package=None,
+        package_registry=None,
+        license=None,
+    )
+    filled = fetch_spdx_license(cand, client=httpx.Client(transport=httpx.MockTransport(handler)))
+    assert filled.license is None

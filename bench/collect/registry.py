@@ -25,6 +25,7 @@ from pydantic import BaseModel
 log = logging.getLogger(__name__)
 
 BASE_URL = "https://registry.modelcontextprotocol.io"
+GITHUB_API = "https://api.github.com"
 LIST_PATH = "/v0.1/servers"
 PAGE_SIZE = 100
 PAGE_DELAY_S = 0.2
@@ -100,6 +101,36 @@ def discover(limit: int = 500, *, client: httpx.Client | None = None) -> list[Se
             http.close()
 
 
+def fetch_spdx_license(
+    cand: ServerCandidate, *, client: httpx.Client | None = None
+) -> ServerCandidate:
+    """Fill `license` from the repository's own LICENSE (`GET /repos/{o}/{r}/license`).
+
+    The registry carries no SPDX id, so without this step `filter_permissive` would drop
+    everything. `NOASSERTION` means GitHub could not identify the licence: that is not a
+    permissive licence, so it stays `None` and the candidate is excluded.
+    """
+    if not cand.repo_url or "github.com/" not in cand.repo_url:
+        return cand
+    parts = cand.repo_url.split("github.com/", 1)[1].strip("/").removesuffix(".git").split("/")
+    if len(parts) < 2:
+        return cand
+    owned = client is None
+    http = client or httpx.Client(timeout=30.0)
+    try:
+        response = http.get(f"{GITHUB_API}/repos/{parts[0]}/{parts[1]}/license")
+        if response.status_code != 200:
+            log.info("no licence for %s (%d)", cand.repo_url, response.status_code)
+            return cand
+        spdx = ((response.json() or {}).get("license") or {}).get("spdx_id")
+    finally:
+        if owned:
+            http.close()
+    if not spdx or spdx == "NOASSERTION":
+        return cand
+    return cand.model_copy(update={"license": spdx})
+
+
 def filter_permissive(cands: list[ServerCandidate]) -> list[ServerCandidate]:
     """Keep only candidates whose SPDX id is on the permissive allowlist (PRD SC-6)."""
     return [c for c in cands if c.license in PERMISSIVE_LICENCES]
@@ -116,8 +147,15 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="keep only candidates whose SPDX licence is on the permissive allowlist",
     )
+    parser.add_argument(
+        "--fill-licences",
+        action="store_true",
+        help="look up each candidate's SPDX licence from its repository LICENSE",
+    )
     args = parser.parse_args(argv)
     cands = discover(limit=args.limit)
+    if args.fill_licences or args.permissive_only:
+        cands = [fetch_spdx_license(c) for c in cands]
     if args.permissive_only:
         cands = filter_permissive(cands)
     print(json.dumps([c.model_dump() for c in cands], indent=2))
