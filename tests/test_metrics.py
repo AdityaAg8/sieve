@@ -98,7 +98,8 @@ def test_cluster_bootstrap_ci_brackets_point_and_is_wider_than_row_bootstrap() -
     point, lo, hi = cluster_bootstrap_ci(_fpr, Y, S, G, n_boot=400, seed=1)
     _, rlo, rhi = bootstrap_ci(_fpr, Y, S, n_boot=400, seed=1)
     assert lo <= point <= hi
-    # Resampling three servers is coarser than resampling six rows, so the interval cannot be tighter.
+    # Resampling three servers is coarser than resampling six rows, so the interval
+    # cannot be tighter.
     assert (hi - lo) >= (rhi - rlo)
 
 
@@ -138,7 +139,8 @@ def test_gwet_ac1_hand_checked() -> None:
     # Two raters, two categories, 50% observed agreement, balanced marginals:
     # pi = 0.5 for each class, pe = 2 * 0.5 * 0.5 / (2 - 1) = 0.5, AC1 = (0.5 - 0.5) / 0.5 = 0.0
     assert gwet_ac1(["a", "a", "b", "b"], ["a", "b", "a", "b"]) == pytest.approx(0.0)
-    # AC1's point: near-total prevalence of one class does not collapse the statistic the way κ does.
+    # AC1's point: near-total prevalence of one class does not collapse the statistic
+    # the way κ does.
     a = ["a"] * 19 + ["b"]
     b = ["a"] * 19 + ["a"]
     assert gwet_ac1(a, b) > cohens_kappa(a, b)

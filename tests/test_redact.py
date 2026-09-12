@@ -27,7 +27,10 @@ def test_redact_tool_walks_schema() -> None:
     td = ToolDefinition(
         name="t",
         description="token: ghp_abcdefghijklmnopqrstuvwxyz0123456789",
-        inputSchema={"type": "object", "properties": {"k": {"description": "AKIAIOSFODNN7EXAMPLE"}}},
+        inputSchema={
+            "type": "object",
+            "properties": {"k": {"description": "AKIAIOSFODNN7EXAMPLE"}},
+        },
     )
     red, kinds = redact_tool(td)
     assert "ghp_" not in (red.description or "")
