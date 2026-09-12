@@ -1,0 +1,92 @@
+{
+  "$defs": {
+    "JudgeQuote": {
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "enum": [
+            "name",
+            "title",
+            "description",
+            "inputSchema",
+            "outputSchema",
+            "annotations"
+          ],
+          "title": "Field",
+          "type": "string"
+        },
+        "quote": {
+          "title": "Quote",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field",
+        "quote"
+      ],
+      "title": "JudgeQuote",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "confidence": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "evidence_quotes": {
+      "items": {
+        "$ref": "#/$defs/JudgeQuote"
+      },
+      "title": "Evidence Quotes",
+      "type": "array"
+    },
+    "reasoning": {
+      "maxLength": 400,
+      "title": "Reasoning",
+      "type": "string"
+    },
+    "remediation": {
+      "maxLength": 200,
+      "title": "Remediation",
+      "type": "string"
+    },
+    "sub_labels": {
+      "items": {
+        "enum": [
+          "exfiltration",
+          "instruction_override",
+          "tool_shadowing",
+          "privilege_escalation",
+          "concealment",
+          "secret_solicitation",
+          "command_execution"
+        ],
+        "type": "string"
+      },
+      "title": "Sub Labels",
+      "type": "array"
+    },
+    "verdict": {
+      "enum": [
+        "confirmed",
+        "dismissed",
+        "uncertain"
+      ],
+      "title": "Verdict",
+      "type": "string"
+    }
+  },
+  "required": [
+    "verdict",
+    "confidence",
+    "sub_labels",
+    "evidence_quotes",
+    "reasoning",
+    "remediation"
+  ],
+  "title": "JudgeOutput",
+  "type": "object"
+}

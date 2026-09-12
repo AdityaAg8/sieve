@@ -1,0 +1,118 @@
+{
+  "properties": {
+    "confirmed": {
+      "title": "Confirmed",
+      "type": "integer"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "dismissed": {
+      "title": "Dismissed",
+      "type": "integer"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error"
+    },
+    "expires_at": {
+      "format": "date-time",
+      "title": "Expires At",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "judge_calls": {
+      "title": "Judge Calls",
+      "type": "integer"
+    },
+    "judge_cost_usd": {
+      "title": "Judge Cost Usd",
+      "type": "number"
+    },
+    "judge_model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Judge Model"
+    },
+    "model_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Model Version"
+    },
+    "needs_review": {
+      "title": "Needs Review",
+      "type": "integer"
+    },
+    "scanner_flagged": {
+      "title": "Scanner Flagged",
+      "type": "integer"
+    },
+    "source_type": {
+      "enum": [
+        "tools_json",
+        "mcp_config",
+        "scanner_report",
+        "remote_url"
+      ],
+      "title": "Source Type",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "running",
+        "complete",
+        "failed"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "tool_count": {
+      "title": "Tool Count",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "status",
+    "source_type",
+    "tool_count",
+    "scanner_flagged",
+    "confirmed",
+    "needs_review",
+    "dismissed",
+    "judge_calls",
+    "judge_cost_usd",
+    "model_version",
+    "judge_model",
+    "created_at",
+    "expires_at"
+  ],
+  "title": "ScanSummary",
+  "type": "object"
+}

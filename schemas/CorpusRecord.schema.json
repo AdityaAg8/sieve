@@ -1,0 +1,331 @@
+{
+  "$defs": {
+    "ToolDefinition": {
+      "additionalProperties": true,
+      "description": "An MCP tool object. Extra spec fields (icons, execution, _meta) are preserved.",
+      "properties": {
+        "annotations": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Annotations"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "inputSchema": {
+          "additionalProperties": true,
+          "title": "Inputschema",
+          "type": "object"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "outputSchema": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outputschema"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        }
+      },
+      "required": [
+        "name",
+        "inputSchema"
+      ],
+      "title": "ToolDefinition",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "adjudicated": {
+      "default": false,
+      "title": "Adjudicated",
+      "type": "boolean"
+    },
+    "capture_method": {
+      "enum": [
+        "static_py",
+        "static_ts",
+        "sandbox_tools_list",
+        "authored",
+        "published_artifact"
+      ],
+      "title": "Capture Method",
+      "type": "string"
+    },
+    "concealment": {
+      "default": "none",
+      "enum": [
+        "none",
+        "html_comment",
+        "zero_width",
+        "bidi",
+        "whitespace"
+      ],
+      "title": "Concealment",
+      "type": "string"
+    },
+    "difficulty": {
+      "anyOf": [
+        {
+          "enum": [
+            "easy",
+            "medium",
+            "hard"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Difficulty"
+    },
+    "fold": {
+      "anyOf": [
+        {
+          "maximum": 4,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Fold"
+    },
+    "generator_model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Generator Model"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "label": {
+      "enum": [
+        "benign",
+        "imperative_benign",
+        "poisoned"
+      ],
+      "title": "Label",
+      "type": "string"
+    },
+    "label_rationale": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Label Rationale"
+    },
+    "labelled_at": {
+      "format": "date-time",
+      "title": "Labelled At",
+      "type": "string"
+    },
+    "labeller": {
+      "title": "Labeller",
+      "type": "string"
+    },
+    "mutation_of": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Mutation Of"
+    },
+    "payload_fields": {
+      "items": {
+        "enum": [
+          "name",
+          "title",
+          "description",
+          "inputSchema",
+          "outputSchema",
+          "annotations"
+        ],
+        "type": "string"
+      },
+      "title": "Payload Fields",
+      "type": "array"
+    },
+    "schema_fidelity": {
+      "enum": [
+        "exact",
+        "approx"
+      ],
+      "title": "Schema Fidelity",
+      "type": "string"
+    },
+    "second_label": {
+      "anyOf": [
+        {
+          "enum": [
+            "benign",
+            "imperative_benign",
+            "poisoned"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Second Label"
+    },
+    "server_instructions": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Server Instructions"
+    },
+    "server_name": {
+      "title": "Server Name",
+      "type": "string"
+    },
+    "sibling_tool_names": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Sibling Tool Names",
+      "type": "array"
+    },
+    "source": {
+      "enum": [
+        "public_repo",
+        "synthetic_mutation",
+        "wild_fp",
+        "real_poisoned"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
+    "source_commit": {
+      "title": "Source Commit",
+      "type": "string"
+    },
+    "source_license": {
+      "title": "Source License",
+      "type": "string"
+    },
+    "source_repo": {
+      "title": "Source Repo",
+      "type": "string"
+    },
+    "split": {
+      "anyOf": [
+        {
+          "enum": [
+            "dev",
+            "holdout",
+            "eval_only"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Split"
+    },
+    "sub_labels": {
+      "items": {
+        "enum": [
+          "exfiltration",
+          "instruction_override",
+          "tool_shadowing",
+          "privilege_escalation",
+          "concealment",
+          "secret_solicitation",
+          "command_execution"
+        ],
+        "type": "string"
+      },
+      "title": "Sub Labels",
+      "type": "array"
+    },
+    "tool": {
+      "$ref": "#/$defs/ToolDefinition"
+    }
+  },
+  "required": [
+    "id",
+    "source",
+    "source_repo",
+    "source_commit",
+    "source_license",
+    "capture_method",
+    "schema_fidelity",
+    "server_name",
+    "tool",
+    "label",
+    "labeller",
+    "labelled_at"
+  ],
+  "title": "CorpusRecord",
+  "type": "object"
+}

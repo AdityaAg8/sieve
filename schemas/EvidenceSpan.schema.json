@@ -1,0 +1,62 @@
+{
+  "properties": {
+    "end": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "End"
+    },
+    "field": {
+      "enum": [
+        "name",
+        "title",
+        "description",
+        "inputSchema",
+        "outputSchema",
+        "annotations"
+      ],
+      "title": "Field",
+      "type": "string"
+    },
+    "path": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Path"
+    },
+    "quote": {
+      "title": "Quote",
+      "type": "string"
+    },
+    "start": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Start"
+    }
+  },
+  "required": [
+    "field",
+    "path",
+    "quote",
+    "start",
+    "end"
+  ],
+  "title": "EvidenceSpan",
+  "type": "object"
+}

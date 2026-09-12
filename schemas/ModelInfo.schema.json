@@ -1,0 +1,50 @@
+{
+  "properties": {
+    "judge_enabled": {
+      "title": "Judge Enabled",
+      "type": "boolean"
+    },
+    "judge_model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Judge Model"
+    },
+    "model_version": {
+      "title": "Model Version",
+      "type": "string"
+    },
+    "onnx": {
+      "title": "Onnx",
+      "type": "boolean"
+    },
+    "t_high": {
+      "title": "T High",
+      "type": "number"
+    },
+    "t_low": {
+      "title": "T Low",
+      "type": "number"
+    },
+    "temperature": {
+      "title": "Temperature",
+      "type": "number"
+    }
+  },
+  "required": [
+    "model_version",
+    "t_low",
+    "t_high",
+    "temperature",
+    "onnx",
+    "judge_model",
+    "judge_enabled"
+  ],
+  "title": "ModelInfo",
+  "type": "object"
+}

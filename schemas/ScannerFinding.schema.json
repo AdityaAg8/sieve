@@ -1,0 +1,73 @@
+{
+  "properties": {
+    "message": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Message"
+    },
+    "raw": {
+      "additionalProperties": true,
+      "title": "Raw",
+      "type": "object"
+    },
+    "rule_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Rule Id"
+    },
+    "scanner": {
+      "enum": [
+        "cisco_yara",
+        "cisco_llm",
+        "snyk_agent_scan",
+        "sarif_in",
+        "static_json"
+      ],
+      "title": "Scanner",
+      "type": "string"
+    },
+    "scanner_version": {
+      "title": "Scanner Version",
+      "type": "string"
+    },
+    "severity": {
+      "anyOf": [
+        {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Severity"
+    }
+  },
+  "required": [
+    "scanner",
+    "scanner_version",
+    "rule_id",
+    "severity",
+    "message",
+    "raw"
+  ],
+  "title": "ScannerFinding",
+  "type": "object"
+}

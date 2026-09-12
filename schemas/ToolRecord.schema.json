@@ -1,0 +1,115 @@
+{
+  "$defs": {
+    "ToolDefinition": {
+      "additionalProperties": true,
+      "description": "An MCP tool object. Extra spec fields (icons, execution, _meta) are preserved.",
+      "properties": {
+        "annotations": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Annotations"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "inputSchema": {
+          "additionalProperties": true,
+          "title": "Inputschema",
+          "type": "object"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "outputSchema": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outputschema"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        }
+      },
+      "required": [
+        "name",
+        "inputSchema"
+      ],
+      "title": "ToolDefinition",
+      "type": "object"
+    }
+  },
+  "description": "A tool plus the context Sieve treats as features.",
+  "properties": {
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "server_instructions": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Server Instructions"
+    },
+    "server_name": {
+      "title": "Server Name",
+      "type": "string"
+    },
+    "sibling_tool_names": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Sibling Tool Names",
+      "type": "array"
+    },
+    "tool": {
+      "$ref": "#/$defs/ToolDefinition"
+    }
+  },
+  "required": [
+    "id",
+    "server_name",
+    "tool"
+  ],
+  "title": "ToolRecord",
+  "type": "object"
+}

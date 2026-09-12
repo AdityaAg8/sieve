@@ -28,6 +28,11 @@ target-version = "py312"
 select = ["E", "F", "I", "B", "UP", "N", "S", "SIM"]
 ignore = ["S101"]
 
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's own documented pattern: `Depends(...)`/`Query(...)` as an argument default is how
+# dependency injection works, not a mutable-default bug (B008's usual target).
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.Body"]
+
 [tool.mypy]
 python_version = "3.12"
 strict = true

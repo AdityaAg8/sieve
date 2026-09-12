@@ -1,0 +1,442 @@
+{
+  "$defs": {
+    "EvidenceSpan": {
+      "properties": {
+        "end": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "End"
+        },
+        "field": {
+          "enum": [
+            "name",
+            "title",
+            "description",
+            "inputSchema",
+            "outputSchema",
+            "annotations"
+          ],
+          "title": "Field",
+          "type": "string"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Path"
+        },
+        "quote": {
+          "title": "Quote",
+          "type": "string"
+        },
+        "start": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Start"
+        }
+      },
+      "required": [
+        "field",
+        "path",
+        "quote",
+        "start",
+        "end"
+      ],
+      "title": "EvidenceSpan",
+      "type": "object"
+    },
+    "Finding": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/$defs/TriageResult"
+        },
+        "scan_id": {
+          "title": "Scan Id",
+          "type": "string"
+        },
+        "server_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Server Name"
+        },
+        "sibling_tool_names": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sibling Tool Names",
+          "type": "array"
+        },
+        "tool": {
+          "$ref": "#/$defs/ToolDefinition"
+        }
+      },
+      "required": [
+        "id",
+        "scan_id",
+        "tool",
+        "server_name",
+        "sibling_tool_names",
+        "result"
+      ],
+      "title": "Finding",
+      "type": "object"
+    },
+    "ScannerFinding": {
+      "properties": {
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Message"
+        },
+        "raw": {
+          "additionalProperties": true,
+          "title": "Raw",
+          "type": "object"
+        },
+        "rule_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Rule Id"
+        },
+        "scanner": {
+          "enum": [
+            "cisco_yara",
+            "cisco_llm",
+            "snyk_agent_scan",
+            "sarif_in",
+            "static_json"
+          ],
+          "title": "Scanner",
+          "type": "string"
+        },
+        "scanner_version": {
+          "title": "Scanner Version",
+          "type": "string"
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "enum": [
+                "low",
+                "medium",
+                "high",
+                "critical"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Severity"
+        }
+      },
+      "required": [
+        "scanner",
+        "scanner_version",
+        "rule_id",
+        "severity",
+        "message",
+        "raw"
+      ],
+      "title": "ScannerFinding",
+      "type": "object"
+    },
+    "ToolDefinition": {
+      "additionalProperties": true,
+      "description": "An MCP tool object. Extra spec fields (icons, execution, _meta) are preserved.",
+      "properties": {
+        "annotations": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Annotations"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "inputSchema": {
+          "additionalProperties": true,
+          "title": "Inputschema",
+          "type": "object"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "outputSchema": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outputschema"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        }
+      },
+      "required": [
+        "name",
+        "inputSchema"
+      ],
+      "title": "ToolDefinition",
+      "type": "object"
+    },
+    "TriageResult": {
+      "properties": {
+        "class_probabilities": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "propertyNames": {
+            "enum": [
+              "benign",
+              "imperative_benign",
+              "poisoned"
+            ]
+          },
+          "title": "Class Probabilities",
+          "type": "object"
+        },
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "evidence_spans": {
+          "items": {
+            "$ref": "#/$defs/EvidenceSpan"
+          },
+          "title": "Evidence Spans",
+          "type": "array"
+        },
+        "judge_model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Judge Model"
+        },
+        "latency_ms": {
+          "title": "Latency Ms",
+          "type": "integer"
+        },
+        "model_version": {
+          "title": "Model Version",
+          "type": "string"
+        },
+        "owasp": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Owasp",
+          "type": "array"
+        },
+        "poisoned_probability": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Poisoned Probability",
+          "type": "number"
+        },
+        "predicted_class": {
+          "enum": [
+            "benign",
+            "imperative_benign",
+            "poisoned"
+          ],
+          "title": "Predicted Class",
+          "type": "string"
+        },
+        "reasoning": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Reasoning"
+        },
+        "remediation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Remediation"
+        },
+        "scanner_findings": {
+          "items": {
+            "$ref": "#/$defs/ScannerFinding"
+          },
+          "title": "Scanner Findings",
+          "type": "array"
+        },
+        "stage": {
+          "enum": [
+            "classifier",
+            "judge",
+            "judge_failed",
+            "judge_budget_exhausted"
+          ],
+          "title": "Stage",
+          "type": "string"
+        },
+        "sub_labels": {
+          "items": {
+            "enum": [
+              "exfiltration",
+              "instruction_override",
+              "tool_shadowing",
+              "privilege_escalation",
+              "concealment",
+              "secret_solicitation",
+              "command_execution"
+            ],
+            "type": "string"
+          },
+          "title": "Sub Labels",
+          "type": "array"
+        },
+        "verdict": {
+          "enum": [
+            "confirmed",
+            "needs_review",
+            "dismissed"
+          ],
+          "title": "Verdict",
+          "type": "string"
+        }
+      },
+      "required": [
+        "verdict",
+        "stage",
+        "predicted_class",
+        "class_probabilities",
+        "poisoned_probability",
+        "confidence",
+        "sub_labels",
+        "owasp",
+        "evidence_spans",
+        "reasoning",
+        "remediation",
+        "scanner_findings",
+        "model_version",
+        "judge_model",
+        "latency_ms"
+      ],
+      "title": "TriageResult",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "items": {
+      "items": {
+        "$ref": "#/$defs/Finding"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Next Cursor"
+    },
+    "total": {
+      "title": "Total",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "items",
+    "total",
+    "next_cursor"
+  ],
+  "title": "FindingPage",
+  "type": "object"
+}

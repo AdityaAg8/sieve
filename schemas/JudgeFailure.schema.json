@@ -1,0 +1,26 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "detail": {
+      "title": "Detail",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "timeout",
+        "api_error",
+        "parse_error",
+        "refusal",
+        "budget_exhausted"
+      ],
+      "title": "Kind",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "detail"
+  ],
+  "title": "JudgeFailure",
+  "type": "object"
+}

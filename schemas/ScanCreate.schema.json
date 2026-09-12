@@ -1,0 +1,89 @@
+{
+  "properties": {
+    "mcp_config": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Mcp Config"
+    },
+    "remote_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Remote Url"
+    },
+    "scanner": {
+      "anyOf": [
+        {
+          "enum": [
+            "cisco_yara",
+            "cisco_llm",
+            "snyk_agent_scan",
+            "sarif_in",
+            "static_json"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Scanner"
+    },
+    "scanner_report": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Scanner Report"
+    },
+    "source_type": {
+      "enum": [
+        "tools_json",
+        "mcp_config",
+        "scanner_report",
+        "remote_url"
+      ],
+      "title": "Source Type",
+      "type": "string"
+    },
+    "tools_json": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tools Json"
+    }
+  },
+  "required": [
+    "source_type"
+  ],
+  "title": "ScanCreate",
+  "type": "object"
+}

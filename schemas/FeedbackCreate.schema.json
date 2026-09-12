@@ -1,0 +1,38 @@
+{
+  "properties": {
+    "agrees": {
+      "title": "Agrees",
+      "type": "boolean"
+    },
+    "note": {
+      "anyOf": [
+        {
+          "maxLength": 1000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Note"
+    },
+    "website": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Website"
+    }
+  },
+  "required": [
+    "agrees"
+  ],
+  "title": "FeedbackCreate",
+  "type": "object"
+}

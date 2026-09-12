@@ -1,0 +1,1383 @@
+{
+  "components": {
+    "schemas": {
+      "BenchSummary": {
+        "description": "Served verbatim from bench/results; the web never computes numbers.",
+        "properties": {
+          "dataset_version": {
+            "title": "Dataset Version",
+            "type": "string"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "headline": {
+            "additionalProperties": true,
+            "title": "Headline",
+            "type": "object"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "provisional": {
+            "default": false,
+            "title": "Provisional",
+            "type": "boolean"
+          },
+          "tables": {
+            "additionalProperties": true,
+            "title": "Tables",
+            "type": "object"
+          }
+        },
+        "required": [
+          "dataset_version",
+          "model_version",
+          "headline",
+          "tables",
+          "generated_at"
+        ],
+        "title": "BenchSummary",
+        "type": "object"
+      },
+      "EvidenceSpan": {
+        "properties": {
+          "end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "field": {
+            "enum": [
+              "name",
+              "title",
+              "description",
+              "inputSchema",
+              "outputSchema",
+              "annotations"
+            ],
+            "title": "Field",
+            "type": "string"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
+          },
+          "quote": {
+            "title": "Quote",
+            "type": "string"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          }
+        },
+        "required": [
+          "field",
+          "path",
+          "quote",
+          "start",
+          "end"
+        ],
+        "title": "EvidenceSpan",
+        "type": "object"
+      },
+      "FeedbackCreate": {
+        "properties": {
+          "agrees": {
+            "title": "Agrees",
+            "type": "boolean"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          }
+        },
+        "required": [
+          "agrees"
+        ],
+        "title": "FeedbackCreate",
+        "type": "object"
+      },
+      "Finding": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/TriageResult"
+          },
+          "scan_id": {
+            "title": "Scan Id",
+            "type": "string"
+          },
+          "server_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Name"
+          },
+          "sibling_tool_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sibling Tool Names",
+            "type": "array"
+          },
+          "tool": {
+            "$ref": "#/components/schemas/ToolDefinition"
+          }
+        },
+        "required": [
+          "id",
+          "scan_id",
+          "tool",
+          "server_name",
+          "sibling_tool_names",
+          "result"
+        ],
+        "title": "Finding",
+        "type": "object"
+      },
+      "FindingPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Finding"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "next_cursor"
+        ],
+        "title": "FindingPage",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "ModelInfo": {
+        "properties": {
+          "judge_enabled": {
+            "title": "Judge Enabled",
+            "type": "boolean"
+          },
+          "judge_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Judge Model"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "onnx": {
+            "title": "Onnx",
+            "type": "boolean"
+          },
+          "t_high": {
+            "title": "T High",
+            "type": "number"
+          },
+          "t_low": {
+            "title": "T Low",
+            "type": "number"
+          },
+          "temperature": {
+            "title": "Temperature",
+            "type": "number"
+          }
+        },
+        "required": [
+          "model_version",
+          "t_low",
+          "t_high",
+          "temperature",
+          "onnx",
+          "judge_model",
+          "judge_enabled"
+        ],
+        "title": "ModelInfo",
+        "type": "object"
+      },
+      "ScanCreate": {
+        "properties": {
+          "mcp_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mcp Config"
+          },
+          "remote_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remote Url"
+          },
+          "scanner": {
+            "anyOf": [
+              {
+                "enum": [
+                  "cisco_yara",
+                  "cisco_llm",
+                  "snyk_agent_scan",
+                  "sarif_in",
+                  "static_json"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scanner"
+          },
+          "scanner_report": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scanner Report"
+          },
+          "source_type": {
+            "enum": [
+              "tools_json",
+              "mcp_config",
+              "scanner_report",
+              "remote_url"
+            ],
+            "title": "Source Type",
+            "type": "string"
+          },
+          "tools_json": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools Json"
+          }
+        },
+        "required": [
+          "source_type"
+        ],
+        "title": "ScanCreate",
+        "type": "object"
+      },
+      "ScanSummary": {
+        "properties": {
+          "confirmed": {
+            "title": "Confirmed",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "dismissed": {
+            "title": "Dismissed",
+            "type": "integer"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "judge_calls": {
+            "title": "Judge Calls",
+            "type": "integer"
+          },
+          "judge_cost_usd": {
+            "title": "Judge Cost Usd",
+            "type": "number"
+          },
+          "judge_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Judge Model"
+          },
+          "model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Version"
+          },
+          "needs_review": {
+            "title": "Needs Review",
+            "type": "integer"
+          },
+          "scanner_flagged": {
+            "title": "Scanner Flagged",
+            "type": "integer"
+          },
+          "source_type": {
+            "enum": [
+              "tools_json",
+              "mcp_config",
+              "scanner_report",
+              "remote_url"
+            ],
+            "title": "Source Type",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "complete",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "tool_count": {
+            "title": "Tool Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "source_type",
+          "tool_count",
+          "scanner_flagged",
+          "confirmed",
+          "needs_review",
+          "dismissed",
+          "judge_calls",
+          "judge_cost_usd",
+          "model_version",
+          "judge_model",
+          "created_at",
+          "expires_at"
+        ],
+        "title": "ScanSummary",
+        "type": "object"
+      },
+      "ScannerFinding": {
+        "properties": {
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "raw": {
+            "additionalProperties": true,
+            "title": "Raw",
+            "type": "object"
+          },
+          "rule_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Id"
+          },
+          "scanner": {
+            "enum": [
+              "cisco_yara",
+              "cisco_llm",
+              "snyk_agent_scan",
+              "sarif_in",
+              "static_json"
+            ],
+            "title": "Scanner",
+            "type": "string"
+          },
+          "scanner_version": {
+            "title": "Scanner Version",
+            "type": "string"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "critical"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity"
+          }
+        },
+        "required": [
+          "scanner",
+          "scanner_version",
+          "rule_id",
+          "severity",
+          "message",
+          "raw"
+        ],
+        "title": "ScannerFinding",
+        "type": "object"
+      },
+      "ToolDefinition": {
+        "additionalProperties": true,
+        "description": "An MCP tool object. Extra spec fields (icons, execution, _meta) are preserved.",
+        "properties": {
+          "annotations": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annotations"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "inputSchema": {
+            "additionalProperties": true,
+            "title": "Inputschema",
+            "type": "object"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "outputSchema": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outputschema"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "name",
+          "inputSchema"
+        ],
+        "title": "ToolDefinition",
+        "type": "object"
+      },
+      "ToolRecord": {
+        "description": "A tool plus the context Sieve treats as features.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "server_instructions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Instructions"
+          },
+          "server_name": {
+            "title": "Server Name",
+            "type": "string"
+          },
+          "sibling_tool_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sibling Tool Names",
+            "type": "array"
+          },
+          "tool": {
+            "$ref": "#/components/schemas/ToolDefinition"
+          }
+        },
+        "required": [
+          "id",
+          "server_name",
+          "tool"
+        ],
+        "title": "ToolRecord",
+        "type": "object"
+      },
+      "TriageResult": {
+        "properties": {
+          "class_probabilities": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "propertyNames": {
+              "enum": [
+                "benign",
+                "imperative_benign",
+                "poisoned"
+              ]
+            },
+            "title": "Class Probabilities",
+            "type": "object"
+          },
+          "confidence": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "evidence_spans": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceSpan"
+            },
+            "title": "Evidence Spans",
+            "type": "array"
+          },
+          "judge_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Judge Model"
+          },
+          "latency_ms": {
+            "title": "Latency Ms",
+            "type": "integer"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "owasp": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Owasp",
+            "type": "array"
+          },
+          "poisoned_probability": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Poisoned Probability",
+            "type": "number"
+          },
+          "predicted_class": {
+            "enum": [
+              "benign",
+              "imperative_benign",
+              "poisoned"
+            ],
+            "title": "Predicted Class",
+            "type": "string"
+          },
+          "reasoning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning"
+          },
+          "remediation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remediation"
+          },
+          "scanner_findings": {
+            "items": {
+              "$ref": "#/components/schemas/ScannerFinding"
+            },
+            "title": "Scanner Findings",
+            "type": "array"
+          },
+          "stage": {
+            "enum": [
+              "classifier",
+              "judge",
+              "judge_failed",
+              "judge_budget_exhausted"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "sub_labels": {
+            "items": {
+              "enum": [
+                "exfiltration",
+                "instruction_override",
+                "tool_shadowing",
+                "privilege_escalation",
+                "concealment",
+                "secret_solicitation",
+                "command_execution"
+              ],
+              "type": "string"
+            },
+            "title": "Sub Labels",
+            "type": "array"
+          },
+          "verdict": {
+            "enum": [
+              "confirmed",
+              "needs_review",
+              "dismissed"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "verdict",
+          "stage",
+          "predicted_class",
+          "class_probabilities",
+          "poisoned_probability",
+          "confidence",
+          "sub_labels",
+          "owasp",
+          "evidence_spans",
+          "reasoning",
+          "remediation",
+          "scanner_findings",
+          "model_version",
+          "judge_model",
+          "latency_ms"
+        ],
+        "title": "TriageResult",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Sieve API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/bench/summary": {
+      "get": {
+        "operationId": "bench_summary_api_v1_bench_summary_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BenchSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Bench Summary",
+        "tags": [
+          "bench"
+        ]
+      }
+    },
+    "/api/v1/findings/{finding_id}/feedback": {
+      "post": {
+        "operationId": "submit_feedback_api_v1_findings__finding_id__feedback_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "finding_id",
+            "required": true,
+            "schema": {
+              "title": "Finding Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Submit Feedback",
+        "tags": [
+          "feedback"
+        ]
+      }
+    },
+    "/api/v1/healthz": {
+      "get": {
+        "operationId": "healthz_api_v1_healthz_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Healthz Api V1 Healthz Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Healthz",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/v1/models": {
+      "get": {
+        "operationId": "get_model_info_api_v1_models_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelInfo"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Model Info",
+        "tags": [
+          "models"
+        ]
+      }
+    },
+    "/api/v1/readyz": {
+      "get": {
+        "operationId": "readyz_api_v1_readyz_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "title": "Response Readyz Api V1 Readyz Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Readyz",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/v1/scans": {
+      "post": {
+        "operationId": "create_scan_api_v1_scans_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Scan",
+        "tags": [
+          "scans"
+        ]
+      }
+    },
+    "/api/v1/scans/{scan_id}": {
+      "get": {
+        "operationId": "get_scan_api_v1_scans__scan_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scan_id",
+            "required": true,
+            "schema": {
+              "title": "Scan Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Scan",
+        "tags": [
+          "scans"
+        ]
+      }
+    },
+    "/api/v1/scans/{scan_id}/events": {
+      "get": {
+        "operationId": "scan_events_api_v1_scans__scan_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scan_id",
+            "required": true,
+            "schema": {
+              "title": "Scan Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Scan Events",
+        "tags": [
+          "scans"
+        ]
+      }
+    },
+    "/api/v1/scans/{scan_id}/findings": {
+      "get": {
+        "operationId": "list_findings_api_v1_scans__scan_id__findings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scan_id",
+            "required": true,
+            "schema": {
+              "title": "Scan Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "verdict",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "confirmed",
+                    "needs_review",
+                    "dismissed"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Verdict"
+            }
+          },
+          {
+            "in": "query",
+            "name": "predicted_class",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "benign",
+                    "imperative_benign",
+                    "poisoned"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Predicted Class"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sub_label",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "exfiltration",
+                    "instruction_override",
+                    "tool_shadowing",
+                    "privilege_escalation",
+                    "concealment",
+                    "secret_solicitation",
+                    "command_execution"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sub Label"
+            }
+          },
+          {
+            "in": "query",
+            "name": "stage",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "classifier",
+                    "judge",
+                    "judge_failed",
+                    "judge_budget_exhausted"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Stage"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindingPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Findings",
+        "tags": [
+          "findings"
+        ]
+      }
+    },
+    "/api/v1/scans/{scan_id}/sarif": {
+      "get": {
+        "operationId": "scan_sarif_api_v1_scans__scan_id__sarif_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scan_id",
+            "required": true,
+            "schema": {
+              "title": "Scan Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Scan Sarif Api V1 Scans  Scan Id  Sarif Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Scan Sarif",
+        "tags": [
+          "scans"
+        ]
+      }
+    },
+    "/api/v1/triage": {
+      "post": {
+        "operationId": "triage_api_v1_triage_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolRecord"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TriageResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Triage",
+        "tags": [
+          "triage"
+        ]
+      }
+    }
+  }
+}

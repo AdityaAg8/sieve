@@ -1,0 +1,42 @@
+{
+  "description": "Served verbatim from bench/results; the web never computes numbers.",
+  "properties": {
+    "dataset_version": {
+      "title": "Dataset Version",
+      "type": "string"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "headline": {
+      "additionalProperties": true,
+      "title": "Headline",
+      "type": "object"
+    },
+    "model_version": {
+      "title": "Model Version",
+      "type": "string"
+    },
+    "provisional": {
+      "default": false,
+      "title": "Provisional",
+      "type": "boolean"
+    },
+    "tables": {
+      "additionalProperties": true,
+      "title": "Tables",
+      "type": "object"
+    }
+  },
+  "required": [
+    "dataset_version",
+    "model_version",
+    "headline",
+    "tables",
+    "generated_at"
+  ],
+  "title": "BenchSummary",
+  "type": "object"
+}

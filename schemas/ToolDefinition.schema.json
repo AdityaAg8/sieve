@@ -1,0 +1,71 @@
+{
+  "additionalProperties": true,
+  "description": "An MCP tool object. Extra spec fields (icons, execution, _meta) are preserved.",
+  "properties": {
+    "annotations": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Annotations"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Description"
+    },
+    "inputSchema": {
+      "additionalProperties": true,
+      "title": "Inputschema",
+      "type": "object"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "outputSchema": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Outputschema"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Title"
+    }
+  },
+  "required": [
+    "name",
+    "inputSchema"
+  ],
+  "title": "ToolDefinition",
+  "type": "object"
+}
