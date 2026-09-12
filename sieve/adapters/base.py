@@ -61,4 +61,8 @@ def get_adapter(name: ScannerName) -> ScannerAdapter:
     lane, as each adapter class lands — never referencing a module that does not exist yet, so
     `mypy` stays clean at every commit.
     """
+    if name == "cisco_yara":
+        from sieve.adapters.cisco_yara import CiscoYaraAdapter
+
+        return CiscoYaraAdapter()
     raise ValueError(f"{name!r} has no get_adapter factory; use its module functions directly")
