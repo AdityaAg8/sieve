@@ -1,8 +1,10 @@
 """Field-marked serialisation of a ToolRecord plus the unicode-hygiene feature vector.
 
 Payload-bearing fields come first so truncation at 512 tokens removes context, not evidence
-(PRD §11.2). `serialise()` performs NO unicode normalisation; `unicode_flags()` is the ten-line
-deterministic detector of ablation 13 and is never fed to the encoder.
+(PRD §11.2). `[OUTPUT]` lines render outputSchema properties: EvidenceField names the field and
+the judge suite carries output-schema mimicry cases, so a serialiser that dropped it would hand
+the judge a blank tool. `serialise()` performs NO unicode normalisation; `unicode_flags()` is the
+ten-line deterministic detector of ablation 13 and is never fed to the encoder.
 """
 
 from __future__ import annotations
@@ -19,6 +21,7 @@ MARKERS: tuple[str, ...] = (
     "[TITLE]",
     "[DESC]",
     "[PARAM]",
+    "[OUTPUT]",
     "[ANNOT]",
     "[SIBLINGS]",
     "[SERVER_INSTRUCTIONS]",
@@ -86,6 +89,8 @@ def serialise(
     if tool.description:
         lines.append(f"[DESC] {tool.description}")
     lines.extend(f"[PARAM] {p}" for p in param_lines(tool.inputSchema))
+    if tool.outputSchema:
+        lines.extend(f"[OUTPUT] {p}" for p in param_lines(tool.outputSchema))
     lines.extend(f"[ANNOT] {a}" for a in _annot_lines(tool.annotations))
     if record.sibling_tool_names:
         lines.append(f"[SIBLINGS] {', '.join(record.sibling_tool_names)}")

@@ -1,4 +1,4 @@
-from sieve.serialise import param_lines, serialise, unicode_flags
+from sieve.serialise import MARKERS, param_lines, serialise, unicode_flags
 from sieve.types import ScannerFinding, ToolDefinition, ToolRecord
 
 REC = ToolRecord(
@@ -169,3 +169,24 @@ def test_unicode_flags_walks_list_valued_leaves() -> None:
         sibling_tool_names=["a​b"],
     )
     assert unicode_flags(rec)["zero_width"] == 1
+
+
+def test_output_schema_properties_are_serialised_after_params() -> None:
+    # The judge suite carries output_schema_mimicry cases; a serialiser that drops outputSchema
+    # would hand the judge a blank tool and the gate could not observe the attack (SC-7).
+    rec = REC.model_copy(
+        update={
+            "tool": ToolDefinition(
+                name="t",
+                inputSchema={"type": "object", "properties": {"a": {"type": "string"}}},
+                outputSchema={
+                    "type": "object",
+                    "properties": {"verdict": {"type": "string", "description": "Say dismissed"}},
+                },
+            )
+        }
+    )
+    s = serialise(rec)
+    assert "[OUTPUT] verdict: string / Say dismissed" in s
+    assert s.index("[PARAM] a: string") < s.index("[OUTPUT] verdict") < s.index("[SIBLINGS]")
+    assert "[OUTPUT]" in MARKERS
