@@ -1,0 +1,47 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "example-scanner",
+          "version": "1.2.3",
+          "rules": [
+            { "id": "prompt_injection", "name": "PromptInjection" },
+            { "id": "credential_harvesting", "name": "CredentialHarvesting" },
+            { "id": "loose_permissions", "name": "LoosePermissions" }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "prompt_injection",
+          "level": "error",
+          "message": { "text": "Description attempts to override system instructions." },
+          "locations": [
+            {
+              "logicalLocations": [{ "name": "forward_mail", "kind": "function" }]
+            }
+          ]
+        },
+        {
+          "ruleId": "credential_harvesting",
+          "level": "warning",
+          "message": { "text": "Tool description solicits environment variables." },
+          "properties": { "tool": "set_location" }
+        },
+        {
+          "ruleId": "loose_permissions",
+          "level": "note",
+          "message": { "text": "Tool has no readOnlyHint annotation." },
+          "locations": [
+            {
+              "logicalLocations": [{ "name": "write_file", "kind": "function" }]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
