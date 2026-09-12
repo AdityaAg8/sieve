@@ -110,7 +110,13 @@ class FixtureStore:
             "dismissed": self._template_summary["dismissed"],
         }
 
+    def all_findings(self, scan_id: str) -> list[Finding] | None:
+        """Every finding for a scan, unfiltered and unpaginated (the SSE `/events` route)."""
+        return self._findings.get(scan_id)
 
+
+# Process-wide, in-memory, and never evicted: correct for Phase 0 stub routes and tests, which
+# never outlive one process. L5's DB-backed store enforces `settings.scan_ttl_days` for real.
 _STORE = FixtureStore()
 
 

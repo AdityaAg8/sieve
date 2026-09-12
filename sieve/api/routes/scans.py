@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
 from sieve.api.deps import FixtureStore, get_store
-from sieve.types import Finding, ScanCreate, ScanSummary
+from sieve.types import ScanCreate, ScanSummary
 
 router = APIRouter(tags=["scans"])
 
@@ -30,14 +30,9 @@ def _sse(event: str, data: dict[str, object]) -> str:
     return f"event: {event}\ndata: {json.dumps(data)}\n\n"
 
 
-def _all_findings(store: FixtureStore, scan_id: str) -> list[Finding] | None:
-    page = store.list_findings(scan_id, limit=1_000_000)
-    return None if page is None else page.items
-
-
 @router.get("/scans/{scan_id}/events")
 async def scan_events(scan_id: str, store: FixtureStore = Depends(get_store)) -> StreamingResponse:
-    findings = _all_findings(store, scan_id)
+    findings = store.all_findings(scan_id)
     if findings is None:
         raise HTTPException(status_code=404, detail="scan not found")
 
