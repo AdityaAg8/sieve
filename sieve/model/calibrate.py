@@ -1,0 +1,181 @@
+"""Pooled out-of-fold temperature scaling, and the CLI that fills the artefact's thresholds.
+
+Pooling is the safety property: `pool_oof` refuses a set of fold directories whose ids overlap
+or whose union is not exactly the dev set, so a calibration can never be fitted on a fold's
+own training rows or on a partial corpus (PRD §11.4).
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+import shutil
+from collections.abc import Sequence
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import numpy.typing as npt
+from scipy.optimize import minimize_scalar  # type: ignore[import-untyped]
+
+from sieve.eval.metrics import expected_calibration_error
+from sieve.model import thresholds as th
+from sieve.model.data import load_corpus
+
+log = logging.getLogger("sieve.model.calibrate")
+
+TEMPERATURE_BOUNDS = (0.05, 10.0)
+
+
+class PoolError(ValueError):
+    """The fold artefacts do not form one clean pooled out-of-fold prediction set."""
+
+
+def apply(logits: npt.NDArray[Any], temperature: float) -> npt.NDArray[np.float64]:
+    """Softmax of `logits / temperature`, computed in a shift-stable way."""
+    scaled = np.asarray(logits, dtype=np.float64) / float(temperature)
+    scaled = scaled - scaled.max(axis=1, keepdims=True)
+    exponentiated = np.exp(scaled)
+    return np.asarray(exponentiated / exponentiated.sum(axis=1, keepdims=True), dtype=np.float64)
+
+
+def _nll(
+    logits: npt.NDArray[np.float64], labels: npt.NDArray[np.int_], temperature: float
+) -> float:
+    probs = apply(logits, temperature)
+    picked = probs[np.arange(len(labels)), labels]
+    return float(-np.mean(np.log(np.clip(picked, 1e-12, 1.0))))
+
+
+def fit_temperature(
+    logits: npt.NDArray[Any], labels: Sequence[int] | npt.NDArray[np.int_]
+) -> float:
+    """The single scalar that minimises pooled-OOF NLL. One parameter, so one plot explains it."""
+    x = np.asarray(logits, dtype=np.float64)
+    y = np.asarray(labels, dtype=np.int64)
+    result = minimize_scalar(lambda t: _nll(x, y, t), bounds=TEMPERATURE_BOUNDS, method="bounded")
+    return float(np.clip(result.x, *TEMPERATURE_BOUNDS))
+
+
+def pool_oof(
+    model_dirs: Sequence[Path], *, expected_ids: Sequence[str] | None = None
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int_], list[str]]:
+    """Concatenate the folds' held-out predictions for one (profile, seed)."""
+    blocks: list[npt.NDArray[np.float64]] = []
+    label_blocks: list[npt.NDArray[np.int_]] = []
+    ids: list[str] = []
+    for directory in model_dirs:
+        for name in ("oof_logits.npy", "oof_labels.npy", "oof_ids.json"):
+            if not (directory / name).exists():
+                raise PoolError(f"{directory / name} is missing; the fold never finished")
+        logits = np.load(directory / "oof_logits.npy").astype(np.float64)
+        labels = np.load(directory / "oof_labels.npy").astype(np.int64)
+        fold_ids = [str(x) for x in json.loads((directory / "oof_ids.json").read_text("utf-8"))]
+        if not (len(logits) == len(labels) == len(fold_ids)):
+            raise PoolError(
+                f"{directory}: length mismatch — {len(logits)} logits, {len(labels)} labels, "
+                f"{len(fold_ids)} ids"
+            )
+        blocks.append(logits)
+        label_blocks.append(labels)
+        ids.extend(fold_ids)
+
+    duplicates = sorted({i for i in ids if ids.count(i) > 1})
+    if duplicates:
+        raise PoolError(
+            f"{len(duplicates)} record(s) appear in more than one fold: {duplicates[:5]}; "
+            "the folds are not a partition and the pooled predictions are not out-of-fold"
+        )
+    if expected_ids is not None:
+        expected = set(expected_ids)
+        seen = set(ids)
+        if expected - seen:
+            raise PoolError(
+                f"missing {len(expected - seen)} dev record(s): {sorted(expected - seen)[:5]}"
+            )
+        if seen - expected:
+            raise PoolError(
+                f"{len(seen - expected)} pooled id(s) are not in the dev set: "
+                f"{sorted(seen - expected)[:5]}"
+            )
+    return np.concatenate(blocks), np.concatenate(label_blocks), ids
+
+
+# ----------------------------------------------------------------------------------- CLI
+
+
+def _shared_dir(model_dirs: Sequence[Path], override: Path | None) -> Path:
+    if override is not None:
+        return override
+    config = json.loads((model_dirs[0] / "sieve_config.json").read_text(encoding="utf-8"))
+    profile = str(config["model_version"]).split("@", 1)[0]
+    return model_dirs[0].parent / f"{profile}-s{config['seed']}"
+
+
+def main(argv: Sequence[str] | None = None) -> Path:
+    parser = argparse.ArgumentParser(prog="python -m sieve.model.calibrate")
+    parser.add_argument("--dirs", nargs="+", type=Path, required=True)
+    parser.add_argument("--corpus", type=Path, required=True)
+    parser.add_argument("--out", type=Path, default=None)
+    parser.add_argument("--results-dir", type=Path, default=Path("bench/results"))
+    parser.add_argument("--recall-target", type=float, default=0.98)
+    parser.add_argument("--precision-target", type=float, default=0.95)
+    parser.add_argument("--n-boot", type=int, default=1000)
+    parser.add_argument("--curve-boot", type=int, default=200)
+    parser.add_argument("--curve-points", type=int, default=200)
+    ns = parser.parse_args(argv)
+    logging.basicConfig(level=logging.INFO)
+
+    records = [r for r in load_corpus(ns.corpus) if r.split == "dev"]
+    groups_by_id = {r.id: r.server_name for r in records}
+    logits, labels, ids = pool_oof(ns.dirs, expected_ids=list(groups_by_id))
+    groups = [groups_by_id[i] for i in ids]
+
+    before = expected_calibration_error(apply(logits, 1.0), labels)
+    temperature = fit_temperature(logits, labels)
+    probs = apply(logits, temperature)
+    after = expected_calibration_error(probs, labels)
+    log.info("temperature %.4f; ECE %.4f -> %.4f", temperature, before, after)
+
+    chosen = th.select(
+        probs,
+        labels,
+        groups,
+        temperature=temperature,
+        recall_target=ns.recall_target,
+        precision_target=ns.precision_target,
+        n_boot=ns.n_boot,
+    )
+    spread = th.t_low_spread(probs, labels, groups, target=ns.recall_target, n_boot=ns.n_boot)
+    payload = th.threshold_payload(chosen, t_low_spread=spread, ece_before=before, ece_after=after)
+
+    shared = _shared_dir(ns.dirs, ns.out)
+    shared.mkdir(parents=True, exist_ok=True)
+    base = json.loads((ns.dirs[0] / "sieve_config.json").read_text(encoding="utf-8"))
+    base.update(payload)
+    base["fold"] = "pooled"
+    written = shared / th.CONFIG_FILE
+    written.write_text(
+        json.dumps(base, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
+    )
+    # Every per-fold directory gets the same file, so a stray fold artefact can never be served
+    # with unset thresholds.
+    for directory in ns.dirs:
+        shutil.copyfile(written, directory / th.CONFIG_FILE)
+
+    th.write_curves(
+        probs,
+        labels,
+        groups,
+        ns.results_dir / "curves.json",
+        n_thresholds=ns.curve_points,
+        n_boot=ns.curve_boot,
+    )
+    return written
+
+
+__all__ = ["PoolError", "apply", "fit_temperature", "main", "pool_oof"]
+
+if __name__ == "__main__":  # pragma: no cover
+    main()

@@ -17,28 +17,13 @@ from sklearn.feature_extraction.text import TfidfVectorizer  # type: ignore[impo
 from sklearn.linear_model import LogisticRegression  # type: ignore[import-untyped]
 from sklearn.pipeline import FeatureUnion, Pipeline  # type: ignore[import-untyped]
 
+from sieve.model.thresholds import UNCALIBRATED
 from sieve.model.version import git_sha
 from sieve.protocols import Thresholds
 from sieve.types import LABELS
 
 MODEL_FILE = "tfidf-lr.joblib"
 CONFIG_FILE = "sieve_config.json"
-
-UNCALIBRATED = Thresholds(
-    t_low=float("nan"),
-    t_high=float("nan"),
-    temperature=1.0,
-    val_recall_at_t_low=float("nan"),
-    val_precision_at_t_high=float("nan"),
-    routing_rate=float("nan"),
-)
-"""No operating point has been chosen yet.
-
-The `Classifier` Protocol requires a `thresholds` attribute, but this lane has no default
-threshold (PRD §11.4): a routing decision only ever comes from `thresholds.select` or
-`thresholds.load`. NaN is the sentinel because it is loud — it survives no comparison and no
-`json.dump` round trip without someone noticing.
-"""
 
 
 def _build() -> Pipeline:
