@@ -1,0 +1,12 @@
+FROM python:3.12-slim AS base
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1
+RUN pip install --no-cache-dir uv
+WORKDIR /app
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --extra api --extra judge --extra cli --extra mcp --no-install-project
+COPY sieve ./sieve
+COPY fixtures ./fixtures
+COPY bench/results ./bench/results
+RUN uv sync --frozen --no-dev --extra api --extra judge --extra cli --extra mcp
+EXPOSE 8000
+CMD ["uv", "run", "python", "-m", "sieve.worker.remote"]

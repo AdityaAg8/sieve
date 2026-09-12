@@ -1,0 +1,76 @@
+name: ci
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 4 * * 1"   # weekly, for the `model` job
+env:
+  PYTHONUTF8: "1"
+jobs:
+  fast:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: sieve, POSTGRES_PASSWORD: sieve, POSTGRES_DB: sieve }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U sieve" --health-interval 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://sieve:sieve@localhost:5432/sieve
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --extra api --extra judge --extra cli --extra mcp --extra bench --group dev
+      - run: uv run ruff check sieve bench tests && uv run ruff format --check sieve bench tests
+      - run: uv run mypy
+      - run: uv run python -m sieve.api.export_schemas && git diff --exit-code schemas/
+      - run: >
+          uv run pytest -q -m "not slow and not docker and not holdout"
+          --cov=sieve --cov-report=xml --cov-fail-under=60
+      - run: uv run pip-audit || true   # informational until Phase 4 makes it blocking
+  model:
+    # Model extras are ~2 GB and the slow tests train a real (tiny) model. Runs on a `model`-labelled
+    # PR and on the weekly schedule, never on every push.
+    if: >
+      github.event_name == 'schedule' ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'model'))
+    runs-on: ubuntu-latest
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --all-extras --group dev
+      - run: uv run pytest -q -m slow
+  web:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: web } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
+      - run: npm ci
+      - run: npm run lint && npm run lint:tokens && npm run lint:contrast && npx tsc --noEmit
+      - run: npm test
+      - run: npm run build
+  playwright:
+    if: false   # enabled in Task 11.3
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: web } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
+      - run: npm ci && npx playwright install --with-deps chromium
+      - run: npm run e2e
+  lighthouse:
+    if: false   # enabled in Task 11.3
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: web } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
+      - run: npm ci && npm run build
+      - run: npx lhci autorun --config=lighthouserc.json

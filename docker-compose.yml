@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16
+    environment: { POSTGRES_USER: sieve, POSTGRES_PASSWORD: sieve, POSTGRES_DB: sieve }
+    ports: ["5432:5432"]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U sieve"], interval: 5s, retries: 10 }
+  api:
+    build: { context: ., dockerfile: Dockerfile.api }
+    env_file: [{ path: .env, required: false }]
+    environment: { DATABASE_URL: postgresql+psycopg://sieve:sieve@postgres:5432/sieve, WEB_ORIGIN: http://localhost:3000 }
+    ports: ["8000:8000"]
+    depends_on: { postgres: { condition: service_healthy } }
+  worker:
+    build: { context: ., dockerfile: Dockerfile.api }
+    env_file: [{ path: .env, required: false }]
+    environment: { DATABASE_URL: postgresql+psycopg://sieve:sieve@postgres:5432/sieve }
+    command: ["uv", "run", "python", "-m", "sieve.worker.main"]
+    depends_on: { postgres: { condition: service_healthy } }
+  sandbox-worker:
+    profiles: ["remote"]
+    build: { context: ., dockerfile: Dockerfile.sandbox }
+    env_file: [{ path: .env, required: false }]
+    environment: { DATABASE_URL: postgresql+psycopg://sieve:sieve@postgres:5432/sieve, SIEVE_ALLOW_REMOTE_MCP: "true" }
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp"]
+    depends_on: { postgres: { condition: service_healthy } }
+  web:
+    image: node:22-slim
+    working_dir: /web
+    volumes: ["./web:/web"]
+    env_file: [{ path: .env, required: false }]
+    command: ["sh", "-c", "npm ci && npm run dev"]
+    environment: { NEXT_PUBLIC_API_URL: http://localhost:8000 }
+    ports: ["3000:3000"]
