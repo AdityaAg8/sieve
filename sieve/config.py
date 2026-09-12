@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     max_tools_per_scan: int = 500
     scan_ttl_days: int = 7
     trust_proxy: bool = False
+    ip_hash_salt: str = "change-me-per-deployment"  # PRD §13.2: SHA-256(salt + client_ip)
     log_level: str = "INFO"
     snyk_max_invocations: int = 25
     web_origin: str = Field(default="http://localhost:3000", validation_alias="WEB_ORIGIN")

@@ -42,6 +42,10 @@ files = ["sieve"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+filterwarnings = [
+  "error",
+  "ignore:The anyio.abc.BlockingPortal alias is deprecated:DeprecationWarning",
+]
 pythonpath = ["."]
 markers = [
   "slow: long-running (model training, ONNX export); run in the `model` CI job",
