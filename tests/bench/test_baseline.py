@@ -93,7 +93,9 @@ def test_per_source_and_per_concealment_have_one_entry_per_observed_value(
     result: BaselineResult,
 ) -> None:
     assert set(result.per_source) == {"public_repo", "synthetic_mutation"}
-    assert set(result.per_concealment) == {"none"}
+    # mini-023 is labelled `html_comment` (contracts C2.4): its payload hides in an HTML
+    # comment in the description, so it is no longer the only concealment bucket in mini-50.
+    assert set(result.per_concealment) == {"none", "html_comment"}
     for bucket in result.per_source.values():
         assert {"precision", "recall", "fpr", "n"} <= set(bucket)
 

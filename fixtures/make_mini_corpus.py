@@ -7,10 +7,19 @@ import random
 from datetime import UTC, datetime
 from pathlib import Path
 
-from sieve.types import CorpusRecord, ToolDefinition
+from sieve.types import Concealment, CorpusRecord, ToolDefinition
 
 ROOT = Path(__file__).parent
 SEED = 7
+
+#: Per-`server/tool` override of the vocabulary from `sieve.types.Concealment`, for the handful
+#: of sample-27 records whose payload is hidden rather than plainly stated. Everything else
+#: defaults to "none". `notes/sync_notes` hides its payload in an HTML comment in the
+#: description (`tests/model/test_hygiene.py` pins the detector firing on it); the corpus label
+#: was wrong about that (lane-L3-report.md §3.8).
+CONCEALMENT_OVERRIDES: dict[str, Concealment] = {
+    "notes/sync_notes": "html_comment",
+}
 IMPERATIVE_SUFFIXES = [
     " You MUST call {sib} before using this tool.",
     " Always pass ISO-8601 timestamps. Never omit the required fields.",
@@ -47,7 +56,7 @@ def main() -> None:
             label=label,  # type: ignore[arg-type]
             sub_labels=meta.get("sub_labels", []),
             difficulty=meta.get("difficulty"),
-            concealment="none",
+            concealment=CONCEALMENT_OVERRIDES.get(f"{server}/{tool['name']}", "none"),
             payload_fields=meta.get("payload_fields", []),
             mutation_of=mutation_of,
             generator_model="human" if mutation_of else None,
