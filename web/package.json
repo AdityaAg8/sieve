@@ -5,10 +5,11 @@
   "scripts": {
     "fixtures": "node scripts/copy-fixtures.mjs",
     "postinstall": "node scripts/copy-fixtures.mjs && next typegen",
-    "predev": "node scripts/copy-fixtures.mjs",
+    "predev": "node scripts/copy-fixtures.mjs && node scripts/mock-worker.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/copy-fixtures.mjs",
+    "prebuild": "node scripts/copy-fixtures.mjs && node scripts/mock-worker.mjs",
     "build": "next build",
+    "postbuild": "node scripts/check-no-msw.mjs",
     "start": "next start",
     "lint": "eslint",
     "lint:tokens": "node scripts/lint-tokens.mjs",
@@ -17,7 +18,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "pretest": "node scripts/copy-fixtures.mjs",
     "test": "vitest run --passWithNoTests",
-    "pree2e": "node scripts/copy-fixtures.mjs",
+    "pree2e": "node scripts/copy-fixtures.mjs && node scripts/mock-worker.mjs",
     "e2e": "playwright test",
     "gen:types": "openapi-typescript ../schemas/openapi.json -o src/lib/api-types.ts"
   },
@@ -59,7 +60,7 @@
   },
   "msw": {
     "workerDirectory": [
-      "public"
+      "mocks"
     ]
   }
 }

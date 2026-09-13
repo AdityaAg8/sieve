@@ -27,7 +27,7 @@ export const WIDTHS = [320, 375, 414, 768, 1280, 1920] as const;
  */
 export async function mockOverride(
   page: Page,
-  name: "models" | "bench",
+  name: "models" | "bench" | "scan",
   value: Record<string, unknown>,
 ): Promise<void> {
   await page.addInitScript(
@@ -40,6 +40,18 @@ export async function mockOverride(
 export async function mockFail(page: Page, routes: string[]): Promise<void> {
   await page.addInitScript(
     (json) => window.localStorage.setItem("sieve.mock.fail", json as string),
+    JSON.stringify(routes),
+  );
+}
+
+/**
+ * Routes the mock layer should fail at the transport — a refused connection rather than a
+ * status. `fetch` rejects with a `TypeError` and there is no response to read a code off, which
+ * is the shape of an offline browser, a CORS rejection or a dead API host.
+ */
+export async function mockOffline(page: Page, routes: string[]): Promise<void> {
+  await page.addInitScript(
+    (json) => window.localStorage.setItem("sieve.mock.offline", json as string),
     JSON.stringify(routes),
   );
 }

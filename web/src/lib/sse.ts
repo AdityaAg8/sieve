@@ -116,17 +116,28 @@ export function useScanEvents(scanId: string): ScanEvents {
       }
     };
 
-    /** Every frame resets the retry budget and records the id a reconnect would resume from. */
+    /**
+     * A frame arrived: the retry budget is spent, and the id it carried is what a reconnect
+     * resumes from. Called *before* `update`, never inside the updater — React may run an
+     * updater more than once, and a side effect in there would spend or reset the budget a
+     * number of times nobody can predict.
+     */
     const received = (event: Event): Partial<StreamState> => {
       retries = 0;
       const id = (event as MessageEvent).lastEventId;
       return id ? { lastEventId: id } : {};
     };
 
+    // A reconnect that got through is a reconnect that worked, even if no frame follows it yet.
+    source.onopen = () => {
+      retries = 0;
+    };
+
     source.addEventListener("scan.started", (event) => {
       const payload = parse<{ tool_count?: number }>(event);
+      const seenFrame = received(event);
       update((previous) => ({
-        ...received(event),
+        ...seenFrame,
         status: "streaming",
         expected: typeof payload?.tool_count === "number" ? payload.tool_count : previous.expected,
       }));
@@ -134,13 +145,14 @@ export function useScanEvents(scanId: string): ScanEvents {
 
     source.addEventListener("tool.verdict", (event) => {
       const finding = parse<Finding>(event);
+      const seenFrame = received(event);
       if (!finding?.id || seen.current.has(finding.id)) {
-        update(() => received(event));
+        update(() => seenFrame);
         return;
       }
       seen.current.add(finding.id);
       update((previous) => ({
-        ...received(event),
+        ...seenFrame,
         status: "streaming",
         findings: [...previous.findings, finding],
       }));
@@ -169,8 +181,9 @@ export function useScanEvents(scanId: string): ScanEvents {
         return { ...(cached as ScanSummary), ...counts, status: "complete" };
       });
       void queryClient.invalidateQueries({ queryKey: queryKeys.scan(scanId) });
+      const seenFrame = received(event);
       update((previous) => ({
-        ...received(event),
+        ...seenFrame,
         status: "complete",
         summary: payload,
         expected: typeof payload.tool_count === "number" ? payload.tool_count : previous.expected,
@@ -182,8 +195,9 @@ export function useScanEvents(scanId: string): ScanEvents {
     source.addEventListener("scan.failed", (event) => {
       const payload = parse<{ error?: string }>(event);
       void queryClient.invalidateQueries({ queryKey: queryKeys.scan(scanId) });
+      const seenFrame = received(event);
       update(() => ({
-        ...received(event),
+        ...seenFrame,
         status: "failed",
         error: typeof payload?.error === "string" ? payload.error : null,
       }));

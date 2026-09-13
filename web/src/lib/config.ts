@@ -5,7 +5,14 @@ export function apiBase(): string {
   return process.env.NEXT_PUBLIC_API_BASE ?? "";
 }
 
-/** True when MSW should intercept requests in the browser (`NEXT_PUBLIC_API_MOCK=1`). */
+/**
+ * True when MSW should intercept requests in the browser (`NEXT_PUBLIC_API_MOCK=1`).
+ *
+ * `src/app/providers.tsx` deliberately repeats this comparison inline instead of calling it, and
+ * that duplication is load-bearing: only a literal comparison folds at build time, which is what
+ * deletes the `import("@/mocks/browser")` branch from a production bundle. Everywhere the folding
+ * does not matter — this module's own `serverApiBase()`, for one — call this.
+ */
 export function mocksEnabled(): boolean {
   return process.env.NEXT_PUBLIC_API_MOCK === "1";
 }

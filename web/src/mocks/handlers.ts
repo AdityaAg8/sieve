@@ -123,7 +123,7 @@ const API = "*/api/v1";
  * it over the default — which is how the suite exercises "judge on" and "judge off", or a
  * non-provisional benchmark, without a second set of handlers. No application code reads this.
  */
-function override(name: "models" | "bench"): Record<string, unknown> {
+function override(name: "models" | "bench" | "scan"): Record<string, unknown> {
   if (typeof window === "undefined") return {};
   try {
     return JSON.parse(window.localStorage.getItem(`sieve.mock.${name}`) ?? "{}") as Record<
@@ -138,14 +138,30 @@ function override(name: "models" | "bench"): Record<string, unknown> {
 /** Routes a test has asked to fail, so the error states can be exercised as they will happen. */
 export type FailableRoute = "scan" | "events" | "findings" | "bench" | "models" | "sarif";
 
-function failing(route: FailableRoute): boolean {
+function listed(key: string, route: FailableRoute): boolean {
   if (typeof window === "undefined") return false;
   try {
-    const raw = window.localStorage.getItem("sieve.mock.fail");
+    const raw = window.localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as string[]).includes(route) : false;
   } catch {
     return false;
   }
+}
+
+function failing(route: FailableRoute): boolean {
+  return listed("sieve.mock.fail", route);
+}
+
+/**
+ * Routes a test has asked to fail at the *transport*, not with a status.
+ *
+ * A refused connection, a CORS rejection and an offline browser all reject `fetch` with a plain
+ * `TypeError` and never produce a response — so a page that reads only the status code shows
+ * nothing and explains nothing. `HttpResponse.error()` is the only way to reproduce that from a
+ * mock, and it is a different test from a 500.
+ */
+function offline(route: FailableRoute): boolean {
+  return listed("sieve.mock.offline", route);
 }
 
 /** A scan the scanner flagged nothing in — the clean-scan empty state. */
@@ -181,11 +197,14 @@ export const handlers = [
     HttpResponse.json(queuedSummary(sampleSummary.id), { status: 202 }),
   ),
 
-  http.get(`${API}/scans/:scanId`, ({ params }) =>
-    failing("scan")
-      ? serverError()
-      : HttpResponse.json(completedSummary(String(params.scanId))),
-  ),
+  http.get(`${API}/scans/:scanId`, ({ params }) => {
+    if (offline("scan")) return HttpResponse.error();
+    if (failing("scan")) return serverError();
+    // `sieve.mock.scan` merges over the summary, which is how a test asks for a scan that has
+    // already expired (`expires_at` in the past) or one the worker gave up on (`status`,
+    // `error`) — neither of which a real API produces on demand.
+    return HttpResponse.json({ ...completedSummary(String(params.scanId)), ...override("scan") });
+  }),
 
   http.get(`${API}/scans/:scanId/findings`, ({ request }) => {
     if (failing("findings")) return serverError();

@@ -55,6 +55,12 @@ class FakeEventSource {
     this.readyState = retrying ? this.CONNECTING : this.CLOSED;
     act(() => this.onerror?.(new Event("error")));
   }
+
+  /** A reconnect got through. No frame has followed it yet. */
+  reopen(): void {
+    this.readyState = this.OPEN;
+    act(() => this.onopen?.(new Event("open")));
+  }
 }
 
 const SCAN = "00000000-0000-0000-0000-000000005eed";
@@ -132,6 +138,25 @@ describe("useScanEvents against a stream that drops", () => {
     const source = FakeEventSource.instances[0];
     for (let attempt = 0; attempt < 6; attempt += 1) source.fail({ retrying: true });
     await waitFor(() => expect(result.current.status).toBe("failed"));
+  });
+
+  /**
+   * A stream that reconnects but has nothing new to send — a completed scan, a quiet worker —
+   * still spends the budget on every drop. Without `onopen` a long-lived page would eventually
+   * fall back to the paged endpoint despite every reconnect having succeeded.
+   */
+  it("a reconnect that gets through refills the retry budget, frame or no frame", async () => {
+    const { result } = renderHook(() => useScanEvents(SCAN), { wrapper: wrapper(client) });
+    const source = FakeEventSource.instances[0];
+
+    for (let round = 0; round < 4; round += 1) {
+      for (let attempt = 0; attempt < 5; attempt += 1) source.fail({ retrying: true });
+      source.reopen();
+    }
+
+    await waitFor(() => expect(result.current.status).not.toBe("failed"));
+    source.emit("tool.verdict", verdict("a"), "1");
+    await waitFor(() => expect(result.current.findings).toHaveLength(1));
   });
 });
 

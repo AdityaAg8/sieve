@@ -28,6 +28,9 @@ lint:
 	uv run ruff format --check sieve bench tests
 	uv run mypy
 	cd web && npm run lint && npx tsc --noEmit && npm run lint:tokens && npm run lint:contrast
+	# The MSW guard needs something built to look at: `npm run build` runs it from `postbuild`,
+	# and `lint:bundle` again so a failure names itself rather than hiding in the build output.
+	cd web && npm run build && npm run lint:bundle
 
 test:
 	uv run pytest -q -m "not slow and not docker and not holdout" --cov=sieve --cov-report=term-missing

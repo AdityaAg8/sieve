@@ -1,7 +1,7 @@
 {
   "ci": {
     "collect": {
-      "startServerCommand": "npm run start -- --port 3200",
+      "startServerCommand": "node scripts/lh-server.mjs",
       "startServerReadyPattern": "Ready in",
       "url": [
         "http://127.0.0.1:3200/",

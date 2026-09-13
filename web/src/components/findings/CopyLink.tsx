@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
-
-const COPIED = "Link copied.";
-const REFUSED = "The link could not be copied. Copy it from the address bar.";
+export const COPIED = "Link copied.";
+export const COPY_REFUSED = "The link could not be copied. Copy it from the address bar.";
 
 /**
  * Copies this page's own address.
@@ -13,33 +11,25 @@ const REFUSED = "The link could not be copied. Copy it from the address bar.";
  * address from props, so whatever the reader is actually looking at is what their colleague
  * opens.
  *
- * The outcome is announced rather than merely shown: `navigator.clipboard` is permission-gated
- * and can refuse, and a button that silently does nothing is worse than one that says it could
- * not. Nothing here animates, so reduced motion has nothing to suppress.
+ * The outcome goes to `onResult` instead of into a status element of this component's own:
+ * `navigator.clipboard` is permission-gated and can refuse, so the outcome has to be announced —
+ * but the results page owns exactly one announced slot, and a second one competing with it is
+ * how a screen reader ends up hearing neither. Nothing here animates, so reduced motion has
+ * nothing to suppress.
  */
-export function CopyLink() {
-  const [message, setMessage] = useState<string | null>(null);
-
+export function CopyLink({ onResult }: { onResult: (message: string) => void }) {
   async function copy() {
-    setMessage(null);
     try {
       await navigator.clipboard.writeText(window.location.href);
-      setMessage(COPIED);
+      onResult(COPIED);
     } catch {
-      setMessage(REFUSED);
+      onResult(COPY_REFUSED);
     }
   }
 
   return (
-    <>
-      <button type="button" className="btn btn-secondary" onClick={() => void copy()}>
-        Copy link
-      </button>
-      {/* `role="status"` and nothing more: the results page owns exactly one element carrying an
-          explicit `aria-live` (its stream status), and `e2e/results.spec.ts` enforces that. */}
-      <span role="status" className="t-ui text-ink-2">
-        {message}
-      </span>
-    </>
+    <button type="button" className="btn btn-secondary" onClick={() => void copy()}>
+      Copy link
+    </button>
   );
 }

@@ -9,13 +9,6 @@ const nextConfig: NextConfig = {
    * them from overwriting each other. Unset everywhere else, so the default stays `.next`.
    */
   distDir: process.env.NEXT_DIST_DIR || ".next",
-  /**
-   * `next dev` only serves its own dev resources to `localhost` unless told otherwise, and the
-   * E2E suite drives `127.0.0.1` — Playwright's `webServer` waits on a literal address, not a
-   * name. Without this the dev server blocks `/_next/*` for that origin and the page renders
-   * with no JavaScript at all. Development only; a production build serves nothing of the kind.
-   */
-  allowedDevOrigins: ["127.0.0.1", "localhost"],
   env: {
     /**
      * Off. The app talks to the real API (lane L9); MSW is a test dependency now, kept for the

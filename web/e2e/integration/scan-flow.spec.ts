@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { API_BASE_URL, SAMPLE_TOOL_COUNT, startSampleScan } from "./helpers";
+import { API_BASE_URL, SAMPLE_TOOL_COUNT, allFindings, startSampleScan } from "./helpers";
 
 /**
  * PRD §22's path, end to end, against the real API: paste the sample, watch the results fill from
@@ -96,15 +96,15 @@ test.describe("the §22 path against the real API", () => {
     expect(sarif.version).toBe("2.1.0");
     expect(sarif.runs).toHaveLength(1);
 
-    const findings = (await (
-      await request.get(`${API_BASE_URL}/api/v1/scans/${scanId}/findings`)
-    ).json()) as { items: { id: string; result: { verdict: string } }[]; total: number };
+    // Every page of them, not the first: the SARIF document has one result per finding, so the
+    // comparison is only as good as this list.
+    const findings = await allFindings(request, scanId);
 
     // One result per finding — not per confirmed finding, and not per flagged tool.
-    expect(sarif.runs[0].results).toHaveLength(findings.total);
-    expect(findings.total).toBe(SAMPLE_TOOL_COUNT);
+    expect(sarif.runs[0].results).toHaveLength(findings.length);
+    expect(findings).toHaveLength(SAMPLE_TOOL_COUNT);
 
-    const byId = new Map(findings.items.map((f) => [f.id, f.result.verdict]));
+    const byId = new Map(findings.map((f) => [f.id, f.result.verdict]));
     for (const result of sarif.runs[0].results) {
       // `properties.predicted_class` is present on every result, whatever the verdict was.
       expect(result.properties.predicted_class, JSON.stringify(result.properties)).toBeTruthy();
@@ -114,7 +114,7 @@ test.describe("the §22 path against the real API", () => {
     }
 
     // And the claim holds in the other direction: every confirmed finding is an `error`.
-    const confirmedIds = findings.items
+    const confirmedIds = findings
       .filter((f) => f.result.verdict === "confirmed")
       .map((f) => f.id);
     const errorIds = sarif.runs[0].results

@@ -12,8 +12,10 @@ import { defineConfig, devices } from "@playwright/test";
  * queue, and the browser's own `EventSource` on the real SSE route. Nothing in `e2e/integration`
  * may reach for a mock; the point of it is that the contract holds when nobody is pretending.
  *
- * The two run side by side, so each build gets its own `NEXT_DIST_DIR` — `next build` and
- * `next dev` both own `.next` and would otherwise overwrite one another.
+ * Both are production builds — the artefact a deployment serves and the one Lighthouse measures,
+ * with no dev overlay in the measurements and no dev-only origin rules. They run side by side,
+ * so each gets its own `NEXT_DIST_DIR`; `next build` owns `.next` and they would otherwise
+ * overwrite one another.
  */
 const MOCK_PORT = Number(process.env.PLAYWRIGHT_PORT ?? 3100);
 const LIVE_PORT = Number(process.env.PLAYWRIGHT_LIVE_PORT ?? 3101);
@@ -89,7 +91,14 @@ export default defineConfig({
     },
     {
       name: "web (live API)",
-      command: `npm run dev -- --port ${LIVE_PORT}`,
+      /*
+       * `npx next build` rather than `npm run build`: the npm lifecycle would run `prebuild`
+       * (which takes `mockServiceWorker.js` *out* of `public/`) and `postbuild` (which asserts
+       * it is gone) at the same moment the mocked build beside it is putting it there. Two
+       * builds cannot share `public/`, so this one leaves it alone. `make lint` and CI run the
+       * guard where nothing else is building.
+       */
+      command: `node scripts/copy-fixtures.mjs && npx next build && npx next start --port ${LIVE_PORT}`,
       url: LIVE_BASE_URL,
       env: {
         NEXT_PUBLIC_API_MOCK: "0",

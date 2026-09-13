@@ -93,10 +93,13 @@ test.describe("the app against the live API", () => {
     await page.goto("/benchmark");
     await expect(page.getByRole("heading", { name: "Headline" })).toBeVisible();
 
-    // A row with no significance test says so; one whose p-value nobody has measured says `—`.
-    // The two are different statements and the page must not collapse them into one.
-    await expect(page.getByText("No test defined").first()).toBeVisible();
-    if (typeof summary.headline.mcnemar_p !== "number") {
+    // Only the half that this deployment's data can falsify: a p-value nobody has measured
+    // renders as `—` with "metric to confirm", and a measured one renders as the number. That
+    // "No test defined" appears on the rows with no paired comparison is a property of the
+    // component and is asserted where it can fail — `HeadlineTable.test.tsx`.
+    if (typeof summary.headline.mcnemar_p === "number") {
+      await expect(page.getByText(/^McNemar p = /)).toBeVisible();
+    } else {
       await expect(page.getByTitle("metric to confirm").first()).toBeVisible();
     }
   });

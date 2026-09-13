@@ -11,10 +11,24 @@ import { verdictCounts, type VerdictCounts } from "./FindingList";
 
 export type ScanFeed = {
   scan: ScanSummary | null;
-  /** The status the scan read failed with. `404` is an expired scan; `null` is no failure. */
+  /**
+   * The scan could not be read, for any reason at all.
+   *
+   * Not the same question as `scanStatus`. A refused connection, a CORS rejection or an offline
+   * browser rejects `fetch` with a plain `TypeError` and never produces an `ApiError`, so a
+   * failure gated on the status code alone leaves the page showing empty counts and no
+   * explanation — which is the one thing this app is not allowed to do.
+   */
+  scanFailed: boolean;
+  /**
+   * The HTTP status the scan read failed with, when there was one. `404` is an expired scan;
+   * `null` means either no failure or a failure with no status (see `scanFailed`).
+   */
   scanStatus: number | null;
   /** Every finding that has arrived, by whichever route was available. */
   findings: Finding[];
+  /** `findings` narrowed to the active filter — what the list actually renders. */
+  visible: Finding[];
   counts: VerdictCounts;
   /** Rows each group holds from first paint, or `null` while that is not yet knowable. */
   reserved: VerdictCounts | null;
@@ -131,8 +145,10 @@ export function useScanFeed(scanId: string, options: Options = {}): ScanFeed {
 
   return {
     scan: scan.data ?? null,
+    scanFailed: scan.isError,
     scanStatus: scan.error instanceof ApiError ? scan.error.status : null,
     findings,
+    visible,
     counts,
     reserved,
     loading,

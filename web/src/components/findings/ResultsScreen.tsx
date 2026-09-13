@@ -47,12 +47,7 @@ export function ResultsScreen({
   const [keyMapOpen, setKeyMapOpen] = useState(false);
 
   const feed = useScanFeed(scanId, { initialScan, initialFindings, filter });
-  const { counts, findings, reserved, retry } = feed;
-
-  const visible = useMemo(
-    () => (filter ? findings.filter((f) => f.result.verdict === filter) : findings),
-    [findings, filter],
-  );
+  const { counts, findings, reserved, retry, visible } = feed;
 
   const ordered = useMemo(
     () =>
@@ -62,6 +57,14 @@ export function ResultsScreen({
 
   const openFinding = findings.find((f) => f.id === openId) ?? null;
   const { exportSarif, message: exportMessage } = useSarifExport(scanId);
+
+  /**
+   * One slot for "the last thing a control did". Export and copy both report here, so the header
+   * carries a single `role="status"` paragraph rather than one per control — which is the same
+   * discipline `e2e/results.spec.ts` enforces for the explicit live region below.
+   */
+  const [copyMessage, setCopyMessage] = useState<string | null>(null);
+  const notice = exportMessage ?? copyMessage;
 
   const move = useCallback(
     (delta: 1 | -1) => {
@@ -190,8 +193,9 @@ export function ResultsScreen({
             <button type="button" className="btn btn-secondary" onClick={() => void exportSarif()}>
               Export SARIF
             </button>
-            {/* A scan's URL is the whole of sharing it; this is the shortcut for saying so. */}
-            <CopyLink />
+            {/* A scan's URL is the whole of sharing it; this is the shortcut for saying so. It
+                reports into the header's one status slot rather than carrying its own. */}
+            <CopyLink onResult={setCopyMessage} />
           </div>
         </div>
 
@@ -210,7 +214,10 @@ export function ResultsScreen({
           ) : null}
         </div>
 
-        {feed.scanStatus !== null ? (
+        {/* Any failure at all, not only one that came back with a status code: a refused
+            connection rejects with a `TypeError`, and counts that are simply blank are worse
+            than a sentence saying why. */}
+        {feed.scanFailed ? (
           <ErrorNote
             title="This scan's summary could not be read."
             detail="The counts above may be incomplete."
@@ -218,9 +225,9 @@ export function ResultsScreen({
           />
         ) : null}
 
-        {exportMessage ? (
+        {notice ? (
           <p role="status" className="t-ui text-ink-1">
-            {exportMessage}
+            {notice}
           </p>
         ) : null}
       </header>
