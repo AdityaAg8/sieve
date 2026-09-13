@@ -12,7 +12,19 @@ dependencies = [
 
 [project.optional-dependencies]
 api = ["fastapi", "uvicorn[standard]", "sqlalchemy[asyncio]>=2.0", "alembic", "psycopg[binary]<3.3.5", "sse-starlette", "python-multipart", "httpx"]
-model = ["torch", "transformers", "accelerate", "datasets", "scikit-learn<1.9.1", "onnxruntime", "optimum[onnxruntime]", "huggingface_hub", "sentence-transformers", "scipy"]
+model = [
+    "torch",
+    "transformers",
+    "accelerate",
+    "datasets",
+    "scikit-learn<1.9.1",
+    "onnxruntime",
+    "optimum[onnxruntime]",
+    "huggingface_hub",
+    "sentence-transformers",
+    "scipy",
+    "sentencepiece>=0.2.2",
+]
 judge = ["anthropic>=1.0"]
 cli = ["typer", "rich"]
 mcp = ["mcp"]
