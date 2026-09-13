@@ -32,6 +32,7 @@ const PAIRS = [
   // Added by lane L6, one row per new (foreground, background) pair the app paints.
   ["red-0", "bg-2", 4.5, "evidence text and marks on a raised quote surface"],
   ["red-fill", "bg-0", 3.0, "the confirmed chip's filled square as a UI element"],
+  ["red-fill", "bg-1", 3.0, "the confirmed segment of the verdict bar, on its track"],
   ["ink-0", "red-1", 4.5, "button label on the pressed primary fill"],
   ["focus", "bg-0", 3.0, "the 2 px focus ring on the page"],
   ["focus", "bg-1", 3.0, "the 2 px focus ring on a surface"],

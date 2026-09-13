@@ -31,12 +31,16 @@ export function useScan(id: string): UseQueryResult<ScanSummary> {
   });
 }
 
-export function useFindings(id: string, filters?: FindingQuery): UseQueryResult<FindingPage> {
+export function useFindings(
+  id: string,
+  filters?: FindingQuery,
+  options?: { enabled?: boolean },
+): UseQueryResult<FindingPage> {
   const ready = useApiReady();
   return useQuery({
     queryKey: queryKeys.findings(id, filters),
     queryFn: () => getFindings(id, filters),
-    enabled: ready && id.length > 0,
+    enabled: ready && id.length > 0 && (options?.enabled ?? true),
   });
 }
 
