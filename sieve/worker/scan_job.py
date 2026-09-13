@@ -115,7 +115,9 @@ async def _event(
 
 
 def _deps(budget: Callable[[], bool] | None = None) -> PipelineDeps:
-    judge = get_judge() if settings.judge_enabled else None
+    # The judge holds the same ledger gate the pipeline does: the cap is process-wide, so it
+    # has to hold for anything that reaches the judge, not only for the routed path.
+    judge = get_judge(budget) if settings.judge_enabled else None
     deps = PipelineDeps(
         classifier=get_classifier(), judge=judge, judge_enabled=settings.judge_enabled
     )

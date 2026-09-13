@@ -1,13 +1,24 @@
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from sieve.api.deps import close_judge
 from sieve.api.middleware import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from sieve.api.routes import bench, feedback, findings, health, models, scans, triage
 from sieve.config import settings
 from sieve.db.session import use_selector_event_loop_on_windows
 from sieve.logging import configure_logging
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Shutdown closes the judge's HTTP client rather than leaving it to the collector."""
+    yield
+    close_judge()
 
 
 def create_app(*, stub: bool = False) -> FastAPI:
@@ -19,6 +30,7 @@ def create_app(*, stub: bool = False) -> FastAPI:
         version="1.0.0",
         openapi_url="/api/v1/openapi.json",
         docs_url="/api/v1/docs",
+        lifespan=lifespan,
     )
     app.add_middleware(
         CORSMiddleware,

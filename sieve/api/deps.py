@@ -20,9 +20,10 @@ from __future__ import annotations
 import json
 import logging
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sieve.config import settings
 from sieve.model.infer import FIXTURE_ID, load_classifier
@@ -38,6 +39,9 @@ from sieve.types import (
     TriageResult,
     Verdict,
 )
+
+if TYPE_CHECKING:  # `anthropic` is the optional `judge` extra; only the annotation needs it.
+    from sieve.judge.client import AnthropicJudge
 
 log = logging.getLogger("sieve.api.deps")
 
@@ -188,6 +192,56 @@ def get_classifier() -> Classifier:
     return classifier
 
 
-def get_judge() -> Judge:
-    """The active judge. L4 replaces this body with the Anthropic-backed judge."""
-    return stub_judge()
+#: The process's Anthropic judge. It owns the one HTTP connection pool; the per-call judges
+#: `get_judge(budget=...)` hands out borrow that client and own nothing, so closing this one
+#: at shutdown closes everything.
+_JUDGE: AnthropicJudge | None = None
+
+
+def _anthropic_judge() -> AnthropicJudge:
+    global _JUDGE
+    if _JUDGE is None or _JUDGE.model != settings.judge_model:
+        close_judge()
+        # Imported here, not at module scope: `sieve.judge.client` needs `anthropic`, the
+        # optional `judge` extra, and the fixture path must stay importable without it.
+        from sieve.judge.client import AnthropicJudge as _AnthropicJudge
+
+        log.info("judge: AnthropicJudge on %s", settings.judge_model)
+        _JUDGE = _AnthropicJudge(model=settings.judge_model)
+    return _JUDGE
+
+
+def get_judge(budget: Callable[[], bool] | None = None) -> Judge:
+    """The active judge for the API, the worker and the CLI.
+
+    With `ANTHROPIC_API_KEY` set this is `AnthropicJudge` on `settings.judge_model`; without
+    it, the shared `FakeJudge`, said out loud at INFO so a deployment that lost its key is
+    visible rather than merely cheap.
+
+    `budget` is the daily-ledger gate, and it is a callback rather than a bool on purpose: it
+    is asked at each decision, so a scan that crosses the cap mid-batch stops there (PRD
+    §13.2). The pipeline asks it too; passing it into the judge as well is what makes the cap
+    hold for any caller that reaches the judge directly.
+    """
+    if not settings.anthropic_api_key:
+        log.info("judge: ANTHROPIC_API_KEY is unset; the shared FakeJudge is active")
+        return stub_judge()
+    base = _anthropic_judge()
+    if budget is None:
+        return base
+    from sieve.judge.client import AnthropicJudge as _AnthropicJudge
+
+    return _AnthropicJudge(model=settings.judge_model, client=base.client, budget=budget)
+
+
+def close_judge() -> None:
+    """Close the process's judge client. Called at API shutdown and at worker shutdown.
+
+    Deterministic rather than left to the garbage collector: a pooled TLS socket finalised at
+    an arbitrary moment surfaces as an unraisable `ResourceWarning` inside whichever request
+    or test happens to be running.
+    """
+    global _JUDGE
+    judge, _JUDGE = _JUDGE, None
+    if judge is not None:
+        judge.close()

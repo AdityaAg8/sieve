@@ -123,6 +123,9 @@ async def _main() -> None:
     try:
         await run_forever(sessions, stop=stop)
     finally:
+        from sieve.api.deps import close_judge
+
+        close_judge()
         await dispose_engine()
         log.info("worker.stopped")
 

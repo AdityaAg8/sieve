@@ -32,15 +32,17 @@ async def triage(
     await ratelimit.enforce(request, session, "triage_min")
 
     stub = getattr(request.app.state, "stub", False)
-    judge = get_judge() if settings.judge_enabled else None
+    # Asked at the decision, not before it: the same gate the worker uses, so a request that
+    # arrives as the ledger crosses the cap is refused the judge, not handed a snapshot taken
+    # a moment earlier (PRD §13.2). The judge holds the same callback, so the cap survives a
+    # path that reaches it without the pipeline.
+    budget = _always_allowed if stub else spend.budget_gate(session, asyncio.get_running_loop())
+    judge = get_judge(budget) if settings.judge_enabled else None
     deps = PipelineDeps(
         classifier=get_classifier(),
         judge=judge,
         judge_enabled=settings.judge_enabled,
-        # Asked at the decision, not before it: the same gate the worker uses, so a request
-        # that arrives as the ledger crosses the cap is refused the judge, not handed a
-        # snapshot taken a moment earlier (PRD §13.2).
-        budget=_always_allowed if stub else spend.budget_gate(session, asyncio.get_running_loop()),
+        budget=budget,
     )
     # Off the event loop: a real DeBERTa forward pass is CPU-bound, and `budget` marshals
     # itself back, so the loop stays free to answer the ledger.
