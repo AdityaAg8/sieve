@@ -37,11 +37,11 @@ def test_load_corpus_reads_the_committed_fixture() -> None:
 
 
 def test_every_fold_has_three_non_empty_disjoint_splits(
-    balanced_dev_records: list[CorpusRecord],
+    dev_records: list[CorpusRecord],
 ) -> None:
-    assert _populated_folds(balanced_dev_records) == [0, 1, 2, 3, 4]
+    assert _populated_folds(dev_records) == [0, 1, 2, 3, 4]
     for fold in range(5):
-        d = build_splits(balanced_dev_records, fold=fold)
+        d = build_splits(dev_records, fold=fold)
         train, early, oof = d["train"], d["early_stop"], d["oof"]
         assert len(train) > 0 and len(early) > 0 and len(oof) > 0
         sets = [set(_ids(train)), set(_ids(early)), set(_ids(oof))]
@@ -51,64 +51,84 @@ def test_every_fold_has_three_non_empty_disjoint_splits(
 
 
 def test_no_server_appears_in_both_train_and_oof(
-    balanced_dev_records: list[CorpusRecord],
+    dev_records: list[CorpusRecord],
 ) -> None:
     for fold in range(5):
-        d = build_splits(balanced_dev_records, fold=fold)
+        d = build_splits(dev_records, fold=fold)
         assert _servers(d["train"]) & _servers(d["oof"]) == set()
         assert _servers(d["early_stop"]) & _servers(d["oof"]) == set()
 
 
 def test_early_stop_servers_are_a_subset_of_the_folds_training_servers(
-    balanced_dev_records: list[CorpusRecord],
+    dev_records: list[CorpusRecord],
 ) -> None:
     for fold in range(5):
-        d = build_splits(balanced_dev_records, fold=fold)
-        held_out = {r.server_name for r in balanced_dev_records if r.fold == fold}
-        training_servers = {r.server_name for r in balanced_dev_records if r.fold != fold}
+        d = build_splits(dev_records, fold=fold)
+        held_out = {r.server_name for r in dev_records if r.fold == fold}
+        training_servers = {r.server_name for r in dev_records if r.fold != fold}
         assert _servers(d["early_stop"]) <= training_servers
         assert _servers(d["early_stop"]) & held_out == set()
 
 
 def test_pooled_oof_covers_every_dev_record_exactly_once(
-    balanced_dev_records: list[CorpusRecord],
+    dev_records: list[CorpusRecord],
 ) -> None:
     pooled: list[str] = []
     for fold in range(5):
-        pooled.extend(_ids(build_splits(balanced_dev_records, fold=fold)["oof"]))
-    assert sorted(pooled) == sorted(r.id for r in balanced_dev_records)
+        pooled.extend(_ids(build_splits(dev_records, fold=fold)["oof"]))
+    assert sorted(pooled) == sorted(r.id for r in dev_records)
 
 
-def test_the_brief_fixture_folds_are_usable_where_they_are_populated(
-    dev_records: list[CorpusRecord],
+def test_the_real_assignment_populates_every_fold_on_the_fixture_corpus(
+    assigned_records: list[CorpusRecord],
 ) -> None:
-    """`_fold_of` leaves fold 0 empty on mini-50; every populated fold still splits cleanly."""
-    for fold in _populated_folds(dev_records):
-        d = build_splits(dev_records, fold=fold)
-        assert len(d["oof"]) > 0
-        assert _servers(d["train"]) & _servers(d["oof"]) == set()
+    """A splitter that empties a fold would make every fold-wise test above vacuous.
+
+    `bench.split.split.assign` holds one of mini-50's seven servers out and round-robins the
+    remaining six over five folds, so all five are populated. This is the guard that says so
+    out loud if L1 ever changes the holdout share or the fold count.
+    """
+    dev = [r for r in assigned_records if r.split == "dev"]
+    assert _populated_folds(dev) == [0, 1, 2, 3, 4]
+    assert len({r.server_name for r in assigned_records if r.split == "holdout"}) >= 1
+    # Grouping is by server: no server may appear on both sides of the seal.
+    dev_servers = {r.server_name for r in dev}
+    sealed_servers = {r.server_name for r in assigned_records if r.split != "dev"}
+    assert dev_servers & sealed_servers == set()
+
+
+def test_the_real_holdout_rows_never_reach_a_training_split(
+    assigned_records: list[CorpusRecord],
+) -> None:
+    """Not a planted row: the rows `assign` actually sealed."""
+    sealed = {r.id for r in assigned_records if r.split != "dev"}
+    assert sealed, "the fixture corpus must produce at least one sealed row"
+    for fold in range(5):
+        d = build_splits(assigned_records, fold=fold)
+        for name in ("train", "early_stop", "oof"):
+            assert sealed & set(_ids(d[name])) == set()
 
 
 def test_holdout_and_eval_only_rows_never_reach_any_split(
-    balanced_dev_records: list[CorpusRecord],
+    dev_records: list[CorpusRecord],
 ) -> None:
     sealed = [
-        balanced_dev_records[0].model_copy(
+        dev_records[0].model_copy(
             update={"id": "sealed-holdout", "server_name": "sealed-a", "split": "holdout"}
         ),
-        balanced_dev_records[1].model_copy(
+        dev_records[1].model_copy(
             update={"id": "sealed-eval", "server_name": "sealed-b", "split": "eval_only"}
         ),
     ]
     for fold in range(5):
-        d = build_splits([*balanced_dev_records, *sealed], fold=fold)
+        d = build_splits([*dev_records, *sealed], fold=fold)
         for name in ("train", "early_stop", "oof"):
             assert "sealed-holdout" not in _ids(d[name])
             assert "sealed-eval" not in _ids(d[name])
 
 
-def test_columns_and_label_ids(balanced_dev_records: list[CorpusRecord]) -> None:
-    d = build_splits(balanced_dev_records, fold=0)
+def test_columns_and_label_ids(dev_records: list[CorpusRecord]) -> None:
+    d = build_splits(dev_records, fold=0)
     assert set(d["train"].column_names) == {
         "id",
         "text",
@@ -119,26 +139,26 @@ def test_columns_and_label_ids(balanced_dev_records: list[CorpusRecord]) -> None
         "server_name",
         "fold",
     }
-    by_id = {r.id: r for r in balanced_dev_records}
+    by_id = {r.id: r for r in dev_records}
     for row in d["train"]:
         assert row["label"] == LABEL2ID[by_id[row["id"]].label]
 
 
 def test_description_only_mode_serialises_only_the_description(
-    balanced_dev_records: list[CorpusRecord],
+    dev_records: list[CorpusRecord],
 ) -> None:
-    d = build_splits(balanced_dev_records, fold=0, mode="description_only")
+    d = build_splits(dev_records, fold=0, mode="description_only")
     for text in d["train"]["text"]:
         assert text.startswith("[DESC]")
         assert "[NAME]" not in text
 
 
 def test_scanner_findings_are_appended_when_supplied(
-    balanced_dev_records: list[CorpusRecord],
+    dev_records: list[CorpusRecord],
 ) -> None:
     from sieve.types import ScannerFinding
 
-    target = balanced_dev_records[0]
+    target = dev_records[0]
     finding = ScannerFinding(
         scanner="cisco_yara",
         scanner_version="1.0",
@@ -148,7 +168,7 @@ def test_scanner_findings_are_appended_when_supplied(
         raw={},
     )
     d = build_splits(
-        balanced_dev_records,
+        dev_records,
         fold=1 if target.fold == 0 else 0,
         scanner_findings_by_id={target.id: [finding]},
     )
@@ -156,9 +176,9 @@ def test_scanner_findings_are_appended_when_supplied(
     assert "[SCANNER] cisco_yara:R1" in texts[target.id]
 
 
-def test_build_splits_is_deterministic(balanced_dev_records: list[CorpusRecord]) -> None:
-    a = build_splits(balanced_dev_records, fold=2)
-    b = build_splits(balanced_dev_records, fold=2)
+def test_build_splits_is_deterministic(dev_records: list[CorpusRecord]) -> None:
+    a = build_splits(dev_records, fold=2)
+    b = build_splits(dev_records, fold=2)
     assert _ids(a["early_stop"]) == _ids(b["early_stop"])
     assert _ids(a["train"]) == _ids(b["train"])
 

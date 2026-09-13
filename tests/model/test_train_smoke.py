@@ -40,14 +40,14 @@ def _write_corpus(path: Path, records: list[CorpusRecord]) -> Path:
 
 @pytest.fixture
 def corpus_with_a_sealed_row(
-    balanced_dev_records: list[CorpusRecord], tmp_path: Path
+    dev_records: list[CorpusRecord], tmp_path: Path
 ) -> tuple[Path, list[CorpusRecord]]:
-    sealed = balanced_dev_records[0].model_copy(
+    sealed = dev_records[0].model_copy(
         update={"id": "sealed-holdout", "server_name": "sealed-server", "split": "holdout"}
     )
     return (
-        _write_corpus(tmp_path / "corpus.jsonl", [*balanced_dev_records, sealed]),
-        balanced_dev_records,
+        _write_corpus(tmp_path / "corpus.jsonl", [*dev_records, sealed]),
+        dev_records,
     )
 
 
@@ -149,19 +149,19 @@ def test_three_class_label_map_is_the_identity() -> None:
 
 
 def test_every_payload_field_survives_tokenisation_at_the_configured_length(
-    balanced_dev_records: list[CorpusRecord],
+    dev_records: list[CorpusRecord],
 ) -> None:
     """PRD §22: truncation must remove context, never evidence."""
     tokenizer = AutoTokenizer.from_pretrained(TINY)
-    failures = payload_survival_failures(balanced_dev_records, tokenizer, max_length=512)
+    failures = payload_survival_failures(dev_records, tokenizer, max_length=512)
     assert failures == [], f"payload truncated: {failures}"
 
 
 def test_payload_survival_reports_the_record_and_the_field(
-    balanced_dev_records: list[CorpusRecord],
+    dev_records: list[CorpusRecord],
 ) -> None:
     tokenizer = AutoTokenizer.from_pretrained(TINY)
-    poisoned = next(r for r in balanced_dev_records if r.label == "poisoned" and r.payload_fields)
+    poisoned = next(r for r in dev_records if r.label == "poisoned" and r.payload_fields)
     failures = payload_survival_failures([poisoned], tokenizer, max_length=8)
     assert failures == [(poisoned.id, poisoned.payload_fields[0])]
 
@@ -237,14 +237,14 @@ def test_tiny_profile_fold_zero_writes_every_artefact_and_no_sealed_file(
 
 @pytest.mark.slow
 def test_a_sealed_row_does_not_change_the_run(
-    balanced_dev_records: list[CorpusRecord], tmp_path: Path
+    dev_records: list[CorpusRecord], tmp_path: Path
 ) -> None:
     """Identical artefacts with and without a `split="holdout"` row in the corpus file."""
-    clean = _write_corpus(tmp_path / "clean.jsonl", balanced_dev_records)
-    sealed_rec = balanced_dev_records[0].model_copy(
+    clean = _write_corpus(tmp_path / "clean.jsonl", dev_records)
+    sealed_rec = dev_records[0].model_copy(
         update={"id": "sealed-holdout", "server_name": "sealed-server", "split": "holdout"}
     )
-    dirty = _write_corpus(tmp_path / "dirty.jsonl", [*balanced_dev_records, sealed_rec])
+    dirty = _write_corpus(tmp_path / "dirty.jsonl", [*dev_records, sealed_rec])
     outs = []
     for name, corpus in (("clean", clean), ("dirty", dirty)):
         out = tmp_path / name
@@ -263,10 +263,8 @@ def test_a_sealed_row_does_not_change_the_run(
 
 
 @pytest.mark.slow
-def test_fold_all_writes_no_oof_logits(
-    balanced_dev_records: list[CorpusRecord], tmp_path: Path
-) -> None:
-    corpus = _write_corpus(tmp_path / "corpus.jsonl", balanced_dev_records)
+def test_fold_all_writes_no_oof_logits(dev_records: list[CorpusRecord], tmp_path: Path) -> None:
+    corpus = _write_corpus(tmp_path / "corpus.jsonl", dev_records)
     out = tmp_path / "tiny-fall-s0"
     main(
         [

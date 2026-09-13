@@ -1,19 +1,41 @@
-"""Local grouped-fold assignment so the model lane does not import L1's bench.split."""
+"""Fixtures for the model lane: the real grouped split, and a closed Hugging Face session."""
 
 from __future__ import annotations
 
-import hashlib
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 
+from bench.split.split import DEFAULT_SEED, assign
 from sieve.types import CorpusRecord
 
 
-def _fold_of(server_name: str, folds: int = 5) -> int:
-    # Deterministic across processes and platforms; hash() is salted per run and must not be used.
-    digest = hashlib.sha256(server_name.encode("utf-8")).hexdigest()
-    return int(digest, 16) % folds
+@pytest.fixture(scope="session", autouse=True)
+def _close_the_hub_session() -> Iterator[None]:
+    """Close `huggingface_hub`'s pooled TLS connection before the interpreter tears down.
+
+    The hub keeps a cached `requests.Session` per (headers, proxies) key. Left open, its socket
+    is finalised by the garbage collector during some later test's teardown, and under the
+    project's `filterwarnings = ["error"]` that surfaces as a sporadic
+    `ResourceWarning: unclosed <ssl.SSLSocket ...>` ERROR attributed to whichever test happened
+    to run last. Closing it here fixes it at the source instead of filtering the symptom.
+    """
+    yield
+    close_hub_session()
+
+
+def close_hub_session() -> None:
+    """Close and drop `huggingface_hub`'s cached session. Never raises; teardown is not a gate."""
+    try:
+        from huggingface_hub.utils._http import get_session, reset_sessions
+    except ImportError:  # pragma: no cover - the hub is always installed with the model extra
+        return
+    try:
+        get_session().close()
+        reset_sessions()
+    except Exception:  # pragma: no cover  # noqa: BLE001
+        return
 
 
 def _mini_50() -> list[CorpusRecord]:
@@ -21,25 +43,24 @@ def _mini_50() -> list[CorpusRecord]:
     return [CorpusRecord.model_validate_json(line) for line in lines]
 
 
+def assigned_mini_50() -> list[CorpusRecord]:
+    """mini-50 through L1's real grouped assignment: `dev` + `holdout`, folds by server."""
+    return assign(_mini_50(), seed=DEFAULT_SEED)
+
+
+@pytest.fixture
+def assigned_records() -> list[CorpusRecord]:
+    """Every mini-50 row carrying the split L1's `bench.split.split.assign` gave it."""
+    return assigned_mini_50()
+
+
 @pytest.fixture
 def dev_records() -> list[CorpusRecord]:
-    """mini-50 with folds re-assigned BY SERVER, which the fixture's own fold field is not."""
-    out = []
-    for rec in _mini_50():
-        out.append(rec.model_copy(update={"split": "dev", "fold": _fold_of(rec.server_name)}))
-    return out
+    """The development rows only, as the lane's rule requires (PRD §9.7, §11.6).
 
-
-@pytest.fixture
-def balanced_dev_records() -> list[CorpusRecord]:
-    """`dev_records`, but every one of the five folds is guaranteed non-empty.
-
-    `_fold_of` over mini-50's seven server names lands nothing in fold 0 and four servers in
-    fold 2, so it cannot exercise "every fold has three non-empty splits". Round-robin over the
-    sorted server names is still a *grouped* split (a server is never split across folds) and
-    keeps every fold populated. Reported in docs/handoffs/L3.md.
+    Every fold is populated: `assign` puts one of mini-50's seven servers in the holdout and
+    round-robins the remaining six over five folds. `test_data` asserts that, so a future change
+    to the splitter that empties a fold fails loudly instead of quietly making fold-wise tests
+    vacuous — which is exactly what the temporary `sha256(server) % 5` helper used to do.
     """
-    records = _mini_50()
-    servers = sorted({r.server_name for r in records})
-    fold_of = {name: i % 5 for i, name in enumerate(servers)}
-    return [r.model_copy(update={"split": "dev", "fold": fold_of[r.server_name]}) for r in records]
+    return [r for r in assigned_mini_50() if r.split == "dev"]

@@ -23,6 +23,7 @@ from bench.ablations.run import (
     scanner_findings_from_baseline,
     write_results,
 )
+from bench.split.split import DEFAULT_SEED, assign
 from sieve.model.data import load_corpus
 from sieve.protocols import Classifier, FakeClassifier, FakeJudge, Judge
 from sieve.types import CorpusRecord
@@ -59,15 +60,13 @@ def _fake_judge_factory(model: str) -> Judge:
 
 @pytest.fixture
 def dev() -> list[CorpusRecord]:
-    """mini-50 with folds re-assigned by server. Local, because tests/bench/conftest.py is L1's.
+    """The development rows of mini-50 under L1's real grouped assignment.
 
-    Round-robin over the sorted server names keeps a server whole inside one fold and leaves
-    every fold populated, which the sha256 helper in tests/model/conftest.py does not.
+    Defined locally because `tests/bench/conftest.py` belongs to L1/L2; the assignment itself
+    is theirs, imported rather than re-implemented.
     """
-    records = load_corpus(Path("fixtures/corpus/mini-50.jsonl"))
-    servers = sorted({r.server_name for r in records})
-    fold_of = {name: i % 5 for i, name in enumerate(servers)}
-    return [r.model_copy(update={"split": "dev", "fold": fold_of[r.server_name]}) for r in records]
+    assigned = assign(load_corpus(Path("fixtures/corpus/mini-50.jsonl")), seed=DEFAULT_SEED)
+    return [r for r in assigned if r.split == "dev"]
 
 
 @pytest.fixture
@@ -370,9 +369,12 @@ def test_an_unknown_row_selection_raises(inputs: Inputs) -> None:
         )
 
 
-def test_the_fixture_corpus_is_all_dev() -> None:
-    records = load_corpus(Path("fixtures/corpus/mini-50.jsonl"))
-    assert {r.split for r in records} == {"dev"}
+def test_the_matrix_only_ever_sees_the_development_rows(dev: list[CorpusRecord]) -> None:
+    """The fixture is the real assignment, which seals some of mini-50; only `dev` reaches here."""
+    assigned = assign(load_corpus(Path("fixtures/corpus/mini-50.jsonl")), seed=DEFAULT_SEED)
+    assert {r.split for r in assigned} > {"dev"}, "the fixture must exercise a sealed row"
+    assert {r.split for r in dev} == {"dev"}
+    assert len(dev) < len(assigned)
 
 
 # ----------------------------------------------------------- errors.md (out-of-fold only)

@@ -9,7 +9,6 @@ import pytest
 from bench.eval_final import SEALED_MESSAGE, HoldoutSealed, evaluate, main
 from sieve.model.data import load_corpus
 from sieve.protocols import FakeClassifier, FakeJudge
-from sieve.types import CorpusRecord
 
 LOG_KEYS = {"git_sha", "utc", "rows_evaluated", "reason"}
 
@@ -90,6 +89,14 @@ def test_nothing_else_in_the_repository_opens_the_holdout() -> None:
     allowed = {
         # Reads sealed ROWS. There is exactly one.
         "bench/eval_final.py",
+        # Assigns the splits in the first place (L1 Task 1.8).
+        "bench/split/split.py",
+        # Produces `eval_only` rows (L1's real_poisoned collector).
+        "bench/collect/real_poisoned.py",
+        # L2's own gate: refuses to score a sealed row.
+        "bench/baseline/run.py",
+        # L1 publishes the split counts in the datasheet.
+        "bench/publish.py",
         # Refuse or drop a sealed row; none of them can read one.
         "sieve/model/data.py",
         "sieve/model/train.py",
@@ -102,11 +109,6 @@ def test_nothing_else_in_the_repository_opens_the_holdout() -> None:
         # Read the holdout REPORT (`holdout.json`), never a row.
         "sieve/model/push.py",
         "sieve/model/card.md",
-        # Other lanes' own split handling.
-        "bench/baseline/run.py",
-        "bench/split/assign.py",
-        "bench/stats.py",
-        "bench/publish.py",
     }
     assert hits <= allowed, f"unexpected holdout/eval_only reader(s): {sorted(hits - allowed)}"
 
@@ -116,25 +118,29 @@ def test_nothing_else_in_the_repository_opens_the_holdout() -> None:
 
 @pytest.fixture
 def sealed_corpus(tmp_path: Path) -> Path:
-    """mini-50 with planted `holdout` and `eval_only` rows; the rest stay `dev`."""
+    """mini-50 under L1's real assignment, plus a planted `real_poisoned` slice.
+
+    The holdout rows are the ones `bench.split.split.assign` actually sealed, not rows this
+    test relabelled; only the `eval_only` slice is planted, because mini-50 carries no
+    `real_poisoned` source of its own.
+    """
+    from bench.split.split import DEFAULT_SEED, assign
+
     records = load_corpus(Path("fixtures/corpus/mini-50.jsonl"))
-    out: list[CorpusRecord] = []
-    holdout_servers = {"weather", "notes"}
-    for record in records:
-        split = "holdout" if record.server_name in holdout_servers else "dev"
-        out.append(record.model_copy(update={"split": split}))
-    for index, record in enumerate(records[:4]):
-        out.append(
-            record.model_copy(
-                update={
-                    "id": f"real-poisoned-{index}",
-                    "server_name": f"wild-{index}",
-                    "source": "real_poisoned",
-                    "label": "poisoned",
-                    "split": "eval_only",
-                }
-            )
+    planted = [
+        r.model_copy(
+            update={
+                "id": f"real-poisoned-{index}",
+                "server_name": f"wild-{index}",
+                "source": "real_poisoned",
+                "label": "poisoned",
+                "mutation_of": None,
+            }
         )
+        for index, r in enumerate(records[:4])
+    ]
+    out = assign([*records, *planted], seed=DEFAULT_SEED)
+    assert {r.split for r in out} == {"dev", "holdout", "eval_only"}
     path = tmp_path / "labelled.jsonl"
     path.write_text(
         "".join(r.model_dump_json() + "\n" for r in out), encoding="utf-8", newline="\n"
