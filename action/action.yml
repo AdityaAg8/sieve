@@ -1,13 +1,17 @@
 name: "Sieve triage"
-description: "Triage an MCP server's tools for prompt-injection and tool-poisoning risk (SC-1: parses the config only, never spawns the server)."
+description: "Triage an MCP server's tools for prompt-injection and tool-poisoning risk (SC-1: parses the config only, never spawns the server). Run actions/checkout before this action -- sieve-version: local needs the repo already checked out, and the composite steps below are loaded from it either way."
 author: "Sieve"
 
 inputs:
   config:
     description: "Path to the MCP config (mcp.json) to parse, relative to the repo root."
     required: true
-  version:
-    description: "The sieve version to install."
+  sieve-version:
+    description: >
+      What to install: a PyPI version (e.g. "0.1.0"), the literal string "local" to install
+      from the checked-out repository (uv tool install --from . sieve -- requires
+      actions/checkout to have run first), or a git ref
+      (git+https://github.com/<owner>/<repo>@<ref>).
     required: false
     default: "0.1.0"
   fail-on:
@@ -39,19 +43,37 @@ runs:
 
     - name: Install sieve
       shell: bash
-      run: uv tool install sieve==${{ inputs.version }}
+      env:
+        SIEVE_VERSION_INPUT: ${{ inputs.sieve-version }}
+      run: |
+        SPEC="$SIEVE_VERSION_INPUT"
+        if [ "$SPEC" = "local" ]; then
+          uv tool install --from . sieve
+        elif [ "${SPEC#git+}" != "$SPEC" ]; then
+          uv tool install "$SPEC"
+        else
+          uv tool install "sieve==$SPEC"
+        fi
+
+    - name: Resolve judge flag
+      id: judge-flag
+      shell: bash
+      env:
+        JUDGE_INPUT: ${{ inputs.judge }}
+      run: |
+        if [ "$JUDGE_INPUT" = "true" ]; then
+          echo "flag=" >> "$GITHUB_OUTPUT"
+        else
+          echo "flag=--no-judge" >> "$GITHUB_OUTPUT"
+        fi
 
     - name: Triage (SARIF)
       shell: bash
       env:
         ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
       run: |
-        JUDGE_FLAG="--no-judge"
-        if [ "${{ inputs.judge }}" = "true" ]; then
-          JUDGE_FLAG=""
-        fi
         sieve triage --config "${{ inputs.config }}" --static --offline --format sarif \
-          --output sieve.sarif --fail-on never $JUDGE_FLAG
+          --output sieve.sarif --fail-on never ${{ steps.judge-flag.outputs.flag }}
 
     - name: Upload SARIF to Code Scanning
       if: inputs.upload-sarif == 'true'
@@ -71,9 +93,5 @@ runs:
       env:
         ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
       run: |
-        JUDGE_FLAG="--no-judge"
-        if [ "${{ inputs.judge }}" = "true" ]; then
-          JUDGE_FLAG=""
-        fi
         sieve triage --config "${{ inputs.config }}" --static --offline \
-          --fail-on "${{ inputs.fail-on }}" $JUDGE_FLAG
+          --fail-on "${{ inputs.fail-on }}" ${{ steps.judge-flag.outputs.flag }}

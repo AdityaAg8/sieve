@@ -13,7 +13,7 @@ jobs:
       - uses: ./action
         with:
           config: fixtures/mcp-config/sample.mcp.json
-          version: "0.1.0"
+          sieve-version: local
           fail-on: confirmed
           upload-sarif: true
           comment: true

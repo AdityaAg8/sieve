@@ -210,3 +210,31 @@ def test_triage_client_wraps_transport_errors_as_api_error() -> None:
         pytest.raises(net.ApiError),
     ):
         client.triage_tool(_record())
+
+
+def test_triage_client_raises_api_error_on_a_200_with_invalid_json() -> None:
+    # Fix round 1, Important 2: a 200 used to reach `response.json()`/`model_validate` outside
+    # any try/except, so a malformed body raised a bare traceback instead of `ApiError`.
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200, content=b"{not json", headers={"content-type": "application/json"}
+        )
+
+    transport = httpx.MockTransport(handler)
+    with (
+        net.TriageClient("http://testserver", transport=transport) as client,
+        pytest.raises(net.ApiError, match="triage"),
+    ):
+        client.triage_tool(_record())
+
+
+def test_triage_client_raises_api_error_on_a_200_with_the_wrong_shape() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"not": "a TriageResult"})
+
+    transport = httpx.MockTransport(handler)
+    with (
+        net.TriageClient("http://testserver", transport=transport) as client,
+        pytest.raises(net.ApiError, match="triage"),
+    ):
+        client.triage_tool(_record())

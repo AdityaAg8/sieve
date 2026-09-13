@@ -40,7 +40,9 @@ def _no_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_format_json_validates_as_a_list_of_finding() -> None:
     result = runner.invoke(app, ["triage", str(TOOLS_27), "--format", "json", "--no-judge"])
-    assert result.exit_code in (EXIT_OK, EXIT_FINDINGS), result.output
+    # 5 of the 27 fixture tools score >= t_high regardless of the judge; default --fail-on is
+    # "confirmed", so this always exits 1.
+    assert result.exit_code == EXIT_FINDINGS, result.output
     payload = json.loads(result.stdout)
     assert isinstance(payload, list)
     assert len(payload) == 27
@@ -57,7 +59,9 @@ def test_from_cisco_yara_reads_the_golden_from_stdin_and_attaches_scanner_findin
         ["triage", "-", "--from", "cisco-yara", "--no-judge", "--format", "json"],
         input=stdin_text,
     )
-    assert result.exit_code in (EXIT_OK, EXIT_FINDINGS), result.output
+    # A `--from` record carries no description, so the classifier has nothing poison-worded to
+    # score: all 27 are dismissed, so the default --fail-on "confirmed" exits 0.
+    assert result.exit_code == EXIT_OK, result.output
     findings = [Finding.model_validate(item) for item in json.loads(result.stdout)]
     assert len(findings) == 27
     by_name = {f.tool.name: f for f in findings}
@@ -79,6 +83,42 @@ def test_fail_on_never_exits_0_on_the_same_fixture() -> None:
         app, ["triage", str(TOOLS_27), "--fail-on", "never", "--no-judge", "--format", "json"]
     )
     assert result.exit_code == EXIT_OK, result.output
+
+
+def test_fail_on_any_exits_0_without_any_scanner_findings() -> None:
+    # Fix round 1, Important 1: `any` means "the scanner flagged something", not "anything was
+    # triaged" -- a plain tools.json carries no scanner findings at all, so `any` must not fire
+    # just because 27 tools were scored.
+    result = runner.invoke(
+        app, ["triage", str(TOOLS_27), "--fail-on", "any", "--no-judge", "--format", "json"]
+    )
+    assert result.exit_code == EXIT_OK, result.output
+
+
+def test_fail_on_any_exits_1_on_the_cisco_yara_golden_even_when_every_tool_is_dismissed() -> None:
+    stdin_text = CISCO_GOLDEN.read_text(encoding="utf-8")
+    result = runner.invoke(
+        app,
+        [
+            "triage",
+            "-",
+            "--from",
+            "cisco-yara",
+            "--no-judge",
+            "--fail-on",
+            "any",
+            "--format",
+            "json",
+        ],
+        input=stdin_text,
+    )
+    assert result.exit_code == EXIT_FINDINGS, result.output
+    # The claim in the name: every one of the 27 tools is dismissed (a `--from` record carries no
+    # description, so the classifier has nothing poison-worded to score), yet 4 of them were
+    # scanner-flagged and `any` still fires.
+    findings = [Finding.model_validate(item) for item in json.loads(result.stdout)]
+    assert all(f.result.verdict == "dismissed" for f in findings)
+    assert sum(1 for f in findings if f.result.scanner_findings) == 4
 
 
 def test_ci_alone_is_format_json_and_fail_on_confirmed() -> None:
@@ -300,6 +340,40 @@ def test_api_url_posts_one_redacted_tool_per_call(monkeypatch: pytest.MonkeyPatc
     assert all(f.result.model_version == "remote@0" for f in findings)
 
 
+def _patch_api_url_transport(monkeypatch: pytest.MonkeyPatch, handler: object) -> None:
+    transport = httpx.MockTransport(handler)  # type: ignore[arg-type]
+    real_triage_client = net.TriageClient
+    monkeypatch.setattr(
+        net,
+        "TriageClient",
+        lambda base_url, **kw: real_triage_client(base_url, transport=transport),
+    )
+
+
+def test_api_url_with_a_200_invalid_json_response_exits_3(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Fix round 1, Important 2 (CliRunner coverage): a malformed 200 used to leak a bare
+    # traceback instead of a clean exit 3.
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=b"{not json")
+
+    _patch_api_url_transport(monkeypatch, handler)
+    result = runner.invoke(
+        app, ["triage", str(TOOLS_27), "--api-url", "http://testserver", "--fail-on", "never"]
+    )
+    assert result.exit_code == EXIT_MODEL, result.output
+
+
+def test_api_url_with_a_200_wrong_shape_response_exits_3(monkeypatch: pytest.MonkeyPatch) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"not": "a TriageResult"})
+
+    _patch_api_url_transport(monkeypatch, handler)
+    result = runner.invoke(
+        app, ["triage", str(TOOLS_27), "--api-url", "http://testserver", "--fail-on", "never"]
+    )
+    assert result.exit_code == EXIT_MODEL, result.output
+
+
 # --- --config PATH --static (SC-1: parse only) --------------------------------------------------
 
 
@@ -312,6 +386,21 @@ def test_config_static_never_produces_a_tool_and_prints_the_clean_scan_message(
     assert result.exit_code == EXIT_OK, result.output
     assert connect_calls == []
     assert "No findings to triage. The scanner flagged nothing in these 0 tools." in result.output
+
+
+def test_config_static_never_loads_a_classifier(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Fix round 1, Minor 1: zero ToolRecords means nothing to score, so no classifier -- local or
+    # offline -- should ever be constructed. The Action hits this path on every PR.
+    def boom(*_a: object, **_kw: object) -> object:
+        raise AssertionError("the classifier must not be loaded when there is nothing to triage")
+
+    monkeypatch.setattr("sieve.cli.app.load_classifier", boom)
+    monkeypatch.setattr(net, "load_classifier_offline", boom)
+    result = runner.invoke(
+        app, ["triage", "--config", str(MCP_CONFIG), "--static", "--offline", "--format", "json"]
+    )
+    assert result.exit_code == EXIT_OK, result.output
+    assert json.loads(result.stdout) == []
 
 
 def test_config_without_static_is_an_input_error() -> None:
@@ -356,7 +445,7 @@ def test_invalid_fail_on_is_an_input_error() -> None:
 
 def test_pretty_output_shows_confirmed_before_dismissed_and_never_greens_dismissed() -> None:
     result = runner.invoke(app, ["triage", str(TOOLS_27), "--no-judge"])
-    assert result.exit_code in (EXIT_OK, EXIT_FINDINGS), result.output
+    assert result.exit_code == EXIT_FINDINGS, result.output  # the fixture always has a confirmed
     confirmed_at = result.output.find("Confirmed")
     dismissed_at = result.output.find("Dismissed")
     assert confirmed_at != -1
@@ -370,7 +459,7 @@ def test_output_flag_writes_to_a_file_not_stdout(tmp_path: Path) -> None:
     result = runner.invoke(
         app, ["triage", str(TOOLS_27), "--format", "json", "--output", str(out), "--no-judge"]
     )
-    assert result.exit_code in (EXIT_OK, EXIT_FINDINGS), result.output
+    assert result.exit_code == EXIT_FINDINGS, result.output  # the fixture always has a confirmed
     assert result.stdout == ""
     data = json.loads(out.read_text(encoding="utf-8"))
     assert len(data) == 27

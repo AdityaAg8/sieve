@@ -163,12 +163,12 @@ def _run_via_api(records: list[ToolRecord], api_url: str, *, offline: bool) -> l
 
 
 def _resolve_exit_code(results: list[TriageResult], fail_on: str) -> int:
-    """PRD §15.1's four tiers, read as an ordered scale: confirmed ⊂ review ⊂ any.
-
-    `any` is the widest tier -- it matches once anything at all was triaged, not just once
-    something was flagged, so it fails a run only when the run produced zero results (an empty
-    tools list matched no tier and never matches `any` either -- see `test_triage.py` for a
-    documented case).
+    """PRD §15.1's four tiers, an ordered scale by Sieve verdict severity plus one wider tier
+    (ruling, fix round 1): `confirmed` ⊂ `review` (adds `needs_review`) ⊂ `any` (every tool the
+    *scanner* flagged, regardless of what Sieve concluded about it -- so `any` can still fire on
+    a run where Sieve dismissed every single tool: the scanner's original call is not Sieve's to
+    overrule for this gate). `any` uses the same quantity as `render.py::build_scan_summary`'s
+    `scanner_flagged` count: `bool(r.scanner_findings)`.
     """
     if fail_on == "never":
         return EXIT_OK
@@ -177,7 +177,7 @@ def _resolve_exit_code(results: list[TriageResult], fail_on: str) -> int:
     elif fail_on == "review":
         matched = any(r.verdict in ("confirmed", "needs_review") for r in results)
     else:
-        matched = len(results) > 0
+        matched = any(r.scanner_findings for r in results)
     return EXIT_FINDINGS if matched else EXIT_OK
 
 
@@ -242,24 +242,30 @@ def triage(
 
     records, findings_by_id, source_type, source_path = _ingest(input, from_, config, static)
 
-    try:
-        if api_url is not None:
-            results = _run_via_api(records, api_url, offline=offline)
-        else:
-            results = _run_locally(
-                records,
-                findings_by_id,
-                model=model,
-                no_judge=no_judge,
-                offline=offline,
-                threshold_override=threshold_override,
-            )
-    except net.NetworkBlocked as exc:
-        _fatal(str(exc), EXIT_MODEL)
-    except net.ApiError as exc:
-        _fatal(str(exc), EXIT_MODEL)
-    except (ThresholdsMissing, FileNotFoundError, OSError) as exc:
-        _fatal(f"could not load model {model!r}: {exc}", EXIT_MODEL)
+    if not records:
+        # Nothing to score: skip the classifier/judge/API entirely rather than paying for a
+        # model load (or the one `--offline` download) that would classify zero texts. The
+        # `--config --static` path (SC-1: always zero tools) hits this on every invocation.
+        results: list[TriageResult] = []
+    else:
+        try:
+            if api_url is not None:
+                results = _run_via_api(records, api_url, offline=offline)
+            else:
+                results = _run_locally(
+                    records,
+                    findings_by_id,
+                    model=model,
+                    no_judge=no_judge,
+                    offline=offline,
+                    threshold_override=threshold_override,
+                )
+        except net.NetworkBlocked as exc:
+            _fatal(str(exc), EXIT_MODEL)
+        except net.ApiError as exc:
+            _fatal(str(exc), EXIT_MODEL)
+        except (ThresholdsMissing, FileNotFoundError, OSError) as exc:
+            _fatal(f"could not load model {model!r}: {exc}", EXIT_MODEL)
 
     scan = render.build_scan_summary(records, results, source_type=source_type)
     findings = render.build_findings(records, results, scan_id=scan.id)

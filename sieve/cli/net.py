@@ -143,7 +143,10 @@ class TriageClient:
         self.close()
 
     def triage_tool(self, record: ToolRecord) -> TriageResult:
+        import json
+
         import httpx
+        from pydantic import ValidationError
 
         from sieve.redact import redact, redact_tool
         from sieve.types import TriageResult
@@ -161,4 +164,15 @@ class TriageClient:
 
         if response.status_code != 200:
             raise ApiError(f"POST /api/v1/triage -> {response.status_code}: {response.text}")
-        return TriageResult.model_validate(response.json())
+
+        try:
+            payload = response.json()
+        except json.JSONDecodeError as exc:
+            raise ApiError(f"POST /api/v1/triage returned a 200 that is not JSON: {exc}") from exc
+
+        try:
+            return TriageResult.model_validate(payload)
+        except ValidationError as exc:
+            raise ApiError(
+                f"POST /api/v1/triage returned a 200 that is not a TriageResult: {exc}"
+            ) from exc
