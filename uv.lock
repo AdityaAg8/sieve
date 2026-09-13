@@ -2120,6 +2120,8 @@ dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pyyaml" },
+    { name = "rich" },
+    { name = "typer" },
 ]
 
 [package.optional-dependencies]
@@ -2140,10 +2142,6 @@ bench = [
     { name = "tree-sitter" },
     { name = "tree-sitter-python" },
     { name = "tree-sitter-typescript" },
-]
-cli = [
-    { name = "rich" },
-    { name = "typer" },
 ]
 judge = [
     { name = "anthropic" },
@@ -2198,7 +2196,7 @@ requires-dist = [
     { name = "pydantic-settings", specifier = ">=2.5" },
     { name = "python-multipart", marker = "extra == 'api'" },
     { name = "pyyaml", specifier = ">=6.0" },
-    { name = "rich", marker = "extra == 'cli'" },
+    { name = "rich", specifier = ">=13" },
     { name = "scikit-learn", marker = "extra == 'model'", specifier = "<1.9.1" },
     { name = "scipy", marker = "extra == 'model'" },
     { name = "sentence-transformers", marker = "extra == 'model'" },
@@ -2211,7 +2209,7 @@ requires-dist = [
     { name = "tree-sitter", marker = "extra == 'bench'" },
     { name = "tree-sitter-python", marker = "extra == 'bench'" },
     { name = "tree-sitter-typescript", marker = "extra == 'bench'" },
-    { name = "typer", marker = "extra == 'cli'" },
+    { name = "typer", specifier = ">=0.12" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'api'" },
 ]
 provides-extras = ["api", "model", "judge", "cli", "mcp", "bench"]

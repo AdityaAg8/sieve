@@ -8,7 +8,12 @@ dependencies = [
   "pydantic-settings>=2.5",
   "numpy>=2.0,<2.4",  # 2.5.x wheels are blocked by Windows Smart App Control on the dev box
   "pyyaml>=6.0",
+  "typer>=0.12",  # sieve.cli.app -- the [project.scripts] entry point, so not optional (PRD §15.1)
+  "rich>=13",
 ]
+
+[project.scripts]
+sieve = "sieve.cli.app:main"
 
 [project.optional-dependencies]
 api = ["fastapi", "uvicorn[standard]", "sqlalchemy[asyncio]>=2.0", "alembic", "psycopg[binary]<3.3.5", "sse-starlette", "python-multipart", "httpx"]
@@ -26,7 +31,8 @@ model = [
     "sentencepiece>=0.2.2",
 ]
 judge = ["anthropic>=1.0"]
-cli = ["typer", "rich"]
+cli = []  # typer/rich moved to base dependencies (the [project.scripts] entry point needs them
+          # unconditionally); kept as an empty extra so `uv sync --extra cli` in CI still resolves.
 mcp = ["mcp"]
 bench = ["textual", "httpx", "tree-sitter", "tree-sitter-python", "tree-sitter-typescript", "jsonschema"]
 
