@@ -13,6 +13,7 @@ from sieve.api.ingest import IngestError, ingest
 from sieve.api.store import Store, StubStore, get_store
 from sieve.config import settings
 from sieve.db.session import session_factory
+from sieve.sarif import to_sarif
 from sieve.types import ScanCreate, ScanSummary
 
 router = APIRouter(tags=["scans"])
@@ -94,6 +95,9 @@ async def scan_events(
 
 @router.get("/scans/{scan_id}/sarif")
 async def scan_sarif(scan_id: str, store: Store = Depends(get_store)) -> dict[str, object]:
-    if await store.get_scan(scan_id) is None:
+    """SARIF 2.1.0 for CI. The scanner's original verdict rides along in `properties`."""
+    summary = await store.get_scan(scan_id)
+    if summary is None:
         raise HTTPException(status_code=404, detail="scan not found")
-    return {"version": "2.1.0", "runs": []}
+    findings = await store.all_findings(scan_id) or []
+    return to_sarif(summary, findings, source_path=await store.source_path(scan_id))

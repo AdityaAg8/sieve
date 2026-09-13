@@ -64,6 +64,8 @@ class Store(Protocol):
 
     async def all_findings(self, scan_id: str) -> list[Finding] | None: ...
 
+    async def source_path(self, scan_id: str) -> str | None: ...
+
 
 def parse_cursor(cursor: str | None) -> int:
     if cursor is None or cursor == "":
@@ -115,6 +117,9 @@ class StubStore:
 
     async def all_findings(self, scan_id: str) -> list[Finding] | None:
         return self._inner.all_findings(scan_id)
+
+    async def source_path(self, scan_id: str) -> str | None:
+        return None
 
 
 def _summary(scan: Scan) -> ScanSummary:
@@ -396,6 +401,16 @@ class DbStore:
     async def all_findings(self, scan_id: str) -> list[Finding] | None:
         page = await self.list_findings(scan_id, limit=settings.max_tools_per_scan)
         return None if page is None else page.items
+
+    async def source_path(self, scan_id: str) -> str | None:
+        """`scans.source_ref`: the config path or URL the tools came from, for SARIF locations."""
+        try:
+            key = uuid.UUID(scan_id)
+        except ValueError:
+            return None
+        return (
+            await self.session.execute(select(Scan.source_ref).where(Scan.id == key))
+        ).scalar_one_or_none()
 
 
 async def get_store(request: Request, session: AsyncSession = Depends(get_session)) -> Store:

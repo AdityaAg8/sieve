@@ -1299,6 +1299,7 @@
     },
     "/api/v1/scans/{scan_id}/sarif": {
       "get": {
+        "description": "SARIF 2.1.0 for CI. The scanner's original verdict rides along in `properties`.",
         "operationId": "scan_sarif_api_v1_scans__scan_id__sarif_get",
         "parameters": [
           {

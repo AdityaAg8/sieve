@@ -227,3 +227,21 @@ async def test_models_reports_the_artefact_thresholds(api: AsyncClient) -> None:
     info = (await api.get("/api/v1/models")).json()
     assert 0.0 < info["t_low"] < info["t_high"] <= 1.0
     assert info["model_version"]
+
+
+async def test_the_sarif_export_is_real_sarif(
+    api: AsyncClient, sessions: async_sessionmaker[AsyncSession]
+) -> None:
+    from jsonschema import Draft7Validator
+
+    schema = json.loads(Path("tests/data/sarif-schema-2.1.0.json").read_text(encoding="utf-8"))
+    created = await api.post(
+        "/api/v1/scans", json={"source_type": "tools_json", "tools_json": TOOLS}
+    )
+    scan_id = created.json()["id"]
+    await tick(sessions)
+
+    doc = (await api.get(f"/api/v1/scans/{scan_id}/sarif")).json()
+    assert not list(Draft7Validator(schema).iter_errors(doc))
+    assert len(doc["runs"][0]["results"]) == 27
+    assert doc["runs"][0]["properties"]["scan_id"] == scan_id
