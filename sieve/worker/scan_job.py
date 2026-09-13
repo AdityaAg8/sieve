@@ -13,6 +13,7 @@ import logging
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
+from urllib.parse import urlsplit
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,6 +23,7 @@ from sieve.api.store import verdict_row
 from sieve.config import settings
 from sieve.db.models import Job, Scan, ScanEvent, ScannerFindingRow, Tool, VerdictRow
 from sieve.pipeline import PipelineDeps, triage_many
+from sieve.redact import redact_tool
 from sieve.types import (
     Finding,
     ScannerFinding,
@@ -154,8 +156,38 @@ async def run(session: AsyncSession, job: Job) -> None:
 
 
 async def _load_remote(session: AsyncSession, scan: Scan) -> None:
-    """Enumerating an untrusted server happens only in the sandbox container (SC-1)."""
-    raise RuntimeError(REMOTE_DISABLED)
+    """Enumerate an untrusted server -- only in the sandbox container, only when enabled (SC-1)."""
+    if not settings.allow_remote_mcp:
+        raise RuntimeError(REMOTE_DISABLED)
+    from sieve.worker.remote import fetch_tools
+
+    url = scan.source_ref or ""
+    tools = await fetch_tools(url, timeout_s=settings.remote_timeout_seconds)
+    if len(tools) > settings.max_tools_per_scan:
+        raise ValueError(f"remote server advertised more than {settings.max_tools_per_scan} tools")
+
+    server = urlsplit(url).hostname or "remote"
+    names = [t.name for t in tools]
+    for ordinal, tool in enumerate(tools):
+        # Redact before insert, exactly as `DbStore.create_scan` does for a posted body (SC-5).
+        clean, _kinds = redact_tool(tool)
+        session.add(
+            Tool(
+                id=uuid.uuid4(),
+                scan_id=scan.id,
+                server_name=server,
+                name=clean.name,
+                title=clean.title,
+                description=clean.description,
+                input_schema=clean.inputSchema,
+                output_schema=clean.outputSchema,
+                annotations=clean.annotations,
+                siblings=[n for n in names if n != clean.name],
+                ordinal=ordinal,
+            )
+        )
+    scan.tool_count = len(tools)
+    await session.commit()
 
 
 async def _triage(session: AsyncSession, scan_id: uuid.UUID, loaded: _Loaded) -> list[TriageResult]:
