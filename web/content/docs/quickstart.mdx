@@ -1,0 +1,29 @@
+# Quickstart
+
+Sieve reads tool definitions that a scanner has already looked at, and decides which of its
+findings survive being read carefully. It never starts your MCP servers and never calls your
+tools.
+
+## In the browser
+
+1. Open **Scan** and paste the JSON your client gets back from a `tools/list` call, or upload the
+   `mcp.json` your client reads. Both are parsed in your browser before anything is sent.
+2. Press **Triage N tools**. The results page fills in as each tool is decided.
+3. Read the confirmed findings first. Each one shows the scanner's verdict beside Sieve's, the
+   predicted class, and the span of text the verdict rests on.
+
+Scans are deleted after 7 days. Do not submit configurations containing secrets.
+
+## Without an API key
+
+The classifier runs locally and needs no key. The judge — the second stage that reads the small
+band of tools the classifier is unsure about — needs one. With no key, band tools are reported as
+**needs review** rather than guessed at, and the results page says so.
+
+## What the verdicts mean
+
+- **Confirmed** — Sieve agrees this tool definition tries to steer the agent somewhere it should
+  not go, and shows you the span it read.
+- **Needs review** — Sieve is not confident enough to decide. This is an answer, not a failure.
+- **Dismissed** — Sieve has evidence that this particular finding is not an attack, and it states
+  which class it decided on. It is not a statement that the tool is safe.

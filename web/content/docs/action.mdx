@@ -1,0 +1,27 @@
+# GitHub Action
+
+Add Sieve to a workflow so the build fails on confirmed findings and on nothing else.
+
+```yaml
+- uses: aditya-tr-cyber/sieve-action@v1
+  with:
+    config: .mcp.json
+    fail-on: confirmed
+    sarif: sieve.sarif
+
+- uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: sieve.sarif
+```
+
+## Choosing what fails the build
+
+`fail-on: confirmed` is the default and the recommendation. A pipeline that fails on
+needs-review will fail on tools nobody has judged yet, which trains people to skip the check —
+the failure mode this whole project exists to avoid.
+
+## In code scanning
+
+Uploading the SARIF puts each finding on the line of the configuration file that declares the
+tool, with the predicted class, the probability, the stage and the model version attached as
+properties, and the scanner's original verdict preserved.

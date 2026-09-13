@@ -1,0 +1,24 @@
+# MCP server
+
+Sieve ships as an MCP server so an agent can check a server before trusting it, using the same
+pipeline as everything else.
+
+## Tools
+
+| Tool | Input | Output |
+| --- | --- | --- |
+| `triage_tool` | one tool definition | a verdict with evidence spans |
+| `scan_tools_list` | an array of tool definitions | a summary plus per-tool verdicts |
+
+## What it will not do
+
+The MCP server never connects to the server it is asked about. It reads definitions you hand it.
+Fetching a remote server's `tools/list` happens only in the sandboxed worker, on its own network,
+behind a feature flag that is off by default — and never as a side effect of an agent asking a
+question.
+
+## Reading the answer
+
+A verdict is `confirmed`, `needs_review` or `dismissed`, always with the predicted class and the
+probability. An agent that treats `dismissed` as "safe to call" has misread it: Sieve has
+evidence about this finding, not about everything the tool might do.

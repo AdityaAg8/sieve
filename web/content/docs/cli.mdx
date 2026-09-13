@@ -1,0 +1,32 @@
+# CLI
+
+The CLI calls the same `triage()` function the API and the web app call, so a verdict from a
+terminal and a verdict from the browser cannot disagree.
+
+## Triage a file
+
+```
+sieve triage tools.json
+sieve triage mcp.json --format sarif > findings.sarif
+```
+
+## Offline
+
+```
+sieve triage tools.json --offline
+```
+
+`--offline` never makes a network call. The classifier runs from the local model artefact and
+band tools are reported as **needs review** with the stage recorded, rather than being escalated
+to a judge that is not reachable. This is the mode for air-gapped pipelines.
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Nothing confirmed |
+| `1` | At least one confirmed finding |
+| `2` | Sieve could not run — bad input, missing model artefact |
+
+A build that should fail only on confirmed findings checks for `1` and treats needs-review as
+information.

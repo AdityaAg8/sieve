@@ -1,0 +1,27 @@
+# Limitations
+
+## What Sieve does not do
+
+Sieve is a triage layer, not a scanner. It writes no detection rules and no signatures. It
+decides which of *another* tool's findings deserve attention, and it can only be as complete as
+what it was given. A tool nobody flagged and nobody handed to Sieve is a tool Sieve never saw.
+
+Sieve reads static definitions. It says nothing about what a server does at runtime, what it
+sends over the wire, or what a tool does when called.
+
+## Where it is weakest
+
+- **Poisoned training samples are synthetic.** Real poisoned tools in the wild are rare, so the
+  poisoned class is largely generated, with a hand-authored fraction and a small real slice held
+  back for evaluation only. Numbers on the real slice are the ones to trust.
+- **The judge is an LLM.** It can be argued with by the text it is reading. The self-defence
+  suite is two-sided — it must not be talked out of a finding, and it must not be talked into one
+  — and the model card reports the result rather than claiming general injection resistance.
+- **The benign/imperative-benign boundary is genuinely hard.** Two careful people do not always
+  agree on it, which is why agreement is published three ways instead of once.
+
+## What would change this
+
+Real poisoned tools. The corpus grows as they are reported, and every number here is regenerated
+from committed predictions when it does, with the holdout opened once per published version and
+the log published beside the result.

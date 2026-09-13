@@ -1,0 +1,52 @@
+# API
+
+Every endpoint lives under `/api/v1` and every request and response is described by the frozen
+OpenAPI document in `schemas/openapi.json`. The web app's types are generated from it, so the
+contract and the interface cannot drift apart silently.
+
+## Start a scan
+
+```
+POST /api/v1/scans
+{ "source_type": "tools_json", "tools_json": { "tools": [ ... ] } }
+```
+
+Returns `202` with a scan id. Bodies are capped at 1 MB and 500 tools.
+
+## Watch it happen
+
+```
+GET /api/v1/scans/{id}/events
+```
+
+A Server-Sent Events stream: `scan.started`, one `tool.verdict` per tool, then `scan.completed`
+or `scan.failed`. `Last-Event-ID` replays from where you dropped. This is what fills the results
+page live.
+
+## Read the findings
+
+```
+GET /api/v1/scans/{id}/findings?verdict=confirmed
+GET /api/v1/scans/{id}/sarif
+```
+
+Findings page by cursor and filter by `verdict`, `predicted_class`, `sub_label` and `stage`. The
+SARIF document is 2.1.0 and keeps the original scanner verdict in `properties`; Sieve never drops
+what the scanner said.
+
+## One tool, synchronously
+
+```
+POST /api/v1/triage
+```
+
+The hot path for the CLI and the MCP server.
+
+## What the deployment is running
+
+```
+GET /api/v1/models
+```
+
+Model version, thresholds, the judge model, and whether the judge is enabled here at all. The
+results page reads this to decide whether to show the judge-off notice.

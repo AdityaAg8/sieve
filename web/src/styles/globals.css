@@ -205,6 +205,18 @@ body {
     border-radius: var(--r-2);
   }
 
+  /*
+   * A box whose wide content scrolls inside it — a data table, a code block. `contain: paint`
+   * is load-bearing, not decoration: without it Chrome still counts the clipped child in
+   * `documentElement.scrollWidth`, and the no-horizontal-scroll assertion at 320 px fails on a
+   * page that does not actually scroll sideways.
+   */
+  .scroll-x {
+    overflow-x: auto;
+    max-width: 100%;
+    contain: paint;
+  }
+
   /* A quoted string from an analysed tool definition. Always monospace, always on a raised fill. */
   .quote {
     background: var(--bg-2);
