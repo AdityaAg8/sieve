@@ -406,6 +406,17 @@
             "title": "Judge Calls",
             "type": "integer"
           },
+          "judge_cost_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Judge Cost Source"
+          },
           "judge_cost_usd": {
             "title": "Judge Cost Usd",
             "type": "number"

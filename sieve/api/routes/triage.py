@@ -49,8 +49,10 @@ async def triage(
     result = await asyncio.to_thread(run_triage, record, [], deps)
 
     if result.stage == "judge" and not stub:
-        # Same transaction as the answer it paid for (PRD §13.2).
-        await spend.charge(session)
+        # What the call reported, not what it was expected to cost. Same transaction as the
+        # answer it paid for (PRD §13.2).
+        usd, _source = spend.judge_call_cost(judge)
+        await spend.charge(session, usd)
         await session.commit()
     # Identifiers only: the tool text stays out of the log above DEBUG (SC-5).
     log.info(

@@ -10,16 +10,23 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable
 from decimal import Decimal
+from typing import Literal
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sieve.config import settings
+from sieve.protocols import Judge
 
 # PRD §12.4's cost model (~1,800 cached + ~600 uncached input, ~250 output at Haiku 4.5
 # pricing) and the committed sample scan, whose 2 judge calls cost US$0.0041, agree on this.
-# L4 replaces the estimate with the `usage` the API actually reports.
+# It is the fallback for a judge that reports no usage at all -- `FakeJudge`, and the demo
+# and every test that runs on it. A judge that reports usage is charged what it reported.
 ESTIMATED_JUDGE_CALL_USD = 0.00205
+
+#: Which of the two paid for a figure. Recorded on the scan so a published cost is never
+#: ambiguous about whether it was measured or modelled.
+CostSource = Literal["usage", "estimate"]
 
 _CHARGE = """
 INSERT INTO spend_ledger (day, judge_calls, usd)
@@ -46,6 +53,26 @@ async def charge(session: AsyncSession, usd: float = ESTIMATED_JUDGE_CALL_USD) -
     """Record one judge call. The caller commits, together with the verdict it paid for."""
     total = (await session.execute(text(_CHARGE), {"usd": Decimal(str(usd))})).scalar_one()
     return Decimal(total)
+
+
+def judge_call_cost(judge: Judge | None) -> tuple[float, CostSource]:
+    """What the call this judge just made cost, and where the figure came from.
+
+    `AnthropicJudge` records the API's own `usage` on every answered call, so the ledger
+    accumulates measured spend rather than PRD §12.4's planning number -- a cap enforced on
+    an estimate is a cap that does not hold. The estimate survives exactly one case: a judge
+    with no usage to report. An unpriced model raises out of `sieve.judge.cost`; billing an
+    unknown model as ~$0.002 would be a silent licence to spend.
+    """
+    usage = getattr(judge, "last_usage", None)
+    model = getattr(judge, "model", None)
+    if usage is None or not model:
+        return ESTIMATED_JUDGE_CALL_USD, "estimate"
+    # Imported here: `sieve.judge.cost` needs `anthropic`, the optional `judge` extra, and a
+    # deployment running on the fake must not have to install it.
+    from sieve.judge.cost import estimate
+
+    return estimate(usage, model), "usage"
 
 
 def budget_gate(session: AsyncSession, loop: asyncio.AbstractEventLoop) -> Callable[[], bool]:

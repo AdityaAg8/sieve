@@ -52,6 +52,9 @@ class Scan(Base):
     judge_cost_usd: Mapped[Decimal] = mapped_column(
         Numeric(8, 5), nullable=False, server_default=text("0")
     )
+    #: "usage" (the API's own token counts) or "estimate" (PRD §12.4, a judge that reports
+    #: none); NULL when the scan never called the judge.
+    judge_cost_source: Mapped[str | None] = mapped_column(Text)
     model_version: Mapped[str | None] = mapped_column(Text)
     judge_model: Mapped[str | None] = mapped_column(Text)
     idempotency_key: Mapped[str | None] = mapped_column(Text, unique=True)

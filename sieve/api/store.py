@@ -134,6 +134,7 @@ def _summary(scan: Scan) -> ScanSummary:
         dismissed=scan.dismissed,
         judge_calls=scan.judge_calls,
         judge_cost_usd=float(scan.judge_cost_usd),
+        judge_cost_source=scan.judge_cost_source,
         model_version=scan.model_version,
         judge_model=scan.judge_model,
         created_at=scan.created_at,

@@ -39,6 +39,17 @@ REMOTE_DISABLED = "remote scanning disabled"
 
 
 @dataclass
+class _Triaged:
+    """The batch's verdicts and the money they cost, carried together to `_finish`."""
+
+    results: list[TriageResult]
+    judge_cost_usd: Decimal = Decimal(0)
+    #: "usage" only when every judged decision was priced from the API's own token counts;
+    #: one estimated call makes the scan's total an estimate. None when nothing was judged.
+    cost_source: str | None = None
+
+
+@dataclass
 class _Loaded:
     tool_ids: dict[str, uuid.UUID]
     records: list[ToolRecord]
@@ -146,8 +157,8 @@ async def run(session: AsyncSession, job: Job) -> None:
         if scan.source_type == "remote_url":
             await _load_remote(session, scan)
         loaded = await _load(session, scan_id)
-        results = await _triage(session, scan_id, loaded)
-        await _finish(session, scan, results)
+        triaged = await _triage(session, scan_id, loaded)
+        await _finish(session, scan, triaged)
     except Exception as exc:
         detail = f"{type(exc).__name__}: {exc}"
         scan.status = "failed"
@@ -193,19 +204,28 @@ async def _load_remote(session: AsyncSession, scan: Scan) -> None:
     await session.commit()
 
 
-async def _triage(session: AsyncSession, scan_id: uuid.UUID, loaded: _Loaded) -> list[TriageResult]:
+async def _triage(session: AsyncSession, scan_id: uuid.UUID, loaded: _Loaded) -> _Triaged:
     loop = asyncio.get_running_loop()
 
     by_id = {r.id: r for r in loaded.records}
+    deps = _deps(spend.budget_gate(session, loop))
+    spent = Decimal(0)
+    sources: set[str] = set()
 
     async def persist(record_id: str, result: TriageResult) -> None:
+        nonlocal spent
         tool_id = loaded.tool_ids[record_id]
         row = verdict_row(tool_id, result)
         session.add(row)
         if result.stage == "judge":
+            # The judge answered this record a moment ago and the loop is sequential, so
+            # `last_usage` is this call's usage -- what it actually cost, not the estimate.
+            usd, source = spend.judge_call_cost(deps.judge)
             # One transaction for the verdict and the money it cost (PRD §13.2), so a crash
             # can neither bank a free judge call nor charge for a verdict that was lost.
-            await spend.charge(session)
+            await spend.charge(session, usd)
+            spent += Decimal(str(usd))
+            sources.add(source)
         await session.commit()
         record = by_id[record_id]
         finding = Finding(
@@ -221,23 +241,31 @@ async def _triage(session: AsyncSession, scan_id: uuid.UUID, loaded: _Loaded) ->
     def on_result(record_id: str, result: TriageResult) -> None:
         asyncio.run_coroutine_threadsafe(persist(record_id, result), loop).result()
 
-    return await asyncio.to_thread(
+    results = await asyncio.to_thread(
         triage_many,
         loaded.records,
         loaded.findings_by_id,
-        _deps(spend.budget_gate(session, loop)),
+        deps,
         on_result=on_result,
         judge_budget=settings.judge_max_calls_per_scan,
     )
+    return _Triaged(
+        results=results,
+        judge_cost_usd=spent,
+        cost_source=("usage" if sources == {"usage"} else "estimate") if sources else None,
+    )
 
 
-async def _finish(session: AsyncSession, scan: Scan, results: list[TriageResult]) -> None:
+async def _finish(session: AsyncSession, scan: Scan, triaged: _Triaged) -> None:
+    results = triaged.results
     scan.status = "complete"
     scan.confirmed = sum(1 for r in results if r.verdict == "confirmed")
     scan.needs_review = sum(1 for r in results if r.verdict == "needs_review")
     scan.dismissed = sum(1 for r in results if r.verdict == "dismissed")
     scan.judge_calls = sum(1 for r in results if r.stage == "judge")
-    scan.judge_cost_usd = Decimal(str(spend.ESTIMATED_JUDGE_CALL_USD)) * scan.judge_calls
+    # The sum of what each call was actually charged, so the scan and the ledger agree.
+    scan.judge_cost_usd = triaged.judge_cost_usd
+    scan.judge_cost_source = triaged.cost_source
     scan.model_version = results[0].model_version if results else get_classifier().model_version
     scan.judge_model = next((r.judge_model for r in results if r.judge_model), None)
     await session.commit()

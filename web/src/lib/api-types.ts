@@ -356,6 +356,8 @@ export interface components {
             id: string;
             /** Judge Calls */
             judge_calls: number;
+            /** Judge Cost Source */
+            judge_cost_source?: string | null;
             /** Judge Cost Usd */
             judge_cost_usd: number;
             /** Judge Model */

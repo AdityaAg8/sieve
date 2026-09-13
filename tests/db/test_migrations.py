@@ -97,6 +97,12 @@ async def test_scans_error_column_is_nullable_text(session: AsyncSession) -> Non
     assert cols["error"] == ("text", "YES")
 
 
+async def test_scans_record_where_their_cost_figure_came_from(session: AsyncSession) -> None:
+    """0003, additive: nullable because a scan that never judged has no cost source."""
+    cols = await _columns(session, "scans")
+    assert cols["judge_cost_source"] == ("text", "YES")
+
+
 async def test_verdict_stage_round_trips_judge_budget_exhausted(session: AsyncSession) -> None:
     """`stage` is free text in Postgres; the Literal in `sieve.types` is the validation."""
     from sieve.db.models import Scan, Tool, VerdictRow

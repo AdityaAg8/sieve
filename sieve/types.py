@@ -143,6 +143,9 @@ class ScanSummary(BaseModel):
     dismissed: int
     judge_calls: int
     judge_cost_usd: float
+    #: "usage" when the figure is the API's own token counts, "estimate" for PRD §12.4's
+    #: model (a judge that reports no usage), null when nothing was judged.
+    judge_cost_source: str | None = None
     model_version: str | None
     judge_model: str | None
     created_at: datetime
