@@ -84,8 +84,12 @@ export function VerdictBar({ scannerFlagged, counts, expected, streaming }: Prop
             </span>
           </li>
         ))}
+        {/*
+          Visible progress only. The single announced region lives in `ResultsScreen`; a second
+          live region here would speak once per verdict, 29 times in under a second.
+        */}
         {streaming ? (
-          <li aria-live="polite" className="text-ink-2 t-num">
+          <li className="text-ink-2 t-num">
             Triaging {decided} of {expected ?? "—"}…
           </li>
         ) : null}

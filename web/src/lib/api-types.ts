@@ -481,6 +481,11 @@ export interface components {
             /** Sub Labels */
             sub_labels: ("exfiltration" | "instruction_override" | "tool_shadowing" | "privilege_escalation" | "concealment" | "secret_solicitation" | "command_execution")[];
             /**
+             * Unlocated Quotes
+             * @default 0
+             */
+            unlocated_quotes: number;
+            /**
              * Verdict
              * @enum {string}
              */

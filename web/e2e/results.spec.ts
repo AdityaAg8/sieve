@@ -125,6 +125,63 @@ test.describe("results screen", () => {
     await expect(page.getByText(JUDGE_OFF_NOTICE)).toHaveCount(0);
   });
 
+  test("the drawer takes the keyboard: the list does not answer underneath it", async ({
+    page,
+  }) => {
+    await page.goto(RESULTS);
+    await expect(page.getByTestId("group-count-dismissed")).toHaveText(String(EXPECTED.dismissed));
+
+    await page.keyboard.press("j");
+    await page.keyboard.press("Enter");
+    const drawer = page.getByRole("dialog", { name: /^Finding / });
+    await expect(drawer).toBeVisible();
+    const opened = await drawer.getAttribute("aria-label");
+
+    // `e` must not start a SARIF download while the drawer owns the keyboard.
+    let downloads = 0;
+    page.on("download", () => {
+      downloads += 1;
+    });
+    await page.keyboard.press("e");
+
+    // `j`/`k` must not move the selection, and 1/2/3 must not re-filter the list behind it.
+    await page.keyboard.press("j");
+    await page.keyboard.press("j");
+    await page.keyboard.press("k");
+    await page.keyboard.press("2");
+    await page.keyboard.press("3");
+
+    await page.waitForTimeout(500);
+    expect(downloads, "`e` fired a download with the drawer open").toBe(0);
+    await expect(drawer).toHaveAttribute("aria-label", opened ?? "");
+    await expect(page.getByTestId("group-count-confirmed")).toHaveText(String(EXPECTED.confirmed));
+    await expect(page.getByTestId("group-count-dismissed")).toHaveText(String(EXPECTED.dismissed));
+
+    // Closing hands the keyboard back.
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog", { name: /^Finding / })).toHaveCount(0);
+    await page.keyboard.press("2");
+    await expect(page.getByTestId("group-count-confirmed")).toHaveCount(0);
+  });
+
+  test("exactly one live region exists, from first paint through completion", async ({ page }) => {
+    await page.route("**/api/v1/scans/*/events", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await route.continue();
+    });
+
+    // Next's own route announcer is framework chrome and is excluded by id; everything else
+    // that announces on this page has to be the one region the app owns.
+    const live = page.locator("[aria-live]:not(#__next-route-announcer__)");
+
+    await page.goto(RESULTS);
+    await expect(live).toHaveCount(1);
+    await expect(live).toHaveAttribute("data-testid", "stream-status");
+
+    await expect(page.getByTestId("group-count-dismissed")).toHaveText(String(EXPECTED.dismissed));
+    await expect(live).toHaveCount(1);
+  });
+
   for (const width of WIDTHS) {
     test(`has no horizontal scroll at ${width} px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });

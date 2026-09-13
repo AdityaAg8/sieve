@@ -55,12 +55,10 @@ export function FindingList({
   // Until the scan says how many rows each group will hold there is nothing to reserve them
   // with, so the list waits rather than rendering groups it would have to re-order — and move
   // every row already on screen — a moment later.
+  // Not a live region: it is mounted and unmounted as the scan resolves, which is exactly the
+  // shape an assistive technology cannot observe. `ResultsScreen` owns the one announced region.
   if (expected === null) {
-    return (
-      <p className="sr-only" aria-live="polite">
-        Reading the scan…
-      </p>
-    );
+    return <p className="sr-only">Reading the scan…</p>;
   }
 
   // The clean-scan sentence names a real count or it is not shown: a `0` here would be an

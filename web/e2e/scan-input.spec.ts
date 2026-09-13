@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { WIDTHS, expectNoHorizontalScroll, mockOverride } from "./helpers";
+import { EXPECTED, WIDTHS, expectNoHorizontalScroll, mockFail, mockOverride } from "./helpers";
 
 const VALID = JSON.stringify({
   tools: Array.from({ length: 27 }, (_, i) => ({
@@ -60,6 +60,22 @@ test.describe("scan input", () => {
   test("the sample opens without starting a scan", async ({ page }) => {
     await page.goto("/scan");
     await expect(page.getByRole("link", { name: "Open the sample scan" })).toBeVisible();
+  });
+
+  test("the sample's size is read from the scan, not typed into the copy", async ({ page }) => {
+    await page.goto("/scan");
+    await expect(page.getByTestId("sample-tool-count")).toHaveText(String(EXPECTED.toolCount));
+    await expect(
+      page.getByText(
+        `The sample is ${EXPECTED.toolCount} tools from public MCP servers, triaged in advance`,
+      ),
+    ).toBeVisible();
+  });
+
+  test("the sample's size shows a dash until the scan answers", async ({ page }) => {
+    await mockFail(page, ["scan"]);
+    await page.goto("/scan");
+    await expect(page.getByTestId("sample-tool-count")).toHaveText("—");
   });
 
   for (const width of WIDTHS) {

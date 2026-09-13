@@ -127,6 +127,7 @@ function result(overrides: Partial<TriageResult> = {}): TriageResult {
     reasoning: null,
     remediation: null,
     scanner_findings: [],
+    unlocated_quotes: 0,
     model_version: "fixture@0",
     judge_model: null,
     latency_ms: 20,

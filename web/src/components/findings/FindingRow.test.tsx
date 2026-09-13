@@ -20,6 +20,7 @@ function result(overrides: Partial<TriageResult> = {}): TriageResult {
     reasoning: "The description asks the tool to print all environment variables.",
     remediation: "Remove the environment-variable instruction.",
     scanner_findings: [],
+    unlocated_quotes: 0,
     model_version: "fixture@0",
     judge_model: null,
     latency_ms: 45,
