@@ -1,0 +1,25 @@
+This NOTICE is generated, never hand-edited. It is rebuilt by
+`python -m bench.publish --dry-run`, which writes the published copy to
+bench/data/hub/NOTICE. The copy below was generated from the committed fixture corpus
+(fixtures/corpus/mini-50.jsonl) and will be regenerated from the real corpus when the
+collection run lands.
+
+SieveBench
+==========
+
+The annotations, taxonomy, splits and schema in this dataset are licensed CC BY 4.0.
+
+The `tool`, `server_instructions` and `sibling_tool_names` fields of each record remain
+under that record's own source licence, recorded per record as `source_license`. Every
+source repository, the commit the text was taken from, and its licence are listed below.
+
+To request removal of any record, contact the maintainer named in the dataset card; records
+are removed within 7 days and the dataset version is re-tagged.
+
+Sources
+-------
+
+- https://github.com/example/fixture
+  commit:  fixture
+  licence: MIT
+  records: 50

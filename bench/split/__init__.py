@@ -1,1 +1,1 @@
-"""Deduplication, grouped holdout and folds, and the minimal-pair index."""
+"""Deduplication, grouped split and fold assignment, and the minimal-pair index."""
