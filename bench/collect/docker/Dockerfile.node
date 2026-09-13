@@ -1,0 +1,19 @@
+# Build stage: network, no repository credentials, lifecycle scripts disabled (PRD SC-1).
+# A server that will not install this way is excluded with reason `install_requires_scripts`.
+FROM node:22-slim AS build
+ARG PACKAGE
+ARG VERSION=latest
+WORKDIR /srv
+RUN npm install --ignore-scripts --no-audit --no-fund --prefix /srv "${PACKAGE}@${VERSION}"
+
+# Capture stage: no network, read-only root, unprivileged. Flags live in `docker_args`.
+FROM node:22-slim
+ARG PACKAGE
+ENV NODE_ENV=production
+ENV PACKAGE=${PACKAGE}
+COPY --from=build /srv/node_modules /srv/node_modules
+WORKDIR /srv
+USER 65534:65534
+# The exec form does not expand build args, so the package name is passed through ENV
+# and expanded by the shell at start-up.
+ENTRYPOINT ["/bin/sh", "-c", "exec npx --no-install \"$PACKAGE\""]
