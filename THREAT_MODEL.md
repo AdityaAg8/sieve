@@ -39,7 +39,10 @@ MCP client (stdio)   ->  the same pipeline, in-process, the user's own key
 
 - **Browser to API.** Untrusted. Every request is rate-limited and size-capped; responses carry
   `Content-Security-Policy: default-src 'none'`, `X-Frame-Options: DENY` and `Referrer-Policy:
-  no-referrer` (`sieve/api/middleware.py`).
+  no-referrer` (`sieve/api/middleware.py`), and CORS allows exactly one origin (`WEB_ORIGIN`).
+  **There is no authentication and there are no sessions or cookies**: every route is public by
+  design, which is why the abuse controls here are quotas, a spend cap and a data TTL rather than
+  roles, and why there is no CSRF surface (nothing to ride: no ambient credential exists).
 - **API to worker.** The queue is a Postgres table with `FOR UPDATE SKIP LOCKED`; jobs carry ids,
   not code. A stale worker's job is reaped and re-claimed rather than lost (`sieve/worker/queue.py`).
 - **Worker to sandbox.** The only service permitted to reach a remote MCP server is
@@ -87,6 +90,9 @@ privilege. One row per threat that the code actually answers; the test column is
 | 23 | A1 | **D** — the CLI phones home from an air-gapped CI runner | `--offline` installs a socket guard that raises on any `connect()`, and the model cache is read local-first so a populated cache opens no socket at all | `tests/cli/test_net.py::test_install_guard_blocks_socket_connect`, `tests/cli/test_net.py::test_ensure_model_cached_hits_cache_first_with_no_network` |
 | 24 | A1, A7 | **E** — the GitHub Action or the CLI spawns the MCP server it is asked to scan | `--config PATH --static` parses the config and nothing else; listing a server's tools requires running it, so that mode reports zero tools by construction (SC-1) | `tests/cli/test_triage.py`, `tests/cli/test_action_yml.py` |
 | 25 | A1 | **D** — a hostile MCP client hangs or floods the Sieve MCP server | `scan_tools_list` refuses more than `max_tools_per_scan` tools; the paged finding walk has a page cap and a repeated-cursor check; a redirect from the configured API is an error, not a hop | `tests/mcp/test_server.py::test_scan_tools_list_refuses_more_tools_than_the_cap`, `tests/mcp/test_server.py::test_explain_verdict_treats_a_redirect_as_a_transport_error` |
+
+| 26 | A2, A6 | **T** — malformed input reaches storage, or turns into a 500 | Every request body is a Pydantic v2 model and the OpenAPI schema is frozen and diffed in CI; an unsupported source type is 422, a malformed cursor is 400 rather than 500, and more tools than the cap is 413 | `tests/api/test_scans.py::test_a_source_type_without_its_payload_is_422`, `tests/api/test_scans.py::test_a_malformed_cursor_is_400_not_500`, `tests/test_api_contract.py::test_committed_openapi_matches_live` |
+| 27 | A6 | **T** — SQL injection | Every query is typed SQLAlchemy; the two raw statements (the rate-limit upsert and the spend charge) use bound parameters and no string concatenation. The guarantee is structural, so the tests below exercise those two statements rather than proving the absence of a pattern | `tests/api/test_ratelimit.py::test_the_count_survives_a_new_session`, `tests/api/test_spend.py::test_fifty_concurrent_charges_are_exact` |
 
 ## The mitigations PRD §17.3 names
 
@@ -201,6 +207,9 @@ block a release rather than a demo.
   a limitation of the scanner, not a bug in this layer.
 - Physical, supply-chain-at-the-registrar and account-takeover threats against the deployment's own
   cloud provider are not modelled.
+- **There are no user accounts**, so authentication, authorisation, session fixation and privilege
+  escalation between users are out of scope by construction rather than by assessment. A
+  deployment that adds accounts inherits none of this document's reasoning about abuse controls.
 - The web front end's own threats (XSS in rendered evidence, clickjacking) are covered only by the
   headers in row 15 and by the fact that evidence is rendered as text, never as HTML; a dedicated
   front-end review is Phase 4's.
