@@ -25,6 +25,9 @@ export default async function ScanResultsPage(props: PageProps<"/scan/[id]">) {
       scanId={id}
       initialScan={snapshot.state === "ok" ? snapshot.scan : null}
       initialFindings={snapshot.state === "ok" ? snapshot.findings : null}
+      // A 404 here is an expired scan, and knowing it on the server means the reader never sees
+      // a results page flash before the sentence that replaces it.
+      initialMissing={snapshot.state === "missing"}
     />
   );
 }

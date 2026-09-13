@@ -5,7 +5,7 @@
       "startServerReadyPattern": "Ready in",
       "url": [
         "http://127.0.0.1:3200/",
-        "http://127.0.0.1:3200/scan/fixture-0000-0000-0000-000000000000"
+        "http://127.0.0.1:3200/scan/00000000-0000-0000-0000-000000005eed"
       ],
       "numberOfRuns": 3,
       "settings": {

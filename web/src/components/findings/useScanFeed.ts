@@ -3,6 +3,7 @@
 import { useCallback, useMemo } from "react";
 
 import { ApiError, type Finding, type ScanSummary, type Verdict } from "@/lib/api";
+import { useHasPassed } from "@/lib/expiry";
 import { useFindings, useScan } from "@/lib/queries";
 import { useScanEvents, type StreamStatus } from "@/lib/sse";
 
@@ -24,6 +25,8 @@ export type ScanFeed = {
   status: StreamStatus;
   /** Tools this scan says it will triage. */
   expected: number | null;
+  /** The scan's own `expires_at` has passed; the row is still here but its contents are not. */
+  expired: boolean;
   /** What the worker said went wrong, from the scan row or from `scan.failed`. */
   error: string | null;
   retry: () => void;
@@ -108,6 +111,11 @@ export function useScanFeed(scanId: string, options: Options = {}): ScanFeed {
     return { confirmed: 0, needs_review: 0, dismissed: 0, [filter]: all[filter] };
   }, [scan.data, scan.isError, live.status, streamFailed, filter, visible]);
 
+  // A page left open across the scan's retention window says so rather than going on showing
+  // verdicts that have been deleted. See `lib/expiry.ts` for why this is a store and not a
+  // comparison in the render body.
+  const expired = useHasPassed(scan.data?.expires_at);
+
   const verdictsUnreadable = streamFailed && fallback.isError && findings.length === 0;
 
   const loading =
@@ -131,6 +139,7 @@ export function useScanFeed(scanId: string, options: Options = {}): ScanFeed {
     verdictsUnreadable,
     status: live.status,
     expected: live.expected ?? scan.data?.tool_count ?? null,
+    expired,
     error: scan.data?.error ?? live.error ?? null,
     retry,
   };

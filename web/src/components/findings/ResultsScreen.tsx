@@ -12,7 +12,9 @@ import { KEY_MAP, useFindingKeys } from "@/lib/keyboard";
 import { useModels } from "@/lib/queries";
 import { VERDICT_LABEL, VERDICT_ORDER } from "@/lib/verdict";
 
+import { CopyLink } from "./CopyLink";
 import { FindingList } from "./FindingList";
+import { ScanUnavailable } from "./ScanUnavailable";
 import { useSarifExport } from "./useSarifExport";
 import { useScanFeed } from "./useScanFeed";
 import { useStreamAnnouncement } from "./useStreamAnnouncement";
@@ -26,12 +28,15 @@ export function ResultsScreen({
   initialFindingId = null,
   initialScan = null,
   initialFindings = null,
+  initialMissing = false,
 }: {
   scanId: string;
   initialFindingId?: string | null;
   /** What the server renderer already read. See `lib/server-api.ts`. */
   initialScan?: ScanSummary | null;
   initialFindings?: Finding[] | null;
+  /** The server renderer got a 404, so the page says so without a second round trip. */
+  initialMissing?: boolean;
 }) {
   const models = useModels();
 
@@ -117,6 +122,29 @@ export function ResultsScreen({
     feed.verdictsUnreadable,
   );
 
+  /*
+   * Three states replace the screen rather than sitting inside it, because in all three there is
+   * no scan to be the subject of a results page. Every hook above has already run, so the order
+   * of these returns cannot change how many hooks React sees.
+   */
+
+  // A purged scan is a 404, and a 404 is how an expired scan reads (PRD §13.3). No date survives
+  // the row, so the sentence goes without one rather than deriving a plausible day.
+  if (initialMissing || feed.scanStatus === 404) {
+    return <ScanUnavailable state="expired" expiresAt={null} />;
+  }
+
+  // Expired but not yet purged: the row is still there, so the date is real.
+  if (feed.expired && feed.scan) {
+    return <ScanUnavailable state="expired" expiresAt={feed.scan.expires_at} />;
+  }
+
+  // A failed scan has no verdicts — the worker rolls back what it half-wrote — so the reason is
+  // the page, in the worker's own words.
+  if (feed.scan?.status === "failed") {
+    return <ScanUnavailable state="failed" error={feed.error} onRetry={retry} />;
+  }
+
   return (
     /*
      * From `lg` up this is a console, not a document: the verdict bar and the filters stay put
@@ -154,6 +182,8 @@ export function ResultsScreen({
             <button type="button" className="btn btn-secondary" onClick={() => void exportSarif()}>
               Export SARIF
             </button>
+            {/* A scan's URL is the whole of sharing it; this is the shortcut for saying so. */}
+            <CopyLink />
           </div>
         </div>
 
