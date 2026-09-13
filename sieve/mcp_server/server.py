@@ -14,20 +14,30 @@ with the offending field names, and never reaches the pipeline.
 from __future__ import annotations
 
 import logging
-from collections.abc import Awaitable, Callable, Mapping, Sequence
-from typing import Any
+from collections.abc import Sequence
+from typing import NamedTuple
 from urllib.parse import quote
 
 import httpx2
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from sieve import __version__
 from sieve.api.deps import get_classifier, get_judge
 from sieve.config import settings
 from sieve.pipeline import PipelineDeps, triage, triage_many
-from sieve.types import EvidenceSpan, Finding, ToolDefinition, ToolRecord, TriageResult
+from sieve.types import (
+    EvidenceSpan,
+    Finding,
+    FindingPage,
+    Stage,
+    SubLabel,
+    ToolDefinition,
+    ToolRecord,
+    TriageResult,
+    Verdict,
+)
 
 log = logging.getLogger("sieve.mcp_server")
 
@@ -49,8 +59,8 @@ SCAN_TOOLS_LIST_DESCRIPTION = (
 )
 EXPLAIN_VERDICT_DESCRIPTION = "Returns the evidence and reasoning stored for a previous finding id."
 
-#: How `explain_verdict` reaches a Sieve API: `(api_url, finding_id) -> finding document`.
-FindingFetcher = Callable[[str, str], Awaitable[Mapping[str, Any]]]
+#: A stop on the `next_cursor` walk, so a Sieve API that paged forever could not hang a client.
+MAX_FINDING_PAGES = 200
 
 
 class ScanCounts(BaseModel):
@@ -68,12 +78,30 @@ class ScanToolsListResult(BaseModel):
 
 
 class VerdictExplanation(BaseModel):
-    """The stored `TriageResult` narrowed to what a caller asking "why?" needs."""
+    """The stored `TriageResult` narrowed to what a caller asking "why?" needs.
 
-    evidence_spans: list[EvidenceSpan]
-    reasoning: str | None
-    remediation: str | None
-    owasp: list[str]
+    `found = false` with a `message` is the answer for an id the API does not carry: a caller
+    asking about a finding that is not there has a fact to learn, not a failure to handle.
+    """
+
+    found: bool
+    scan_id: str
+    finding_id: str
+    verdict: Verdict | None = None
+    stage: Stage | None = None
+    sub_labels: list[SubLabel] = Field(default_factory=list)
+    evidence_spans: list[EvidenceSpan] = Field(default_factory=list)
+    reasoning: str | None = None
+    remediation: str | None = None
+    owasp: list[str] = Field(default_factory=list)
+    message: str | None = None
+
+
+class Lookup(NamedTuple):
+    """A finding, or the reason there is none. `message` is empty exactly when one was found."""
+
+    finding: Finding | None
+    message: str
 
 
 def runtime_deps() -> PipelineDeps:
@@ -85,34 +113,58 @@ def runtime_deps() -> PipelineDeps:
     )
 
 
-async def _read(client: httpx2.AsyncClient, url: str, finding_id: str) -> Mapping[str, Any]:
+async def fetch_findings_page(
+    client: httpx2.AsyncClient, api_url: str, scan_id: str, cursor: str | None
+) -> FindingPage | None:
+    """One page of `GET {api_url}/api/v1/scans/{scan_id}/findings`. `None` means no such scan.
+
+    That route is the only one in `schemas/openapi.json` that serves a stored verdict, and it
+    is paged, so a stored explanation is always a cursor walk rather than a single GET.
+    """
+    url = f"{api_url.rstrip('/')}/api/v1/scans/{quote(scan_id, safe='')}/findings"
+    params = {"cursor": cursor} if cursor is not None else None
     try:
-        response = await client.get(url)
+        response = await client.get(url, params=params)
     except httpx2.HTTPError as exc:
         raise ToolError(f"could not reach the Sieve API at {url}: {exc}") from exc
     if response.status_code == 404:
-        raise ToolError(f"that Sieve API has no finding {finding_id!r}.")
+        return None
     if response.status_code >= 400:
-        raise ToolError(
-            f"the Sieve API answered {response.status_code} for finding {finding_id!r}."
-        )
-    body: Mapping[str, Any] = response.json()
-    return body
+        raise ToolError(f"the Sieve API answered {response.status_code} for that scan's findings.")
+    try:
+        return FindingPage.model_validate(response.json())
+    except (ValueError, ValidationError) as exc:
+        raise ToolError("the Sieve API returned a findings page Sieve could not read.") from exc
 
 
-async def fetch_finding(
-    api_url: str, finding_id: str, *, client: httpx2.AsyncClient | None = None
-) -> Mapping[str, Any]:
-    """`GET {api_url}/api/v1/findings/{finding_id}`.
-
-    `client` is a seam for tests and for a caller that already owns a connection pool; with it
-    unset the call owns a client for its own lifetime.
-    """
-    url = f"{api_url.rstrip('/')}/api/v1/findings/{quote(finding_id, safe='')}"
-    if client is not None:
-        return await _read(client, url, finding_id)
-    async with httpx2.AsyncClient(timeout=float(settings.remote_timeout_seconds)) as owned:
-        return await _read(owned, url, finding_id)
+async def find_finding(
+    client: httpx2.AsyncClient, api_url: str, scan_id: str, finding_id: str
+) -> Lookup:
+    """Walk `next_cursor` until the id turns up or the pages run out."""
+    cursor: str | None = None
+    seen: set[str] = set()
+    for _ in range(MAX_FINDING_PAGES):
+        page = await fetch_findings_page(client, api_url, scan_id, cursor)
+        if page is None:
+            return Lookup(None, f"that Sieve API has no scan {scan_id!r}.")
+        for finding in page.items:
+            if finding.id == finding_id:
+                return Lookup(finding, "")
+        cursor = page.next_cursor
+        if cursor is None:
+            return Lookup(None, f"scan {scan_id!r} has no finding {finding_id!r}.")
+        if cursor in seen:
+            # A cursor that comes back round would otherwise be an infinite walk.
+            return Lookup(
+                None,
+                f"the findings cursor for scan {scan_id!r} repeated before {finding_id!r} "
+                f"was seen.",
+            )
+        seen.add(cursor)
+    return Lookup(
+        None,
+        f"read {MAX_FINDING_PAGES} pages of scan {scan_id!r} without seeing {finding_id!r}.",
+    )
 
 
 def _record(tool: ToolDefinition, sibling_tool_names: Sequence[str]) -> ToolRecord:
@@ -139,7 +191,7 @@ def build_server(
     *,
     deps: PipelineDeps | None = None,
     api_url: str | None = None,
-    fetch_finding: FindingFetcher = fetch_finding,
+    http_client: httpx2.AsyncClient | None = None,
     max_tools: int | None = None,
 ) -> MCPServer:
     """Build the Sieve MCP server. `deps` defaults to the process's real classifier and judge."""
@@ -181,26 +233,37 @@ def build_server(
         return ScanToolsListResult(summary=summary, results=results)
 
     @server.tool(name="explain_verdict", description=EXPLAIN_VERDICT_DESCRIPTION)
-    async def explain_verdict(finding_id: str) -> VerdictExplanation:
+    async def explain_verdict(scan_id: str, finding_id: str) -> VerdictExplanation:
         if api_url is None:
             raise ToolError(
                 "explain_verdict reads stored findings from a Sieve API, and this server was "
                 "started without one. Restart it with --api-url http://host:port to enable it."
             )
-        payload = await fetch_finding(api_url, finding_id)
-        try:
-            finding = Finding.model_validate(payload)
-        except ValidationError as exc:
-            raise ToolError(
-                f"the Sieve API returned a finding Sieve could not read "
-                f"({exc.error_count()} field errors)."
-            ) from exc
-        stored = finding.result
+        if http_client is not None:
+            lookup = await find_finding(http_client, api_url, scan_id, finding_id)
+        else:
+            timeout = float(settings.remote_timeout_seconds)
+            async with httpx2.AsyncClient(timeout=timeout) as owned:
+                lookup = await find_finding(owned, api_url, scan_id, finding_id)
+
+        if lookup.finding is None:
+            log.info("explain_verdict: not found")
+            return VerdictExplanation(
+                found=False, scan_id=scan_id, finding_id=finding_id, message=lookup.message
+            )
+        stored = lookup.finding.result
+        log.info("explain_verdict: %s at %s", stored.verdict, stored.stage)
         return VerdictExplanation(
-            evidence_spans=stored.evidence_spans,
+            found=True,
+            scan_id=scan_id,
+            finding_id=finding_id,
+            verdict=stored.verdict,
+            stage=stored.stage,
+            sub_labels=list(stored.sub_labels),
+            evidence_spans=list(stored.evidence_spans),
             reasoning=stored.reasoning,
             remediation=stored.remediation,
-            owasp=stored.owasp,
+            owasp=list(stored.owasp),
         )
 
     return server

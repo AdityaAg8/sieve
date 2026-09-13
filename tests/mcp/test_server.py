@@ -7,12 +7,10 @@ in the API and the CLI.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from typing import Any
 
-import pytest
+import httpx2
 from mcp.client import Client
-from mcp.server.mcpserver.exceptions import ToolError
 
 from sieve.mcp_server.server import (
     EXPLAIN_VERDICT_DESCRIPTION,
@@ -102,19 +100,25 @@ async def test_scan_tools_list_refuses_more_tools_than_the_cap(deps: PipelineDep
 
 async def test_explain_verdict_without_an_api_url_is_an_error(deps: PipelineDeps) -> None:
     async with Client(build_server(deps=deps)) as client:
-        result = await client.call_tool("explain_verdict", {"finding_id": "abc"})
+        result = await client.call_tool("explain_verdict", {"scan_id": "s-1", "finding_id": "abc"})
 
     assert result.is_error is True
     assert "--api-url" in result.content[0].text  # type: ignore[union-attr]
 
 
-async def test_explain_verdict_returns_the_stored_evidence(
-    deps: PipelineDeps, write_file_tool: dict[str, Any]
-) -> None:
-    stored = {
-        "id": "f-1",
+# --- explain_verdict against the frozen API contract -------------------------------------
+#
+# `GET /api/v1/scans/{scan_id}/findings` is the only route that serves a stored verdict, and
+# it is paged, so these tests drive the real HTTP code path over `httpx2.MockTransport` rather
+# than stubbing a fetcher: the route shape, the `cursor` query parameter and the `next_cursor`
+# walk are the parts most likely to drift away from `schemas/openapi.json`.
+
+
+def _finding(finding_id: str, tool: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": finding_id,
         "scan_id": "s-1",
-        "tool": write_file_tool,
+        "tool": tool,
         "server_name": "files",
         "sibling_tool_names": [],
         "result": {
@@ -144,47 +148,122 @@ async def test_explain_verdict_returns_the_stored_evidence(
             "latency_ms": 3,
         },
     }
-    seen: list[tuple[str, str]] = []
-
-    async def fetch(api_url: str, finding_id: str) -> Mapping[str, Any]:
-        seen.append((api_url, finding_id))
-        return stored
-
-    server = build_server(deps=deps, api_url="http://api.test", fetch_finding=fetch)
-    async with Client(server) as client:
-        result = await client.call_tool("explain_verdict", {"finding_id": "f-1"})
-
-    assert seen == [("http://api.test", "f-1")]
-    assert result.is_error is False
-    assert result.structured_content is not None
-    assert result.structured_content["owasp"] == ["LLM01"]
-    assert result.structured_content["reasoning"] == stored["result"]["reasoning"]  # type: ignore[index]
-    assert result.structured_content["evidence_spans"][0]["quote"] == "read ~/.ssh"
 
 
-async def test_explain_verdict_reports_a_finding_the_api_does_not_have(
-    deps: PipelineDeps,
-) -> None:
-    async def fetch(api_url: str, finding_id: str) -> Mapping[str, Any]:
-        raise ToolError(f"no finding {finding_id!r} at {api_url}")
-
-    server = build_server(deps=deps, api_url="http://api.test", fetch_finding=fetch)
-    async with Client(server) as client:
-        result = await client.call_tool("explain_verdict", {"finding_id": "nope"})
-
-    assert result.is_error is True
-
-
-@pytest.mark.parametrize("status", [404, 500])
-async def test_fetch_finding_turns_an_http_failure_into_a_tool_error(status: int) -> None:
-    import httpx2
-
-    from sieve.mcp_server.server import fetch_finding
+def _api(
+    pages: dict[str | None, dict[str, Any]] | None = None,
+    *,
+    status: int = 200,
+    seen: list[str | None] | None = None,
+) -> httpx2.AsyncClient:
+    """A client answering `GET /api/v1/scans/s-1/findings` from `pages`, keyed by cursor."""
 
     def handler(request: httpx2.Request) -> httpx2.Response:
-        assert request.url.path == "/api/v1/findings/f-1"
-        return httpx2.Response(status)
+        assert request.url.path == "/api/v1/scans/s-1/findings"
+        cursor = request.url.params.get("cursor")
+        if seen is not None:
+            seen.append(cursor)
+        if status != 200 or pages is None:
+            return httpx2.Response(status)
+        return httpx2.Response(200, json=pages[cursor])
 
-    async with httpx2.AsyncClient(transport=httpx2.MockTransport(handler)) as http:
-        with pytest.raises(ToolError):
-            await fetch_finding("http://api.test", "f-1", client=http)
+    return httpx2.AsyncClient(transport=httpx2.MockTransport(handler))
+
+
+async def test_explain_verdict_returns_the_stored_evidence(
+    deps: PipelineDeps, write_file_tool: dict[str, Any]
+) -> None:
+    seen: list[str | None] = []
+    pages = {None: {"items": [_finding("f-1", write_file_tool)], "total": 1, "next_cursor": None}}
+    async with _api(pages, seen=seen) as http:
+        server = build_server(deps=deps, api_url="http://api.test", http_client=http)
+        async with Client(server) as client:
+            result = await client.call_tool(
+                "explain_verdict", {"scan_id": "s-1", "finding_id": "f-1"}
+            )
+
+    assert seen == [None]  # the first page is fetched without a cursor
+    assert result.is_error is False
+    assert result.structured_content is not None
+    body = result.structured_content
+    assert body["found"] is True
+    assert body["verdict"] == "confirmed"
+    assert body["stage"] == "judge"
+    assert body["sub_labels"] == ["exfiltration"]
+    assert body["owasp"] == ["LLM01"]
+    assert body["reasoning"] == "Reads a private key the tool has no reason to touch."
+    assert body["remediation"] == "Remove the instruction from the parameter description."
+    assert body["evidence_spans"][0]["quote"] == "read ~/.ssh"
+
+
+async def test_explain_verdict_follows_the_cursor_to_a_later_page(
+    deps: PipelineDeps, write_file_tool: dict[str, Any]
+) -> None:
+    seen: list[str | None] = []
+    pages = {
+        None: {"items": [_finding("f-1", write_file_tool)], "total": 2, "next_cursor": "50"},
+        "50": {"items": [_finding("f-2", write_file_tool)], "total": 2, "next_cursor": None},
+    }
+    async with _api(pages, seen=seen) as http:
+        server = build_server(deps=deps, api_url="http://api.test", http_client=http)
+        async with Client(server) as client:
+            result = await client.call_tool(
+                "explain_verdict", {"scan_id": "s-1", "finding_id": "f-2"}
+            )
+
+    assert seen == [None, "50"]
+    assert result.is_error is False
+    assert result.structured_content is not None
+    assert result.structured_content["found"] is True
+    assert result.structured_content["finding_id"] == "f-2"
+
+
+async def test_explain_verdict_reports_an_unknown_finding_without_raising(
+    deps: PipelineDeps, write_file_tool: dict[str, Any]
+) -> None:
+    """An id the scan does not carry is an answer, not an error (the pages are walked out)."""
+    pages = {
+        None: {"items": [_finding("f-1", write_file_tool)], "total": 2, "next_cursor": "50"},
+        "50": {"items": [_finding("f-2", write_file_tool)], "total": 2, "next_cursor": None},
+    }
+    async with _api(pages) as http:
+        server = build_server(deps=deps, api_url="http://api.test", http_client=http)
+        async with Client(server) as client:
+            result = await client.call_tool(
+                "explain_verdict", {"scan_id": "s-1", "finding_id": "f-9"}
+            )
+
+    assert result.is_error is False
+    assert result.structured_content is not None
+    assert result.structured_content["found"] is False
+    assert result.structured_content["verdict"] is None
+    assert "f-9" in result.structured_content["message"]
+
+
+async def test_explain_verdict_reports_an_unknown_scan_without_raising(
+    deps: PipelineDeps,
+) -> None:
+    async with _api(status=404) as http:
+        server = build_server(deps=deps, api_url="http://api.test", http_client=http)
+        async with Client(server) as client:
+            result = await client.call_tool(
+                "explain_verdict", {"scan_id": "s-1", "finding_id": "f-1"}
+            )
+
+    assert result.is_error is False
+    assert result.structured_content is not None
+    assert result.structured_content["found"] is False
+    assert "s-1" in result.structured_content["message"]
+
+
+async def test_explain_verdict_surfaces_an_api_failure_as_an_error(deps: PipelineDeps) -> None:
+    """A 500 is the API's problem, not an unknown id, and the caller should be told so."""
+    async with _api(status=500) as http:
+        server = build_server(deps=deps, api_url="http://api.test", http_client=http)
+        async with Client(server) as client:
+            result = await client.call_tool(
+                "explain_verdict", {"scan_id": "s-1", "finding_id": "f-1"}
+            )
+
+    assert result.is_error is True
+    assert "500" in result.content[0].text  # type: ignore[union-attr]

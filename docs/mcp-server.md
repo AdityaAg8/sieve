@@ -13,14 +13,18 @@ because every tool goes through `sieve.pipeline.triage` like every other Sieve s
 | --- | --- | --- |
 | `triage_tool_definition` | `tool`, `sibling_tool_names` (optional) | one `TriageResult` |
 | `scan_tools_list` | `tools` | `summary` counts plus one `TriageResult` per tool |
-| `explain_verdict` | `finding_id` | `evidence_spans`, `reasoning`, `remediation`, `owasp` |
+| `explain_verdict` | `scan_id`, `finding_id` | `found`, `verdict`, `stage`, `sub_labels`, `evidence_spans`, `reasoning`, `remediation`, `owasp` |
 
 Input and output schemas are generated from the Pydantic models in `sieve/types.py`, so a
 verdict on the wire is the same object the HTTP API and the CLI return.
 
-`explain_verdict` reads stored findings from a Sieve API and therefore needs `--api-url`.
-Started without one it answers `isError: true` and says so, rather than inventing an
-explanation.
+`explain_verdict` reads a verdict Sieve already stored, so it needs a Sieve API and therefore
+`--api-url`; started without one it answers `isError: true` and says so, rather than inventing
+an explanation. It takes both ids because the API's findings route is scan-scoped and paged:
+the tool reads `GET /api/v1/scans/{scan_id}/findings` and follows `next_cursor` until the id
+turns up or the pages run out. An id the API does not carry is an **answer**, not an error —
+`found: false` with a `message` saying whether the scan or the finding was the missing one. A
+transport failure or a 5xx is a genuine error and comes back as one.
 
 ## Running it
 
@@ -99,10 +103,13 @@ The `initialize` reply, verbatim:
 
 And the three tools from the `tools/list` reply, schemas elided:
 
-```json
-{"name": "triage_tool_definition", "description": "Classifies one MCP tool definition as confirmed, needs review, or dismissed, with evidence.", "inputSchema": {"type": "object"}}
-{"name": "scan_tools_list", "description": "Classifies every tool in a tools/list response and returns per-tool verdicts and counts.", "inputSchema": {"type": "object"}}
-{"name": "explain_verdict", "description": "Returns the evidence and reasoning stored for a previous finding id.", "inputSchema": {"type": "object"}}
+```
+tool: triage_tool_definition | type = object | required = ['tool']
+      Classifies one MCP tool definition as confirmed, needs review, or dismissed, with evidence.
+tool: scan_tools_list | type = object | required = ['tools']
+      Classifies every tool in a tools/list response and returns per-tool verdicts and counts.
+tool: explain_verdict | type = object | required = ['scan_id', 'finding_id']
+      Returns the evidence and reasoning stored for a previous finding id.
 ```
 
 Both halves of that are pinned as tests:
