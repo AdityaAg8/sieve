@@ -146,16 +146,69 @@ def test_cli_fails_clearly_when_corpus_missing(tmp_path: Path) -> None:
     assert "not found" in str(exc_info.value).lower()
 
 
-def test_cli_refuses_holdout_split_without_sieve_final(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("SIEVE_FINAL", raising=False)
-    with pytest.raises(SystemExit) as exc_info:
-        main(["--corpus", str(MINI_50), "--split", "holdout"])
-    assert "SIEVE_FINAL" in str(exc_info.value)
+def _minimal_corpus_row(record_id: str, split: str) -> dict[str, Any]:
+    """A minimal, schema-valid `CorpusRecord` dict, for split-filtering tests only."""
+    return {
+        "id": record_id,
+        "source": "public_repo",
+        "source_repo": "https://github.com/example/fixture",
+        "source_commit": "fixture",
+        "source_license": "MIT",
+        "capture_method": "authored",
+        "schema_fidelity": "exact",
+        "server_name": f"server-{record_id}",
+        "tool": {
+            "name": f"tool_{record_id.replace('-', '_')}",
+            "description": "A test tool with no imperative language.",
+            "inputSchema": {"type": "object", "properties": {}},
+        },
+        "label": "benign",
+        "labeller": "fixture",
+        "labelled_at": "2026-09-11T00:00:00Z",
+        "split": split,
+    }
+
+
+@pytest.mark.parametrize("sealed_split", ["holdout", "all", "eval_only"])
+def test_cli_rejects_every_split_except_dev(sealed_split: str) -> None:
+    """PRD §9.7/§11.6: this harness is not bench/eval_final.py and must never open sealed rows."""
+    with pytest.raises(SystemExit):
+        main(["--corpus", str(MINI_50), "--split", sealed_split])
+
+
+def test_cli_dev_run_never_reads_sealed_split_rows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import bench.baseline.run as run_module
+
+    corpus_path = tmp_path / "mixed.jsonl"
+    rows = [
+        _minimal_corpus_row("dev-1", "dev"),
+        _minimal_corpus_row("dev-2", "dev"),
+        _minimal_corpus_row("sealed-holdout", "holdout"),
+        _minimal_corpus_row("sealed-eval-only", "eval_only"),
+    ]
+    corpus_path.write_text(
+        "\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8", newline="\n"
+    )
+    results_dir = tmp_path / "bench" / "results"
+    monkeypatch.setattr(report, "RESULTS_DIR", results_dir)
+    # A fake adapter stands in so this test does not depend on mcp-scanner being on PATH; the
+    # point under test is which RECORDS reach evaluate(), not what the scanner does with them.
+    monkeypatch.setattr(run_module, "get_adapter", lambda name: FakeAdapter())
+
+    exit_code = main(["--corpus", str(corpus_path), "--scanners", "cisco_yara"])
+    baseline = json.loads((results_dir / "baseline.json").read_text(encoding="utf-8"))
+    raw = json.loads((results_dir / "baseline_raw.json").read_text(encoding="utf-8"))
+
+    assert exit_code == 0
+    assert baseline[0]["n"] == 2
+    assert {row["id"] for row in raw} == {"dev-1", "dev-2"}
 
 
 def test_cli_rejects_an_unresolvable_scanner_name(tmp_path: Path) -> None:
     with pytest.raises(SystemExit):
-        main(["--corpus", str(MINI_50), "--scanners", "static_json_fake", "--split", "all"])
+        main(["--corpus", str(MINI_50), "--scanners", "static_json_fake"])
 
 
 @pytest.mark.skipif(shutil.which("mcp-scanner") is None, reason="mcp-scanner not on PATH")

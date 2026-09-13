@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 from collections import defaultdict
 from collections.abc import Callable, Iterable
@@ -238,17 +237,8 @@ def _load_corpus(path: Path) -> list[CorpusRecord]:
 
 
 def _filter_split(records: list[CorpusRecord], split: str) -> list[CorpusRecord]:
-    if split == "all":
-        return records
+    """This harness only ever reads `dev` rows (see `main`'s `--split` choices, dev-only)."""
     return [r for r in records if r.split == split]
-
-
-def _check_holdout_gate(split: str) -> None:
-    if split == "holdout" and os.environ.get("SIEVE_FINAL") != "1":
-        raise SystemExit(
-            "refusing --split holdout without SIEVE_FINAL=1: the holdout split and the "
-            "real_poisoned slice are opened exactly once, by bench/eval_final.py (PRD §9.7, §11.6)"
-        )
 
 
 def _resolve_scanner_name(name: str) -> ScannerName:
@@ -261,10 +251,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m bench.baseline.run")
     parser.add_argument("--corpus", type=Path, default=Path("bench/data/labelled.jsonl"))
     parser.add_argument("--scanners", type=str, default="cisco_yara")
-    parser.add_argument("--split", type=str, default="dev", choices=["dev", "holdout", "all"])
+    # Dev-only, deliberately: this harness is not `bench/eval_final.py`. The holdout split and
+    # the real_poisoned/eval_only slice are opened exactly once, by that script, under
+    # `SIEVE_FINAL=1` (PRD §9.7, §11.6) — never by a routine `make baseline` run. `--split` takes
+    # no other value; there is nothing for `SIEVE_FINAL` to gate here.
+    parser.add_argument("--split", type=str, default="dev", choices=["dev"])
     args = parser.parse_args(argv)
 
-    _check_holdout_gate(args.split)
     records = _filter_split(_load_corpus(args.corpus), args.split)
 
     scanner_names = [
