@@ -102,14 +102,18 @@ def _fuzzy(folded_text: str, folded_quote: str) -> tuple[float, int, int] | None
     best: tuple[float, int, int] | None = None
     for length in sorted({max(1, int(n * factor)) for factor in _LENGTH_FACTORS}):
         for start in range(low, max(low + 1, high - length + 1)):
-            matcher.set_seq1(folded_text[start : start + length])
+            # The window is clamped to the text, not to `length`: a quote longer than the
+            # field it came from (the fake judge quotes off the serialised block) still has
+            # a best window, and it ends at the end of the text rather than past it.
+            stop = min(start + length, len(folded_text))
+            matcher.set_seq1(folded_text[start:stop])
             if matcher.real_quick_ratio() < FUZZY_THRESHOLD:
                 continue
             if matcher.quick_ratio() < FUZZY_THRESHOLD:
                 continue
             ratio = matcher.ratio()
             if ratio >= FUZZY_THRESHOLD and (best is None or ratio > best[0]):
-                best = (ratio, start, start + length)
+                best = (ratio, start, stop)
     return best
 
 

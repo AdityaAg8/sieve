@@ -21,6 +21,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "dismissed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -73,6 +74,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "dismissed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -129,6 +131,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "dismissed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -181,6 +184,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "confirmed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -231,6 +235,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "dismissed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -287,6 +292,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "needs_review"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -337,6 +343,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "needs_review"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -391,6 +398,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "needs_review"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -439,6 +447,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "dismissed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -491,6 +500,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "dismissed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -543,6 +553,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "needs_review"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -593,6 +604,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "confirmed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -648,6 +660,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "dismissed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -693,6 +706,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "dismissed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -745,6 +759,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "needs_review"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -797,6 +812,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "confirmed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -851,6 +867,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "dismissed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -901,6 +918,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "dismissed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -946,6 +964,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "dismissed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -996,6 +1015,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "confirmed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -1046,6 +1066,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "dismissed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -1101,6 +1122,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "dismissed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -1146,6 +1168,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "needs_review"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -1201,6 +1224,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "confirmed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -1244,6 +1268,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "dismissed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -1288,6 +1313,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "dismissed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",
@@ -1350,6 +1376,7 @@
         "scanner_findings": [],
         "stage": "classifier",
         "sub_labels": [],
+        "unlocated_quotes": 0,
         "verdict": "confirmed"
       },
       "scan_id": "demo-0000-0000-0000-000000000000",

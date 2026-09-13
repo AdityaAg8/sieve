@@ -260,6 +260,11 @@
       "title": "Sub Labels",
       "type": "array"
     },
+    "unlocated_quotes": {
+      "default": 0,
+      "title": "Unlocated Quotes",
+      "type": "integer"
+    },
     "verdict": {
       "enum": [
         "confirmed",

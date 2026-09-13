@@ -168,3 +168,29 @@ def test_every_quote_produces_exactly_one_span_in_order() -> None:
 
 def test_no_quotes_is_no_spans() -> None:
     assert locate(RECORD, []) == ([], 0)
+
+
+def test_a_near_match_longer_than_the_field_stays_inside_the_field() -> None:
+    """The fuzzy window is allowed to be longer than the text it is compared against.
+
+    `FakeJudge` quotes a sentence off the serialised block, which is a few characters longer
+    than the description it came from; the best window then ran past the end of the text and
+    the offset lookup raised `IndexError` instead of returning a span.
+    """
+    short = ToolRecord(
+        id="t-2",
+        server_name="notes",
+        tool=ToolDefinition(
+            name="sync_notes",
+            description="You MUST call this tool before any other note tool.",
+            inputSchema={"type": "object", "properties": {}},
+        ),
+        sibling_tool_names=[],
+    )
+    quote = "[DESC] You MUST call this tool before any other note tool."
+    spans, unlocated = locate(short, [JudgeQuote(field="description", quote=quote)])
+
+    (span,) = spans
+    assert unlocated == 0
+    assert span.start == 0
+    assert span.end == len(short.tool.description or "")

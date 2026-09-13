@@ -11,6 +11,7 @@ import time
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 
+from sieve.judge.locate import locate
 from sieve.owasp import owasp_for
 from sieve.protocols import Classifier, Judge, JudgeFailure, JudgeOutput
 from sieve.redact import redact, redact_tool
@@ -66,12 +67,15 @@ def _distribution(classifier: Classifier, text: str) -> dict[Label, float]:
     return {lab: float(raw[i]) / total for i, lab in enumerate(LABELS)}
 
 
-def _spans(output: JudgeOutput) -> list[EvidenceSpan]:
-    """Quotes, not offsets (PRD §12.2). `sieve/judge/locate.py` (L4) fills start/end."""
-    return [
-        EvidenceSpan(field=q.field, path=None, quote=q.quote, start=None, end=None)
-        for q in output.evidence_quotes
-    ]
+def _spans(record: ToolRecord, output: JudgeOutput) -> tuple[list[EvidenceSpan], int]:
+    """Quotes, not offsets (PRD §12.2): the judge names text and `locate` finds it here.
+
+    Located against the redacted record -- the text the judge was actually shown -- so the
+    offsets index the same string the UI and SARIF render. A quote that will not locate is
+    kept with `start = end = None` and counted: a fabricated quote is a quality signal about
+    the judge, and dropping it would hide exactly the thing worth seeing.
+    """
+    return locate(record, output.evidence_quotes)
 
 
 def triage(record: ToolRecord, findings: list[ScannerFinding], deps: PipelineDeps) -> TriageResult:
@@ -89,6 +93,7 @@ def triage(record: ToolRecord, findings: list[ScannerFinding], deps: PipelineDep
     confidence = argmax_confidence
     sub_labels: list[SubLabel] = []
     spans: list[EvidenceSpan] = []
+    unlocated = 0
     reasoning: str | None = None
     remediation: str | None = None
     judge_model: str | None = None
@@ -116,7 +121,7 @@ def triage(record: ToolRecord, findings: list[ScannerFinding], deps: PipelineDep
             stage = "judge"
             confidence = answer.confidence
             sub_labels = list(answer.sub_labels)
-            spans = _spans(answer)
+            spans, unlocated = _spans(clean, answer)
             reasoning = answer.reasoning
             remediation = answer.remediation
             judge_model = deps.judge.model
@@ -131,6 +136,7 @@ def triage(record: ToolRecord, findings: list[ScannerFinding], deps: PipelineDep
         sub_labels=sub_labels,
         owasp=owasp_for(sub_labels),
         evidence_spans=spans,
+        unlocated_quotes=unlocated,
         reasoning=reasoning,
         remediation=remediation,
         scanner_findings=findings,

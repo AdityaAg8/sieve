@@ -126,6 +126,8 @@ class VerdictRow(Base):
     evidence_spans: Mapped[list[dict[str, Any]]] = mapped_column(
         JSONB, nullable=False, server_default=text("'[]'")
     )
+    #: Quotes the judge gave that `sieve.judge.locate` could not find in the tool text.
+    unlocated_quotes: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     reasoning: Mapped[str | None] = mapped_column(Text)
     remediation: Mapped[str | None] = mapped_column(Text)
     model_version: Mapped[str] = mapped_column(Text, nullable=False)

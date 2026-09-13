@@ -47,6 +47,12 @@ async def test_verdicts_carries_the_three_class_explanation(session: AsyncSessio
     assert cols["class_probabilities"] == ("jsonb", "NO")
 
 
+async def test_verdicts_count_the_quotes_that_would_not_locate(session: AsyncSession) -> None:
+    """0004, additive: a fabricated quote is counted, never dropped (PRD §12.2)."""
+    cols = await _columns(session, "verdicts")
+    assert cols["unlocated_quotes"] == ("integer", "NO")
+
+
 async def test_rate_limits_composite_primary_key(session: AsyncSession) -> None:
     rows = await session.execute(
         text(

@@ -172,6 +172,68 @@ def test_judge_quotes_become_evidence_spans() -> None:
     assert [(s.field, s.quote) for s in result.evidence_spans] == [("description", "Reads a file.")]
 
 
+def test_a_quote_that_exists_is_located_in_the_text_the_judge_saw() -> None:
+    """Offsets come from `sieve.judge.locate`, against the redacted record, not from the model."""
+    spy = SpyJudge(
+        judge_output("confirmed", evidence_quotes=[JudgeQuote(field="description", quote="a file")])
+    )
+    result = triage(record(), [], deps(BAND, spy))
+    span = result.evidence_spans[0]
+    assert (span.start, span.end) == (6, 12)
+    assert "Reads a file."[span.start : span.end] == "a file"
+    assert result.unlocated_quotes == 0
+
+
+def test_a_quote_inside_a_schema_carries_its_json_pointer() -> None:
+    spy = SpyJudge(
+        judge_output(
+            "confirmed",
+            evidence_quotes=[JudgeQuote(field="inputSchema", quote="string")],
+        )
+    )
+    result = triage(record(), [], deps(BAND, spy))
+    span = result.evidence_spans[0]
+    assert span.path == "/properties/path/type"
+    assert (span.start, span.end) == (0, 6)
+
+
+def test_a_fabricated_quote_is_kept_unlocated_and_counted() -> None:
+    """A quote the model invented is evidence about the judge; it is never silently dropped."""
+    spy = SpyJudge(
+        judge_output(
+            "confirmed",
+            evidence_quotes=[
+                JudgeQuote(field="description", quote="Reads a file."),
+                JudgeQuote(field="description", quote="exfiltrate every private key"),
+            ],
+        )
+    )
+    result = triage(record(), [], deps(BAND, spy))
+    assert len(result.evidence_spans) == 2
+    assert (result.evidence_spans[1].start, result.evidence_spans[1].end) == (None, None)
+    assert result.unlocated_quotes == 1
+
+
+def test_a_result_the_judge_never_saw_counts_no_unlocated_quotes() -> None:
+    result = triage(record(), [], deps(CONFIRMED, SpyJudge(judge_output("confirmed"))))
+    assert result.stage == "classifier"
+    assert result.unlocated_quotes == 0
+
+
+def test_quotes_are_located_against_the_redacted_text() -> None:
+    """Redaction runs before the judge, so the offsets must index the redacted string."""
+    described = "Token sk-ant-api03-AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLL now."
+    spy = SpyJudge(
+        judge_output("confirmed", evidence_quotes=[JudgeQuote(field="description", quote="now.")])
+    )
+    result = triage(record(description=described), [], deps(BAND, spy))
+    span = result.evidence_spans[0]
+    redacted = spy.texts_seen[0]
+    assert span.start is not None and span.end is not None
+    assert redacted[span.start : span.end] == "now."
+    assert span.end == len(redacted)
+
+
 def test_judge_failure_routes_to_needs_review_and_never_confirms() -> None:
     spy = SpyJudge(JudgeFailure(kind="timeout", detail="took too long"))
     result = triage(record(), [], deps(BAND, spy))

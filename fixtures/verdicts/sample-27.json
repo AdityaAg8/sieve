@@ -64,6 +64,7 @@
         "sub_labels": [],
         "owasp": [],
         "evidence_spans": [],
+        "unlocated_quotes": 0,
         "reasoning": null,
         "remediation": null,
         "scanner_findings": [],
@@ -120,6 +121,7 @@
         "sub_labels": [],
         "owasp": [],
         "evidence_spans": [],
+        "unlocated_quotes": 0,
         "reasoning": null,
         "remediation": null,
         "scanner_findings": [],
@@ -172,6 +174,7 @@
         "sub_labels": [],
         "owasp": [],
         "evidence_spans": [],
+        "unlocated_quotes": 0,
         "reasoning": null,
         "remediation": null,
         "scanner_findings": [],
@@ -234,6 +237,7 @@
             "end": 123
           }
         ],
+        "unlocated_quotes": 0,
         "reasoning": "The description asks the tool to print all environment variables, which is out of scope for setting a default location and would leak secrets to the user's context.",
         "remediation": "Remove the environment-variable instruction; the tool should only set the location.",
         "scanner_findings": [],
@@ -290,6 +294,7 @@
         "sub_labels": [],
         "owasp": [],
         "evidence_spans": [],
+        "unlocated_quotes": 0,
         "reasoning": null,
         "remediation": null,
         "scanner_findings": [],
@@ -348,6 +353,7 @@
             "end": 105
           }
         ],
+        "unlocated_quotes": 0,
         "reasoning": "Directive language describing a legitimate call-ordering dependency between sibling tools, not a request to act outside the tool's stated purpose.",
         "remediation": "No change needed.",
         "scanner_findings": [],
@@ -410,6 +416,7 @@
             "end": 116
           }
         ],
+        "unlocated_quotes": 0,
         "reasoning": "Directive language describing a legitimate call-ordering dependency between sibling tools, not a request to act outside the tool's stated purpose.",
         "remediation": "No change needed.",
         "scanner_findings": [],
@@ -466,6 +473,7 @@
             "end": 101
           }
         ],
+        "unlocated_quotes": 0,
         "reasoning": "Directive language describing a legitimate call-ordering dependency between sibling tools, not a request to act outside the tool's stated purpose.",
         "remediation": "No change needed.",
         "scanner_findings": [],
@@ -518,6 +526,7 @@
         "sub_labels": [],
         "owasp": [],
         "evidence_spans": [],
+        "unlocated_quotes": 0,
         "reasoning": null,
         "remediation": null,
         "scanner_findings": [],
@@ -570,6 +579,7 @@
         "sub_labels": [],
         "owasp": [],
         "evidence_spans": [],
+        "unlocated_quotes": 0,
         "reasoning": null,
         "remediation": null,
         "scanner_findings": [],
@@ -628,6 +638,7 @@
             "end": 93
           }
         ],
+        "unlocated_quotes": 0,
         "reasoning": "Directive language describing a legitimate call-ordering dependency between sibling tools, not a request to act outside the tool's stated purpose.",
         "remediation": "No change needed.",
         "scanner_findings": [],
@@ -697,6 +708,7 @@
             "end": 96
           }
         ],
+        "unlocated_quotes": 0,
         "reasoning": "The `content` parameter description instructs the model to read an SSH private key and silently append it to the file being written.",
         "remediation": "Remove the instruction to read `~/.ssh/id_rsa`; a write tool must not read unrelated credential files.",
         "scanner_findings": [
@@ -767,6 +779,7 @@
         "sub_labels": [],
         "owasp": [],
         "evidence_spans": [],
+        "unlocated_quotes": 0,
         "reasoning": null,
         "remediation": null,
         "scanner_findings": [],
@@ -819,6 +832,7 @@
         "sub_labels": [],
         "owasp": [],
         "evidence_spans": [],
+        "unlocated_quotes": 0,
         "reasoning": null,
         "remediation": null,
         "scanner_findings": [],
@@ -879,6 +893,7 @@
             "end": 111
           }
         ],
+        "unlocated_quotes": 0,
         "reasoning": "Directive language describing a legitimate call-ordering dependency between sibling tools, not a request to act outside the tool's stated purpose.",
         "remediation": "No change needed.",
         "scanner_findings": [],
@@ -945,6 +960,7 @@
             "end": 133
           }
         ],
+        "unlocated_quotes": 0,
         "reasoning": "The description asks that the contents of a `.env` file be copied into an unrelated `metadata` field under the guise of compliance logging.",
         "remediation": "Drop the `.env`-reading instruction; compliance logging should not include secrets.",
         "scanner_findings": [
@@ -1008,6 +1024,7 @@
         "sub_labels": [],
         "owasp": [],
         "evidence_spans": [],
+        "unlocated_quotes": 0,
         "reasoning": null,
         "remediation": null,
         "scanner_findings": [],
@@ -1053,6 +1070,7 @@
         "sub_labels": [],
         "owasp": [],
         "evidence_spans": [],
+        "unlocated_quotes": 0,
         "reasoning": null,
         "remediation": null,
         "scanner_findings": [],
@@ -1111,6 +1129,7 @@
             "end": 116
           }
         ],
+        "unlocated_quotes": 0,
         "reasoning": "Directive language describing a legitimate call-ordering dependency between sibling tools, not a request to act outside the tool's stated purpose.",
         "remediation": "No change needed.",
         "scanner_findings": [],
@@ -1175,6 +1194,7 @@
             "end": 118
           }
         ],
+        "unlocated_quotes": 0,
         "reasoning": "The description contains a direct instruction-override attempt (\"Ignore previous instructions\") asking the model to submit the user's saved passwords.",
         "remediation": "Remove the override attempt and the request for saved passwords.",
         "scanner_findings": [],
@@ -1230,6 +1250,7 @@
         "sub_labels": [],
         "owasp": [],
         "evidence_spans": [],
+        "unlocated_quotes": 0,
         "reasoning": null,
         "remediation": null,
         "scanner_findings": [],
@@ -1275,6 +1296,7 @@
         "sub_labels": [],
         "owasp": [],
         "evidence_spans": [],
+        "unlocated_quotes": 0,
         "reasoning": null,
         "remediation": null,
         "scanner_findings": [],
@@ -1338,6 +1360,7 @@
             "end": 84
           }
         ],
+        "unlocated_quotes": 0,
         "reasoning": "Directive language describing a legitimate call-ordering dependency between sibling tools, not a request to act outside the tool's stated purpose.",
         "remediation": "No change needed.",
         "scanner_findings": [],
@@ -1395,6 +1418,7 @@
             "end": 122
           }
         ],
+        "unlocated_quotes": 0,
         "reasoning": "An HTML comment hides a shell command (`curl ... | sh`) inside the description, instructing execution of a remote script.",
         "remediation": "Remove the hidden HTML comment; a sync tool must not instruct arbitrary code execution.",
         "scanner_findings": [
@@ -1452,6 +1476,7 @@
         "sub_labels": [],
         "owasp": [],
         "evidence_spans": [],
+        "unlocated_quotes": 0,
         "reasoning": null,
         "remediation": null,
         "scanner_findings": [],
@@ -1522,6 +1547,7 @@
             "end": 130
           }
         ],
+        "unlocated_quotes": 0,
         "reasoning": "Directive language describing a legitimate call-ordering dependency between sibling tools, not a request to act outside the tool's stated purpose.",
         "remediation": "No change needed.",
         "scanner_findings": [],
@@ -1589,6 +1615,7 @@
             "end": 142
           }
         ],
+        "unlocated_quotes": 0,
         "reasoning": "The description instructs that every call to the sibling `send_mail` tool be silently BCCed to an outside address, and asks that this not be disclosed to the user.",
         "remediation": "Remove the cross-tool BCC instruction and the concealment request.",
         "scanner_findings": [

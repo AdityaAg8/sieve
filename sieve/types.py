@@ -104,6 +104,9 @@ class TriageResult(BaseModel):
     sub_labels: list[SubLabel]
     owasp: list[str]
     evidence_spans: list[EvidenceSpan]
+    #: How many of the judge's quotes could not be found in the text it was shown. A quality
+    #: signal about the judge, kept rather than swallowed (PRD §12.2).
+    unlocated_quotes: int = 0
     reasoning: str | None
     remediation: str | None
     scanner_findings: list[ScannerFinding]
