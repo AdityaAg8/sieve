@@ -13,11 +13,13 @@ import logging
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
+from decimal import Decimal
 from urllib.parse import urlsplit
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sieve.api import spend
 from sieve.api.deps import get_classifier, get_judge
 from sieve.api.store import verdict_row
 from sieve.config import settings
@@ -197,6 +199,10 @@ async def _triage(session: AsyncSession, scan_id: uuid.UUID, loaded: _Loaded) ->
         tool_id = loaded.tool_ids[record_id]
         row = verdict_row(tool_id, result)
         session.add(row)
+        if result.stage == "judge":
+            # One transaction for the verdict and the money it cost (PRD §13.2), so a crash
+            # can neither bank a free judge call nor charge for a verdict that was lost.
+            await spend.charge(session)
         await session.commit()
         record = next(r for r in loaded.records if r.id == record_id)
         finding = Finding(
@@ -212,11 +218,12 @@ async def _triage(session: AsyncSession, scan_id: uuid.UUID, loaded: _Loaded) ->
     def on_result(record_id: str, result: TriageResult) -> None:
         asyncio.run_coroutine_threadsafe(persist(record_id, result), loop).result()
 
+    budget_ok = await spend.allowed(session)
     return await asyncio.to_thread(
         triage_many,
         loaded.records,
         loaded.findings_by_id,
-        _deps(),
+        _deps(lambda: budget_ok),
         on_result=on_result,
         judge_budget=settings.judge_max_calls_per_scan,
     )
@@ -228,6 +235,7 @@ async def _finish(session: AsyncSession, scan: Scan, results: list[TriageResult]
     scan.needs_review = sum(1 for r in results if r.verdict == "needs_review")
     scan.dismissed = sum(1 for r in results if r.verdict == "dismissed")
     scan.judge_calls = sum(1 for r in results if r.stage == "judge")
+    scan.judge_cost_usd = Decimal(str(spend.ESTIMATED_JUDGE_CALL_USD)) * scan.judge_calls
     scan.model_version = results[0].model_version if results else get_classifier().model_version
     scan.judge_model = next((r.judge_model for r in results if r.judge_model), None)
     await session.commit()

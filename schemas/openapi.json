@@ -891,6 +891,7 @@
     },
     "/api/v1/findings/{finding_id}/feedback": {
       "post": {
+        "description": "Agree/disagree on a verdict. Rate-limited, with a honeypot field (PRD \u00a713.1).",
         "operationId": "submit_feedback_api_v1_findings__finding_id__feedback_post",
         "parameters": [
           {

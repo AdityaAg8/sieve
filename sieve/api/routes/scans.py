@@ -6,13 +6,14 @@ from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette import EventSourceResponse
 
-from sieve.api import sse
+from sieve.api import ratelimit, sse
 from sieve.api.ingest import IngestError, ingest
 from sieve.api.store import Store, StubStore, get_store
 from sieve.config import settings
-from sieve.db.session import session_factory
+from sieve.db.session import get_session, session_factory
 from sieve.sarif import to_sarif
 from sieve.types import ScanCreate, ScanSummary
 
@@ -25,7 +26,9 @@ async def create_scan(
     request: Request,
     response: Response,
     store: Store = Depends(get_store),
+    session: AsyncSession = Depends(get_session),
 ) -> ScanSummary:
+    await ratelimit.enforce(request, session, "scans_min", "scans_day")
     try:
         data = ingest(req)
     except IngestError as exc:

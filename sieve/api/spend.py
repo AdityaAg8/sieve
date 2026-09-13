@@ -1,0 +1,46 @@
+"""The daily judge budget (PRD §13.2). One `spend_ledger` row per UTC day.
+
+`charge` deliberately does NOT commit: PRD §13.2 requires it to run in the same transaction
+as the verdict write, so a crash cannot bank a judge call without paying for it, or pay for
+a call whose verdict was lost.
+"""
+
+from __future__ import annotations
+
+from decimal import Decimal
+
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from sieve.config import settings
+
+# PRD §12.4's cost model (~1,800 cached + ~600 uncached input, ~250 output at Haiku 4.5
+# pricing) and the committed sample scan, whose 2 judge calls cost US$0.0041, agree on this.
+# L4 replaces the estimate with the `usage` the API actually reports.
+ESTIMATED_JUDGE_CALL_USD = 0.00205
+
+_CHARGE = """
+INSERT INTO spend_ledger (day, judge_calls, usd)
+VALUES (current_date, 1, :usd)
+ON CONFLICT (day) DO UPDATE SET judge_calls = spend_ledger.judge_calls + 1,
+                                usd = spend_ledger.usd + :usd
+RETURNING usd
+"""
+
+
+async def spent_today(session: AsyncSession) -> Decimal:
+    value = (
+        await session.execute(text("SELECT usd FROM spend_ledger WHERE day = current_date"))
+    ).scalar_one_or_none()
+    return Decimal(0) if value is None else Decimal(value)
+
+
+async def allowed(session: AsyncSession) -> bool:
+    """True while today's spend is under the cap. This is `PipelineDeps.budget`."""
+    return await spent_today(session) < Decimal(str(settings.daily_judge_budget_usd))
+
+
+async def charge(session: AsyncSession, usd: float = ESTIMATED_JUDGE_CALL_USD) -> Decimal:
+    """Record one judge call. The caller commits, together with the verdict it paid for."""
+    total = (await session.execute(text(_CHARGE), {"usd": Decimal(str(usd))})).scalar_one()
+    return Decimal(total)
