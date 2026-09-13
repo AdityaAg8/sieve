@@ -17,13 +17,15 @@ from sieve.types import ToolDefinition, ToolRecord
 
 
 async def test_sieve_dismisses_its_own_tool_definitions() -> None:
-    server = build_server()
+    deps = PipelineDeps(classifier=FakeClassifier(), judge=FakeJudge())
+    # The same fakes go into the server, so the gate never depends on `SIEVE_MODEL_ID`; the
+    # tool list it advertises does not depend on them either way.
+    server = build_server(deps=deps)
     async with Client(server) as client:
         listed = await client.list_tools()
 
     assert listed.tools, "the server advertised no tools to scan"
     names = [t.name for t in listed.tools]
-    deps = PipelineDeps(classifier=FakeClassifier(), judge=FakeJudge())
 
     for tool in listed.tools:
         wire = tool.model_dump(by_alias=True, exclude_none=True)
