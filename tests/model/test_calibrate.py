@@ -196,3 +196,35 @@ def test_cli_fills_every_fold_config_and_writes_the_curves(
     curves = json.loads((results / "curves.json").read_text(encoding="utf-8"))
     assert len(curves["recall_vs_threshold"]) == 20
     assert len(curves["fpr_vs_recall"]) == 20
+
+
+def test_cli_also_writes_the_pooled_arrays_for_the_selection_step(
+    balanced_dev_records: list, tmp_path: Path
+) -> None:
+    """`sieve.model.select` reads one directory per (architecture, seed), not five folds."""
+    from sieve.model.calibrate import main
+
+    corpus = tmp_path / "corpus.jsonl"
+    corpus.write_text(
+        "".join(r.model_dump_json() + "\n" for r in balanced_dev_records),
+        encoding="utf-8",
+        newline="\n",
+    )
+    rng = np.random.default_rng(3)
+    dirs = [
+        _fold_dir(tmp_path / "models" / f"tiny-f{fold}-s0", balanced_dev_records, fold, rng=rng)
+        for fold in range(5)
+    ]
+    written = main(
+        [
+            "--dirs", *[str(d) for d in dirs],
+            "--corpus", str(corpus),
+            "--results-dir", str(tmp_path / "results"),
+            "--n-boot", "40", "--curve-boot", "20", "--curve-points", "10",
+        ]
+    )  # fmt: skip
+    shared = written.parent
+    ids = json.loads((shared / "oof_ids.json").read_text(encoding="utf-8"))
+    assert sorted(ids) == sorted(r.id for r in balanced_dev_records)
+    assert np.load(shared / "oof_logits.npy").shape == (len(ids), 3)
+    assert np.load(shared / "oof_labels.npy").shape == (len(ids),)

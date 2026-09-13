@@ -152,6 +152,13 @@ def main(argv: Sequence[str] | None = None) -> Path:
 
     shared = _shared_dir(ns.dirs, ns.out)
     shared.mkdir(parents=True, exist_ok=True)
+    # The pooled arrays live beside the pooled thresholds so `sieve.model.select` has one
+    # directory per (architecture, seed) to read, rather than re-pooling five folds itself.
+    np.save(shared / "oof_logits.npy", logits.astype(np.float32))
+    np.save(shared / "oof_labels.npy", labels.astype(np.int64))
+    (shared / "oof_ids.json").write_text(
+        json.dumps(ids, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
     base = json.loads((ns.dirs[0] / "sieve_config.json").read_text(encoding="utf-8"))
     base.update(payload)
     base["fold"] = "pooled"
