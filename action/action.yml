@@ -1,0 +1,79 @@
+name: "Sieve triage"
+description: "Triage an MCP server's tools for prompt-injection and tool-poisoning risk (SC-1: parses the config only, never spawns the server)."
+author: "Sieve"
+
+inputs:
+  config:
+    description: "Path to the MCP config (mcp.json) to parse, relative to the repo root."
+    required: true
+  version:
+    description: "The sieve version to install."
+    required: false
+    default: "0.1.0"
+  fail-on:
+    description: "confirmed|review|any|never -- when the final step should fail the job."
+    required: false
+    default: "confirmed"
+  upload-sarif:
+    description: "Upload sieve.sarif to GitHub Code Scanning."
+    required: false
+    default: "true"
+  comment:
+    description: "Post (or update) a PR comment listing confirmed findings."
+    required: false
+    default: "true"
+  judge:
+    description: "Allow the LLM judge stage (requires anthropic-api-key)."
+    required: false
+    default: "false"
+  anthropic-api-key:
+    description: "ANTHROPIC_API_KEY, only used when judge is true."
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+
+    - name: Install sieve
+      shell: bash
+      run: uv tool install sieve==${{ inputs.version }}
+
+    - name: Triage (SARIF)
+      shell: bash
+      env:
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+      run: |
+        JUDGE_FLAG="--no-judge"
+        if [ "${{ inputs.judge }}" = "true" ]; then
+          JUDGE_FLAG=""
+        fi
+        sieve triage --config "${{ inputs.config }}" --static --offline --format sarif \
+          --output sieve.sarif --fail-on never $JUDGE_FLAG
+
+    - name: Upload SARIF to Code Scanning
+      if: inputs.upload-sarif == 'true'
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: sieve.sarif
+
+    - name: Comment on the pull request
+      if: inputs.comment == 'true' && github.event_name == 'pull_request'
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: python "${{ github.action_path }}/comment.py" sieve.sarif
+
+    - name: Triage (exit code)
+      shell: bash
+      env:
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+      run: |
+        JUDGE_FLAG="--no-judge"
+        if [ "${{ inputs.judge }}" = "true" ]; then
+          JUDGE_FLAG=""
+        fi
+        sieve triage --config "${{ inputs.config }}" --static --offline \
+          --fail-on "${{ inputs.fail-on }}" $JUDGE_FLAG

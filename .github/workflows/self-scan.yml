@@ -1,0 +1,19 @@
+name: self-scan
+on:
+  pull_request:
+jobs:
+  sieve:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./action
+        with:
+          config: fixtures/mcp-config/sample.mcp.json
+          version: "0.1.0"
+          fail-on: confirmed
+          upload-sarif: true
+          comment: true
