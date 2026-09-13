@@ -16,7 +16,7 @@ import numpy as np
 import numpy.typing as npt
 
 from sieve.eval.metrics import (
-    cluster_bootstrap_ci,
+    cluster_bootstrap_curve,
     precision_recall_fpr,
     t_high_for_precision,
     t_low_for_recall_lcb,
@@ -123,20 +123,6 @@ def t_low_spread(
     ]
 
 
-def _recall_at(threshold: float) -> Any:
-    def stat(truth: Any, scores: Any) -> float:
-        return precision_recall_fpr(list(truth), list(scores), threshold)[1]
-
-    return stat
-
-
-def _fpr_at(threshold: float) -> Any:
-    def stat(truth: Any, scores: Any) -> float:
-        return precision_recall_fpr(list(truth), list(scores), threshold)[2]
-
-    return stat
-
-
 def write_curves(
     probs: npt.NDArray[np.float64],
     labels: Sequence[int] | npt.NDArray[np.int_],
@@ -144,31 +130,31 @@ def write_curves(
     path: Path,
     *,
     n_thresholds: int = 200,
-    n_boot: int = 200,
+    n_boot: int = 1000,
     seed: int = 0,
 ) -> Path:
     """Recall-vs-threshold and FPR-vs-recall with cluster-bootstrap bounds (PRD §11.4).
 
-    `n_boot` defaults below the 1,000 of a published point estimate on purpose: this is
-    `n_thresholds` separate cluster bootstraps, and `metrics.cluster_bootstrap_ci` is a Python
-    loop. The operating point itself is always selected at the full 1,000.
+    Backed by `metrics.cluster_bootstrap_curve`, which draws the server resample once per
+    bootstrap replicate and reuses it across every threshold and every statistic, so `n_boot`
+    defaults to the full 1,000 of a published point estimate rather than a cheaper number.
     """
     truth = label_strings(labels)
     scores = poisoned_scores(probs)
     grid = np.linspace(0.0, 1.0, n_thresholds)
 
-    recall_rows: list[list[float]] = []
-    fpr_rows: list[list[float]] = []
-    for threshold in grid:
-        t = float(threshold)
-        r_point, r_lo, r_hi = cluster_bootstrap_ci(
-            _recall_at(t), truth, scores, groups, n_boot=n_boot, seed=seed
-        )
-        f_point, f_lo, f_hi = cluster_bootstrap_ci(
-            _fpr_at(t), truth, scores, groups, n_boot=n_boot, seed=seed
-        )
-        recall_rows.append([t, r_point, min(r_lo, r_point), max(r_hi, r_point)])
-        fpr_rows.append([r_point, f_point, min(f_lo, f_point), max(f_hi, f_point)])
+    curves = cluster_bootstrap_curve(truth, scores, groups, grid, n_boot=n_boot, seed=seed)
+    recall_point, recall_lo, recall_hi = curves["recall"]
+    fpr_point, fpr_lo, fpr_hi = curves["fpr"]
+
+    recall_rows = [
+        [float(t), float(r), float(min(lo, r)), float(max(hi, r))]
+        for t, r, lo, hi in zip(grid, recall_point, recall_lo, recall_hi, strict=True)
+    ]
+    fpr_rows = [
+        [float(r), float(f), float(min(lo, f)), float(max(hi, f))]
+        for r, f, lo, hi in zip(recall_point, fpr_point, fpr_lo, fpr_hi, strict=True)
+    ]
 
     # Both curves are traced by walking the threshold down, so sort the FPR curve onto its own
     # recall axis. Recall is non-increasing in the threshold by construction; a bootstrap bound

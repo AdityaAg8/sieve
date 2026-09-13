@@ -1,3 +1,5 @@
+from itertools import pairwise
+
 import numpy as np
 import numpy.typing as npt
 import pytest
@@ -7,6 +9,7 @@ from sieve.eval.metrics import (
     binary_counts,
     bootstrap_ci,
     cluster_bootstrap_ci,
+    cluster_bootstrap_curve,
     cohens_kappa,
     confusion_matrix,
     expected_calibration_error,
@@ -124,6 +127,40 @@ def test_paired_bootstrap_diff_sign_follows_the_worse_scorer() -> None:
     worse = [0.9, 0.6, 0.9, 0.9, 0.9, 0.9]  # flags every non-poisoned row
     point, _, _ = paired_bootstrap_diff(Y, worse, 0.5, S, 0.5, G, n_boot=200, seed=0)
     assert point == pytest.approx(0.5)  # FPR 1.0 vs 0.5
+
+
+def test_cluster_bootstrap_curve_shape() -> None:
+    thresholds = [0.2, 0.4, 0.6]
+    curves = cluster_bootstrap_curve(Y, S, G, thresholds, n_boot=50, seed=0)
+    assert set(curves) == {"precision", "recall", "fpr"}
+    for arr in curves.values():
+        assert arr.shape == (3, len(thresholds))
+
+
+def test_cluster_bootstrap_curve_points_match_precision_recall_fpr_per_threshold() -> None:
+    thresholds = [0.1, 0.3, 0.5, 0.7, 0.9]
+    curves = cluster_bootstrap_curve(Y, S, G, thresholds, n_boot=200, seed=1)
+    for i, t in enumerate(thresholds):
+        p, r, f = precision_recall_fpr(Y, S, t)
+        assert curves["precision"][0, i] == pytest.approx(p)
+        assert curves["recall"][0, i] == pytest.approx(r)
+        assert curves["fpr"][0, i] == pytest.approx(f)
+
+
+def test_cluster_bootstrap_curve_interval_brackets_the_point_everywhere() -> None:
+    thresholds = [0.1, 0.3, 0.5, 0.7, 0.9]
+    curves = cluster_bootstrap_curve(Y, S, G, thresholds, n_boot=200, seed=1)
+    for key in ("precision", "recall", "fpr"):
+        point, lo, hi = curves[key]
+        assert np.all(lo <= point + 1e-12)
+        assert np.all(point <= hi + 1e-12)
+
+
+def test_cluster_bootstrap_curve_recall_is_monotone_non_increasing_in_threshold() -> None:
+    thresholds = np.linspace(0.0, 1.0, 11)
+    curves = cluster_bootstrap_curve(Y, S, G, thresholds, n_boot=100, seed=0)
+    recall_point = curves["recall"][0]
+    assert all(a >= b - 1e-12 for a, b in pairwise(recall_point))
 
 
 def test_mcnemar_exact_hand_checked() -> None:

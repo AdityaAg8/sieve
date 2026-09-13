@@ -184,6 +184,14 @@ def _group_index(groups: Sequence[str]) -> tuple[list[str], dict[str, npt.NDArra
     return keys, {k: np.flatnonzero(ga == k) for k in keys}
 
 
+def _resample_indices(
+    rng: np.random.Generator, keys: Sequence[str], members: dict[str, npt.NDArray[np.int_]]
+) -> npt.NDArray[np.int_]:
+    """One cluster-bootstrap draw: `len(keys)` server keys with replacement, each kept whole."""
+    picked = rng.integers(0, len(keys), len(keys))
+    return np.concatenate([members[keys[p]] for p in picked])
+
+
 def cluster_bootstrap_ci(
     stat: Stat,
     y_true: Sequence[str],
@@ -205,8 +213,7 @@ def cluster_bootstrap_ci(
     point = stat(yt, ys)
     vals: list[float] = []
     for _ in range(n_boot):
-        picked = rng.integers(0, len(keys), len(keys))
-        idx = np.concatenate([members[keys[p]] for p in picked])
+        idx = _resample_indices(rng, keys, members)
         vals.append(stat(yt[idx], ys[idx]))
     lo, hi = np.quantile(vals, [alpha / 2, 1 - alpha / 2])
     return float(point), float(lo), float(hi)
@@ -274,7 +281,68 @@ def paired_bootstrap_diff(
     point = diff(np.arange(len(yt)))
     vals: list[float] = []
     for _ in range(n_boot):
-        picked = rng.integers(0, len(keys), len(keys))
-        vals.append(diff(np.concatenate([members[keys[p]] for p in picked])))
+        vals.append(diff(_resample_indices(rng, keys, members)))
     lo, hi = np.quantile(vals, [alpha / 2, 1 - alpha / 2])
     return float(point), float(lo), float(hi)
+
+
+def _sweep(
+    is_positive: npt.NDArray[np.bool_], scores: Arr, thresholds: Arr
+) -> tuple[Arr, Arr, Arr]:
+    """Vectorised precision/recall/fpr at every threshold, for one (truth, score) draw.
+
+    `_safe_div`'s zero-denominator-is-zero convention, applied elementwise: `np.where` picks a
+    safe divisor of 1 for the zero-count cells so the division never warns, then the same cells
+    are overwritten with 0.0.
+    """
+    pred = scores[:, None] >= thresholds[None, :]  # (n_rows, n_thresholds)
+    pos = is_positive[:, None]
+    tp = (pred & pos).sum(axis=0).astype(float)
+    fp = (pred & ~pos).sum(axis=0).astype(float)
+    fn = (~pred & pos).sum(axis=0).astype(float)
+    tn = (~pred & ~pos).sum(axis=0).astype(float)
+    precision = np.where(tp + fp > 0, tp / np.where(tp + fp > 0, tp + fp, 1.0), 0.0)
+    recall = np.where(tp + fn > 0, tp / np.where(tp + fn > 0, tp + fn, 1.0), 0.0)
+    fpr = np.where(fp + tn > 0, fp / np.where(fp + tn > 0, fp + tn, 1.0), 0.0)
+    return precision, recall, fpr
+
+
+def cluster_bootstrap_curve(
+    y_true: Sequence[str],
+    p_poisoned: Sequence[float],
+    groups: Sequence[str],
+    thresholds: Arr,
+    *,
+    n_boot: int = 1000,
+    seed: int = 0,
+    alpha: float = 0.05,
+    positive: str = "poisoned",
+) -> dict[str, Arr]:
+    """Cluster (by server) bootstrap of precision, recall and FPR at every threshold.
+
+    Draws the server resample ONCE per bootstrap replicate and reuses it across all thresholds,
+    so the cost is O(n_boot * n_rows) plus a vectorised threshold sweep, not O(n_boot *
+    n_thresholds * n_rows). Returns {"precision", "recall", "fpr"}, each shaped
+    (3, len(thresholds)) = point, lo, hi.
+    """
+    rng = np.random.default_rng(seed)
+    yt: StrArr = np.asarray(y_true)
+    ys: Arr = np.asarray(p_poisoned, dtype=float)
+    ts: Arr = np.asarray(thresholds, dtype=float)
+    keys, members = _group_index(groups)
+    is_pos = yt == positive
+
+    point = _sweep(is_pos, ys, ts)
+
+    boots = np.empty((3, n_boot, len(ts)), dtype=float)
+    for b in range(n_boot):
+        idx = _resample_indices(rng, keys, members)
+        for k, arr in enumerate(_sweep(is_pos[idx], ys[idx], ts)):
+            boots[k, b] = arr
+
+    names = ("precision", "recall", "fpr")
+    out: dict[str, Arr] = {}
+    for k, name in enumerate(names):
+        lo, hi = np.quantile(boots[k], [alpha / 2, 1 - alpha / 2], axis=0)
+        out[name] = np.stack([point[k], lo, hi])
+    return out
