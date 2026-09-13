@@ -1,48 +1,21 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-from sieve.api.deps import FixtureStore, get_store, stub_classifier
-from sieve.serialise import serialise
-from sieve.types import LABELS, Label, ToolRecord, TriageResult
+from sieve.api.deps import get_classifier, get_judge
+from sieve.config import settings
+from sieve.pipeline import PipelineDeps
+from sieve.pipeline import triage as run_triage
+from sieve.types import ToolRecord, TriageResult
 
 router = APIRouter(tags=["triage"])
 
 
 @router.post("/triage", response_model=TriageResult)
-def triage(record: ToolRecord, store: FixtureStore = Depends(get_store)) -> TriageResult:
-    fixture = store.template_result(record.tool.name)
-    if fixture is not None:
-        return fixture
-
-    clf = stub_classifier()
-    probs = clf.predict_proba([serialise(record)])[0]
-    class_probabilities: dict[Label, float] = dict(
-        zip(LABELS, (float(p) for p in probs), strict=True)
+async def triage(record: ToolRecord) -> TriageResult:
+    """The synchronous hot path for the CLI and the MCP server -- the same `pipeline.triage`."""
+    judge = get_judge() if settings.judge_enabled else None
+    deps = PipelineDeps(
+        classifier=get_classifier(), judge=judge, judge_enabled=settings.judge_enabled
     )
-    predicted_class = max(class_probabilities, key=lambda k: class_probabilities[k])
-    poisoned_p = class_probabilities["poisoned"]
-    t_low, t_high = clf.thresholds.t_low, clf.thresholds.t_high
-    if poisoned_p >= t_high:
-        verdict = "confirmed"
-    elif poisoned_p >= t_low:
-        verdict = "needs_review"
-    else:
-        verdict = "dismissed"
-    return TriageResult(
-        verdict=verdict,
-        stage="classifier",
-        predicted_class=predicted_class,
-        class_probabilities=class_probabilities,
-        poisoned_probability=poisoned_p,
-        confidence=class_probabilities[predicted_class],
-        sub_labels=[],
-        owasp=[],
-        evidence_spans=[],
-        reasoning=None,
-        remediation=None,
-        scanner_findings=[],
-        model_version=clf.model_version,
-        judge_model=None,
-        latency_ms=1,
-    )
+    return run_triage(record, [], deps)

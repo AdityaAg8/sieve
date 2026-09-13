@@ -120,7 +120,7 @@ class FixtureStore:
 _STORE = FixtureStore()
 
 
-def get_store() -> FixtureStore:
+def fixture_store() -> FixtureStore:
     return _STORE
 
 
@@ -130,3 +130,17 @@ def stub_classifier() -> Classifier:
 
 def stub_judge() -> Judge:
     return FakeJudge()
+
+
+def get_classifier() -> Classifier:
+    """The active classifier for the API, the worker and the CLI.
+
+    Still the shared fake: L3 replaces this body with the ONNX / `transformers` artefact
+    loader keyed on `settings.model_id`, and every caller picks the change up for free.
+    """
+    return stub_classifier()
+
+
+def get_judge() -> Judge:
+    """The active judge. L4 replaces this body with the Anthropic-backed judge."""
+    return stub_judge()

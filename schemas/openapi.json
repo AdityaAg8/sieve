@@ -961,6 +961,7 @@
     },
     "/api/v1/models": {
       "get": {
+        "description": "Thresholds come from the artefact, never from a constant here (PRD \u00a711.4).",
         "operationId": "get_model_info_api_v1_models_get",
         "responses": {
           "200": {
@@ -982,6 +983,7 @@
     },
     "/api/v1/readyz": {
       "get": {
+        "description": "Readiness checks the database and the model load (PRD \u00a713.1).",
         "operationId": "readyz_api_v1_readyz_get",
         "responses": {
           "200": {
@@ -1097,6 +1099,7 @@
     },
     "/api/v1/scans/{scan_id}/events": {
       "get": {
+        "description": "SSE. `Last-Event-ID` replays only what the client missed (PRD \u00a713.1).",
         "operationId": "scan_events_api_v1_scans__scan_id__events_get",
         "parameters": [
           {
@@ -1340,6 +1343,7 @@
     },
     "/api/v1/triage": {
       "post": {
+        "description": "The synchronous hot path for the CLI and the MCP server -- the same `pipeline.triage`.",
         "operationId": "triage_api_v1_triage_post",
         "requestBody": {
           "content": {
