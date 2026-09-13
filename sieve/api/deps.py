@@ -198,10 +198,29 @@ def get_classifier() -> Classifier:
 _JUDGE: AnthropicJudge | None = None
 
 
+def _require_a_priced_model(model: str) -> None:
+    """Refuse a judge whose calls could be made but not billed.
+
+    Every judge call is charged to the daily ledger from `sieve.judge.cost.PRICES`, and an
+    unpriced model raises there rather than billing zero. Discovering that *after* a call has
+    been made and answered is too late -- the money is spent and the scan dies carrying a
+    verdict nothing paid for -- so the check happens where the judge is built.
+    """
+    from sieve.judge.cost import PRICES, UnpricedModelError
+
+    if model not in PRICES:
+        raise UnpricedModelError(
+            f"SIEVE_JUDGE_MODEL={model!r} has no published price, so its calls could not be "
+            f"charged to the daily ledger; priced models are {', '.join(sorted(PRICES))} "
+            f"(add one to sieve.judge.cost.PRICES)"
+        )
+
+
 def _anthropic_judge() -> AnthropicJudge:
     global _JUDGE
     if _JUDGE is None or _JUDGE.model != settings.judge_model:
         close_judge()
+        _require_a_priced_model(settings.judge_model)
         # Imported here, not at module scope: `sieve.judge.client` needs `anthropic`, the
         # optional `judge` extra, and the fixture path must stay importable without it.
         from sieve.judge.client import AnthropicJudge as _AnthropicJudge

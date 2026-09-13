@@ -161,6 +161,11 @@ async def run(session: AsyncSession, job: Job) -> None:
         await _finish(session, scan, triaged)
     except Exception as exc:
         detail = f"{type(exc).__name__}: {exc}"
+        # Whatever was half-written when this blew up is discarded first. Without the
+        # rollback, a verdict added but not yet charged (the failure can land between
+        # `session.add` and `spend.charge`) would be flushed by the commit below -- a judged
+        # verdict with no ledger row beside it, the inverse of the PRD §13.2 invariant.
+        await session.rollback()
         scan.status = "failed"
         scan.error = detail
         await session.commit()

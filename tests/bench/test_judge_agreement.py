@@ -152,3 +152,18 @@ def test_without_rerecord_a_missing_transcript_names_the_recording_command(
     monkeypatch.delenv("SIEVE_RERECORD", raising=False)
     with pytest.raises(SystemExit, match="SIEVE_RERECORD=1"):
         _judge_factory(tmp_path / "judge_outputs.jsonl", "claude-haiku-4-5")()
+
+
+def test_rerecord_without_a_key_refuses_rather_than_recording_failures(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Half-configured is refused: recording with no key would overwrite the transcript with
+    a file of `api_error` failures."""
+    from bench.analysis.judge_agreement import _judge_factory
+
+    monkeypatch.setenv("SIEVE_RERECORD", "1")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    transcript = tmp_path / "judge_outputs.jsonl"
+    with pytest.raises(SystemExit, match="ANTHROPIC_API_KEY"):
+        _judge_factory(transcript, "claude-haiku-4-5")()
+    assert not transcript.exists()

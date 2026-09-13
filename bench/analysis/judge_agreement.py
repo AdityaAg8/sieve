@@ -113,7 +113,7 @@ def run(records: Sequence[CorpusRecord], judge: Judge, results_dir: Path) -> Pat
 
 
 def _judge_factory(transcript: Path, model: str) -> JudgeFactory:
-    """`RecordingJudge(AnthropicJudge)` only under SIEVE_RERECORD=1; `ReplayJudge` otherwise."""
+    """`RecordingJudge(AnthropicJudge)` only under SIEVE_RERECORD=1 with a key; else replay."""
 
     def factory() -> Judge:
         try:
@@ -121,6 +121,14 @@ def _judge_factory(transcript: Path, model: str) -> JudgeFactory:
         except ImportError as exc:  # pragma: no cover - only before the judge lane merges
             raise SystemExit("judge lane not merged yet") from exc
         if os.environ.get("SIEVE_RERECORD") == "1":
+            # Both halves, or neither: recording without a key would open the transcript,
+            # call an API that refuses every request, and write a file of `api_error`
+            # failures over the one being re-recorded.
+            if not os.environ.get("ANTHROPIC_API_KEY"):
+                raise SystemExit(
+                    "SIEVE_RERECORD=1 needs ANTHROPIC_API_KEY: recording calls the live API. "
+                    "Unset SIEVE_RERECORD to replay the committed transcript instead."
+                )
             from sieve.judge.client import AnthropicJudge
 
             log.warning("SIEVE_RERECORD=1: calling the live API and re-recording %s", transcript)

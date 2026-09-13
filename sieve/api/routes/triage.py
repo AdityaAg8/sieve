@@ -48,15 +48,25 @@ async def triage(
     # itself back, so the loop stays free to answer the ledger.
     result = await asyncio.to_thread(run_triage, record, [], deps)
 
+    charged: float | None = None
+    cost_source: str | None = None
     if result.stage == "judge" and not stub:
         # What the call reported, not what it was expected to cost. Same transaction as the
         # answer it paid for (PRD §13.2).
-        usd, _source = spend.judge_call_cost(judge)
-        await spend.charge(session, usd)
+        charged, cost_source = spend.judge_call_cost(judge)
+        await spend.charge(session, charged)
         await session.commit()
-    # Identifiers only: the tool text stays out of the log above DEBUG (SC-5).
+    # Identifiers only: the tool text stays out of the log above DEBUG (SC-5). The cost and
+    # where the figure came from are logged here because this path has no scan row to record
+    # them on, unlike the worker's `scans.judge_cost_source`.
     log.info(
         "triage.done",
-        extra={"tool": record.tool.name, "verdict": result.verdict, "stage": result.stage},
+        extra={
+            "tool": record.tool.name,
+            "verdict": result.verdict,
+            "stage": result.stage,
+            "judge_cost_usd": charged,
+            "judge_cost_source": cost_source,
+        },
     )
     return result

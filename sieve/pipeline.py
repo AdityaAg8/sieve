@@ -67,17 +67,6 @@ def _distribution(classifier: Classifier, text: str) -> dict[Label, float]:
     return {lab: float(raw[i]) / total for i, lab in enumerate(LABELS)}
 
 
-def _spans(record: ToolRecord, output: JudgeOutput) -> tuple[list[EvidenceSpan], int]:
-    """Quotes, not offsets (PRD §12.2): the judge names text and `locate` finds it here.
-
-    Located against the redacted record -- the text the judge was actually shown -- so the
-    offsets index the same string the UI and SARIF render. A quote that will not locate is
-    kept with `start = end = None` and counted: a fabricated quote is a quality signal about
-    the judge, and dropping it would hide exactly the thing worth seeing.
-    """
-    return locate(record, output.evidence_quotes)
-
-
 def triage(record: ToolRecord, findings: list[ScannerFinding], deps: PipelineDeps) -> TriageResult:
     started = time.perf_counter()
     clean = _redacted(record)
@@ -121,7 +110,12 @@ def triage(record: ToolRecord, findings: list[ScannerFinding], deps: PipelineDep
             stage = "judge"
             confidence = answer.confidence
             sub_labels = list(answer.sub_labels)
-            spans, unlocated = _spans(clean, answer)
+            # Quotes, not offsets (PRD §12.2): the judge names text and `locate` finds it,
+            # against the redacted record -- the text the judge was actually shown -- so the
+            # offsets index the same string the UI and SARIF render. A quote that will not
+            # locate is kept with `start = end = None` and counted, because a fabricated
+            # quote is a quality signal about the judge rather than something to drop.
+            spans, unlocated = locate(clean, answer.evidence_quotes)
             reasoning = answer.reasoning
             remediation = answer.remediation
             judge_model = deps.judge.model
