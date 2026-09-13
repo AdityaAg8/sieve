@@ -113,13 +113,37 @@ class AnthropicJudge:
         self.last_usage: Usage | None = None
         self._budget = budget
         self._client = client
+        self._owns_client = client is None
 
     @property
     def client(self) -> anthropic.Anthropic:
-        """Built lazily: constructing a judge must not require a key that is never used."""
+        """Built lazily, on the first call that actually reaches the API.
+
+        Nothing here opens a socket until then, which is what lets a caller construct a judge
+        on a path that turns out to skip (no key, no cassette) without leaving a connection
+        pool behind for the garbage collector to close at an arbitrary later moment.
+        """
         if self._client is None:
             self._client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+            self._owns_client = True
         return self._client
+
+    def close(self) -> None:
+        """Close the underlying HTTP client, if this judge built it.
+
+        An injected client belongs to the caller and is left alone. Deterministic closing
+        matters under `-W error::ResourceWarning`: a pooled TLS socket finalised by the GC
+        surfaces as an unraisable exception inside whichever test happens to be running.
+        """
+        if self._client is not None and self._owns_client:
+            self._client.close()
+            self._client = None
+
+    def __enter__(self) -> AnthropicJudge:
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        self.close()
 
     def judge(self, record: ToolRecord, p_stage1: float) -> JudgeOutput | JudgeFailure:
         """Returns JudgeFailure(kind="budget_exhausted") WITHOUT calling the API when
@@ -131,15 +155,21 @@ class AnthropicJudge:
                 detail="daily judge budget exhausted; no API call was made",
             )
 
-        redacted_tool, kinds = redact_tool(record.tool)
-        safe = record.model_copy(update={"tool": redacted_tool})
-        nonce = new_nonce()
-        block = render_tool_block(safe, nonce=nonce)
-        # SC-5: the block is the raw (redacted) tool text. DEBUG only, never INFO.
-        LOGGER.info("judging %s with %s (redacted: %s)", record.id, self.model, kinds or "none")
-        LOGGER.debug("judge request block for %s:\n%s", record.id, block)
-
+        # Redaction and rendering are inside the guard on purpose. They are the first code to
+        # touch adversarial text (SC-7), so a crash there is exactly the failure this class
+        # promises never to raise: a malformed schema or a pathological string must become a
+        # `JudgeFailure` the pipeline routes to `needs_review`, not an exception that aborts
+        # the scan. There is no `JudgeFailure` kind for "internal error", and the contract in
+        # sieve/protocols.py is not L4's to change, so `api_error` carries it; the pipeline
+        # maps every non-budget failure to `stage = judge_failed` regardless.
         try:
+            redacted_tool, kinds = redact_tool(record.tool)
+            safe = record.model_copy(update={"tool": redacted_tool})
+            nonce = new_nonce()
+            block = render_tool_block(safe, nonce=nonce)
+            # SC-5: the block is the raw (redacted) tool text. DEBUG only, never INFO.
+            LOGGER.info("judging %s with %s (redacted: %s)", record.id, self.model, kinds or "none")
+            LOGGER.debug("judge request block for %s:\n%s", record.id, block)
             message = self._call(block, nonce=nonce, p_stage1=p_stage1)
         except anthropic.APITimeoutError as exc:
             return JudgeFailure(
@@ -149,6 +179,12 @@ class AnthropicJudge:
             return JudgeFailure(kind="api_error", detail=f"HTTP {exc.status_code} from the API")
         except anthropic.APIError as exc:
             return JudgeFailure(kind="api_error", detail=f"{type(exc).__name__}: {exc}"[:500])
+        except Exception as exc:
+            LOGGER.exception("judge failed before a verdict for %s", record.id)
+            return JudgeFailure(
+                kind="api_error",
+                detail=f"internal judge error: {type(exc).__name__}: {exc}"[:500],
+            )
 
         self.last_usage = message.usage
 

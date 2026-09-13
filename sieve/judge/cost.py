@@ -31,7 +31,14 @@ class UnpricedModelError(KeyError):
 
 
 def estimate(usage: Usage, model: str) -> float:
-    """USD for one call. Absent token counts (the SDK leaves them `None`) count as zero."""
+    """USD for one call. Absent token counts (the SDK leaves them `None`) count as zero.
+
+    Four terms, not three: `PRICES` publishes input, output and cache-read rates, and cache
+    *writes* are billed on top at `input_rate * CACHE_WRITE_MULTIPLIER` (1.25x). Dropping that
+    term would under-report the first call of every cache window, and the figure feeds a spend
+    cap — a ledger that under-counts is a cap that does not hold. It contributes nothing to
+    the PRD §12.4 worked example, where `cache_creation_input_tokens` is zero.
+    """
     try:
         input_price, output_price, cache_read_price = PRICES[model]
     except KeyError as exc:

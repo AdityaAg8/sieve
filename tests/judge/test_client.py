@@ -236,3 +236,53 @@ def test_the_default_model_is_haiku_and_is_sent_on_the_wire() -> None:
     judge.judge(_record(), 0.5)
     assert transport.requests[0]["model"] == "claude-haiku-4-5"
     assert transport.requests[0]["max_tokens"] == 400
+
+
+def test_a_crash_before_the_call_is_a_failure_not_an_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """SC-7: redaction and rendering are the first code to touch adversarial text.
+
+    A crash there must become a `JudgeFailure` the pipeline routes to `needs_review`, not an
+    exception that aborts the scan — the class promises never to raise at the pipeline.
+    """
+    transport = Transport(httpx2.Response(200, json=_message(VALID_OUTPUT)))
+
+    def exploding(*args: Any, **kwargs: Any) -> str:
+        raise RecursionError("pathological tool text")
+
+    monkeypatch.setattr("sieve.judge.client.render_tool_block", exploding)
+    out = _judge(transport).judge(_record(), 0.5)
+
+    assert isinstance(out, JudgeFailure)
+    assert out.kind == "api_error"
+    assert "RecursionError" in out.detail
+    assert transport.requests == [], "nothing may be sent once the pre-call pipeline failed"
+
+
+def test_a_crash_in_redaction_is_also_a_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    transport = Transport(httpx2.Response(200, json=_message(VALID_OUTPUT)))
+
+    def exploding(*args: Any, **kwargs: Any) -> object:
+        raise ValueError("unredactable")
+
+    monkeypatch.setattr("sieve.judge.client.redact_tool", exploding)
+    out = _judge(transport).judge(_record(), 0.5)
+
+    assert isinstance(out, JudgeFailure)
+    assert out.kind == "api_error"
+    assert transport.requests == []
+
+
+def test_close_releases_a_client_the_judge_built_and_leaves_an_injected_one_alone() -> None:
+    injected = anthropic.Anthropic(
+        api_key="not-a-real-key",
+        http_client=anthropic.DefaultHttpxClient(transport=httpx2.MockTransport(Transport())),
+    )
+    judge = AnthropicJudge(client=injected)
+    judge.close()
+    assert judge.client is injected, "an injected client belongs to the caller"
+    injected.close()
+
+    with AnthropicJudge() as owned:
+        assert owned._client is None, "no client is built until a call needs one"

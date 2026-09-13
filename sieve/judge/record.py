@@ -34,6 +34,13 @@ def request_hash(record: ToolRecord, model: str, p_stage1: float) -> str:
     `p_stage1` is part of the prompt, so it is part of the key; it is rounded to three
     decimals first, because an unrounded float from a retrained classifier would miss every
     recorded line even when the prompt is otherwise identical.
+
+    Note that this renders the record **unredacted** — `AnthropicJudge.judge` redacts before
+    it renders, so the hashed text is not byte-identical to what was sent. That is deliberate
+    and safe: the hash is a local cache key, never transmitted and never stored beside the
+    text, and keying on the pre-redaction record keeps the key stable if the redaction
+    patterns in `sieve/redact.py` are ever tightened. Only the 64-hex digest is written to
+    the cassette; no tool text goes into it.
     """
     block = strip_nonce(render_tool_block(record, nonce=new_nonce()))
     material = f"{model}\n{p_stage1:.3f}\n{block}"
