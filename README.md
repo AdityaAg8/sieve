@@ -30,8 +30,9 @@ a video that does not exist. -->
 An MCP server describes its tools to your agent in free text. That text is instructions the model
 will follow, so a tool description can tell the agent to read `~/.ssh/id_rsa` and paste it into the
 next call. Pattern scanners flag this, and they also flag every honest tool that says "You MUST
-call `resolve-library-id` first" — the one public audit of the ecosystem [R1] found most of what a
-scanner flagged was of that second kind.
+call `resolve-library-id` first". In the one public audit of the ecosystem [R1], most of what a
+scanner flagged turned out not to be an attack at all, and a documented share of those false
+positives were exactly that kind of dependency instruction.
 
 Sieve is the layer after the scanner. Stage 1 is a fine-tuned encoder that classifies each tool
 definition as `benign`, `imperative_benign` (directive but legitimate: the false-positive class) or
@@ -84,7 +85,7 @@ see `lessons.md`):
 ```bash
 uv run sieve triage fixtures/tools/sample-27.json --offline --format json
 uv run sieve triage - --from cisco-yara --format json < fixtures/scanner/cisco-yara-sample-27.json
-uv run sieve triage --config fixtures/mcp-config/sample.mcp.json --static --format sarif -o sieve.sarif
+uv run sieve triage --config fixtures/mcp-config/sample.mcp.json --static --format sarif --output sieve.sarif
 uv run sieve version
 ```
 
@@ -92,14 +93,16 @@ uv run sieve version
 but no description or schema, so Stage 1 sees only the name; a SARIF-only run cannot see a tool
 the scanner never flagged. `--config PATH --static` parses the config and never starts the server
 it names, so it always reports zero tools (SC-1 forbids spawning an untrusted MCP server outside
-the sandboxed worker). `--offline` installs a socket guard and refuses to open any connection.
+the sandboxed worker). `--offline` disables the judge and blocks the network for the run; the one
+permitted exception is a single model download when the cache is empty, which happens before the
+socket guard goes on.
 `--fail-on confirmed|review|any|never` sets the exit code; the tiers are read as a widening scale
 and `sieve/cli/app.py::_resolve_exit_code` documents that reading.
 
 ### GitHub Action
 
 ```yaml
-- uses: ./action                  # or aditya/sieve-action@v1 once published
+- uses: ./action   # a published `owner/sieve-action@v1` reference does not exist yet
   with:
     config: .mcp.json
     fail-on: confirmed

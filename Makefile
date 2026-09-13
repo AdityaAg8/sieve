@@ -52,7 +52,7 @@ down:
 	docker compose down -v
 
 serve:
-	uv run uvicorn sieve.api.main:app --reload
+	uv run python -m sieve.api --reload
 
 baseline:
 	uv run python -m bench.baseline.run
