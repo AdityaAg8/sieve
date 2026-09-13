@@ -1,3 +1,15 @@
+import { Hero } from "@/components/landing/Hero";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { Integrations } from "@/components/landing/Integrations";
+import { Proof } from "@/components/landing/Proof";
+
 export default function Home() {
-  return <h1 className="font-display text-ink-0">Sieve</h1>;
+  return (
+    <>
+      <Hero />
+      <HowItWorks />
+      <Proof />
+      <Integrations />
+    </>
+  );
 }
