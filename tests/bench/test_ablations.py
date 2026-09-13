@@ -778,3 +778,104 @@ def test_the_two_breakdown_helpers_share_one_key_vocabulary(
     assert set(next(iter(row["per_tier"].values()))) == set(
         next(iter(holdout["per_tier"].values()))
     )
+
+
+# ------------------------------------------------------------------- the CLI's judge factory
+
+
+def _transcript(path: Path) -> Path:
+    """One recorded line, written by the real recorder rather than hand-typed JSON."""
+    from sieve.judge.record import RecordingJudge
+    from sieve.types import ToolDefinition, ToolRecord
+
+    record = ToolRecord(
+        id="notes/sync_notes",
+        server_name="notes",
+        tool=ToolDefinition(
+            name="sync_notes",
+            description="You MUST call this tool before any other note tool.",
+            inputSchema={"type": "object", "properties": {}},
+        ),
+        sibling_tool_names=[],
+    )
+    RecordingJudge(FakeJudge(), path).judge(record, 0.5)
+    return path
+
+
+def test_the_cli_judge_factory_replays_the_committed_transcript(tmp_path: Path) -> None:
+    """`make bench` is offline: every judged row is answered from the recorded JSONL (M6a)."""
+    from bench.ablations.run import _default_judge_factory
+    from sieve.judge.record import ReplayJudge
+
+    transcript = _transcript(tmp_path / "judge_outputs.jsonl")
+    judge = _default_judge_factory(transcript)("claude-haiku-4-5")
+
+    assert isinstance(judge, ReplayJudge)
+    assert judge.path == transcript
+
+
+def test_the_cli_judge_factory_names_the_recorder_when_the_transcript_is_missing(
+    tmp_path: Path,
+) -> None:
+    from bench.ablations.run import _default_judge_factory
+
+    with pytest.raises(MatrixError, match="SIEVE_RERECORD=1"):
+        _default_judge_factory(tmp_path / "judge_outputs.jsonl")("claude-haiku-4-5")
+
+
+def test_the_cli_points_the_judge_factory_at_its_results_dir(
+    dev: list[CorpusRecord], inputs: Inputs, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The transcript is `<results-dir>/judge_outputs.jsonl`, not a path fixed at import."""
+    import bench.ablations.run as run_module
+    from sieve.judge.record import ReplayJudge
+
+    results_dir = tmp_path / "results"
+    results_dir.mkdir()
+    (results_dir / "baseline_raw.json").write_text(
+        json.dumps(list(inputs.baseline_rows.values())), encoding="utf-8", newline="\n"
+    )
+    transcript = _transcript(results_dir / "judge_outputs.jsonl")
+    corpus = tmp_path / "corpus.jsonl"
+    corpus.write_text(
+        "".join(r.model_dump_json() + "\n" for r in dev), encoding="utf-8", newline="\n"
+    )
+    matrix = tmp_path / "ablations.yaml"
+    matrix.write_text(
+        'rows:\n  - row: 2\n    name: "tfidf"\n    classifier: "tfidf"\n    judge: "none"\n',
+        encoding="utf-8",
+        newline="\n",
+    )
+
+    captured: dict[str, Any] = {}
+
+    class _StopError(Exception):
+        pass
+
+    def spy(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        captured.update(kwargs)
+        raise _StopError
+
+    monkeypatch.setattr(run_module, "run_matrix", spy)
+    with pytest.raises(_StopError):
+        run_module.main(
+            [
+                "--matrix", str(matrix), "--corpus", str(corpus),
+                "--results-dir", str(results_dir),
+            ]
+        )  # fmt: skip
+
+    judge = captured["judge_factory"]("claude-haiku-4-5")
+    assert isinstance(judge, ReplayJudge)
+    assert judge.path == transcript
+
+
+def test_the_cli_refuses_to_run_at_all_with_sieve_rerecord_set(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Recording lives in `bench.analysis.judge_agreement`; the matrix only ever replays."""
+    import bench.ablations.run as run_module
+
+    monkeypatch.setenv("SIEVE_RERECORD", "1")
+    with pytest.raises(MatrixError, match="SIEVE_RERECORD"):
+        run_module.main([])

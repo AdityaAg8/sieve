@@ -93,3 +93,62 @@ def test_the_caveat_is_a_top_level_field_so_it_cannot_be_quoted_away(
     payload = json.loads(run(dev, FakeJudge(), tmp_path).read_text(encoding="utf-8"))
     assert "caveat" in payload
     assert "caveat" not in payload["overall"]
+
+
+# --------------------------------------------------------------- the recorder's own factory
+
+
+def test_rerecord_and_a_key_switch_the_factory_to_the_live_recording_judge(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """This CLI is the only one that may call the API; `make bench` never records (M6a)."""
+    from bench.analysis.judge_agreement import _judge_factory
+    from sieve.judge.client import AnthropicJudge
+    from sieve.judge.record import RecordingJudge
+
+    monkeypatch.setenv("SIEVE_RERECORD", "1")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "not-a-real-key")
+    transcript = tmp_path / "judge_outputs.jsonl"
+    judge = _judge_factory(transcript, "claude-haiku-4-5")()
+
+    assert isinstance(judge, RecordingJudge)
+    assert judge.path == transcript
+    assert isinstance(judge.inner, AnthropicJudge)
+    assert judge.inner.model == "claude-haiku-4-5"
+    # Constructed, never called: no client is built until a request is actually made.
+    assert not transcript.exists()
+
+
+def test_without_rerecord_the_factory_replays_the_transcript(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from bench.analysis.judge_agreement import _judge_factory
+    from sieve.judge.record import RecordingJudge, ReplayJudge
+    from sieve.types import ToolDefinition, ToolRecord
+
+    monkeypatch.delenv("SIEVE_RERECORD", raising=False)
+    transcript = tmp_path / "judge_outputs.jsonl"
+    RecordingJudge(FakeJudge(), transcript).judge(
+        ToolRecord(
+            id="notes/sync_notes",
+            server_name="notes",
+            tool=ToolDefinition(
+                name="sync_notes",
+                description="You MUST call this tool before any other note tool.",
+                inputSchema={"type": "object", "properties": {}},
+            ),
+            sibling_tool_names=[],
+        ),
+        0.5,
+    )
+    assert isinstance(_judge_factory(transcript, "claude-haiku-4-5")(), ReplayJudge)
+
+
+def test_without_rerecord_a_missing_transcript_names_the_recording_command(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from bench.analysis.judge_agreement import _judge_factory
+
+    monkeypatch.delenv("SIEVE_RERECORD", raising=False)
+    with pytest.raises(SystemExit, match="SIEVE_RERECORD=1"):
+        _judge_factory(tmp_path / "judge_outputs.jsonl", "claude-haiku-4-5")()
