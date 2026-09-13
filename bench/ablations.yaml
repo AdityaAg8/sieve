@@ -1,2 +1,112 @@
 # top-level rows key; L3 owns contents
-rows: []
+#
+# The fourteen rows of PRD §11.5. Every row is computed offline from committed artefacts:
+# pooled OOF logits under models/, bench/results/judge_outputs.jsonl replayed through
+# ReplayJudge, and bench/results/baseline_raw.json. `classifier` names either a keyword
+# (tfidf | unicode_hygiene | baseline | none) or an artefact directory whose `*` is the seed.
+#
+# Row 4 is the pre-registered headline configuration. `models/deberta-v3-base-s*` is a
+# placeholder until bench/results/selection.json names the winner; the retrain and the Hub push
+# are human runbook steps, so no committed number depends on these paths resolving yet.
+rows:
+  - row: 1
+    name: Cisco YARA baseline alone
+    classifier: baseline
+    judge: none
+
+  - row: 2
+    name: TF-IDF + logistic regression
+    classifier: tfidf
+    judge: none
+    minimal_pairs: true
+
+  - row: 3
+    name: Primary encoder, description-only serialisation
+    classifier: models/deberta-v3-base-s*
+    judge: none
+    mode: description_only
+
+  - row: 4
+    name: Primary encoder, full serialisation (pre-registered headline)
+    classifier: models/deberta-v3-base-s*
+    judge: none
+    mode: full
+    minimal_pairs: true
+
+  - row: 5
+    name: ModernBERT-base, 512
+    classifier: models/modernbert-base-s*
+    judge: none
+    mode: full
+
+  - row: 6
+    name: Classifier + judge, Haiku 4.5
+    classifier: models/deberta-v3-base-s*
+    judge: claude-haiku-4-5
+    mode: full
+    minimal_pairs: true
+
+  - row: 7
+    name: Classifier + judge, Sonnet 5
+    classifier: models/deberta-v3-base-s*
+    judge: claude-sonnet-5
+    mode: full
+
+  - row: 8
+    name: Judge alone on every row
+    classifier: none
+    judge: claude-haiku-4-5
+    note: >-
+      No Stage 1, so every row reaches the judge. Read the cost and latency columns beside row
+      6: this is what the classifier buys.
+
+  - row: 9
+    name: Full serialisation + scanner features
+    classifier: models/deberta-v3-base-s*
+    judge: none
+    mode: full
+    scanner_features: true
+
+  - row: 10
+    name: Per-difficulty-tier and per-concealment breakdown of rows 4 and 6
+    classifier: models/deberta-v3-base-s*
+    judge: none
+    mode: full
+    breakdown_of: [4, 6]
+    note: Read `per_tier` and `per_concealment` on rows 4 and 6; this row carries no new fit.
+
+  - row: 11
+    name: Per-source breakdown of rows 4 and 6
+    classifier: models/deberta-v3-base-s*
+    judge: none
+    mode: full
+    breakdown_of: [4, 6]
+    note: >-
+      Read `per_source` on rows 4 and 6, keyed `source/generator_model`. The source-leakage
+      probe is a corpus statistic in corpus_stats.json, not a model ablation.
+
+  - row: 12
+    name: Two-class head, identical data, folds and seeds
+    classifier: models/deberta-v3-base-2c-s*
+    judge: none
+    mode: full
+    num_labels: 2
+    minimal_pairs: true
+    note: Report the FPR difference against row 4.
+
+  - row: 13
+    name: Unicode-hygiene detector alone
+    classifier: unicode_hygiene
+    judge: none
+    note: >-
+      If the ten-line unicode detector beats the encoder on a concealment bucket, that is the
+      honest result and it belongs in preprocessing, not in the model.
+
+  - row: 14
+    name: Minimal-pair accuracy (M11) for rows 2, 4, 6 and 12
+    classifier: models/deberta-v3-base-s*
+    judge: none
+    mode: full
+    minimal_pairs: true
+    breakdown_of: [2, 4, 6, 12]
+    note: Read `minimal_pair_accuracy` on rows 2, 4, 6 and 12; this row carries no new fit.

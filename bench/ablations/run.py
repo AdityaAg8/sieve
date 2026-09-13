@@ -1,0 +1,694 @@
+"""The fourteen-row ablation matrix (PRD §11.5), computed offline from committed artefacts.
+
+Every number here comes from pooled out-of-fold predictions over `split == "dev"` rows, the
+recorded judge transcript and the recorded baseline flags. Nothing reaches the network and
+nothing reads a `holdout` or `eval_only` row: that is what makes `make bench` reproducible on a
+clean clone with no API key (M6a), and it is enforced rather than documented — the run installs
+a socket guard and refuses to start with `SIEVE_RERECORD` set.
+
+The judge is taken through the `Judge` protocol and supplied by an injectable factory, so this
+module imports no lane package; the concrete `ReplayJudge` is resolved inside `main`.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+import os
+import socket
+from collections.abc import Callable, Iterator, Sequence
+from contextlib import contextmanager
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Literal
+
+import numpy as np
+import numpy.typing as npt
+import yaml
+from pydantic import BaseModel, ConfigDict
+
+from sieve.eval.metrics import (
+    cluster_bootstrap_ci,
+    macro_f1,
+    mcnemar_exact,
+    paired_bootstrap_diff,
+    precision_recall_fpr,
+)
+from sieve.model import hygiene
+from sieve.model import thresholds as th
+from sieve.protocols import Classifier, Judge, JudgeOutput, Thresholds
+from sieve.serialise import serialise
+from sieve.types import LABELS, CorpusRecord, Label, ScannerFinding, Verdict
+
+log = logging.getLogger("bench.ablations")
+
+DEFAULT_SEEDS: tuple[int, ...] = (0, 1, 2)
+REAL_SOURCES: frozenset[str] = frozenset({"public_repo", "wild_fp"})
+
+#: A boolean detector emits 0 or 1, so its decision point is the midpoint. This is NOT an
+#: operating point: calibrated thresholds only ever come from `thresholds.select` or the
+#: artefact's `sieve_config.json` (PRD §11.4).
+BINARY_DECISION = 0.5
+
+TWO_CLASS_LABELS: tuple[str, str] = ("not_poisoned", "poisoned")
+
+_JUDGE_VERDICT: dict[str, Verdict] = {
+    "confirmed": "confirmed",
+    "dismissed": "dismissed",
+    "uncertain": "needs_review",
+}
+
+HYGIENE_NOTE = (
+    "If the ten-line unicode detector beats the encoder on a concealment bucket, that is the "
+    "honest result and it belongs in preprocessing, not in the model."
+)
+
+
+class MatrixError(ValueError):
+    """The matrix file, or an artefact a row needs, is not usable."""
+
+
+class InsufficientSeeds(ValueError):  # noqa: N818 - named by the lane brief (Task 3.11)
+    """An encoder row was asked for with fewer than three seeds.
+
+    Single-seed numbers are never published (PRD §11.3).
+    """
+
+
+class RowSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    row: int
+    name: str
+    classifier: str  # "tfidf" | "unicode_hygiene" | "baseline" | "none" | "models/<profile>-s*"
+    judge: Literal["none", "claude-haiku-4-5", "claude-sonnet-5", "all"] = "none"
+    mode: Literal["full", "description_only"] = "full"
+    num_labels: int = 3
+    scanner_features: bool = False
+    breakdown_of: list[int] = []
+    minimal_pairs: bool = False
+    note: str | None = None
+
+    @property
+    def seeded(self) -> bool:
+        """True when the row has a seed dimension, i.e. it names a trained encoder artefact."""
+        return self.classifier not in {"tfidf", "unicode_hygiene", "baseline", "none"}
+
+
+ClassifierFactory = Callable[[RowSpec, int], Classifier]
+JudgeFactory = Callable[[str], Judge]
+
+
+@dataclass
+class Inputs:
+    """Everything a run reads. Each is a committed artefact; a missing one is an error."""
+
+    records: list[CorpusRecord]
+    baseline_rows: dict[str, dict[str, Any]]
+    minimal_pairs: list[dict[str, Any]] | None = None
+    judge_usage: list[dict[str, Any]] = field(default_factory=list)
+    scanner_findings_by_id: dict[str, list[ScannerFinding]] = field(default_factory=dict)
+
+
+# --------------------------------------------------------------------------- offline guard
+
+
+def require_offline() -> None:
+    """Refuse to start a bench run that could re-record or phone home."""
+    if os.environ.get("SIEVE_RERECORD"):
+        raise MatrixError(
+            "SIEVE_RERECORD is set; `make bench` replays committed artefacts and never "
+            "records. Unset it, or run the recorder deliberately from "
+            "bench.analysis.judge_agreement."
+        )
+
+
+@contextmanager
+def no_network() -> Iterator[None]:
+    """Make any outbound connection during the run an error rather than a silent dependency."""
+    original = socket.socket.connect
+
+    def refuse(self: socket.socket, address: Any) -> None:
+        raise MatrixError(
+            f"the ablation matrix attempted a network connection to {address!r}; every row is "
+            "computed from committed artefacts (M6a)"
+        )
+
+    socket.socket.connect = refuse  # type: ignore[method-assign]
+    try:
+        yield
+    finally:
+        socket.socket.connect = original  # type: ignore[method-assign]
+
+
+# ------------------------------------------------------------------------------- loading
+
+
+def load_matrix(path: Path) -> list[RowSpec]:
+    raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    rows = raw.get("rows")
+    if not rows:
+        raise MatrixError(f"{path} has no rows")
+    specs = [RowSpec.model_validate(row) for row in rows]
+    numbers = [s.row for s in specs]
+    if len(set(numbers)) != len(numbers):
+        raise MatrixError(f"{path} repeats a row number: {sorted(numbers)}")
+    return specs
+
+
+def load_baseline_rows(path: Path) -> dict[str, dict[str, Any]]:
+    if not path.exists():
+        raise MatrixError(f"{path} is missing; run `make baseline` (L2) before the ablation matrix")
+    return {str(row["id"]): row for row in json.loads(path.read_text(encoding="utf-8"))}
+
+
+def load_minimal_pairs(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        raise MatrixError(f"{path} is missing; row 14 reports minimal-pair accuracy (M11)")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return list(payload["pairs"] if isinstance(payload, dict) else payload)
+
+
+def load_judge_usage(path: Path | None) -> list[dict[str, Any]]:
+    """The recorded token usage, for the cost column. Absent means the column is null."""
+    if path is None or not path.exists():
+        return []
+    usage: list[dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            entry = json.loads(line)
+            if entry.get("usage"):
+                usage.append({"model": entry.get("model"), "usage": entry["usage"]})
+    return usage
+
+
+# -------------------------------------------------------------------------------- scoring
+
+
+@dataclass
+class Scored:
+    scores: list[float]
+    thresholds: Thresholds
+    predicted: list[str] | None
+    head_labels: tuple[str, ...]
+
+
+def _texts(spec: RowSpec, records: Sequence[CorpusRecord], inputs: Inputs) -> list[str]:
+    findings = inputs.scanner_findings_by_id if spec.scanner_features else {}
+    return [
+        serialise(r.to_tool_record(), mode=spec.mode, scanner_findings=findings.get(r.id))
+        for r in records
+    ]
+
+
+def _usable(thresholds: Thresholds) -> bool:
+    return not (np.isnan(thresholds.t_low) or np.isnan(thresholds.t_high))
+
+
+def _binary(point: float) -> Thresholds:
+    return Thresholds(
+        t_low=point,
+        t_high=point,
+        temperature=1.0,
+        val_recall_at_t_low=float("nan"),
+        val_precision_at_t_high=float("nan"),
+        routing_rate=0.0,
+    )
+
+
+def score_row(
+    spec: RowSpec,
+    records: Sequence[CorpusRecord],
+    inputs: Inputs,
+    *,
+    classifier_factory: ClassifierFactory,
+    seed: int,
+    n_boot: int,
+) -> Scored:
+    if spec.classifier == "unicode_hygiene":
+        scores = [hygiene.score(r.to_tool_record()) for r in records]
+        return Scored(scores, _binary(BINARY_DECISION), None, LABELS)
+    if spec.classifier == "baseline":
+        missing = [r.id for r in records if r.id not in inputs.baseline_rows]
+        if missing:
+            raise MatrixError(
+                f"baseline_raw.json has no row for {len(missing)} record(s): {missing[:5]}"
+            )
+        scores = [1.0 if inputs.baseline_rows[r.id]["flagged"] else 0.0 for r in records]
+        return Scored(scores, _binary(BINARY_DECISION), None, LABELS)
+    if spec.classifier == "none":
+        # Row 8: no Stage 1 at all, so every row lands in the abstain band and reaches the judge.
+        everything_routes = Thresholds(0.0, 2.0, 1.0, float("nan"), float("nan"), 1.0)
+        return Scored([0.5] * len(records), everything_routes, None, LABELS)
+
+    model = classifier_factory(spec, seed)
+    probs = np.asarray(model.predict_proba(_texts(spec, records, inputs)), dtype=np.float64)
+    two_class = probs.shape[1] == 2
+    head = TWO_CLASS_LABELS if two_class else LABELS
+    scores = [float(p) for p in probs[:, -1 if two_class else LABELS.index("poisoned")]]
+    predicted = [head[int(i)] for i in probs.argmax(axis=1)]
+
+    thresholds = model.thresholds
+    if not _usable(thresholds):
+        # No calibrated artefact (the TF-IDF baseline): select on this row's OWN pooled OOF
+        # probabilities, with the same procedure row 4 uses, so the rows stay comparable.
+        thresholds = th.select(
+            probs if not two_class else _widen(probs),
+            [_three_class_id(r.label) for r in records],
+            [r.server_name for r in records],
+            temperature=1.0,
+            n_boot=n_boot,
+        )
+    return Scored(scores, thresholds, predicted, head)
+
+
+def _widen(probs: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+    """A two-class block as three columns, so `thresholds.select` reads one shape."""
+    out = np.zeros((probs.shape[0], 3), dtype=np.float64)
+    out[:, 0] = probs[:, 0]
+    out[:, 2] = probs[:, 1]
+    return out
+
+
+def _three_class_id(label: Label) -> int:
+    return LABELS.index(label)
+
+
+# ------------------------------------------------------------------------------- pipeline
+
+
+def pipeline_verdicts(
+    records: Sequence[CorpusRecord],
+    scores: Sequence[float],
+    thresholds: Thresholds,
+    judge: Judge | None,
+) -> list[Verdict]:
+    """Auto-dismiss below `t_low`, auto-confirm at/above `t_high`, route the band."""
+    verdicts: list[Verdict] = []
+    for record, score in zip(records, scores, strict=True):
+        if score < thresholds.t_low:
+            verdicts.append("dismissed")
+        elif score >= thresholds.t_high:
+            verdicts.append("confirmed")
+        elif judge is None:
+            verdicts.append("needs_review")
+        else:
+            answer = judge.judge(record.to_tool_record(), score)
+            verdicts.append(
+                _JUDGE_VERDICT[answer.verdict]
+                if isinstance(answer, JudgeOutput)
+                else "needs_review"
+            )
+    return verdicts
+
+
+def _confirmed_flags(verdicts: Sequence[Verdict]) -> list[float]:
+    return [1.0 if v == "confirmed" else 0.0 for v in verdicts]
+
+
+# -------------------------------------------------------------------------------- metrics
+
+
+def _ci(
+    stat_kind: Literal["recall", "fpr"],
+    truth: Sequence[str],
+    scores: Sequence[float],
+    groups: Sequence[str],
+    threshold: float,
+    n_boot: int,
+) -> dict[str, float]:
+    index = 1 if stat_kind == "recall" else 2
+
+    def stat(y_true: Any, y_score: Any) -> float:
+        return precision_recall_fpr(list(y_true), list(y_score), threshold)[index]
+
+    point, lo, hi = cluster_bootstrap_ci(stat, truth, scores, groups, n_boot=n_boot)
+    return {"point": point, "lo": lo, "hi": hi}
+
+
+def _breakdown(
+    records: Sequence[CorpusRecord],
+    truth: Sequence[str],
+    scores: Sequence[float],
+    verdicts: Sequence[Verdict],
+    thresholds: Thresholds,
+    key: Callable[[CorpusRecord], str],
+) -> dict[str, dict[str, float]]:
+    buckets: dict[str, list[int]] = {}
+    for index, record in enumerate(records):
+        buckets.setdefault(key(record), []).append(index)
+    out: dict[str, dict[str, float]] = {}
+    for bucket, indices in sorted(buckets.items()):
+        bucket_truth = [truth[i] for i in indices]
+        bucket_scores = [scores[i] for i in indices]
+        confirmed = [_confirmed_flags(verdicts)[i] for i in indices]
+        _, recall, fpr = precision_recall_fpr(bucket_truth, bucket_scores, thresholds.t_low)
+        _, _, fpr_pipeline = precision_recall_fpr(bucket_truth, confirmed, BINARY_DECISION)
+        out[bucket] = {
+            "n": float(len(indices)),
+            "oof_recall_at_t_low": recall,
+            "fpr_stage1_at_t_low": fpr,
+            "fpr_pipeline": fpr_pipeline,
+        }
+    return out
+
+
+def _fp_reduction(
+    truth: Sequence[str],
+    sieve_confirmed: Sequence[float],
+    baseline_flagged: Sequence[float],
+    groups: Sequence[str],
+    n_boot: int,
+) -> dict[str, float | None]:
+    if not truth:
+        return {"point": None, "lo": None, "hi": None, "mcnemar_p": None, "relative": None}
+    point, lo, hi = paired_bootstrap_diff(
+        truth,
+        baseline_flagged,
+        BINARY_DECISION,
+        sieve_confirmed,
+        BINARY_DECISION,
+        groups,
+        n_boot=n_boot,
+    )
+    _, _, baseline_fpr = precision_recall_fpr(truth, baseline_flagged, BINARY_DECISION)
+    correct_sieve = [
+        (c >= BINARY_DECISION) == (t == "poisoned")
+        for c, t in zip(sieve_confirmed, truth, strict=True)
+    ]
+    correct_baseline = [
+        (b >= BINARY_DECISION) == (t == "poisoned")
+        for b, t in zip(baseline_flagged, truth, strict=True)
+    ]
+    b = sum(1 for s, base in zip(correct_sieve, correct_baseline, strict=True) if s and not base)
+    c = sum(1 for s, base in zip(correct_sieve, correct_baseline, strict=True) if base and not s)
+    return {
+        "point": point,
+        "lo": lo,
+        "hi": hi,
+        "mcnemar_p": mcnemar_exact(b, c),
+        # Absolute FPR difference above; M2 is stated as a relative reduction, so both are here.
+        "relative": (point / baseline_fpr) if baseline_fpr else None,
+    }
+
+
+def minimal_pair_accuracy(
+    pairs: Sequence[dict[str, Any]], predicted_by_id: dict[str, str]
+) -> float | None:
+    """Share of (host, mutation) pairs where BOTH sides are classified correctly (M11)."""
+    scored = 0
+    correct = 0
+    for pair in pairs:
+        host, mutation = str(pair["host_id"]), str(pair["mutation_id"])
+        if host not in predicted_by_id or mutation not in predicted_by_id:
+            continue
+        scored += 1
+        if predicted_by_id[host] != "poisoned" and predicted_by_id[mutation] == "poisoned":
+            correct += 1
+    return correct / scored if scored else None
+
+
+def _cost_per_50(routing_rate: float, usage: Sequence[dict[str, Any]]) -> float | None:
+    if not usage:
+        return None
+    try:
+        from anthropic.types import Usage
+
+        from sieve.judge.cost import estimate
+    except ImportError:  # pragma: no cover - the judge lane is optional at import time
+        return None
+    costs = [estimate(Usage.model_validate(u["usage"]), str(u["model"])) for u in usage]
+    return float(np.mean(costs) * routing_rate * 50)
+
+
+# ------------------------------------------------------------------------------ one row
+
+
+def evaluate_row(
+    spec: RowSpec,
+    inputs: Inputs,
+    *,
+    classifier_factory: ClassifierFactory,
+    judge_factory: JudgeFactory | None,
+    seeds: Sequence[int],
+    n_boot: int,
+) -> dict[str, Any]:
+    records = inputs.records
+    truth = [r.label for r in records]
+    groups = [r.server_name for r in records]
+
+    row_seeds = tuple(seeds) if spec.seeded else (0,)
+    if spec.seeded and len(row_seeds) < 3:
+        raise InsufficientSeeds(
+            f"row {spec.row} names an encoder artefact and was given {len(row_seeds)} seed(s); "
+            "mean and std across three seeds are required and a single-seed number is never "
+            "published (PRD §11.3)"
+        )
+
+    judge: Judge | None = None
+    if spec.judge != "none":
+        if judge_factory is None:
+            raise MatrixError(f"row {spec.row} needs a judge but no judge factory was supplied")
+        judge = judge_factory(spec.judge)
+
+    per_seed: list[Scored] = [
+        score_row(
+            spec,
+            records,
+            inputs,
+            classifier_factory=classifier_factory,
+            seed=seed,
+            n_boot=n_boot,
+        )
+        for seed in row_seeds
+    ]
+    macro = [
+        macro_f1(
+            [s if s in scored.head_labels else _collapse(s) for s in truth],
+            scored.predicted,
+            labels=list(scored.head_labels),
+        )
+        for scored in per_seed
+        if scored.predicted is not None
+    ]
+
+    # Every reported number is from the FIRST seed's operating point; the seed spread lives in
+    # macro_f1_std, which is what "mean +/- std across seeds" means for a thresholded metric.
+    head = per_seed[0]
+    verdicts = pipeline_verdicts(records, head.scores, head.thresholds, judge)
+    confirmed = _confirmed_flags(verdicts)
+    band = np.asarray(head.scores)
+    routing_rate = float(np.mean((band >= head.thresholds.t_low) & (band < head.thresholds.t_high)))
+
+    real = [i for i, r in enumerate(records) if r.source in REAL_SOURCES]
+    baseline_flags = [
+        1.0 if inputs.baseline_rows.get(r.id, {}).get("flagged") else 0.0 for r in records
+    ]
+
+    result: dict[str, Any] = {
+        "row": spec.row,
+        "name": spec.name,
+        "classifier": spec.classifier,
+        "judge": spec.judge,
+        "mode": spec.mode,
+        "num_labels": spec.num_labels,
+        "scanner_features": spec.scanner_features,
+        "seeds": list(row_seeds),
+        "n": len(records),
+        "t_low": head.thresholds.t_low,
+        "t_high": head.thresholds.t_high,
+        "fpr_stage1_at_t_low": _ci(
+            "fpr", truth, head.scores, groups, head.thresholds.t_low, n_boot
+        ),
+        "fpr_pipeline": _ci("fpr", truth, confirmed, groups, BINARY_DECISION, n_boot),
+        "oof_recall_at_t_low": _ci(
+            "recall", truth, head.scores, groups, head.thresholds.t_low, n_boot
+        ),
+        "fp_reduction_vs_baseline": _fp_reduction(
+            [truth[i] for i in real],
+            [confirmed[i] for i in real],
+            [baseline_flags[i] for i in real],
+            [groups[i] for i in real],
+            n_boot,
+        ),
+        "fp_reduction_all_sources": _fp_reduction(truth, confirmed, baseline_flags, groups, n_boot),
+        "routing_rate": routing_rate,
+        "macro_f1_mean": float(np.mean(macro)) if macro else None,
+        "macro_f1_std": float(np.std(macro)) if macro else None,
+        "per_tier": _breakdown(
+            records,
+            truth,
+            head.scores,
+            verdicts,
+            head.thresholds,
+            lambda r: r.difficulty or "unscored",
+        ),
+        "per_concealment": _breakdown(
+            records, truth, head.scores, verdicts, head.thresholds, lambda r: r.concealment
+        ),
+        "per_source": _breakdown(
+            records,
+            truth,
+            head.scores,
+            verdicts,
+            head.thresholds,
+            lambda r: f"{r.source}/{r.generator_model or 'none'}",
+        ),
+        "minimal_pair_accuracy": None,
+        "cost_usd_per_50": _cost_per_50(routing_rate, inputs.judge_usage) if judge else None,
+        "p95_ms": _p95_ms(spec),
+        "breakdown_of": spec.breakdown_of,
+        "note": spec.note,
+    }
+    if spec.minimal_pairs:
+        if inputs.minimal_pairs is None:
+            raise MatrixError(f"row {spec.row} asks for minimal pairs but none were supplied")
+        predicted_by_id = (
+            {r.id: p for r, p in zip(records, head.predicted, strict=True)}
+            if head.predicted is not None
+            else {
+                r.id: ("poisoned" if c >= BINARY_DECISION else "benign")
+                for r, c in zip(records, confirmed, strict=True)
+            }
+        )
+        result["minimal_pair_accuracy"] = minimal_pair_accuracy(
+            inputs.minimal_pairs, predicted_by_id
+        )
+    if spec.classifier == "unicode_hygiene":
+        result["note"] = spec.note or HYGIENE_NOTE
+    return result
+
+
+def _collapse(label: str) -> str:
+    return "poisoned" if label == "poisoned" else "not_poisoned"
+
+
+def _p95_ms(spec: RowSpec) -> float | None:
+    """The measured latency the export step wrote into the artefact, when there is one."""
+    if not spec.seeded:
+        return None
+    config = Path(spec.classifier) / th.CONFIG_FILE
+    if not config.exists():
+        return None
+    value = json.loads(config.read_text(encoding="utf-8")).get("p95_ms")
+    return None if value is None else float(value)
+
+
+# ------------------------------------------------------------------------------ the matrix
+
+
+def run_matrix(
+    specs: Sequence[RowSpec],
+    inputs: Inputs,
+    *,
+    classifier_factory: ClassifierFactory,
+    judge_factory: JudgeFactory | None = None,
+    rows: Sequence[int] | None = None,
+    seeds: Sequence[int] = DEFAULT_SEEDS,
+    n_boot: int = 1000,
+) -> dict[str, Any]:
+    require_offline()
+    wanted = [s for s in specs if rows is None or s.row in set(rows)]
+    if not wanted:
+        raise MatrixError(f"no matrix row matches {list(rows or [])}")
+    if any(r.split != "dev" for r in inputs.records):
+        raise MatrixError(
+            "the ablation matrix was handed a non-dev row; every number here is out-of-fold "
+            "over the development split (PRD §11.6)"
+        )
+    with no_network():
+        results = [
+            evaluate_row(
+                spec,
+                inputs,
+                classifier_factory=classifier_factory,
+                judge_factory=judge_factory,
+                seeds=seeds,
+                n_boot=n_boot,
+            )
+            for spec in wanted
+        ]
+    return {
+        "rows": results,
+        "n_records": len(inputs.records),
+        "seeds": list(seeds),
+        "n_boot": n_boot,
+    }
+
+
+def write_results(payload: dict[str, Any], path: Path) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
+    )
+    return path
+
+
+# ----------------------------------------------------------------------------------- CLI
+
+
+def _default_classifier_factory(model_cache: dict[str, Classifier]) -> ClassifierFactory:
+    def factory(spec: RowSpec, seed: int) -> Classifier:
+        from sieve.model.infer import load_classifier
+
+        key = f"{spec.classifier}:{seed}"
+        if key not in model_cache:
+            target = spec.classifier.replace("*", str(seed))
+            model_cache[key] = load_classifier(target)
+        return model_cache[key]
+
+    return factory
+
+
+def _default_judge_factory(transcript: Path) -> JudgeFactory:
+    def factory(model: str) -> Judge:
+        try:
+            from sieve.judge.record import ReplayJudge
+        except ImportError as exc:  # pragma: no cover - only before the judge lane merges
+            raise SystemExit("judge lane not merged yet") from exc
+        if not transcript.exists():
+            raise MatrixError(
+                f"{transcript} is missing; record it once with "
+                "`SIEVE_RERECORD=1 python -m bench.analysis.judge_agreement`"
+            )
+        return ReplayJudge(transcript)
+
+    return factory
+
+
+def main(argv: Sequence[str] | None = None) -> Path:
+    parser = argparse.ArgumentParser(prog="python -m bench.ablations.run")
+    parser.add_argument("--matrix", type=Path, default=Path("bench/ablations.yaml"))
+    parser.add_argument("--corpus", type=Path, default=Path("bench/data/labelled.jsonl"))
+    parser.add_argument("--results-dir", type=Path, default=Path("bench/results"))
+    parser.add_argument("--rows", default=None, help="comma-separated row numbers")
+    parser.add_argument("--seeds", default="0,1,2")
+    parser.add_argument("--n-boot", type=int, default=1000)
+    ns = parser.parse_args(argv)
+    logging.basicConfig(level=logging.INFO)
+    require_offline()
+
+    from sieve.model.data import load_corpus
+
+    records = [r for r in load_corpus(ns.corpus) if r.split == "dev"]
+    inputs = Inputs(
+        records=records,
+        baseline_rows=load_baseline_rows(ns.results_dir / "baseline_raw.json"),
+        minimal_pairs=load_minimal_pairs(ns.results_dir / "minimal_pairs.json"),
+        judge_usage=load_judge_usage(ns.results_dir / "judge_outputs.jsonl"),
+    )
+    payload = run_matrix(
+        load_matrix(ns.matrix),
+        inputs,
+        classifier_factory=_default_classifier_factory({}),
+        judge_factory=_default_judge_factory(ns.results_dir / "judge_outputs.jsonl"),
+        rows=[int(x) for x in ns.rows.split(",")] if ns.rows else None,
+        seeds=[int(x) for x in ns.seeds.split(",")],
+        n_boot=ns.n_boot,
+    )
+    return write_results(payload, ns.results_dir / "ablations.json")
+
+
+if __name__ == "__main__":  # pragma: no cover
+    main()

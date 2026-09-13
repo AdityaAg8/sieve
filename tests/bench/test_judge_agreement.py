@@ -1,0 +1,95 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from bench.analysis.judge_agreement import (
+    CAVEAT,
+    agreement,
+    gold_axis,
+    run,
+    write_agreement,
+)
+from sieve.model.data import load_corpus
+from sieve.protocols import FakeJudge, JudgeFailure
+from sieve.types import CorpusRecord, ToolRecord
+
+
+@pytest.fixture
+def dev() -> list[CorpusRecord]:
+    return [
+        r.model_copy(update={"split": "dev"})
+        for r in load_corpus(Path("fixtures/corpus/mini-50.jsonl"))
+    ]
+
+
+class _AlwaysFailingJudge:
+    model: str | None = "claude-haiku-4-5"
+
+    def judge(self, record: ToolRecord, p_stage1: float) -> JudgeFailure:
+        return JudgeFailure(kind="timeout", detail="no answer")
+
+
+def test_the_disclosure_string_is_present_and_non_empty(dev: list[CorpusRecord]) -> None:
+    payload = agreement(dev, FakeJudge())
+    assert payload["caveat"] == CAVEAT
+    assert payload["caveat"].strip()
+    assert "supports no claim" in payload["caveat"]
+
+
+def test_the_figure_is_reported_per_generator_model(dev: list[CorpusRecord]) -> None:
+    """Human-written and model-written rows are never averaged into one number."""
+    payload = agreement(dev, FakeJudge())
+    keys = set(payload["per_generator_model"])
+    assert keys == {r.generator_model or "none" for r in dev}
+    assert len(keys) > 1, "the fixture must exercise more than one generator"
+    for scores in payload["per_generator_model"].values():
+        assert scores["n"] > 0
+        assert -1.0 <= scores["kappa"] <= 1.0
+        assert -1.0 <= scores["gwet_ac1"] <= 1.0
+
+
+def test_overall_carries_kappa_ac1_and_per_class_observed_agreement(
+    dev: list[CorpusRecord],
+) -> None:
+    overall = agreement(dev, FakeJudge())["overall"]
+    assert overall["n"] == len(dev)
+    assert set(overall["per_class"]) == {"poisoned", "not_poisoned"}
+    for scores in overall["per_class"].values():
+        assert 0.0 <= scores["observed_agreement"] <= 1.0
+
+
+def test_gold_collapses_onto_the_poisoned_axis() -> None:
+    assert gold_axis("poisoned") == "poisoned"
+    assert gold_axis("benign") == "not_poisoned"
+    assert gold_axis("imperative_benign") == "not_poisoned"
+
+
+def test_a_judge_failure_is_its_own_value_not_a_dismissal(dev: list[CorpusRecord]) -> None:
+    payload = agreement(dev[:6], _AlwaysFailingJudge())
+    assert payload["n_judge_failures"] == 6
+    assert payload["overall"]["per_class"]["poisoned"]["observed_agreement"] == 0.0
+
+
+def test_writing_refuses_a_payload_with_no_disclosure(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="disclosure"):
+        write_agreement({"overall": {}}, tmp_path / "judge_agreement.json")
+
+
+def test_run_writes_the_file_with_lf_endings(dev: list[CorpusRecord], tmp_path: Path) -> None:
+    path = run(dev, FakeJudge(), tmp_path)
+    assert path == tmp_path / "judge_agreement.json"
+    assert path.read_bytes().count(b"\r\n") == 0
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["caveat"] == CAVEAT
+    assert payload["judge_model"] is None  # FakeJudge declares no model
+
+
+def test_the_caveat_is_a_top_level_field_so_it_cannot_be_quoted_away(
+    dev: list[CorpusRecord], tmp_path: Path
+) -> None:
+    payload = json.loads(run(dev, FakeJudge(), tmp_path).read_text(encoding="utf-8"))
+    assert "caveat" in payload
+    assert "caveat" not in payload["overall"]
