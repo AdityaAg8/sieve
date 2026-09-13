@@ -69,4 +69,8 @@ def get_adapter(name: ScannerName) -> ScannerAdapter:
         from sieve.adapters.snyk_agent_scan import SnykAdapter
 
         return SnykAdapter()
+    if name == "cisco_llm":
+        from sieve.adapters.cisco_llm import CiscoLlmAdapter
+
+        return CiscoLlmAdapter()
     raise ValueError(f"{name!r} has no get_adapter factory; use its module functions directly")
