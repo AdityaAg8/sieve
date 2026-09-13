@@ -1,3 +1,3 @@
 # scanner and tool versions pinned for the baseline; L2 fills these in
 cisco_yara=4.8.0  # cisco-ai-mcp-scanner, captured 2026-09-12 (mcp-scanner --analyzers yara --format raw static)
-cisco_llm=4.8.0  # cisco-ai-mcp-scanner, same binary's --analyzers llm; no LLM key in this environment, so the adapter runs from a one-shot cache (tests/adapters/data/cisco-llm-sample.json is the only cached output so far)
+cisco_llm=4.8.0  # cisco-ai-mcp-scanner, same binary's --analyzers llm; no LLM key in this environment, so the adapter runs from a one-shot cache (tests/adapters/data/cisco-llm-sample.AUTHORED.json is the only cached output so far)

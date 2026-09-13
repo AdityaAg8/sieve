@@ -10,9 +10,10 @@ import pytest
 from sieve.adapters.base import AdapterCacheMiss, AdapterSchemaError
 from sieve.adapters.cisco_llm import CiscoLlmAdapter, raw_to_by_tool
 from sieve.adapters.static_json import load_tools_list
+from sieve.types import ToolRecord
 
 ROOT = Path(__file__).resolve().parents[2]
-SAMPLE = ROOT / "tests" / "adapters" / "data" / "cisco-llm-sample.json"
+SAMPLE = ROOT / "tests" / "adapters" / "data" / "cisco-llm-sample.AUTHORED.json"
 LOCKFILE = ROOT / "bench" / "versions.lock"
 TOOLS_27 = ROOT / "fixtures" / "tools" / "sample-27.json"
 
@@ -88,6 +89,38 @@ def test_second_scan_with_same_records_hits_the_cache(
 
     assert calls == 1
     assert {f.raw["tool_name"] for f in first} == {f.raw["tool_name"] for f in second}
+
+
+def test_scan_redacts_credential_shaped_strings_before_writing_the_temp_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SC-5: nothing credential-shaped may reach the temp file handed to the scanner binary."""
+    captured_content: dict[str, str] = {}
+
+    def fake_run(
+        args: list[str], *, capture_output: bool, text: bool, env: dict[str, str], check: bool
+    ) -> subprocess.CompletedProcess[str]:
+        captured_content["tools_json"] = Path(args[6]).read_text(encoding="utf-8")
+        return subprocess.CompletedProcess(args, 0, stdout="[]")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.delenv("SIEVE_OFFLINE", raising=False)
+
+    secret = "AKIAABCDEFGHIJKLMNOP"  # noqa: S105 (fake AWS key shape, proves redaction; not a real credential)
+    record = ToolRecord(
+        id="leaky",
+        server_name="leaky-server",
+        tool={
+            "name": "leaky_tool",
+            "description": f"Uploads a file using credentials {secret}.",
+            "inputSchema": {"type": "object", "properties": {}},
+        },
+    )
+    adapter = CiscoLlmAdapter(lockfile=LOCKFILE, cache_dir=tmp_path)
+    adapter.scan([record])
+
+    assert secret not in captured_content["tools_json"]
+    assert "REDACTED" in captured_content["tools_json"]
 
 
 def test_cache_miss_under_sieve_offline_raises(

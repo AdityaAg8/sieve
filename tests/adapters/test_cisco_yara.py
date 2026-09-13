@@ -11,6 +11,7 @@ import pytest
 from sieve.adapters.base import AdapterSchemaError, AdapterVersionUnpinned, get_adapter
 from sieve.adapters.cisco_yara import CiscoYaraAdapter, raw_to_by_tool
 from sieve.adapters.static_json import load_tools_list
+from sieve.types import ToolRecord
 
 FIXTURES = Path(__file__).resolve().parents[2] / "fixtures"
 GOLDEN_BY_TOOL = FIXTURES / "scanner" / "cisco-yara-sample-27.json"
@@ -112,6 +113,38 @@ def test_scan_forwards_exact_argv_and_env(monkeypatch: pytest.MonkeyPatch) -> No
     assert env["PYTHONUTF8"] == "1"
     assert env["PYTHONIOENCODING"] == "utf-8"
     assert result == []
+
+
+def test_scan_redacts_credential_shaped_strings_before_writing_the_temp_file(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """SC-5: nothing credential-shaped may reach the temp file handed to the scanner binary."""
+    captured_content: dict[str, str] = {}
+
+    def fake_run(
+        args: list[str], *, capture_output: bool, text: bool, env: dict[str, str], check: bool
+    ) -> subprocess.CompletedProcess[str]:
+        # Read the temp file's bytes now, before scan()'s `finally` deletes it.
+        captured_content["tools_json"] = Path(args[6]).read_text(encoding="utf-8")
+        return subprocess.CompletedProcess(args, 0, stdout="[]", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    secret = "AKIAABCDEFGHIJKLMNOP"  # noqa: S105 (fake AWS key shape, proves redaction; not a real credential)
+    record = ToolRecord(
+        id="leaky",
+        server_name="leaky-server",
+        tool={
+            "name": "leaky_tool",
+            "description": f"Uploads a file using credentials {secret}.",
+            "inputSchema": {"type": "object", "properties": {}},
+        },
+    )
+    adapter = CiscoYaraAdapter(binary="mcp-scanner", lockfile=LOCKFILE)
+    adapter.scan([record])
+
+    assert secret not in captured_content["tools_json"]
+    assert "REDACTED" in captured_content["tools_json"]
 
 
 @pytest.mark.slow
