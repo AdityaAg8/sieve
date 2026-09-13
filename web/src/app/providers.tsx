@@ -3,8 +3,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-import { mocksEnabled } from "@/lib/config";
-
 /**
  * True once the app may issue requests.
  *
@@ -40,12 +38,21 @@ function getQueryClient(): QueryClient {
   return browserQueryClient;
 }
 
+/**
+ * Written as a literal comparison against the inlined build-time value, not as a call to
+ * `mocksEnabled()`, and that is the whole point: the bundler folds `"0" === "1"` to `false` and
+ * deletes the branch, `import("@/mocks/browser")` included. Behind a function call it could not,
+ * and every production bundle would carry `msw` — a dev dependency — in a chunk nobody loads.
+ * `scripts/check-no-msw.mjs` fails the build if that ever stops being true.
+ */
+const MOCKS_ENABLED = process.env.NEXT_PUBLIC_API_MOCK === "1";
+
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(getQueryClient);
-  const [ready, setReady] = useState(!mocksEnabled());
+  const [ready, setReady] = useState(!MOCKS_ENABLED);
 
   useEffect(() => {
-    if (!mocksEnabled()) return;
+    if (!MOCKS_ENABLED) return;
     let cancelled = false;
     void import("@/mocks/browser")
       .then(({ worker }) =>

@@ -10,19 +10,12 @@ import { UploadConfig } from "./UploadConfig";
 
 type TabId = "paste" | "upload" | "remote";
 
-/**
- * `GET /api/v1/models` does not yet carry a remote flag; `ModelInfo` has `judge_enabled` but no
- * equivalent for `SIEVE_ALLOW_REMOTE_MCP` (PRD §13.6). The field is read defensively and the tab
- * stays hidden until a deployment reports it — the contract change is requested in
- * `docs/handoffs/L6.md`. Hidden is the safe default: the feature is off by default anyway.
- */
-function remoteEnabled(models: unknown): boolean {
-  return (models as { remote_enabled?: boolean } | undefined)?.remote_enabled === true;
-}
-
 export function ScanTabs() {
   const models = useModels();
-  const showRemote = remoteEnabled(models.data);
+  // `remote_enabled` is `SIEVE_ALLOW_REMOTE_MCP` as the deployment reports it (PRD §13.6); the
+  // tab stays hidden until `/models` has answered, which is the safe default — the feature is
+  // off by default, and a tab that appears and then vanishes is worse than one that is late.
+  const showRemote = models.data?.remote_enabled === true;
   const baseId = useId();
   const [active, setActive] = useState<TabId>("paste");
   const tabRefs = useRef(new Map<TabId, HTMLButtonElement>());

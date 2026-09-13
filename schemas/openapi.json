@@ -233,7 +233,8 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
-      "ModelInfo": {
+      "ModelInfoResponse": {
+        "description": "`ModelInfo` plus the deployment flags a client cannot infer from the model artefact.\n\n`judge_enabled` already tells the web whether to promise a judge answer; `remote_enabled`\nis the same kind of fact for `SIEVE_ALLOW_REMOTE_MCP` (PRD \u00a713.6), and the `/scan` page's\nRemote tab is hidden until a deployment reports it. Added here rather than on\n`sieve.types.ModelInfo` so the shared type keeps describing the model and this route keeps\ndescribing the deployment; it is additive, so an older client that ignores the field is\nunaffected.",
         "properties": {
           "judge_enabled": {
             "title": "Judge Enabled",
@@ -258,6 +259,10 @@
             "title": "Onnx",
             "type": "boolean"
           },
+          "remote_enabled": {
+            "title": "Remote Enabled",
+            "type": "boolean"
+          },
           "t_high": {
             "title": "T High",
             "type": "number"
@@ -278,9 +283,10 @@
           "temperature",
           "onnx",
           "judge_model",
-          "judge_enabled"
+          "judge_enabled",
+          "remote_enabled"
         ],
-        "title": "ModelInfo",
+        "title": "ModelInfoResponse",
         "type": "object"
       },
       "ScanCreate": {
@@ -985,7 +991,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ModelInfo"
+                  "$ref": "#/components/schemas/ModelInfoResponse"
                 }
               }
             },

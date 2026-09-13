@@ -20,7 +20,11 @@ type Ok<P, M extends keyof P, C extends number> = P[M] extends {
 export type ScanSummary = components["schemas"]["ScanSummary"];
 export type Finding = components["schemas"]["Finding"];
 export type FindingPage = components["schemas"]["FindingPage"];
-export type ModelInfo = components["schemas"]["ModelInfo"];
+/**
+ * `GET /models` answers with `ModelInfoResponse`: the shared `ModelInfo` plus the deployment
+ * flags (`judge_enabled`, `remote_enabled`) that no client can infer from the model artefact.
+ */
+export type ModelInfo = components["schemas"]["ModelInfoResponse"];
 export type BenchSummary = components["schemas"]["BenchSummary"];
 export type TriageResult = components["schemas"]["TriageResult"];
 export type ScanCreate = components["schemas"]["ScanCreate"];

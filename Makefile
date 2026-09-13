@@ -2,7 +2,7 @@ ifeq ($(OS),Windows_NT)
 SHELL := C:/Program Files/Git/usr/bin/bash.exe
 endif
 
-.PHONY: setup lint test schemas up down serve baseline train train-all bench eval-final readme corpus-stats
+.PHONY: setup lint test e2e schemas up down serve baseline train train-all bench eval-final readme corpus-stats
 
 # `train`/`train-all` variables: PROFILE names a `bench/train.yaml` profile; SEED and FOLD are
 # the CLI's own `--seed`/`--fold`. MODEL_OUT follows the "models/<profile>-s<seed>/fold<fold>"
@@ -32,6 +32,13 @@ lint:
 test:
 	uv run pytest -q -m "not slow and not docker and not holdout" --cov=sieve --cov-report=term-missing
 	cd web && npm test
+
+# Both Playwright projects: `mocked` against MSW, `integration` against the real API. Playwright
+# starts everything it needs, including the API stack -- `E2E_STACK=compose` brings it up with
+# `docker compose`, and the default `local` runs uvicorn and the worker from `uv` against an
+# already-running Postgres (`E2E_DATABASE_URL` names it). See web/scripts/e2e-stack.mjs.
+e2e:
+	cd web && npm run e2e
 
 schemas:
 	uv run python -m sieve.api.export_schemas

@@ -72,6 +72,8 @@ export const mockModels: ModelInfo = {
   judge_model: sampleSummary.judge_model,
   // PRD §13.2: the public demo runs judge-off by default, so this is the normal state.
   judge_enabled: false,
+  // PRD §13.6: `SIEVE_ALLOW_REMOTE_MCP` is off by default, so the Remote tab is hidden.
+  remote_enabled: false,
 };
 
 function sarifFor(scanId: string) {

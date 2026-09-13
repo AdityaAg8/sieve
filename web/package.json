@@ -13,6 +13,7 @@
     "lint": "eslint",
     "lint:tokens": "node scripts/lint-tokens.mjs",
     "lint:contrast": "node scripts/check-contrast.mjs",
+    "lint:bundle": "node scripts/check-no-msw.mjs",
     "typecheck": "next typegen && tsc --noEmit",
     "pretest": "node scripts/copy-fixtures.mjs",
     "test": "vitest run --passWithNoTests",

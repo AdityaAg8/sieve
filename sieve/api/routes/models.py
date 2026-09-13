@@ -12,13 +12,27 @@ from sieve.types import ModelInfo
 router = APIRouter(tags=["models"])
 
 
-@router.get("/models", response_model=ModelInfo)
+class ModelInfoResponse(ModelInfo):
+    """`ModelInfo` plus the deployment flags a client cannot infer from the model artefact.
+
+    `judge_enabled` already tells the web whether to promise a judge answer; `remote_enabled`
+    is the same kind of fact for `SIEVE_ALLOW_REMOTE_MCP` (PRD §13.6), and the `/scan` page's
+    Remote tab is hidden until a deployment reports it. Added here rather than on
+    `sieve.types.ModelInfo` so the shared type keeps describing the model and this route keeps
+    describing the deployment; it is additive, so an older client that ignores the field is
+    unaffected.
+    """
+
+    remote_enabled: bool
+
+
+@router.get("/models", response_model=ModelInfoResponse)
 async def get_model_info(
     request: Request, session: AsyncSession = Depends(get_session)
-) -> ModelInfo:
+) -> ModelInfoResponse:
     """Thresholds come from the artefact, never from a constant here (PRD §11.4)."""
     if getattr(request.app.state, "stub", False):
-        return ModelInfo(
+        return ModelInfoResponse(
             model_version="fixture@0",
             t_low=0.3,
             t_high=0.85,
@@ -26,12 +40,13 @@ async def get_model_info(
             onnx=False,
             judge_model=None,
             judge_enabled=False,
+            remote_enabled=False,
         )
     classifier = get_classifier()
     thresholds = classifier.thresholds
     # "Enabled" means the UI can promise a judge answer: configured *and* still in budget.
     judge_enabled = settings.judge_enabled and await spend.allowed(session)
-    return ModelInfo(
+    return ModelInfoResponse(
         model_version=classifier.model_version,
         t_low=thresholds.t_low,
         t_high=thresholds.t_high,
@@ -39,4 +54,5 @@ async def get_model_info(
         onnx=settings.use_onnx,
         judge_model=get_judge().model if judge_enabled else None,
         judge_enabled=judge_enabled,
+        remote_enabled=settings.allow_remote_mcp,
     )

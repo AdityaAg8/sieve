@@ -293,8 +293,18 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
-        /** ModelInfo */
-        ModelInfo: {
+        /**
+         * ModelInfoResponse
+         * @description `ModelInfo` plus the deployment flags a client cannot infer from the model artefact.
+         *
+         *     `judge_enabled` already tells the web whether to promise a judge answer; `remote_enabled`
+         *     is the same kind of fact for `SIEVE_ALLOW_REMOTE_MCP` (PRD §13.6), and the `/scan` page's
+         *     Remote tab is hidden until a deployment reports it. Added here rather than on
+         *     `sieve.types.ModelInfo` so the shared type keeps describing the model and this route keeps
+         *     describing the deployment; it is additive, so an older client that ignores the field is
+         *     unaffected.
+         */
+        ModelInfoResponse: {
             /** Judge Enabled */
             judge_enabled: boolean;
             /** Judge Model */
@@ -303,6 +313,8 @@ export interface components {
             model_version: string;
             /** Onnx */
             onnx: boolean;
+            /** Remote Enabled */
+            remote_enabled: boolean;
             /** T High */
             t_high: number;
             /** T Low */
@@ -603,7 +615,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ModelInfo"];
+                    "application/json": components["schemas"]["ModelInfoResponse"];
                 };
             };
         };

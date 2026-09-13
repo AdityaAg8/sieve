@@ -7,43 +7,42 @@ import { CommandPalette } from "@/components/palette/CommandPalette";
 import { KeyMap } from "@/components/palette/KeyMap";
 import { ErrorNote } from "@/components/shell/ErrorNote";
 import { VerdictBar } from "@/components/verdict/VerdictBar";
-import type { Finding, Verdict } from "@/lib/api";
+import type { Finding, ScanSummary, Verdict } from "@/lib/api";
 import { KEY_MAP, useFindingKeys } from "@/lib/keyboard";
-import { useFindings, useModels, useScan } from "@/lib/queries";
-import { useScanEvents } from "@/lib/sse";
+import { useModels } from "@/lib/queries";
 import { VERDICT_LABEL, VERDICT_ORDER } from "@/lib/verdict";
 
-import { FindingList, verdictCounts } from "./FindingList";
+import { FindingList } from "./FindingList";
 import { useSarifExport } from "./useSarifExport";
+import { useScanFeed } from "./useScanFeed";
 import { useStreamAnnouncement } from "./useStreamAnnouncement";
 
 /** PRD §13.2 and §14.5: the public demo runs judge-off, so this is the normal state. */
 const JUDGE_OFF_NOTICE =
   "The judge is disabled on this deployment; band findings are reported as needs review.";
 
-export function ResultsScreen({ scanId, initialFindingId = null }: { scanId: string; initialFindingId?: string | null }) {
-  const scan = useScan(scanId);
+export function ResultsScreen({
+  scanId,
+  initialFindingId = null,
+  initialScan = null,
+  initialFindings = null,
+}: {
+  scanId: string;
+  initialFindingId?: string | null;
+  /** What the server renderer already read. See `lib/server-api.ts`. */
+  initialScan?: ScanSummary | null;
+  initialFindings?: Finding[] | null;
+}) {
   const models = useModels();
-  const live = useScanEvents(scanId);
-
-  // The stream is how this page fills. The paged endpoint is the fallback for a deployment
-  // where SSE cannot connect (a proxy that buffers, a browser without EventSource).
-  const streamFailed = live.status === "failed";
-  const fallback = useFindings(scanId, undefined, { enabled: streamFailed });
-
-  const findings = useMemo<Finding[]>(
-    () => (streamFailed ? (fallback.data?.items ?? []) : live.findings),
-    [streamFailed, fallback.data, live.findings],
-  );
-
-  /** Both ways of reading the verdicts are gone. This is an outage, not a clean scan. */
-  const verdictsUnreadable = streamFailed && fallback.isError;
 
   const [filter, setFilter] = useState<Verdict | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(initialFindingId);
   const [openId, setOpenId] = useState<string | null>(initialFindingId);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [keyMapOpen, setKeyMapOpen] = useState(false);
+
+  const feed = useScanFeed(scanId, { initialScan, initialFindings, filter });
+  const { counts, findings, reserved, retry } = feed;
 
   const visible = useMemo(
     () => (filter ? findings.filter((f) => f.result.verdict === filter) : findings),
@@ -56,30 +55,6 @@ export function ResultsScreen({ scanId, initialFindingId = null }: { scanId: str
     [visible],
   );
 
-  const counts = useMemo(() => verdictCounts(findings), [findings]);
-
-  /**
-   * What the scan says its final split will be. Reserving those rows from first paint is what
-   * keeps a live-filling list from shifting: a confirmed verdict that arrives after twenty
-   * dismissed ones lands in a slot that already exists. Narrowed to the active filter, and
-   * dropped entirely once the stream has finished.
-   */
-  const reserved = useMemo(() => {
-    // Nothing left to reserve once the stream is done, or if the summary never arrived: the
-    // reservation is exactly what is on screen, filter included.
-    if (live.status === "complete" || streamFailed || scan.isError) return verdictCounts(visible);
-    const summary = scan.data;
-    // `null` means "not yet knowable": the list waits rather than rendering groups it will have
-    // to re-order a moment later.
-    if (!summary) return null;
-    const all = {
-      confirmed: summary.confirmed,
-      needs_review: summary.needs_review,
-      dismissed: summary.dismissed,
-    };
-    if (!filter) return all;
-    return { confirmed: 0, needs_review: 0, dismissed: 0, [filter]: all[filter] };
-  }, [scan.data, scan.isError, live.status, streamFailed, filter, visible]);
   const openFinding = findings.find((f) => f.id === openId) ?? null;
   const { exportSarif, message: exportMessage } = useSarifExport(scanId);
 
@@ -132,25 +107,15 @@ export function ResultsScreen({ scanId, initialFindingId = null }: { scanId: str
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const loading =
-    !verdictsUnreadable &&
-    (live.status === "connecting" ||
-      live.status === "streaming" ||
-      (streamFailed && fallback.isPending));
   const judgeOff = models.data?.judge_enabled === false;
 
   const announcement = useStreamAnnouncement(
-    live.status,
+    feed.status,
     counts.confirmed + counts.needs_review + counts.dismissed,
-    live.expected ?? scan.data?.tool_count ?? null,
+    feed.expected,
     counts,
-    verdictsUnreadable,
+    feed.verdictsUnreadable,
   );
-
-  const retry = () => {
-    void scan.refetch();
-    void fallback.refetch();
-  };
 
   return (
     /*
@@ -193,10 +158,10 @@ export function ResultsScreen({ scanId, initialFindingId = null }: { scanId: str
         </div>
 
         <VerdictBar
-          scannerFlagged={scan.data?.scanner_flagged ?? live.summary?.scanner_flagged ?? null}
+          scannerFlagged={feed.scan?.scanner_flagged ?? null}
           counts={counts}
-          expected={live.expected ?? scan.data?.tool_count ?? null}
-          streaming={live.status === "streaming"}
+          expected={feed.expected}
+          streaming={feed.status === "streaming"}
         />
 
         {/* The slot is reserved whether or not the notice fills it: the judge flag arrives a
@@ -207,7 +172,7 @@ export function ResultsScreen({ scanId, initialFindingId = null }: { scanId: str
           ) : null}
         </div>
 
-        {scan.isError ? (
+        {feed.scanStatus !== null ? (
           <ErrorNote
             title="This scan's summary could not be read."
             detail="The counts above may be incomplete."
@@ -254,10 +219,10 @@ export function ResultsScreen({ scanId, initialFindingId = null }: { scanId: str
         <div className="scroll-y-lg lg:min-h-0 lg:pr-3">
           <FindingList
             findings={visible}
-            loading={loading}
-            toolCount={scan.data?.tool_count ?? live.expected ?? null}
+            loading={feed.loading}
+            toolCount={feed.expected}
             expected={reserved}
-            failed={verdictsUnreadable}
+            failed={feed.verdictsUnreadable}
             onRetry={retry}
             selectedId={selectedId}
             onOpen={(finding) => {
