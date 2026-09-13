@@ -155,12 +155,19 @@ export function useScanEvents(scanId: string): ScanEvents {
 
     source.addEventListener("scan.completed", (event) => {
       const payload = parse<ScanCompletion>(event) ?? {};
-      // The event carries counts, not a summary. Merge them over whatever the page already has
-      // and ask the API for the authoritative row; replacing the cache with this payload would
-      // delete `expires_at`, `scanner_flagged` and `status` from a summary already on screen.
-      queryClient.setQueryData(queryKeys.scan(scanId), (cached: unknown) =>
-        cached ? { ...(cached as ScanSummary), ...payload, status: "complete" } : cached,
-      );
+      // The event carries counts, not a summary. Merge the four it does carry over whatever the
+      // page already has and ask the API for the authoritative row; replacing the cache with
+      // this payload would delete `expires_at`, `scanner_flagged` and `status` from a summary
+      // already on screen. Spreading the payload wholesale is wrong for the other direction too:
+      // it carries `scan_id`, which is not a field of `ScanSummary`.
+      queryClient.setQueryData(queryKeys.scan(scanId), (cached: unknown) => {
+        if (!cached) return cached;
+        const counts: Partial<ScanSummary> = {};
+        for (const key of ["tool_count", "confirmed", "needs_review", "dismissed"] as const) {
+          if (typeof payload[key] === "number") counts[key] = payload[key];
+        }
+        return { ...(cached as ScanSummary), ...counts, status: "complete" };
+      });
       void queryClient.invalidateQueries({ queryKey: queryKeys.scan(scanId) });
       update((previous) => ({
         ...received(event),

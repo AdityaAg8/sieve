@@ -175,6 +175,10 @@ describe("useScanEvents and the scan summary cache", () => {
     expect(after?.expires_at).toBe("2026-09-20T00:00:00Z");
     expect(after?.confirmed).toBe(4);
     expect(after?.status).toBe("complete");
+    // The merge goes both ways: the event's `scan_id` is not a field of `ScanSummary`, and a
+    // cache row with keys the contract does not have is a contract nobody can rely on.
+    expect(after).not.toHaveProperty("scan_id");
+    expect(Object.keys(after ?? {}).sort()).toEqual(Object.keys(cached).sort());
   });
 
   it("reports the error the worker put on scan.failed", async () => {

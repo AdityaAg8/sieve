@@ -92,13 +92,21 @@ export function ResultsScreen({
   // The drawer is modal: while it is open the list must not answer j/k/1/2/3/e underneath it.
   const dialogOpen = paletteOpen || keyMapOpen || openId !== null;
 
+  /**
+   * The three states below replace this screen entirely. The shortcuts have to know that: an
+   * invisible `e` that fires a SARIF fetch for a scan that is gone, and reports the failure to a
+   * paragraph nobody is rendering, is worse than a key that does nothing.
+   */
+  const unavailable =
+    initialMissing || feed.scanStatus === 404 || feed.expired || feed.scan?.status === "failed";
+
   useFindingKeys({
     onMove: move,
     onOpen: open,
     onFilter: setFilter,
     onExport: () => void exportSarif(),
     onHelp: () => setKeyMapOpen(true),
-    enabled: !dialogOpen,
+    enabled: !dialogOpen && !unavailable,
   });
 
   useEffect(() => {
