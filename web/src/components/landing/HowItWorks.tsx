@@ -34,7 +34,7 @@ export function HowItWorks() {
       <ol className="mt-10 grid gap-10 md:grid-cols-3 md:gap-8">
         {STAGES.map((stage) => (
           <li key={stage.n} className="rail flex flex-col gap-3 pl-5">
-            <p className="t-ui t-num text-red-0">{stage.n}</p>
+            <p className="t-ui t-num text-ink-2">{stage.n}</p>
             <h3 className="t-h3 text-ink-0">{stage.title}</h3>
             <p className="t-body text-ink-1 max-w-[46ch]">{stage.body}</p>
           </li>

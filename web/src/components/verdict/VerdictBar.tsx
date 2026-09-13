@@ -46,7 +46,7 @@ export function VerdictBar({ scannerFlagged, counts, expected, streaming }: Prop
       <p className="t-h3 text-ink-1">
         The scanner flagged{" "}
         <span className="t-num text-ink-0">{scannerFlagged ?? "—"}</span>. Sieve confirmed{" "}
-        <span className="t-num text-red-0">{counts.confirmed}</span>.
+        <span data-red="confirmed" className="t-num text-red-0">{counts.confirmed}</span>.
       </p>
 
       <div
@@ -61,6 +61,7 @@ export function VerdictBar({ scannerFlagged, counts, expected, streaming }: Prop
         {segments.map((segment) => (
           <span
             key={segment.verdict}
+            data-red={segment.verdict === "confirmed" ? "confirmed" : undefined}
             aria-hidden="true"
             className={`absolute inset-y-0 left-0 w-full origin-left ${segment.fill}`}
             style={{

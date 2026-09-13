@@ -1,5 +1,6 @@
 "use client";
 
+import { ErrorNote } from "@/components/shell/ErrorNote";
 import { headlineOf, isProvisional, tablesOf } from "@/lib/bench";
 import { footerDestinations } from "@/lib/links";
 import { useBench } from "@/lib/queries";
@@ -16,7 +17,10 @@ import { TierChart } from "./TierChart";
 
 export function BenchmarkScreen() {
   const bench = useBench();
-  const provisional = isProvisional(bench.data);
+  // A fetch that failed is not the same as a benchmark that has not been run. Saying
+  // "numbers appear after the first make bench" during an outage is a false explanation.
+  const unreachable = bench.isError;
+  const provisional = !unreachable && isProvisional(bench.data);
   const headline = headlineOf(bench.data);
   const tables = tablesOf(bench.data);
 
@@ -31,10 +35,16 @@ export function BenchmarkScreen() {
           number that has not been measured shows as a dash rather than a placeholder.
         </p>
 
-        {provisional ? (
+        {unreachable ? (
+          <ErrorNote
+            title="The published numbers could not be loaded."
+            detail="Nothing below has been measured in this session; the dashes are missing data, not results."
+            onRetry={() => void bench.refetch()}
+          />
+        ) : provisional ? (
           <p
             data-testid="provisional-notice"
-            className="t-body text-ink-1 border-red-0 border-l-2 pl-4"
+            className="t-body text-ink-1 border-line-2 border-l-2 pl-4"
           >
             Numbers appear after the first <code className="t-mono">make bench</code>.
           </p>

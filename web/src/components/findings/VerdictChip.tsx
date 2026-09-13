@@ -27,6 +27,7 @@ export function VerdictChip({ verdict }: { verdict: Verdict }) {
   return (
     <span
       data-verdict={verdict}
+      data-red={verdict === "confirmed" ? "confirmed" : undefined}
       className={`t-ui inline-flex items-center gap-2 rounded-1 border px-2 py-1 ${tone}`}
     >
       {glyph}

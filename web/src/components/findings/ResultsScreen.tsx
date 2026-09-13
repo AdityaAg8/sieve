@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { FindingDrawer } from "@/components/findings/FindingDrawer";
 import { CommandPalette } from "@/components/palette/CommandPalette";
 import { KeyMap } from "@/components/palette/KeyMap";
+import { ErrorNote } from "@/components/shell/ErrorNote";
 import { VerdictBar } from "@/components/verdict/VerdictBar";
 import type { Finding, Verdict } from "@/lib/api";
 import { KEY_MAP, useFindingKeys } from "@/lib/keyboard";
@@ -14,6 +15,7 @@ import { VERDICT_LABEL, VERDICT_ORDER } from "@/lib/verdict";
 
 import { FindingList, verdictCounts } from "./FindingList";
 import { useSarifExport } from "./useSarifExport";
+import { useStreamAnnouncement } from "./useStreamAnnouncement";
 
 /** PRD §13.2 and §14.5: the public demo runs judge-off, so this is the normal state. */
 const JUDGE_OFF_NOTICE =
@@ -33,6 +35,9 @@ export function ResultsScreen({ scanId, initialFindingId = null }: { scanId: str
     () => (streamFailed ? (fallback.data?.items ?? []) : live.findings),
     [streamFailed, fallback.data, live.findings],
   );
+
+  /** Both ways of reading the verdicts are gone. This is an outage, not a clean scan. */
+  const verdictsUnreadable = streamFailed && fallback.isError;
 
   const [filter, setFilter] = useState<Verdict | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(initialFindingId);
@@ -85,9 +90,13 @@ export function ResultsScreen({ scanId, initialFindingId = null }: { scanId: str
       const next = index === -1 ? 0 : Math.min(ordered.length - 1, Math.max(0, index + delta));
       const target = ordered[next];
       setSelectedId(target.id);
-      document
-        .querySelector<HTMLElement>(`[data-finding-id="${CSS.escape(target.id)}"]`)
-        ?.scrollIntoView({ block: "nearest" });
+      // Selection moves DOM focus with it, so the row a sighted user sees highlighted is the row
+      // a screen reader is on and the row Enter will open.
+      const row = document.querySelector<HTMLElement>(
+        `[data-finding-id="${CSS.escape(target.id)}"]`,
+      );
+      row?.scrollIntoView({ block: "nearest" });
+      row?.focus({ preventScroll: true });
     },
     [ordered, selectedId],
   );
@@ -100,7 +109,8 @@ export function ResultsScreen({ scanId, initialFindingId = null }: { scanId: str
     }
   }, [ordered, selectedId]);
 
-  const dialogOpen = paletteOpen || keyMapOpen;
+  // The drawer is modal: while it is open the list must not answer j/k/1/2/3/e underneath it.
+  const dialogOpen = paletteOpen || keyMapOpen || openId !== null;
 
   useFindingKeys({
     onMove: move,
@@ -122,8 +132,25 @@ export function ResultsScreen({ scanId, initialFindingId = null }: { scanId: str
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const loading = live.status === "connecting" || live.status === "streaming" || fallback.isPending;
+  const loading =
+    !verdictsUnreadable &&
+    (live.status === "connecting" ||
+      live.status === "streaming" ||
+      (streamFailed && fallback.isPending));
   const judgeOff = models.data?.judge_enabled === false;
+
+  const announcement = useStreamAnnouncement(
+    live.status,
+    counts.confirmed + counts.needs_review + counts.dismissed,
+    live.expected ?? scan.data?.tool_count ?? null,
+    counts,
+    verdictsUnreadable,
+  );
+
+  const retry = () => {
+    void scan.refetch();
+    void fallback.refetch();
+  };
 
   return (
     /*
@@ -134,6 +161,21 @@ export function ResultsScreen({ scanId, initialFindingId = null }: { scanId: str
      * stream that fills it over two seconds never moves anything outside it.
      */
     <div className="mx-auto max-w-[84rem] px-4 py-10 sm:px-8 lg:flex lg:h-dvh lg:flex-col">
+      {/*
+        Mounted from first paint and never unmounted, so an assistive technology has something to
+        observe the change against. `useStreamAnnouncement` throttles it — 29 verdicts in under a
+        second would otherwise be announced 29 times.
+      */}
+      <p
+        data-testid="stream-status"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {announcement}
+      </p>
+
       <header className="flex flex-col gap-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex flex-col gap-2">
@@ -164,6 +206,14 @@ export function ResultsScreen({ scanId, initialFindingId = null }: { scanId: str
             <p className="t-ui text-ink-2 border-line-1 border-l-2 pl-3">{JUDGE_OFF_NOTICE}</p>
           ) : null}
         </div>
+
+        {scan.isError ? (
+          <ErrorNote
+            title="This scan's summary could not be read."
+            detail="The counts above may be incomplete."
+            onRetry={retry}
+          />
+        ) : null}
 
         {exportMessage ? (
           <p role="status" className="t-ui text-ink-1">
@@ -207,6 +257,8 @@ export function ResultsScreen({ scanId, initialFindingId = null }: { scanId: str
             loading={loading}
             toolCount={scan.data?.tool_count ?? live.expected ?? null}
             expected={reserved}
+            failed={verdictsUnreadable}
+            onRetry={retry}
             selectedId={selectedId}
             onOpen={(finding) => {
               setSelectedId(finding.id);
@@ -255,7 +307,7 @@ function FilterButton({
         aria-pressed={active}
         onClick={onClick}
         className={`btn btn-secondary t-ui u-interactive w-full justify-between gap-3 ${
-          active ? "border-red-0 text-ink-0" : ""
+          active ? "border-ink-0 text-ink-0" : ""
         }`}
       >
         {children}

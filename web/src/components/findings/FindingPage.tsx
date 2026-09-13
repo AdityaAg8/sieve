@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { ErrorNote } from "@/components/shell/ErrorNote";
 import { useFindings, useModels } from "@/lib/queries";
 
 import { FindingDetail } from "./FindingDrawer";
@@ -24,15 +25,23 @@ export function FindingPage({ scanId, findingId }: { scanId: string; findingId: 
         Back to the scan
       </Link>
 
-      <div className="surface mt-6">
-        {findings.isPending ? (
-          <p className="t-body text-ink-2 p-6" aria-live="polite">
+      <div className="mt-6">
+        {findings.isError ? (
+          <ErrorNote
+            title="This finding could not be read."
+            detail="The scan's findings did not load. This does not mean the tool is clean."
+            onRetry={() => void findings.refetch()}
+          />
+        ) : findings.isPending ? (
+          <p className="surface t-body text-ink-2 p-6" aria-live="polite">
             Reading the scan…
           </p>
         ) : finding ? (
-          <FindingDetail finding={finding} judgeEnabled={models.data?.judge_enabled ?? null} />
+          <div className="surface">
+            <FindingDetail finding={finding} judgeEnabled={models.data?.judge_enabled ?? null} />
+          </div>
         ) : (
-          <p className="t-body text-ink-1 p-6">
+          <p className="surface t-body text-ink-1 p-6">
             This scan has no finding called{" "}
             <span className="t-mono text-ink-0">{findingId}</span>. It may have expired — scans are
             deleted after 7 days.

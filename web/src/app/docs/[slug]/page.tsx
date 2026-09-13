@@ -45,7 +45,7 @@ export default async function DocPage(props: PageProps<"/docs/[slug]">) {
                 aria-current={doc.slug === slug ? "page" : undefined}
                 className={`t-ui u-interactive border-b pb-0.5 ${
                   doc.slug === slug
-                    ? "text-ink-0 border-red-0"
+                    ? "text-ink-0 border-ink-0"
                     : "text-ink-2 hover:text-ink-0 border-transparent"
                 }`}
               >

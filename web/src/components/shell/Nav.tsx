@@ -37,7 +37,7 @@ export function Nav() {
                   aria-current={active ? "page" : undefined}
                   className={`u-interactive border-b pb-0.5 ${
                     active
-                      ? "text-ink-0 border-red-0"
+                      ? "text-ink-0 border-ink-0"
                       : "text-ink-2 hover:text-ink-0 border-transparent"
                   }`}
                 >

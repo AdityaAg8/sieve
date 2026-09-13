@@ -46,7 +46,11 @@ function queuedSummary(id: string): ScanSummary {
 }
 
 function completedSummary(id: string): ScanSummary {
-  return { ...sampleSummary, id, status: "complete" };
+  const base = { ...sampleSummary, id, status: "complete" as const };
+  // A clean scan still read every tool; the scanner simply flagged nothing in any of them.
+  return cleanScan()
+    ? { ...base, scanner_flagged: 0, confirmed: 0, needs_review: 0, dismissed: 0, judge_calls: 0 }
+    : base;
 }
 
 /** A provisional summary: `make bench` has not run, so the app must render `—` everywhere. */
@@ -81,7 +85,8 @@ function sarifFor(scanId: string) {
           driver: {
             name: "Sieve",
             version: sampleSummary.model_version ?? "fixture@0",
-            informationUri: "https://github.com/aditya-tr-cyber/sieve",
+            // No canonical repository URL exists yet; the mock omits rather than invents one.
+            informationUri: undefined,
             rules: [],
           },
         },
@@ -128,14 +133,46 @@ function override(name: "models" | "bench"): Record<string, unknown> {
   }
 }
 
+/** Routes a test has asked to fail, so the error states can be exercised as they will happen. */
+export type FailableRoute = "scan" | "events" | "findings" | "bench" | "models" | "sarif";
+
+function failing(route: FailableRoute): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const raw = window.localStorage.getItem("sieve.mock.fail");
+    return raw ? (JSON.parse(raw) as string[]).includes(route) : false;
+  } catch {
+    return false;
+  }
+}
+
+/** A scan the scanner flagged nothing in — the clean-scan empty state. */
+function cleanScan(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem("sieve.mock.clean") === "1";
+}
+
+const serverError = () =>
+  HttpResponse.json({ detail: "Internal Server Error" }, { status: 500 });
+
+function findingsFor(): Finding[] {
+  return cleanScan() ? [] : sampleFindings;
+}
+
 export const handlers = [
   http.get(`${API}/healthz`, () => HttpResponse.json({ status: "ok" })),
   http.get(`${API}/readyz`, () => HttpResponse.json({ status: "ok" })),
 
-  http.get(`${API}/models`, () => HttpResponse.json({ ...mockModels, ...override("models") })),
+  http.get(`${API}/models`, () =>
+    failing("models")
+      ? serverError()
+      : HttpResponse.json({ ...mockModels, ...override("models") }),
+  ),
 
   http.get(`${API}/bench/summary`, () =>
-    HttpResponse.json({ ...provisionalBench, ...override("bench") }),
+    failing("bench")
+      ? serverError()
+      : HttpResponse.json({ ...provisionalBench, ...override("bench") }),
   ),
 
   http.post(`${API}/scans`, async () =>
@@ -143,17 +180,20 @@ export const handlers = [
   ),
 
   http.get(`${API}/scans/:scanId`, ({ params }) =>
-    HttpResponse.json(completedSummary(String(params.scanId))),
+    failing("scan")
+      ? serverError()
+      : HttpResponse.json(completedSummary(String(params.scanId))),
   ),
 
   http.get(`${API}/scans/:scanId/findings`, ({ request }) => {
+    if (failing("findings")) return serverError();
     const query = new URL(request.url).searchParams;
     const verdict = query.get("verdict");
     const predictedClass = query.get("predicted_class");
     const subLabel = query.get("sub_label");
     const stage = query.get("stage");
 
-    const items = sampleFindings.filter(
+    const items = findingsFor().filter(
       (finding) =>
         (!verdict || finding.result.verdict === verdict) &&
         (!predictedClass || finding.result.predicted_class === predictedClass) &&
@@ -166,9 +206,11 @@ export const handlers = [
   }),
 
   http.get(`${API}/scans/:scanId/sarif`, ({ params }) =>
-    HttpResponse.json(sarifFor(String(params.scanId)), {
-      headers: { "content-disposition": `attachment; filename="${params.scanId}.sarif"` },
-    }),
+    failing("sarif")
+      ? serverError()
+      : HttpResponse.json(sarifFor(String(params.scanId)), {
+          headers: { "content-disposition": `attachment; filename="${params.scanId}.sarif"` },
+        }),
   ),
 
   http.post(`${API}/triage`, () =>
@@ -183,7 +225,9 @@ export const handlers = [
    * the results page has to group them itself, exactly as it will against the real worker.
    */
   http.get(`${API}/scans/:scanId/events`, ({ params }) => {
+    if (failing("events")) return serverError();
     const scanId = String(params.scanId);
+    const streamed = findingsFor();
     const encoder = new TextEncoder();
     const frame = (id: number, event: string, data: unknown) =>
       encoder.encode(`id: ${id}\nevent: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
@@ -191,16 +235,14 @@ export const handlers = [
     const stream = new ReadableStream({
       async start(controller) {
         controller.enqueue(
-          frame(0, "scan.started", { scan_id: scanId, tool_count: sampleFindings.length }),
+          frame(0, "scan.started", { scan_id: scanId, tool_count: sampleSummary.tool_count }),
         );
-        for (const [index, finding] of sampleFindings.entries()) {
+        for (const [index, finding] of streamed.entries()) {
           await delay(SSE_SPACING_MS);
           controller.enqueue(frame(index + 1, "tool.verdict", { ...finding, scan_id: scanId }));
         }
         await delay(SSE_SPACING_MS);
-        controller.enqueue(
-          frame(sampleFindings.length + 1, "scan.completed", completedSummary(scanId)),
-        );
+        controller.enqueue(frame(streamed.length + 1, "scan.completed", completedSummary(scanId)));
         controller.close();
       },
     });

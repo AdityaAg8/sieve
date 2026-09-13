@@ -46,6 +46,7 @@ export function Evidence({ text, spans, field, path = null }: Props) {
           <mark
             key={`m${index}`}
             aria-label={`Evidence: ${span.quotes[0] ?? quote}`}
+            data-red="evidence"
             className="evidence-mark"
           >
             {quote}
@@ -68,6 +69,7 @@ export function Evidence({ text, spans, field, path = null }: Props) {
           // width with transform alone.
           <motion.span
             data-testid="evidence-sweep"
+            data-red="line"
             aria-hidden="true"
             className="border-red-0 pointer-events-none absolute inset-y-0 left-0 w-full border-l"
             initial={{ x: 0, opacity: 0.9 }}

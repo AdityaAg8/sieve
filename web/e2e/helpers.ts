@@ -36,6 +36,78 @@ export async function mockOverride(
   );
 }
 
+/** Routes the mock layer should answer with a 500, installed before the first navigation. */
+export async function mockFail(page: Page, routes: string[]): Promise<void> {
+  await page.addInitScript(
+    (json) => window.localStorage.setItem("sieve.mock.fail", json as string),
+    JSON.stringify(routes),
+  );
+}
+
+/** Serve a scan the scanner flagged nothing in. */
+export async function mockCleanScan(page: Page): Promise<void> {
+  await page.addInitScript(() => window.localStorage.setItem("sieve.mock.clean", "1"));
+}
+
+/**
+ * Red is semantic (PRD §14.2): confirmed findings, the sieve line, and destructive or error
+ * states — never decoration, never "this tab is current". This walks every element on the page
+ * (and its `::before` / `::after`), finds everything actually painting a `--red-*` token, and
+ * fails unless each one sits inside an element that declares which of those roles it is.
+ *
+ * `data-red` is that declaration. The two exceptions it does not cover are named here: the
+ * primary button, which PRD §14.2 gives `--red-fill` explicitly, and anything inside a
+ * `role="alert"`, which is the error role.
+ */
+export async function expectRedIsSemantic(page: Page): Promise<void> {
+  const offenders = await page.evaluate(() => {
+    const probe = document.createElement("span");
+    document.body.append(probe);
+    const canonical = (value: string): string => {
+      probe.style.color = "";
+      probe.style.color = value;
+      return getComputedStyle(probe).color;
+    };
+    const root = getComputedStyle(document.documentElement);
+    const reds = new Set(
+      ["--red-0", "--red-fill", "--red-1", "--red-wash"]
+        .map((token) => root.getPropertyValue(token).trim())
+        .filter(Boolean)
+        .map(canonical),
+    );
+    probe.remove();
+
+    const paintsRed = (style: CSSStyleDeclaration): boolean => {
+      const painted: string[] = [style.color, style.backgroundColor, style.boxShadow, style.fill];
+      for (const side of ["Top", "Right", "Bottom", "Left"] as const) {
+        const width = parseFloat(
+          style.getPropertyValue(`border-${side.toLowerCase()}-width`) || "0",
+        );
+        if (width > 0) painted.push(style.getPropertyValue(`border-${side.toLowerCase()}-color`));
+      }
+      return painted.some((value) => value && [...reds].some((red) => value.includes(red)));
+    };
+
+    const allowed = (element: Element): boolean =>
+      element.closest('[data-red], .btn-primary, [role="alert"]') !== null;
+
+    const out: string[] = [];
+    for (const element of Array.from(document.querySelectorAll("*"))) {
+      for (const pseudo of [null, "::before", "::after"]) {
+        const style = getComputedStyle(element, pseudo ?? undefined);
+        if (!paintsRed(style)) continue;
+        if (allowed(element)) continue;
+        out.push(
+          `${element.tagName.toLowerCase()}${pseudo ?? ""} class="${String(element.className).slice(0, 60)}"`,
+        );
+      }
+    }
+    return [...new Set(out)];
+  });
+
+  expect(offenders, "elements painting --red-* without a semantic role").toEqual([]);
+}
+
 export async function expectNoHorizontalScroll(page: Page, width: number): Promise<void> {
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - window.innerWidth,

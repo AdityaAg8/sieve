@@ -72,7 +72,7 @@ export function ScanTabs() {
               tabIndex={selected ? 0 : -1}
               onClick={() => setActive(tab.id)}
               className={`btn btn-quiet u-interactive rounded-none border-b-2 ${
-                selected ? "text-ink-0 border-red-0" : "text-ink-2 hover:text-ink-0 border-transparent"
+                selected ? "text-ink-0 border-ink-0" : "text-ink-2 hover:text-ink-0 border-transparent"
               }`}
             >
               {tab.label}

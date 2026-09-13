@@ -167,6 +167,7 @@ export function Sieve({ data, autoplay = true, replayable = true, onComplete }: 
         <div
           ref={lineRef}
           data-testid="sieve-line"
+          data-red="line"
           className="bg-red-0 h-px w-full"
           style={{ boxShadow: "0 0 12px var(--red-glow)" }}
         />
@@ -229,7 +230,7 @@ export function Sieve({ data, autoplay = true, replayable = true, onComplete }: 
             →
           </span>
           confirmed{" "}
-          <span data-testid="sieve-count-confirmed" className="t-num text-red-0">
+          <span data-testid="sieve-count-confirmed" data-red="confirmed" className="t-num text-red-0">
             {settled ? confirmed : confirmedShown}
           </span>
         </p>
@@ -287,6 +288,7 @@ function Tile({
       ref={(element: HTMLElement | null) => register(item.id, element)}
       data-testid={`sieve-tile-${item.id}`}
       data-tray={item.verdict}
+      data-red={item.verdict === "confirmed" ? "confirmed" : undefined}
       data-settled={settled ? "true" : "false"}
       className={`t-mono u-interactive inline-flex items-center rounded-1 border px-2 py-1 text-[12px] leading-none ${appearance}`}
       initial={

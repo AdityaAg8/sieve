@@ -11,6 +11,8 @@ import { VerdictChip } from "./VerdictChip";
 type Props = {
   finding: Finding;
   selected: boolean;
+  /** The list's single tab stop. Roving tabindex: one Tab enters the list, j/k move inside it. */
+  tabStop: boolean;
   onOpen: (finding: Finding) => void;
 };
 
@@ -19,7 +21,7 @@ type Props = {
  * never its fill — because `--ink-3` (dismissed) is only contrast-safe on `--bg-0` and
  * `--bg-1`. See web/DESIGN.md §3.
  */
-export function FindingRow({ finding, selected, onOpen }: Props) {
+export function FindingRow({ finding, selected, tabStop, onOpen }: Props) {
   const { result } = finding;
   const scanner = result.scanner_findings[0];
   const note = stageNote(result);
@@ -36,7 +38,9 @@ export function FindingRow({ finding, selected, onOpen }: Props) {
         type="button"
         data-finding-id={finding.id}
         data-verdict={result.verdict}
+        data-red={result.verdict === "confirmed" ? "confirmed" : undefined}
         aria-current={selected ? "true" : undefined}
+        tabIndex={tabStop ? 0 : -1}
         onClick={() => onOpen(finding)}
         className={`u-interactive bg-bg-1 relative w-full rounded-2 border px-4 py-3 text-left before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:content-[''] sm:h-28 ${marker} ${
           selected ? "border-line-2" : "border-line-1 hover:border-line-2"

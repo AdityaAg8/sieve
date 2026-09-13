@@ -42,6 +42,7 @@ export function ConfusionMatrix({ matrix }: { matrix: Matrix | undefined }) {
                   return (
                     <Td key={columnIndex}>
                       <span
+                        data-red={highlighted ? "destructive" : undefined}
                         className={highlighted ? "text-red-0 border-red-0 border-b" : undefined}
                         title={
                           highlighted

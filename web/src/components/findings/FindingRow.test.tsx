@@ -47,12 +47,12 @@ function finding(overrides: Partial<Finding> = {}): Finding {
 }
 
 describe("<FindingRow />", () => {
-  it("renders the tool name in monospace with both sides of the disagreement", () => {
-    render(<FindingRow finding={finding()} selected={false} onOpen={() => {}} />);
+  it("renders the tool name and both sides of the disagreement", () => {
+    render(<FindingRow finding={finding()} selected={false} tabStop onOpen={() => {}} />);
 
-    const name = screen.getByText("weather/set_location");
-    expect(name).toBeInTheDocument();
-    expect(name.className).toContain("t-mono");
+    // That the name is monospace is a rendered fact, not a class name; it is asserted against
+    // computed styles in e2e/semantics.spec.ts, where a stylesheet actually exists.
+    expect(screen.getByText("weather/set_location")).toBeInTheDocument();
 
     expect(screen.getByText("Scanner said")).toBeInTheDocument();
     expect(screen.getByText("Sieve said")).toBeInTheDocument();
@@ -60,7 +60,7 @@ describe("<FindingRow />", () => {
   });
 
   it("says the scanner had nothing when it did not flag the tool", () => {
-    render(<FindingRow finding={finding()} selected={false} onOpen={() => {}} />);
+    render(<FindingRow finding={finding()} selected={false} tabStop onOpen={() => {}} />);
     expect(screen.getByText("No finding")).toBeInTheDocument();
   });
 
@@ -79,13 +79,13 @@ describe("<FindingRow />", () => {
         ],
       }),
     });
-    render(<FindingRow finding={withScanner} selected={false} onOpen={() => {}} />);
+    render(<FindingRow finding={withScanner} selected={false} tabStop onOpen={() => {}} />);
     expect(screen.getByText(/cisco_yara/)).toBeInTheDocument();
     expect(screen.getByText(/exfil_env/)).toBeInTheDocument();
   });
 
   it("shows the confidence as a bar and a number with tabular figures", () => {
-    render(<FindingRow finding={finding()} selected={false} onOpen={() => {}} />);
+    render(<FindingRow finding={finding()} selected={false} tabStop onOpen={() => {}} />);
     const meter = screen.getByRole("meter", { name: /confidence/i });
     expect(meter).toHaveAttribute("aria-valuenow", "0.95");
     expect(screen.getByText("0.95")).toBeInTheDocument();

@@ -1,5 +1,6 @@
 "use client";
 
+import { ErrorNote } from "@/components/shell/ErrorNote";
 import type { Finding, Verdict } from "@/lib/api";
 import { VERDICT_LABEL, VERDICT_ORDER } from "@/lib/verdict";
 
@@ -19,6 +20,9 @@ type Props = {
    * this page's cumulative layout shift.
    */
   expected: VerdictCounts | null;
+  /** The scan could not be read. Never the same branch as "the scan found nothing". */
+  failed?: boolean;
+  onRetry?: () => void;
   selectedId: string | null;
   onOpen: (finding: Finding) => void;
 };
@@ -29,10 +33,24 @@ export function FindingList({
   loading,
   toolCount,
   expected,
+  failed = false,
+  onRetry,
   selectedId,
   onOpen,
 }: Props) {
   const arrived = verdictCounts(findings);
+
+  // An outage is not a clean scan. This branch comes first so no failure path can fall through
+  // to the empty state's "the scanner flagged nothing" sentence.
+  if (failed && findings.length === 0) {
+    return (
+      <ErrorNote
+        title="This scan could not be read."
+        detail="The verdicts did not arrive. Nothing here says the tools are clean — it says Sieve could not tell you."
+        onRetry={onRetry}
+      />
+    );
+  }
 
   // Until the scan says how many rows each group will hold there is nothing to reserve them
   // with, so the list waits rather than rendering groups it would have to re-order — and move
@@ -45,13 +63,29 @@ export function FindingList({
     );
   }
 
+  // The clean-scan sentence names a real count or it is not shown: a `0` here would be an
+  // invented number dressed as reassurance.
   if (!loading && findings.length === 0) {
-    return (
+    return typeof toolCount === "number" ? (
       <p className="t-body text-ink-1 surface p-6">
-        {`No findings to triage. The scanner flagged nothing in these ${toolCount ?? 0} tools.`}
+        {`No findings to triage. The scanner flagged nothing in these ${toolCount} tools.`}
       </p>
+    ) : (
+      <ErrorNote
+        title="This scan could not be read."
+        detail="Sieve did not receive the scan's tool count, so it cannot say what was triaged."
+        onRetry={onRetry}
+      />
     );
   }
+
+  // One tab stop for the whole list: the selected row, or the first one when nothing is.
+  const ordered = VERDICT_ORDER.flatMap((verdict) =>
+    findings.filter((finding) => finding.result.verdict === verdict),
+  );
+  const tabStopId = ordered.some((finding) => finding.id === selectedId)
+    ? selectedId
+    : (ordered[0]?.id ?? null);
 
   const groups = VERDICT_ORDER.map((verdict) => ({
     verdict,
@@ -79,6 +113,7 @@ export function FindingList({
                 key={finding.id}
                 finding={finding}
                 selected={finding.id === selectedId}
+                tabStop={finding.id === tabStopId}
                 onOpen={onOpen}
               />
             ))}

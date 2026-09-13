@@ -18,6 +18,7 @@ export function ConfidenceBar({ value, tone = "ink" }: { value: number; tone?: "
         className="bg-bg-2 border-line-1 h-1.5 flex-1 overflow-hidden rounded-1 border"
       >
         <div
+          data-red={tone === "red" ? "confirmed" : undefined}
           className={`h-full origin-left ${tone === "red" ? "bg-red-fill" : "bg-ink-2"}`}
           style={{ transform: `scaleX(${clamped})` }}
         />

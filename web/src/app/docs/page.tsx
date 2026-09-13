@@ -25,7 +25,7 @@ export default function DocsIndexPage() {
           <li key={doc.slug} className="border-line-1 border-t pt-4">
             <Link
               href={`/docs/${doc.slug}`}
-              className="t-h3 u-interactive text-ink-0 hover:text-red-0"
+              className="t-h3 u-interactive text-ink-0 border-b border-transparent hover:border-ink-0"
             >
               {doc.title}
             </Link>

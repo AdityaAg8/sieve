@@ -65,6 +65,7 @@ export function BreakdownChart({
                 be in the accessibility tree, and it is the table. */}
           <div
             aria-hidden="true"
+            data-red="series"
             className="h-72 w-full min-w-0 overflow-hidden"
             data-testid={`${id}-chart`}
           >

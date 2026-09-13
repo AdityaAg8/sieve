@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { ErrorNote } from "@/components/shell/ErrorNote";
 import { Sieve, type SieveDatum } from "@/components/sieve/Sieve";
 import { demoScanId } from "@/lib/config";
 import { useFindings, useScan } from "@/lib/queries";
@@ -40,7 +41,9 @@ export function Hero() {
           </span>{" "}
           <span className="block">
             Sieve confirmed{" "}
-            <span className="t-num text-red-0">{scan.data ? scan.data.confirmed : "—"}</span>.
+            <span data-red="confirmed" className="t-num text-red-0">
+              {scan.data ? scan.data.confirmed : "—"}
+            </span>.
           </span>
         </h1>
         {scan.isPending ? (
@@ -71,7 +74,16 @@ export function Hero() {
       </div>
 
       <div className="lg:pt-10">
-        {findings.isPending || findings.isError ? (
+        {findings.isError || scan.isError ? (
+          <ErrorNote
+            title="The sample scan could not be read."
+            detail="The demo is served from a stored scan; it is not reachable right now."
+            onRetry={() => {
+              void scan.refetch();
+              void findings.refetch();
+            }}
+          />
+        ) : findings.isPending ? (
           <SieveSkeleton />
         ) : (
           <Sieve data={tiles} autoplay replayable />
