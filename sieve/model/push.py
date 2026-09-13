@@ -23,6 +23,7 @@ log = logging.getLogger("sieve.model.push")
 CARD_TEMPLATE = Path(__file__).with_name("card.md")
 EMPTY = "—"  # em dash: the "not filled in" marker the test forbids in the output
 _SLOT = re.compile(r"\{\{(\w+)\}\}")
+LINE_BREAK = chr(10)
 
 DEFAULT_LICENCES = (
     "code under the repository's licence; corpus rows carry their own `source_license` and are "
@@ -81,7 +82,7 @@ def _table(breakdown: Mapping[str, Mapping[str, float]] | None) -> str | None:
     if not breakdown:
         return None
     parts = [
-        f"`{bucket}` n={int(values['n'])} recall={values['oof_recall_at_t_low']:.3f} "
+        f"`{bucket}` n={int(values['n'])} recall={values['recall_at_t_low']:.3f} "
         f"FPR_pipeline={values['fpr_pipeline']:.3f}"
         for bucket, values in breakdown.items()
     ]
@@ -99,6 +100,12 @@ def _selection_table(selection: Mapping[str, Any]) -> str | None:
             f"{values['seeds']} | {values.get('p95_ms')} |"
         )
     return "\n".join(lines)
+
+
+def _limitations(derived: str | None, extra: str | None) -> str | None:
+    """What `eval_final` derived from the run, plus anything the release note adds."""
+    parts = [p for p in (derived, extra) if p]
+    return LINE_BREAK.join(parts) if parts else None
 
 
 def _headline_row(ablations: Mapping[str, Any], row: int) -> Mapping[str, Any]:
@@ -164,12 +171,34 @@ def build_context(
         "p50_ms": config.get("p50_ms"),
         "p95_ms": config.get("p95_ms"),
         "holdout_log_line": holdout_log_line(results_dir, sha),
-        "limitations": limitations or holdout.get("limitations"),
+        "limitations": _limitations(holdout.get("limitations"), limitations),
     }
 
 
+def template_slots(template: Path = CARD_TEMPLATE) -> list[str]:
+    """Every `{{name}}` the card asks for, in order of first appearance."""
+    seen: list[str] = []
+    for name in _SLOT.findall(template.read_text(encoding="utf-8")):
+        if name not in seen:
+            seen.append(name)
+    return seen
+
+
+def unfilled_slots(context: Mapping[str, Any], template: Path = CARD_TEMPLATE) -> list[str]:
+    """The slots the result files did not supply.
+
+    Tracked by name rather than by sniffing the rendered text for an em dash: prose is allowed
+    to contain one, and a card that failed to fill a slot should not depend on punctuation.
+    """
+    return [
+        name
+        for name in template_slots(template)
+        if context.get(name) is None or context.get(name) == ""
+    ]
+
+
 def render_card(context: Mapping[str, Any], template: Path = CARD_TEMPLATE) -> str:
-    """Fill the template; a slot with no value stays an em dash and `write_card` refuses it."""
+    """Fill the template; a slot with no value renders as `EMPTY` and `write_card` refuses it."""
     text = template.read_text(encoding="utf-8")
 
     def fill(match: re.Match[str]) -> str:
@@ -180,18 +209,15 @@ def render_card(context: Mapping[str, Any], template: Path = CARD_TEMPLATE) -> s
 
 
 def write_card(context: Mapping[str, Any], out_dir: Path, template: Path = CARD_TEMPLATE) -> Path:
-    rendered = render_card(context, template)
-    blank = sorted(
-        k for k in _SLOT.findall(template.read_text(encoding="utf-8")) if not context.get(k)
-    )
-    if EMPTY in rendered:
+    blank = unfilled_slots(context, template)
+    if blank:
         raise IncompleteCard(
             f"the model card has {len(blank)} unfilled slot(s): {blank}; every number comes "
             "from bench/results and none may be left blank"
         )
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / "README.md"
-    path.write_text(rendered, encoding="utf-8", newline="\n")
+    path.write_text(render_card(context, template), encoding="utf-8", newline="\n")
     return path
 
 
@@ -202,6 +228,12 @@ def main(argv: Sequence[str] | None = None) -> Path:
     parser.add_argument("--results-dir", type=Path, default=Path("bench/results"))
     parser.add_argument("--headline-row", type=int, default=4)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--limitations",
+        type=Path,
+        default=None,
+        help="markdown file appended to the limitations derived from holdout.json",
+    )
     ns = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO)
 
@@ -210,7 +242,8 @@ def main(argv: Sequence[str] | None = None) -> Path:
         raise IncompleteCard(
             "no git SHA is available; a published card records the commit that trained it"
         )
-    context = build_context(ns.model_dir, ns.results_dir, sha=sha)
+    extra = ns.limitations.read_text(encoding="utf-8") if ns.limitations else None
+    context = build_context(ns.model_dir, ns.results_dir, sha=sha, limitations=extra)
     path = write_card(context, ns.model_dir)
     log.info("wrote %s", path)
     if ns.dry_run:
@@ -231,6 +264,8 @@ __all__ = [
     "IncompleteCard",
     "build_context",
     "main",
+    "template_slots",
+    "unfilled_slots",
     "render_card",
     "holdout_log_line",
     "write_card",

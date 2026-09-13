@@ -100,6 +100,29 @@ class TrainConfig(BaseModel):
     def model_version(self) -> str:
         return f"{self.profile}@{git_sha()}"
 
+    def training_command(self, corpus: Path, out_dir: Path) -> str:
+        """The exact command that reproduces this artefact. The model card publishes it."""
+        parts = [
+            "python -m sieve.model.train",
+            "--config bench/train.yaml",
+            f"--profile {self.profile}",
+            f"--fold {self.fold}",
+            f"--seed {self.seed}",
+        ]
+        if self.epochs_explicit:
+            parts.append(f"--epochs {self.epochs}")
+        if self.num_labels != 3:
+            parts.append(f"--num-labels {self.num_labels}")
+        if self.mode != "full":
+            parts.append(f"--mode {self.mode}")
+        if self.scanner_features:
+            parts.append("--scanner-features")
+        if self.allow_reduced_precision:
+            parts.append("--allow-reduced-precision")
+        parts.append(f"--corpus {corpus.as_posix()}")
+        parts.append(f"--out {out_dir.as_posix()}")
+        return " ".join(parts)
+
 
 def load_profile(
     config_path: Path,
@@ -411,6 +434,8 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         out_dir / "sieve_config.json",
         {
             "model_version": config.model_version(),
+            "base_model": config.base_model,
+            "training_command": config.training_command(corpus_path, out_dir),
             "fold": config.fold,
             "seed": config.seed,
             "mode": config.mode,

@@ -16,7 +16,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 
@@ -75,6 +75,8 @@ class Selection:
     winner: str
     rule: str
     margin: float
+    #: Which clause of RULE decided it: the mean, the p95 tie-break, or the declared default.
+    decided_by: Literal["mean", "p95", "default"]
     per_architecture: dict[str, Architecture]
     decided_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     sha: str = field(default_factory=lambda: git_sha(short=False))
@@ -84,6 +86,7 @@ class Selection:
             "winner": self.winner,
             "rule": self.rule,
             "margin": self.margin,
+            "decided_by": self.decided_by,
             "per_architecture": {
                 name: arch.as_dict() for name, arch in self.per_architecture.items()
             },
@@ -147,7 +150,10 @@ def select(candidates: Mapping[str, Sequence[Path]], *, expected_ids: Sequence[s
 
     ranked = sorted(architectures.values(), key=lambda a: a.mean, reverse=True)
     best, runner_up = ranked[0], ranked[1]
+    # The margin is the mean gap the FIRST clause of the rule saw, recorded before any
+    # tie-break so a reader can tell how close the decision actually was.
     margin = best.mean - runner_up.mean
+    decided_by: Literal["mean", "p95", "default"] = "mean"
 
     if margin < TIE_BAND:
         tied = [a for a in ranked if best.mean - a.mean < TIE_BAND]
@@ -157,12 +163,21 @@ def select(candidates: Mapping[str, Sequence[Path]], *, expected_ids: Sequence[s
             still_tied = [
                 a for a in with_latency if abs((a.p95_ms or 0.0) - (fastest.p95_ms or 0.0)) < 1e-9
             ]
-            best = still_tied[0] if len(still_tied) == 1 else _default_of(still_tied)
+            if len(still_tied) == 1:
+                best, decided_by = still_tied[0], "p95"
+            else:
+                best, decided_by = _default_of(still_tied), "default"
         else:
-            best = _default_of(tied)
-        log.info("tie inside %.4f macro-F1; broke toward %s", TIE_BAND, best.name)
+            best, decided_by = _default_of(tied), "default"
+        log.info("tie inside %.4f macro-F1; broke toward %s by %s", TIE_BAND, best.name, decided_by)
 
-    return Selection(winner=best.name, rule=RULE, margin=margin, per_architecture=architectures)
+    return Selection(
+        winner=best.name,
+        rule=RULE,
+        margin=margin,
+        decided_by=decided_by,
+        per_architecture=architectures,
+    )
 
 
 def _default_of(tied: Sequence[Architecture]) -> Architecture:

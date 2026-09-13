@@ -13,10 +13,11 @@ from sieve.types import CorpusRecord
 
 LOG_KEYS = {"git_sha", "utc", "rows_evaluated", "reason"}
 
-#: Every file allowed to mention the holdout at all. Kept as a constant so the call below
-#: is a plain argv reference rather than an inline literal.
-GIT_GREP_HOLDOUT = [
-    "git", "grep", "-l", "-e", 'split == "holdout"', "-e", "'holdout'", "--", "sieve", "bench",
+#: Every file allowed to mention a sealed split at all. Plain substrings, so
+#: `rec.split == "holdout"`, `in {"holdout", "eval_only"}` and a bare `eval_only`
+#: all match; the earlier exact-spacing pattern matched none of them and passed vacuously.
+GIT_GREP_SEALED = [
+    "git", "grep", "-l", "-e", "holdout", "-e", "eval_only", "--", "sieve", "bench",
 ]  # fmt: skip
 
 
@@ -78,11 +79,36 @@ def test_nothing_else_in_the_repository_opens_the_holdout() -> None:
     """The one grep that keeps the rule true as the repository grows."""
     import subprocess
 
-    hits = subprocess.run(  # noqa: S603 - fixed argv, no shell; git is on PATH in CI
-        GIT_GREP_HOLDOUT, capture_output=True, text=True, check=False
-    ).stdout.split()
-    allowed = {"bench/eval_final.py", "sieve/model/data.py", "bench/baseline/run.py"}
-    assert set(hits) <= allowed, f"unexpected holdout reader(s): {set(hits) - allowed}"
+    hits = set(
+        subprocess.run(  # noqa: S603 - fixed argv, no shell; git is on PATH in CI
+            GIT_GREP_SEALED, capture_output=True, text=True, check=False
+        ).stdout.split()
+    )
+    # A vacuous pass is the failure mode this test exists to avoid: the earlier pattern matched
+    # nothing at all and `set() <= allowed` was true.
+    assert "bench/eval_final.py" in hits, f"the grep matched nothing useful: {hits}"
+    allowed = {
+        # Reads sealed ROWS. There is exactly one.
+        "bench/eval_final.py",
+        # Refuse or drop a sealed row; none of them can read one.
+        "sieve/model/data.py",
+        "sieve/model/train.py",
+        "sieve/model/select.py",
+        "sieve/model/__init__.py",
+        "bench/ablations/run.py",
+        "bench/analysis/errors.py",
+        # Declares the `Split` literal.
+        "sieve/types.py",
+        # Read the holdout REPORT (`holdout.json`), never a row.
+        "sieve/model/push.py",
+        "sieve/model/card.md",
+        # Other lanes' own split handling.
+        "bench/baseline/run.py",
+        "bench/split/assign.py",
+        "bench/stats.py",
+        "bench/publish.py",
+    }
+    assert hits <= allowed, f"unexpected holdout/eval_only reader(s): {sorted(hits - allowed)}"
 
 
 # ------------------------------------------------------------------------------ the report

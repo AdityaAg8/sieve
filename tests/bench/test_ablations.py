@@ -12,12 +12,15 @@ from bench.ablations.run import (
     InsufficientSeeds,
     MatrixError,
     RowSpec,
+    dataset_version,
     evaluate_row,
     load_baseline_rows,
     load_matrix,
     load_minimal_pairs,
     minimal_pair_accuracy,
+    pooled_oof_scores,
     run_matrix,
+    scanner_findings_from_baseline,
     write_results,
 )
 from sieve.model.data import load_corpus
@@ -142,18 +145,7 @@ def test_a_matrix_with_a_repeated_row_number_is_rejected(tmp_path: Path) -> None
 # --------------------------------------------------------------------------------- rows
 
 
-@pytest.mark.parametrize(
-    "spec",
-    [
-        _spec(row=2, classifier="tfidf", minimal_pairs=True),
-        _spec(row=4, classifier="models/x-s*", minimal_pairs=True),
-        _spec(row=12, classifier="models/x-2c-s*", num_labels=2, minimal_pairs=True),
-        _spec(row=13, classifier="unicode_hygiene"),
-    ],
-    ids=["row2-tfidf", "row4-encoder", "row12-two-class", "row13-hygiene"],
-)
-def test_every_required_key_is_present(spec: RowSpec, inputs: Inputs) -> None:
-    result = _evaluate(spec, inputs)
+def _assert_row_shape(result: dict[str, Any]) -> None:
     assert set(result) >= REQUIRED_KEYS
     for key in ("fpr_stage1_at_t_low", "fpr_pipeline", "oof_recall_at_t_low"):
         assert set(result[key]) == {"point", "lo", "hi"}
@@ -161,9 +153,41 @@ def test_every_required_key_is_present(spec: RowSpec, inputs: Inputs) -> None:
     assert set(result["fp_reduction_vs_baseline"]) >= {"point", "lo", "hi", "mcnemar_p"}
 
 
-def test_the_judge_can_only_remove_confirmations(inputs: Inputs) -> None:
+@pytest.mark.parametrize(
+    "spec",
+    [
+        _spec(row=2, classifier="tfidf", minimal_pairs=True),
+        _spec(row=13, classifier="unicode_hygiene"),
+    ],
+    ids=["row2-tfidf", "row13-hygiene"],
+)
+def test_every_required_key_is_present(spec: RowSpec, inputs: Inputs) -> None:
+    _assert_row_shape(_evaluate(spec, inputs))
+
+
+@pytest.mark.parametrize("num_labels", [3, 2], ids=["row4-encoder", "row12-two-class"])
+def test_every_required_key_is_present_for_a_seeded_row(
+    inputs: Inputs, artefacts: Path, num_labels: int
+) -> None:
+    """Seeded rows are scored from committed OOF arrays, so they need a real artefact."""
+    _assert_row_shape(
+        _evaluate(
+            _spec(
+                row=4 if num_labels == 3 else 12,
+                classifier=str(artefacts / "tiny-s*"),
+                num_labels=num_labels,
+                minimal_pairs=True,
+            ),
+            inputs,
+        )
+    )
+
+
+def test_the_judge_can_only_remove_confirmations(inputs: Inputs, artefacts: Path) -> None:
     """Row 6: a row the judge dismisses leaves the confirmed set, so pipeline FPR cannot rise."""
-    row6 = _evaluate(_spec(row=6, judge="claude-haiku-4-5"), inputs)
+    row6 = _evaluate(
+        _spec(row=6, classifier=str(artefacts / "tiny-s*"), judge="claude-haiku-4-5"), inputs
+    )
     assert row6["fpr_stage1_at_t_low"]["point"] >= row6["fpr_pipeline"]["point"]
 
 
@@ -181,8 +205,10 @@ def test_row_13_is_the_hygiene_detector_broken_down_per_concealment(inputs: Inpu
     assert "preprocessing, not in the model" in result["note"]
 
 
-def test_row_14_reports_a_fraction(inputs: Inputs) -> None:
-    result = _evaluate(_spec(row=14, minimal_pairs=True), inputs)
+def test_row_14_reports_a_fraction(inputs: Inputs, artefacts: Path) -> None:
+    result = _evaluate(
+        _spec(row=14, classifier=str(artefacts / "tiny-s*"), minimal_pairs=True), inputs
+    )
     accuracy = result["minimal_pair_accuracy"]
     assert accuracy is not None
     assert 0.0 <= accuracy <= 1.0
@@ -195,8 +221,9 @@ def test_minimal_pair_accuracy_needs_both_sides_right() -> None:
     assert minimal_pair_accuracy(pairs, {}) is None
 
 
-def test_a_row_without_minimal_pairs_reports_null(inputs: Inputs) -> None:
-    assert _evaluate(_spec(row=3, mode="description_only"), inputs)["minimal_pair_accuracy"] is None
+def test_a_row_without_minimal_pairs_reports_null(inputs: Inputs, artefacts: Path) -> None:
+    spec = _spec(row=3, classifier=str(artefacts / "tiny-s*"), mode="description_only")
+    assert _evaluate(spec, inputs)["minimal_pair_accuracy"] is None
 
 
 # ------------------------------------------------------------------- refusals, not partial rows
@@ -223,7 +250,7 @@ def test_a_baseline_row_missing_a_record_raises(inputs: Inputs) -> None:
 def test_a_row_that_asks_for_minimal_pairs_without_them_raises(inputs: Inputs) -> None:
     inputs.minimal_pairs = None
     with pytest.raises(MatrixError, match="minimal pairs"):
-        _evaluate(_spec(row=14, minimal_pairs=True), inputs)
+        _evaluate(_spec(row=14, classifier="tfidf", minimal_pairs=True), inputs)
 
 
 def test_an_encoder_row_with_fewer_than_three_seeds_raises(inputs: Inputs) -> None:
@@ -285,9 +312,11 @@ def test_a_network_call_during_a_run_is_an_error(inputs: Inputs) -> None:
             sock.connect(("example.invalid", 80))
         return FakeClassifier()
 
+    # `reinference` is the only path that still loads a model, so it is the only way a row can
+    # reach the network at all. The guard has to catch it.
     with pytest.raises(MatrixError, match="network connection"):
         run_matrix(
-            [_spec(row=2, classifier="tfidf")],
+            [_spec(row=4, classifier="models/x-s*", reinference=True)],
             inputs,
             classifier_factory=phoning_home,
             n_boot=N_BOOT,
@@ -465,7 +494,285 @@ def test_the_committed_demo_file_is_provisional_and_matches_a_fresh_run(tmp_path
     if not committed.exists():
         pytest.skip("bench/results/demo.json has not been generated yet")
     fresh = main(["--results-dir", str(tmp_path)])
-    assert json.loads(committed.read_text(encoding="utf-8")) == json.loads(
-        fresh.read_text(encoding="utf-8")
-    )
+    # Bytes, not parsed JSON: `make bench` claims byte-identical reproduction (M6a), and a
+    # newline or key-order change is exactly the drift a parsed comparison would hide.
+    assert committed.read_bytes() == fresh.read_bytes()
     assert json.loads(committed.read_text(encoding="utf-8"))["meta"]["provisional"] is True
+
+
+# ===========================================================================================
+# Seeded rows are scored from pooled OUT-OF-FOLD arrays, never by re-running inference.
+#
+# Every artefact below is produced by a real writer: the per-fold files in the shape
+# `sieve.model.train.run` writes them, the pooled arrays and `sieve_config.json` by
+# `sieve.model.calibrate.main` itself. Nothing here hand-types a number production computes.
+# ===========================================================================================
+
+
+def _write_fold(directory: Path, held: list[CorpusRecord], *, seed: int, skill: float) -> Path:
+    """One fold artefact in the shape `sieve.model.train.run` writes it."""
+    import numpy as np
+
+    from sieve.model.data import LABEL2ID
+
+    directory.mkdir(parents=True, exist_ok=True)
+    rng = np.random.default_rng(seed)
+    logits = rng.normal(0.0, 0.5, size=(len(held), 3))
+    for row, record in zip(logits, held, strict=True):
+        row[LABEL2ID[record.label]] += skill
+    np.save(directory / "oof_logits.npy", logits.astype(np.float32))
+    np.save(
+        directory / "oof_labels.npy",
+        np.asarray([LABEL2ID[r.label] for r in held], dtype=np.int64),
+    )
+    (directory / "oof_ids.json").write_text(
+        json.dumps([r.id for r in held], indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
+    (directory / "sieve_config.json").write_text(
+        json.dumps(
+            {
+                "model_version": f"tiny@abc{seed}",
+                "fold": None,
+                "seed": seed,
+                "mode": "full",
+                "num_labels": 3,
+                "max_length": 128,
+                "temperature": None,
+                "t_low": None,
+                "t_high": None,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    return directory
+
+
+@pytest.fixture
+def corpus_file(dev: list[CorpusRecord], tmp_path: Path) -> Path:
+    path = tmp_path / "labelled.jsonl"
+    path.write_text(
+        "".join(r.model_dump_json() + "\n" for r in dev), encoding="utf-8", newline="\n"
+    )
+    return path
+
+
+@pytest.fixture
+def artefacts(dev: list[CorpusRecord], corpus_file: Path, tmp_path: Path) -> Path:
+    """`<models>/tiny-s{0,1,2}`, each holding real pooled arrays and a real threshold file."""
+    from sieve.model.calibrate import main as calibrate_main
+
+    models = tmp_path / "models"
+    for seed in DEFAULT_SEEDS:
+        fold_dirs = [
+            _write_fold(
+                models / f"tiny-f{fold}-s{seed}",
+                [r for r in dev if r.fold == fold],
+                seed=seed * 10 + fold,
+                # Three seeds are three models: give them different skill so macro_f1_std is a
+                # real spread and a bug that reads one seed three times cannot hide in it.
+                skill=2.4 - 0.7 * seed,
+            )
+            for fold in range(5)
+        ]
+        calibrate_main(
+            [
+                "--dirs", *[str(d) for d in fold_dirs],
+                "--corpus", str(corpus_file),
+                "--results-dir", str(models / "results"),
+                "--out", str(models / f"tiny-s{seed}"),
+                "--n-boot", "40", "--curve-boot", "40", "--curve-points", "12",
+            ]
+        )  # fmt: skip
+    return models
+
+
+def _explodes(spec: RowSpec, seed: int) -> Classifier:
+    """A factory that must never be reached: a seeded row is scored from committed arrays."""
+    raise AssertionError(f"row {spec.row} re-ran inference instead of reading pooled OOF arrays")
+
+
+def _row(spec: RowSpec, inputs: Inputs, **kwargs: Any) -> dict[str, Any]:
+    return evaluate_row(
+        spec,
+        inputs,
+        classifier_factory=kwargs.pop("classifier_factory", _explodes),
+        judge_factory=kwargs.pop("judge_factory", None),
+        seeds=kwargs.pop("seeds", DEFAULT_SEEDS),
+        n_boot=kwargs.pop("n_boot", N_BOOT),
+        **kwargs,
+    )
+
+
+def test_pooled_oof_scores_read_the_real_calibrate_output(
+    dev: list[CorpusRecord], artefacts: Path
+) -> None:
+    scored = pooled_oof_scores(artefacts / "tiny-s0", dev)
+    assert len(scored.scores) == len(dev)
+    assert all(0.0 <= s <= 1.0 for s in scored.scores)
+    assert scored.predicted is not None
+    config = json.loads((artefacts / "tiny-s0" / "sieve_config.json").read_text(encoding="utf-8"))
+    assert scored.thresholds.t_low == config["t_low"]
+    assert scored.thresholds.temperature == config["temperature"]
+
+
+def test_scores_are_reordered_onto_the_record_order_not_the_fold_order(
+    dev: list[CorpusRecord], artefacts: Path
+) -> None:
+    """`oof_ids.json` is fold-concatenated; the metrics need record order."""
+    forward = pooled_oof_scores(artefacts / "tiny-s0", dev)
+    backward = pooled_oof_scores(artefacts / "tiny-s0", list(reversed(dev)))
+    assert backward.scores == list(reversed(forward.scores))
+
+
+def test_a_seeded_row_never_re_runs_inference(inputs: Inputs, artefacts: Path) -> None:
+    result = _row(
+        RowSpec(row=4, name="headline", classifier=str(artefacts / "tiny-s*"), judge="none"),
+        inputs,
+    )
+    assert result["oof_recall_at_t_low"]["point"] > 0.0
+    assert result["macro_f1_mean"] is not None
+    assert result["seeds"] == list(DEFAULT_SEEDS)
+
+
+def test_the_seed_glob_is_substituted_per_seed(inputs: Inputs, artefacts: Path) -> None:
+    """Three seeds must produce three different macro-F1 values, not one repeated."""
+    result = _row(
+        RowSpec(row=4, name="headline", classifier=str(artefacts / "tiny-s*"), judge="none"),
+        inputs,
+    )
+    assert result["macro_f1_std"] > 0.0
+
+
+def test_a_missing_seed_artefact_raises_rather_than_writing_a_partial_row(
+    inputs: Inputs, tmp_path: Path
+) -> None:
+    with pytest.raises(MatrixError, match="oof_logits.npy"):
+        _row(
+            RowSpec(row=4, name="headline", classifier=str(tmp_path / "nope-s*"), judge="none"),
+            inputs,
+        )
+
+
+def test_an_artefact_that_does_not_cover_the_dev_set_raises(
+    dev: list[CorpusRecord], inputs: Inputs, artefacts: Path
+) -> None:
+    inputs.records = [*dev, dev[0].model_copy(update={"id": "unseen", "server_name": "ghost"})]
+    with pytest.raises(MatrixError, match="missing"):
+        _row(
+            RowSpec(row=4, name="headline", classifier=str(artefacts / "tiny-s*"), judge="none"),
+            inputs,
+        )
+
+
+def test_an_uncalibrated_artefact_raises_rather_than_defaulting_a_threshold(
+    dev: list[CorpusRecord], tmp_path: Path
+) -> None:
+    from sieve.model.thresholds import ThresholdsMissing
+
+    uncalibrated = _write_fold(tmp_path / "raw-s0", dev, seed=1, skill=2.0)
+    with pytest.raises(ThresholdsMissing):
+        pooled_oof_scores(uncalibrated, dev)
+
+
+# ---------------------------------------------------------------------- row 2 is production
+
+
+def test_row_two_fits_tfidf_per_fold_with_no_factory(inputs: Inputs) -> None:
+    """The TF-IDF baseline is fitted here, over the same five folds, not loaded from the Hub."""
+    result = _row(RowSpec(row=2, name="tfidf", classifier="tfidf", judge="none"), inputs)
+    assert result["macro_f1_mean"] is not None
+    assert result["macro_f1_mean"] > 0.5
+    assert result["seeds"] == [0]
+    assert 0.0 <= result["oof_recall_at_t_low"]["point"] <= 1.0
+
+
+def test_row_two_thresholds_come_from_its_own_pooled_oof(inputs: Inputs) -> None:
+    import numpy as np
+
+    result = _row(RowSpec(row=2, name="tfidf", classifier="tfidf", judge="none"), inputs)
+    assert not np.isnan(result["t_low"])
+    assert result["t_low"] <= result["t_high"]
+
+
+# ----------------------------------------------------------------- row 9 scanner features
+
+
+def test_a_row_asking_for_scanner_features_without_them_raises(inputs: Inputs) -> None:
+    with pytest.raises(MatrixError, match="scanner feature"):
+        _row(
+            RowSpec(row=9, name="scanner", classifier="tfidf", judge="none", scanner_features=True),
+            inputs,
+        )
+
+
+def test_scanner_features_reach_the_serialisation(dev: list[CorpusRecord], inputs: Inputs) -> None:
+    inputs.scanner_findings_by_id = scanner_findings_from_baseline(inputs.baseline_rows)
+    flagged = [r for r in dev if inputs.baseline_rows[r.id]["flagged"]]
+    assert flagged, "the fixture must flag something"
+    assert all(f.rule_id == "R1" for f in inputs.scanner_findings_by_id[flagged[0].id])
+
+    result = _row(
+        RowSpec(row=9, name="scanner", classifier="tfidf", judge="none", scanner_features=True),
+        inputs,
+    )
+    assert result["scanner_features"] is True
+    assert result["macro_f1_mean"] is not None
+
+
+# ------------------------------------------------------------------------------- p95_ms
+
+
+def test_p95_is_read_per_seed_and_averaged(inputs: Inputs, artefacts: Path) -> None:
+    """`_p95_ms` must substitute the seed glob; a literal `s*` path never exists."""
+    for seed, value in zip(DEFAULT_SEEDS, (100.0, 120.0, 140.0), strict=True):
+        path = artefacts / f"tiny-s{seed}" / "sieve_config.json"
+        config = json.loads(path.read_text(encoding="utf-8"))
+        config["p95_ms"] = value
+        path.write_text(
+            json.dumps(config, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
+        )
+    result = _row(
+        RowSpec(row=4, name="headline", classifier=str(artefacts / "tiny-s*"), judge="none"),
+        inputs,
+    )
+    assert result["p95_ms"] == pytest.approx(120.0)
+
+
+def test_p95_is_null_for_a_row_with_no_artefact(inputs: Inputs) -> None:
+    result = _row(
+        RowSpec(row=13, name="hygiene", classifier="unicode_hygiene", judge="none"), inputs
+    )
+    assert result["p95_ms"] is None
+
+
+# ------------------------------------------------------------------- the shared vocabulary
+
+
+def test_dataset_version_is_recorded(inputs: Inputs, corpus_file: Path) -> None:
+    inputs.dataset_version = dataset_version(corpus_file)
+    payload = run_matrix(
+        [RowSpec(row=13, name="hygiene", classifier="unicode_hygiene", judge="none")],
+        inputs,
+        classifier_factory=_explodes,
+        n_boot=N_BOOT,
+    )
+    assert payload["dataset_version"] == inputs.dataset_version
+    assert "@" in payload["dataset_version"]
+
+
+def test_the_two_breakdown_helpers_share_one_key_vocabulary(
+    inputs: Inputs, dev: list[CorpusRecord]
+) -> None:
+    """`push._table` reads one set of keys; both writers must emit it."""
+    from bench.eval_final import evaluate as holdout_evaluate
+
+    row = _row(RowSpec(row=13, name="hygiene", classifier="unicode_hygiene", judge="none"), inputs)
+    sealed = [r.model_copy(update={"split": "holdout"}) for r in dev]
+    holdout = holdout_evaluate(sealed, [], FakeClassifier(), None, n_boot=N_BOOT)
+    assert set(next(iter(row["per_tier"].values()))) == set(
+        next(iter(holdout["per_tier"].values()))
+    )

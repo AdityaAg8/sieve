@@ -5,6 +5,13 @@
 # ReplayJudge, and bench/results/baseline_raw.json. `classifier` names either a keyword
 # (tfidf | unicode_hygiene | baseline | none) or an artefact directory whose `*` is the seed.
 #
+# A row that names an artefact is scored from that artefact's pooled `oof_logits.npy`, NOT by
+# re-running inference: the artefact was fitted on dev servers, so scoring dev rows with it
+# would be in-sample and every `oof_*` number would be optimistic. That is why every row with
+# its own serialisation (3, 9), its own head (12) or its own architecture (5) names its own
+# artefact directory and its own training run; `mode`, `num_labels` and `scanner_features`
+# record how that artefact was trained rather than changing anything at scoring time.
+#
 # Row 4 is the pre-registered headline configuration. `models/deberta-v3-base-s*` is a
 # placeholder until bench/results/selection.json names the winner; the retrain and the Hub push
 # are human runbook steps, so no committed number depends on these paths resolving yet.
@@ -22,7 +29,7 @@ rows:
 
   - row: 3
     name: Primary encoder, description-only serialisation
-    classifier: models/deberta-v3-base-s*
+    classifier: models/deberta-v3-base-desc-s*
     judge: none
     mode: description_only
 
@@ -62,7 +69,7 @@ rows:
 
   - row: 9
     name: Full serialisation + scanner features
-    classifier: models/deberta-v3-base-s*
+    classifier: models/deberta-v3-base-scanner-s*
     judge: none
     mode: full
     scanner_features: true

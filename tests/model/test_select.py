@@ -85,6 +85,7 @@ def test_a_tie_inside_the_band_goes_to_the_lower_p95(tmp_path: Path) -> None:
     selection = select(candidates, expected_ids=IDS)
     assert selection.margin == pytest.approx(0.0)
     assert selection.winner == "modernbert-base"
+    assert selection.decided_by == "p95"
 
 
 def test_a_full_tie_goes_to_deberta(tmp_path: Path) -> None:
@@ -93,7 +94,9 @@ def test_a_full_tie_goes_to_deberta(tmp_path: Path) -> None:
         "modernbert-base": _candidate(tmp_path, "modernbert", same, p95_ms=100.0),
         "deberta-v3-base": _candidate(tmp_path, "deberta", same, p95_ms=100.0),
     }
-    assert select(candidates, expected_ids=IDS).winner == "deberta-v3-base"
+    selection = select(candidates, expected_ids=IDS)
+    assert selection.winner == "deberta-v3-base"
+    assert selection.decided_by == "default"
 
 
 def test_a_full_tie_with_no_latency_recorded_still_goes_to_deberta(tmp_path: Path) -> None:
@@ -201,10 +204,12 @@ def test_selection_json_records_the_rule_verbatim(tmp_path: Path) -> None:
         "winner",
         "rule",
         "margin",
+        "decided_by",
         "per_architecture",
         "decided_at",
         "git_sha",
     }
+    assert payload["decided_by"] == "mean"
     assert set(payload["per_architecture"]["deberta-v3-base"]) >= {
         "macro_f1_mean",
         "macro_f1_std",

@@ -56,18 +56,22 @@ def test_it_looks_at_every_string_leaf_not_only_the_description() -> None:
     assert detect(record) is True
 
 
-def test_it_fires_on_exactly_the_fixture_rows_that_hide_content() -> None:
-    """The detector follows the text, not the `concealment` label.
+def test_it_agrees_with_the_corpus_concealment_label() -> None:
+    """The detector follows the text; the corpus label now says the same thing.
 
-    mini-50 declares `concealment: "none"` on every row, but mini-023 hides its payload in an
-    HTML comment, so the honest answer is one hit. That mismatch is a corpus-labelling question
-    for L1 and is reported in the hand-off; the detector must not be tuned around it.
+    Round 1 found the detector firing on mini-023 while the row was labelled
+    `concealment: "none"`. The corpus was corrected (the payload is in an HTML comment), so the
+    two now agree and this test pins that agreement in both directions.
     """
     records = load_corpus(Path("fixtures/corpus/mini-50.jsonl"))
-    flagged = [r.id for r in records if detect(r.to_tool_record())]
-    assert flagged == ["mini-023"]
+    flagged = {r.id for r in records if detect(r.to_tool_record())}
+    labelled = {r.id for r in records if r.concealment != "none"}
+    assert flagged == labelled
+    assert flagged, "the fixture must exercise at least one concealed row"
     assert all(
-        unicode_flags(r.to_tool_record())["html_comments"] > 0 for r in records if r.id in flagged
+        unicode_flags(r.to_tool_record())["html_comments"] > 0
+        for r in records
+        if r.concealment == "html_comment"
     )
 
 

@@ -206,16 +206,23 @@ def main(argv: Sequence[str] | None = None) -> Path:
 
     corpus = Path("fixtures/corpus/mini-50.jsonl")
     texts = [serialise(r.to_tool_record()) for r in load_corpus(corpus)[: ns.parity_texts]]
-    config_path = out_dir / CONFIG_FILE
-    config: dict[str, Any] = (
-        json.loads(config_path.read_text(encoding="utf-8")) if config_path.exists() else {}
-    )
-    config["onnx_int8_parity"] = parity(ns.model_dir, graph, texts)
+    measured: dict[str, Any] = {"onnx_int8_parity": parity(ns.model_dir, graph, texts)}
     if ns.latency:
-        config.update(bench_latency(graph, texts[0], n=ns.latency_n, threads=ns.threads))
-    config_path.write_text(
-        json.dumps(config, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
-    )
+        measured.update(bench_latency(graph, texts[0], n=ns.latency_n, threads=ns.threads))
+
+    # Written into BOTH configs. `sieve.model.select` and the ablation matrix read the source
+    # artefact's `sieve_config.json`, not the exported subdirectory's, so writing only the
+    # latter left the latency tie-break and the `p95_ms` column permanently null.
+    for target in (out_dir / CONFIG_FILE, ns.model_dir / CONFIG_FILE):
+        existing: dict[str, Any] = (
+            json.loads(target.read_text(encoding="utf-8")) if target.exists() else {}
+        )
+        existing.update(measured)
+        target.write_text(
+            json.dumps(existing, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
     return Path(out_dir)
 
 

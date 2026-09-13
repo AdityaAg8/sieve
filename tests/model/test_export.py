@@ -8,7 +8,16 @@ import pytest
 from sieve.model.data import load_corpus
 from sieve.model.export import FP32_ONNX, INT8_ONNX, bench_latency, export, main, parity
 
-pytestmark = pytest.mark.filterwarnings("ignore")
+# Targeted, not blanket: the project turns warnings into errors on purpose. Only the
+# noise `transformers`/`torch` emit on a CPU training or export run is filtered, so a
+# new deprecation in this lane's own code still fails the run.
+pytestmark = [
+    pytest.mark.filterwarnings("ignore::FutureWarning"),
+    pytest.mark.filterwarnings("ignore::DeprecationWarning"),
+    pytest.mark.filterwarnings("ignore::UserWarning"),
+    # torch.onnx traces the graph and warns about constant tensors on every export.
+    pytest.mark.filterwarnings("ignore::torch.jit.TracerWarning"),
+]
 
 
 def _texts(n: int = 20) -> list[str]:
@@ -98,6 +107,16 @@ def test_cli_appends_parity_and_latency_to_the_artefact(trained_tiny: Path, tmp_
     assert config["p95_ms"] >= config["p50_ms"]
     # The CLI adds keys; it must not quietly fill in an operating point.
     assert config["t_low"] is None and config["t_high"] is None
+
+    # The SOURCE artefact gets the same numbers, because that is where `sieve.model.select`
+    # and the ablation matrix look for `p95_ms`.
+    source = json.loads((trained_tiny / "sieve_config.json").read_text(encoding="utf-8"))
+    assert source["p95_ms"] == config["p95_ms"]
+    assert source["p50_ms"] == config["p50_ms"]
+    assert source["onnx_int8_parity"] == config["onnx_int8_parity"]
+    # ...without losing what training wrote there.
+    assert source["model_version"] == config["model_version"]
+    assert source["training_command"].startswith("python -m sieve.model.train")
 
 
 def test_parity_refuses_a_missing_graph(tmp_path: Path) -> None:

@@ -13,11 +13,12 @@ module imports no lane package; the concrete `ReplayJudge` is resolved inside `m
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 import os
 import socket
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -88,6 +89,9 @@ class RowSpec(BaseModel):
     scanner_features: bool = False
     breakdown_of: list[int] = []
     minimal_pairs: bool = False
+    #: Score by loading the model and re-running inference instead of reading committed
+    #: OOF arrays. In-sample over dev; off for every committed row.
+    reinference: bool = False
     note: str | None = None
 
     @property
@@ -109,6 +113,7 @@ class Inputs:
     minimal_pairs: list[dict[str, Any]] | None = None
     judge_usage: list[dict[str, Any]] = field(default_factory=list)
     scanner_findings_by_id: dict[str, list[ScannerFinding]] = field(default_factory=dict)
+    dataset_version: str | None = None
 
 
 # --------------------------------------------------------------------------- offline guard
@@ -217,6 +222,87 @@ def _binary(point: float) -> Thresholds:
     )
 
 
+def seed_dir(classifier: str, seed: int) -> Path:
+    """`models/<profile>-s*` names a family; one seed is one directory."""
+    return Path(classifier.replace("*", str(seed)))
+
+
+def _scored_from_probs(probs: npt.NDArray[np.float64], thresholds: Thresholds) -> Scored:
+    two_class = probs.shape[1] == 2
+    head = TWO_CLASS_LABELS if two_class else LABELS
+    scores = [float(p) for p in probs[:, -1 if two_class else LABELS.index("poisoned")]]
+    predicted = [head[int(i)] for i in probs.argmax(axis=1)]
+    return Scored(scores, thresholds, predicted, head)
+
+
+def pooled_oof_scores(model_dir: Path, records: Sequence[CorpusRecord]) -> Scored:
+    """Calibrated probabilities for one (architecture, seed), from committed OOF arrays.
+
+    This is the whole point of the lane: a row named `oof_*` is scored by the fold's model on
+    rows that fold never saw. Re-running `predict_proba` with the pooled artefact would score
+    dev rows in-sample and every headline number would be optimistic under an out-of-fold name.
+    Thresholds come from the artefact via `thresholds.load`, which raises on a null.
+    """
+    from sieve.model.calibrate import PoolError, apply, pool_oof
+
+    expected = [r.id for r in records]
+    try:
+        logits, _, ids = pool_oof([Path(model_dir)], expected_ids=expected)
+    except PoolError as exc:
+        raise MatrixError(str(exc)) from exc
+    thresholds = th.load(Path(model_dir))
+    probs = apply(logits, thresholds.temperature)
+    # `oof_ids.json` is fold-concatenated; every metric downstream is positional over `records`.
+    position = {record_id: index for index, record_id in enumerate(ids)}
+    order = np.asarray([position[r.id] for r in records], dtype=np.int64)
+    return _scored_from_probs(probs[order], thresholds)
+
+
+def tfidf_pooled_oof(
+    spec: RowSpec, records: Sequence[CorpusRecord], inputs: Inputs, *, n_boot: int
+) -> Scored:
+    """Fit the TF-IDF baseline per fold and pool its held-out probabilities (row 2).
+
+    Row 2 must be comparable to row 4, so it uses the same five folds and the same threshold
+    procedure. Nothing is loaded from the Hub: `TfidfClassifier` is fitted here, in process.
+    """
+    from sieve.model.data import build_splits, texts_and_labels
+    from sieve.model.tfidf import TfidfClassifier
+
+    folds = sorted({r.fold for r in records if r.fold is not None})
+    if not folds:
+        raise MatrixError(
+            "row 2 needs fold assignments on the dev records; run bench.split.assign first"
+        )
+    findings = inputs.scanner_findings_by_id if spec.scanner_features else None
+    by_id: dict[str, npt.NDArray[np.float64]] = {}
+    for fold in folds:
+        splits = build_splits(records, fold=fold, mode=spec.mode, scanner_findings_by_id=findings)
+        train_texts, train_labels = texts_and_labels(splits["train"])
+        early_texts, early_labels = texts_and_labels(splits["early_stop"])
+        model = TfidfClassifier().fit(train_texts + early_texts, train_labels + early_labels)
+        held_texts, _ = texts_and_labels(splits["oof"])
+        for record_id, row in zip(
+            splits["oof"]["id"], model.predict_proba(held_texts), strict=True
+        ):
+            by_id[str(record_id)] = row
+
+    missing = [r.id for r in records if r.id not in by_id]
+    if missing:
+        raise MatrixError(f"row 2 produced no pooled prediction for {missing[:5]}")
+    probs = np.asarray([by_id[r.id] for r in records], dtype=np.float64)
+    if spec.num_labels == 2:
+        probs = _two_class_block(probs)
+    thresholds = th.select(
+        probs if probs.shape[1] == 3 else _widen(probs),
+        [_three_class_id(r.label) for r in records],
+        [r.server_name for r in records],
+        temperature=1.0,
+        n_boot=n_boot,
+    )
+    return _scored_from_probs(probs, thresholds)
+
+
 def score_row(
     spec: RowSpec,
     records: Sequence[CorpusRecord],
@@ -226,6 +312,11 @@ def score_row(
     seed: int,
     n_boot: int,
 ) -> Scored:
+    if spec.scanner_features and not inputs.scanner_findings_by_id:
+        raise MatrixError(
+            f"row {spec.row} asks for scanner features but no scanner findings were supplied; "
+            "load bench/results/baseline_raw.json before the run"
+        )
     if spec.classifier == "unicode_hygiene":
         scores = [hygiene.score(r.to_tool_record()) for r in records]
         return Scored(scores, _binary(BINARY_DECISION), None, LABELS)
@@ -241,26 +332,16 @@ def score_row(
         # Row 8: no Stage 1 at all, so every row lands in the abstain band and reaches the judge.
         everything_routes = Thresholds(0.0, 2.0, 1.0, float("nan"), float("nan"), 1.0)
         return Scored([0.5] * len(records), everything_routes, None, LABELS)
-
-    model = classifier_factory(spec, seed)
-    probs = np.asarray(model.predict_proba(_texts(spec, records, inputs)), dtype=np.float64)
-    two_class = probs.shape[1] == 2
-    head = TWO_CLASS_LABELS if two_class else LABELS
-    scores = [float(p) for p in probs[:, -1 if two_class else LABELS.index("poisoned")]]
-    predicted = [head[int(i)] for i in probs.argmax(axis=1)]
-
-    thresholds = model.thresholds
-    if not _usable(thresholds):
-        # No calibrated artefact (the TF-IDF baseline): select on this row's OWN pooled OOF
-        # probabilities, with the same procedure row 4 uses, so the rows stay comparable.
-        thresholds = th.select(
-            probs if not two_class else _widen(probs),
-            [_three_class_id(r.label) for r in records],
-            [r.server_name for r in records],
-            temperature=1.0,
-            n_boot=n_boot,
-        )
-    return Scored(scores, thresholds, predicted, head)
+    if spec.classifier == "tfidf":
+        return tfidf_pooled_oof(spec, records, inputs, n_boot=n_boot)
+    if spec.reinference:
+        # The escape hatch, off by default and never used by a committed row: score with a
+        # loaded model instead of committed OOF arrays. In-sample over dev, so the row's own
+        # `note` has to say so.
+        model = classifier_factory(spec, seed)
+        probs = np.asarray(model.predict_proba(_texts(spec, records, inputs)), dtype=np.float64)
+        return _scored_from_probs(probs, model.thresholds)
+    return pooled_oof_scores(seed_dir(spec.classifier, seed), records)
 
 
 def _widen(probs: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
@@ -271,8 +352,47 @@ def _widen(probs: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
     return out
 
 
+def _two_class_block(probs: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+    """Three columns to the two-class head of ablation 12: `not_poisoned`, `poisoned`."""
+    poisoned = probs[:, LABELS.index("poisoned")]
+    return np.stack([1.0 - poisoned, poisoned], axis=1)
+
+
 def _three_class_id(label: Label) -> int:
     return LABELS.index(label)
+
+
+def scanner_findings_from_baseline(
+    baseline_rows: Mapping[str, Mapping[str, Any]],
+) -> dict[str, list[ScannerFinding]]:
+    """`[SCANNER] cisco_yara:<rule_id>` lines for ablation 9, from the recorded flags.
+
+    The rule ids are the only part of a scanner finding the serialisation renders (PRD §11.2),
+    and `baseline_raw.json` is the committed record of them, so row 9 needs no second artefact.
+    """
+    out: dict[str, list[ScannerFinding]] = {}
+    for record_id, row in baseline_rows.items():
+        rule_ids = list(row.get("rule_ids") or [])
+        if not rule_ids:
+            continue
+        out[str(record_id)] = [
+            ScannerFinding(
+                scanner="cisco_yara",
+                scanner_version=str(row.get("scanner_version") or "replayed"),
+                rule_id=str(rule_id),
+                severity=None,
+                message=None,
+                raw={},
+            )
+            for rule_id in rule_ids
+        ]
+    return out
+
+
+def dataset_version(corpus_path: Path) -> str:
+    """`<filename>@<sha256[:12]>` of the corpus file. Deterministic, and it names what it is."""
+    digest = hashlib.sha256(Path(corpus_path).read_bytes()).hexdigest()[:12]
+    return f"{Path(corpus_path).name}@{digest}"
 
 
 # ------------------------------------------------------------------------------- pipeline
@@ -327,27 +447,38 @@ def _ci(
     return {"point": point, "lo": lo, "hi": hi}
 
 
-def _breakdown(
+#: The one key vocabulary for a per-bucket breakdown. `bench.eval_final` imports `breakdown`
+#: rather than repeating it, and `sieve.model.push._table` reads exactly these names.
+BREAKDOWN_KEYS: tuple[str, ...] = (
+    "n",
+    "recall_at_t_low",
+    "fpr_stage1_at_t_low",
+    "fpr_pipeline",
+)
+
+
+def breakdown(
     records: Sequence[CorpusRecord],
     truth: Sequence[str],
     scores: Sequence[float],
-    verdicts: Sequence[Verdict],
-    thresholds: Thresholds,
+    confirmed: Sequence[float],
+    t_low: float,
     key: Callable[[CorpusRecord], str],
 ) -> dict[str, dict[str, float]]:
+    """Per-bucket recall, Stage-1 FPR and pipeline FPR. Shared by the matrix and the holdout."""
     buckets: dict[str, list[int]] = {}
     for index, record in enumerate(records):
         buckets.setdefault(key(record), []).append(index)
     out: dict[str, dict[str, float]] = {}
     for bucket, indices in sorted(buckets.items()):
         bucket_truth = [truth[i] for i in indices]
-        bucket_scores = [scores[i] for i in indices]
-        confirmed = [_confirmed_flags(verdicts)[i] for i in indices]
-        _, recall, fpr = precision_recall_fpr(bucket_truth, bucket_scores, thresholds.t_low)
-        _, _, fpr_pipeline = precision_recall_fpr(bucket_truth, confirmed, BINARY_DECISION)
+        _, recall, fpr = precision_recall_fpr(bucket_truth, [scores[i] for i in indices], t_low)
+        _, _, fpr_pipeline = precision_recall_fpr(
+            bucket_truth, [confirmed[i] for i in indices], BINARY_DECISION
+        )
         out[bucket] = {
             "n": float(len(indices)),
-            "oof_recall_at_t_low": recall,
+            "recall_at_t_low": recall,
             "fpr_stage1_at_t_low": fpr,
             "fpr_pipeline": fpr_pipeline,
         }
@@ -516,28 +647,28 @@ def evaluate_row(
         "routing_rate": routing_rate,
         "macro_f1_mean": float(np.mean(macro)) if macro else None,
         "macro_f1_std": float(np.std(macro)) if macro else None,
-        "per_tier": _breakdown(
+        "per_tier": breakdown(
             records,
             truth,
             head.scores,
-            verdicts,
-            head.thresholds,
+            confirmed,
+            head.thresholds.t_low,
             lambda r: r.difficulty or "unscored",
         ),
-        "per_concealment": _breakdown(
-            records, truth, head.scores, verdicts, head.thresholds, lambda r: r.concealment
+        "per_concealment": breakdown(
+            records, truth, head.scores, confirmed, head.thresholds.t_low, lambda r: r.concealment
         ),
-        "per_source": _breakdown(
+        "per_source": breakdown(
             records,
             truth,
             head.scores,
-            verdicts,
-            head.thresholds,
+            confirmed,
+            head.thresholds.t_low,
             lambda r: f"{r.source}/{r.generator_model or 'none'}",
         ),
         "minimal_pair_accuracy": None,
         "cost_usd_per_50": _cost_per_50(routing_rate, inputs.judge_usage) if judge else None,
-        "p95_ms": _p95_ms(spec),
+        "p95_ms": _p95_ms(spec, row_seeds),
         "breakdown_of": spec.breakdown_of,
         "note": spec.note,
     }
@@ -564,15 +695,23 @@ def _collapse(label: str) -> str:
     return "poisoned" if label == "poisoned" else "not_poisoned"
 
 
-def _p95_ms(spec: RowSpec) -> float | None:
-    """The measured latency the export step wrote into the artefact, when there is one."""
+def _p95_ms(spec: RowSpec, seeds: Sequence[int]) -> float | None:
+    """Mean measured p95 across the row's seeds, from each artefact's `sieve_config.json`.
+
+    The seed glob has to be substituted: `models/<profile>-s*/sieve_config.json` is a path that
+    never exists, and reading it silently produced `null` for every row.
+    """
     if not spec.seeded:
         return None
-    config = Path(spec.classifier) / th.CONFIG_FILE
-    if not config.exists():
-        return None
-    value = json.loads(config.read_text(encoding="utf-8")).get("p95_ms")
-    return None if value is None else float(value)
+    values: list[float] = []
+    for seed in seeds:
+        config = seed_dir(spec.classifier, seed) / th.CONFIG_FILE
+        if not config.exists():
+            continue
+        value = json.loads(config.read_text(encoding="utf-8")).get("p95_ms")
+        if value is not None:
+            values.append(float(value))
+    return float(np.mean(values)) if values else None
 
 
 # ------------------------------------------------------------------------------ the matrix
@@ -611,6 +750,7 @@ def run_matrix(
         ]
     return {
         "rows": results,
+        "dataset_version": inputs.dataset_version,
         "n_records": len(inputs.records),
         "seeds": list(seeds),
         "n_boot": n_boot,
@@ -672,18 +812,34 @@ def main(argv: Sequence[str] | None = None) -> Path:
     from sieve.model.data import load_corpus
 
     records = [r for r in load_corpus(ns.corpus) if r.split == "dev"]
+    specs = load_matrix(ns.matrix)
+    wanted = [int(x) for x in ns.rows.split(",")] if ns.rows else None
+    selected = [s for s in specs if wanted is None or s.row in set(wanted)]
+
+    baseline_rows = load_baseline_rows(ns.results_dir / "baseline_raw.json")
     inputs = Inputs(
         records=records,
-        baseline_rows=load_baseline_rows(ns.results_dir / "baseline_raw.json"),
-        minimal_pairs=load_minimal_pairs(ns.results_dir / "minimal_pairs.json"),
+        baseline_rows=baseline_rows,
+        # Only the rows that ask for it pay for it; a missing artefact is still an error there.
+        minimal_pairs=(
+            load_minimal_pairs(ns.results_dir / "minimal_pairs.json")
+            if any(s.minimal_pairs for s in selected)
+            else None
+        ),
         judge_usage=load_judge_usage(ns.results_dir / "judge_outputs.jsonl"),
+        scanner_findings_by_id=(
+            scanner_findings_from_baseline(baseline_rows)
+            if any(s.scanner_features for s in selected)
+            else {}
+        ),
+        dataset_version=dataset_version(ns.corpus),
     )
     payload = run_matrix(
-        load_matrix(ns.matrix),
+        specs,
         inputs,
         classifier_factory=_default_classifier_factory({}),
         judge_factory=_default_judge_factory(ns.results_dir / "judge_outputs.jsonl"),
-        rows=[int(x) for x in ns.rows.split(",")] if ns.rows else None,
+        rows=wanted,
         seeds=[int(x) for x in ns.seeds.split(",")],
         n_boot=ns.n_boot,
     )

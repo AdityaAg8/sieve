@@ -14,8 +14,10 @@ from sieve.model.push import (
     holdout_log_line,
     main,
     render_card,
+    unfilled_slots,
     write_card,
 )
+from sieve.protocols import Thresholds
 
 SHA = "0123456789abcdef0123456789abcdef01234567"
 
@@ -26,9 +28,9 @@ def _ci(point: float) -> dict[str, float]:
 
 def _breakdown() -> dict[str, dict[str, float]]:
     return {
-        "easy": {"n": 10.0, "oof_recall_at_t_low": 1.0, "fpr_stage1_at_t_low": 0.1,
+        "easy": {"n": 10.0, "recall_at_t_low": 1.0, "fpr_stage1_at_t_low": 0.1,
                  "fpr_pipeline": 0.05},
-        "hard": {"n": 6.0, "oof_recall_at_t_low": 0.9, "fpr_stage1_at_t_low": 0.2,
+        "hard": {"n": 6.0, "recall_at_t_low": 0.9, "fpr_stage1_at_t_low": 0.2,
                  "fpr_pipeline": 0.12},
     }  # fmt: skip
 
@@ -274,3 +276,266 @@ def test_the_cli_refuses_without_a_git_sha(
                 "--results-dir", str(results), "--dry-run",
             ]
         )  # fmt: skip
+
+
+# ===========================================================================================
+# The same card, built from files the REAL writers emitted.
+#
+# The fixtures above are hand-typed and answer "does every slot render". These answer the
+# question that actually matters: do `run_matrix`, `eval_final.evaluate`, `select` and the
+# `train` config writer emit the key vocabulary the card reads? A drift between writer and
+# reader is invisible to a hand-typed fixture, and that is how `oof_recall_at_t_low` vs
+# `recall_at_t_low` survived the first round.
+# ===========================================================================================
+
+
+@pytest.fixture
+def dev_records_for_writers() -> list[Any]:
+    from sieve.model.data import load_corpus
+
+    records = load_corpus(Path("fixtures/corpus/mini-50.jsonl"))
+    servers = sorted({r.server_name for r in records})
+    fold_of = {name: i % 5 for i, name in enumerate(servers)}
+    return [r.model_copy(update={"split": "dev", "fold": fold_of[r.server_name]}) for r in records]
+
+
+@pytest.fixture
+def written_results(dev_records_for_writers: list[Any], tmp_path: Path) -> Path:
+    """`ablations.json`, `holdout.json`, `selection.json`, `curves.json`, `test_opened.log`,
+    each produced by the production writer rather than typed here."""
+    import numpy as np
+
+    from bench.ablations.run import Inputs, RowSpec, dataset_version, run_matrix, write_results
+    from bench.eval_final import evaluate as holdout_evaluate
+    from sieve.model.data import LABEL2ID
+    from sieve.model.select import select, write_selection
+    from sieve.model.thresholds import write_curves
+    from sieve.protocols import Classifier, FakeClassifier
+
+    dev = dev_records_for_writers
+    results = tmp_path / "results"
+    results.mkdir(parents=True, exist_ok=True)
+    corpus = tmp_path / "labelled.jsonl"
+    corpus.write_text(
+        "".join(r.model_dump_json() + "\n" for r in dev), encoding="utf-8", newline="\n"
+    )
+
+    def never(spec: RowSpec, seed: int) -> Classifier:  # pragma: no cover - must not be reached
+        raise AssertionError("row 4 must be scored from pooled OOF arrays")
+
+    baseline = {
+        r.id: {
+            "id": r.id,
+            "server_name": r.server_name,
+            "label": r.label,
+            "source": r.source,
+            "flagged": r.label == "poisoned",
+            "rule_ids": ["R1"] if r.label == "poisoned" else [],
+        }
+        for r in dev
+    }
+    pairs = [{"host_id": r.mutation_of, "mutation_id": r.id} for r in dev if r.mutation_of]
+
+    # `run_matrix` writes ablations.json. Row 4 is the headline the card reads.
+    write_results(
+        run_matrix(
+            [RowSpec(row=4, name="headline", classifier="tfidf", judge="none", minimal_pairs=True)],
+            Inputs(
+                records=dev,
+                baseline_rows=baseline,
+                minimal_pairs=pairs,
+                dataset_version=dataset_version(corpus),
+            ),
+            classifier_factory=never,
+            n_boot=40,
+        ),
+        results / "ablations.json",
+    )
+
+    # `eval_final.evaluate` writes holdout.json, including the derived `limitations` slot.
+    sealed = [r.model_copy(update={"split": "holdout"}) for r in dev]
+    eval_only = [
+        r.model_copy(
+            update={
+                "id": f"real-poisoned-{i}",
+                "server_name": f"wild-{i}",
+                "source": "real_poisoned",
+                "label": "poisoned",
+                "split": "eval_only",
+            }
+        )
+        for i, r in enumerate(dev[:4])
+    ]
+    holdout = holdout_evaluate(sealed, eval_only, FakeClassifier(), None, n_boot=40)
+    holdout["dataset_version"] = dataset_version(corpus)
+    (results / "holdout.json").write_text(
+        json.dumps(holdout, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
+    )
+
+    # `select` writes selection.json.
+    def seed_dir(name: str, skill: float, p95: float) -> Path:
+        directory = tmp_path / name
+        directory.mkdir(parents=True, exist_ok=True)
+        rng = np.random.default_rng(abs(hash(name)) % 2**32)
+        logits = rng.normal(0.0, 1.0, size=(len(dev), 3))
+        for row, record in zip(logits, dev, strict=True):
+            row[LABEL2ID[record.label]] += skill
+        np.save(directory / "oof_logits.npy", logits.astype(np.float32))
+        np.save(
+            directory / "oof_labels.npy",
+            np.asarray([LABEL2ID[r.label] for r in dev], dtype=np.int64),
+        )
+        (directory / "oof_ids.json").write_text(
+            json.dumps([r.id for r in dev]), encoding="utf-8", newline="\n"
+        )
+        (directory / "sieve_config.json").write_text(
+            json.dumps({"p95_ms": p95}), encoding="utf-8", newline="\n"
+        )
+        return directory
+
+    write_selection(
+        select(
+            {
+                "deberta-v3-base": [seed_dir(f"deberta-s{s}", 3.0, 120.0) for s in range(3)],
+                "modernbert-base": [seed_dir(f"modernbert-s{s}", 1.0, 90.0) for s in range(3)],
+            },
+            expected_ids=[r.id for r in dev],
+        ),
+        results / "selection.json",
+    )
+
+    # `thresholds.write_curves` writes curves.json.
+    probs = FakeClassifier().predict_proba(
+        [
+            __import__("sieve.serialise", fromlist=["serialise"]).serialise(r.to_tool_record())
+            for r in dev
+        ]
+    )
+    write_curves(
+        probs,
+        [LABEL2ID[r.label] for r in dev],
+        [r.server_name for r in dev],
+        results / "curves.json",
+        n_thresholds=8,
+        n_boot=40,
+    )
+
+    # `eval_final.append_log_line` writes the log line.
+    from bench.eval_final import append_log_line
+
+    append_log_line(results, rows_evaluated=len(sealed), reason="fixture release")
+    line = json.loads((results / "test_opened.log").read_text(encoding="utf-8").splitlines()[0])
+    assert line["git_sha"], "the log line must carry a SHA for the card to quote"
+    return results
+
+
+@pytest.fixture
+def written_model_dir(dev_records_for_writers: list[Any], tmp_path: Path) -> Path:
+    """`sieve_config.json` as `sieve.model.train.run` writes it, then as `calibrate` fills it."""
+    from sieve.model.thresholds import threshold_payload
+    from sieve.model.train import load_profile
+
+    directory = tmp_path / "artefact"
+    directory.mkdir(parents=True, exist_ok=True)
+    config = load_profile(Path("bench/train.yaml"), "deberta", fold="all", seed=1, epochs=4)
+    payload: dict[str, Any] = {
+        "model_version": config.model_version(),
+        "base_model": config.base_model,
+        "training_command": config.training_command(
+            Path("bench/data/labelled.jsonl"), Path("models/deberta-v3-base-final")
+        ),
+        "fold": config.fold,
+        "seed": config.seed,
+        "mode": config.mode,
+        "num_labels": config.num_labels,
+        "max_length": config.max_length,
+        "temperature": None,
+        "t_low": None,
+        "t_high": None,
+    }
+    # What `calibrate.main` merges in.
+    chosen = Thresholds(0.11, 0.87, 1.4, 0.99, 0.96, 0.21)
+    payload.update(
+        threshold_payload(
+            chosen, t_low_spread=[0.09, 0.11, 0.12, 0.1, 0.13], ece_before=0.18, ece_after=0.03
+        )
+    )
+    # What `export.main` appends.
+    payload.update({"onnx_int8_parity": 0.004, "p50_ms": 61.0, "p95_ms": 120.0})
+    (directory / "sieve_config.json").write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
+    )
+    return directory
+
+
+def test_a_card_built_entirely_from_real_writer_output_has_no_blank_slot(
+    written_results: Path, written_model_dir: Path
+) -> None:
+    context = build_context(written_model_dir, written_results, sha=_written_sha(written_results))
+    assert unfilled_slots(context) == []
+    path = write_card(context, written_model_dir)
+    assert EMPTY not in path.read_text(encoding="utf-8")
+
+
+def test_the_breakdown_keys_the_writers_emit_are_the_keys_the_card_reads(
+    written_results: Path, written_model_dir: Path
+) -> None:
+    """The exact drift that round 1 found: `oof_recall_at_t_low` vs `recall_at_t_low`."""
+    from bench.ablations.run import BREAKDOWN_KEYS
+
+    holdout = json.loads((written_results / "holdout.json").read_text(encoding="utf-8"))
+    ablations = json.loads((written_results / "ablations.json").read_text(encoding="utf-8"))
+    for table in (holdout["per_tier"], holdout["per_concealment"]):
+        assert set(next(iter(table.values()))) == set(BREAKDOWN_KEYS)
+    assert set(next(iter(ablations["rows"][0]["per_tier"].values()))) == set(BREAKDOWN_KEYS)
+
+    context = build_context(written_model_dir, written_results, sha=_written_sha(written_results))
+    assert "recall=" in str(context["per_tier"])
+
+
+def test_the_three_previously_missing_fields_are_emitted(
+    written_results: Path, written_model_dir: Path
+) -> None:
+    ablations = json.loads((written_results / "ablations.json").read_text(encoding="utf-8"))
+    holdout = json.loads((written_results / "holdout.json").read_text(encoding="utf-8"))
+    config = json.loads((written_model_dir / "sieve_config.json").read_text(encoding="utf-8"))
+    assert ablations["dataset_version"]
+    assert holdout["limitations"]
+    assert config["training_command"].startswith("python -m sieve.model.train")
+    assert "--fold all" in config["training_command"]
+    assert "--epochs 4" in config["training_command"]
+
+
+def test_a_writer_that_stops_emitting_a_field_fails_the_card(
+    written_results: Path, written_model_dir: Path
+) -> None:
+    holdout = json.loads((written_results / "holdout.json").read_text(encoding="utf-8"))
+    del holdout["limitations"]
+    (written_results / "holdout.json").write_text(
+        json.dumps(holdout), encoding="utf-8", newline="\n"
+    )
+    context = build_context(written_model_dir, written_results, sha=_written_sha(written_results))
+    assert unfilled_slots(context) == ["limitations"]
+    with pytest.raises(IncompleteCard, match="limitations"):
+        write_card(context, written_model_dir)
+
+
+def test_a_release_note_can_add_to_the_derived_limitations(
+    written_results: Path, written_model_dir: Path, tmp_path: Path
+) -> None:
+    note = tmp_path / "note.md"
+    note.write_text("- Trained on a toy corpus.", encoding="utf-8", newline="\n")
+    context = build_context(
+        written_model_dir,
+        written_results,
+        sha=_written_sha(written_results),
+        limitations=note.read_text(encoding="utf-8"),
+    )
+    assert "Trained on a toy corpus." in str(context["limitations"])
+    assert "The holdout is" in str(context["limitations"])
+
+
+def _written_sha(results: Path) -> str:
+    """The SHA the real `append_log_line` recorded, so the card's gate is exercised for real."""
+    line = (results / "test_opened.log").read_text(encoding="utf-8").splitlines()[0]
+    return str(json.loads(line)["git_sha"])

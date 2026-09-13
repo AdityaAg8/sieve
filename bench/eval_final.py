@@ -14,13 +14,14 @@ import argparse
 import json
 import logging
 import os
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
+from bench.ablations.run import dataset_version
 from sieve.eval.metrics import cluster_bootstrap_ci, precision_recall_fpr
 from sieve.protocols import Classifier, Judge, Thresholds
 from sieve.types import CorpusRecord, Verdict
@@ -31,6 +32,7 @@ SEALED_MESSAGE = "the holdout is opened once per published version; see PRD §11
 LOG_FILE = "test_opened.log"
 RESULTS_FILE = "holdout.json"
 REAL_SOURCES = frozenset({"public_repo", "wild_fp"})
+SEALED_SPLITS = frozenset({"holdout", "eval_only"})
 DEFAULT_CORPUS = Path("bench/data/labelled.jsonl")
 RELEASE_GATE = {"recall_point": 0.95, "recall_lower_bound": 0.90}
 
@@ -105,21 +107,10 @@ def _breakdown(
     t_low: float,
     key: Callable[[CorpusRecord], str],
 ) -> dict[str, dict[str, float]]:
-    buckets: dict[str, list[int]] = {}
-    for index, record in enumerate(records):
-        buckets.setdefault(key(record), []).append(index)
-    out: dict[str, dict[str, float]] = {}
-    for bucket, indices in sorted(buckets.items()):
-        truth = [records[i].label for i in indices]
-        _, recall, fpr = precision_recall_fpr(truth, [scores[i] for i in indices], t_low)
-        _, _, fpr_pipeline = precision_recall_fpr(truth, [confirmed[i] for i in indices], 0.5)
-        out[bucket] = {
-            "n": float(len(indices)),
-            "recall_at_t_low": recall,
-            "fpr_stage1_at_t_low": fpr,
-            "fpr_pipeline": fpr_pipeline,
-        }
-    return out
+    """One key vocabulary with the ablation matrix, so the model card reads one set of names."""
+    from bench.ablations.run import breakdown
+
+    return breakdown(records, [r.label for r in records], scores, confirmed, t_low, key)
 
 
 def _scores(classifier: Classifier, records: Sequence[CorpusRecord]) -> list[float]:
@@ -199,7 +190,47 @@ def evaluate(
             and recall["point"] >= RELEASE_GATE["recall_point"]
             and recall["lo"] >= RELEASE_GATE["recall_lower_bound"]
         ),
+        "limitations": _limitations(holdout, eval_only, recall),
     }
+
+
+def _limitations(
+    holdout: Sequence[CorpusRecord],
+    eval_only: Sequence[CorpusRecord],
+    recall: Mapping[str, float | None],
+) -> str:
+    """Limitations derived from what was actually evaluated, not typed by a human.
+
+    The model card refuses to publish with this slot blank, so it is written here from facts
+    the run has in hand: how wide the interval is, how many servers backed it, and what the
+    holdout does not contain.
+    """
+    servers = len({r.server_name for r in holdout})
+    real = sum(1 for r in holdout if r.source in REAL_SOURCES)
+    lines = [
+        f"- The holdout is {len(holdout)} row(s) across {servers} server(s); "
+        f"{real} of them are real (`public_repo`/`wild_fp`). Every interval below is a cluster "
+        "bootstrap over that many clusters, so it is wide by construction.",
+    ]
+    if recall["point"] is not None and recall["lo"] is not None:
+        lines.append(
+            f"- Holdout recall is {recall['point']:.3f} with a 95% lower bound of "
+            f"{recall['lo']:.3f}; read the lower bound, not the point."
+        )
+    buckets = sorted({r.concealment for r in holdout})
+    lines.append(f"- Concealment buckets present in the holdout: {', '.join(buckets) or 'none'}.")
+    if not eval_only:
+        lines.append("- The `real_poisoned` slice was empty for this run, so M13 is unmeasured.")
+    return "\n".join(lines)
+
+
+def count_sealed_rows(corpus_path: Path) -> int:
+    """How many rows the run is about to open, read before anything else touches them."""
+    if not Path(corpus_path).exists():
+        return 0
+    from sieve.model.data import load_corpus
+
+    return sum(1 for r in load_corpus(Path(corpus_path)) if r.split in SEALED_SPLITS)
 
 
 def _empty_report(note: str) -> dict[str, Any]:
@@ -208,6 +239,7 @@ def _empty_report(note: str) -> dict[str, Any]:
         "n_holdout": 0,
         "n_eval_only": 0,
         "note": note,
+        "limitations": f"- Nothing was evaluated: {note}.",
         "release_gate": RELEASE_GATE,
         "release_gate_passed": False,
     }
@@ -226,6 +258,12 @@ def main(
     require_unsealed()
     results_dir = Path(results_dir)
     corpus_path = corpus if corpus is not None else DEFAULT_CORPUS
+
+    # The log line is written BEFORE anything is read, so a run that crashes half way through
+    # the holdout still leaves a record that the seal was broken. `rows_evaluated` is filled in
+    # from the corpus, not from the evaluation, for the same reason.
+    sealed_rows = count_sealed_rows(corpus_path)
+    log_line = append_log_line(results_dir, rows_evaluated=sealed_rows, reason=reason)
 
     if not corpus_path.exists():
         # Still logged: the seal was broken even though there was nothing behind it.
@@ -248,9 +286,8 @@ def main(
             report = evaluate(holdout, eval_only, classifier, judge, n_boot=n_boot)
 
     report["reason"] = reason
-    report["log_line"] = append_log_line(
-        results_dir, rows_evaluated=int(report["rows_evaluated"]), reason=reason
-    )
+    report["log_line"] = log_line
+    report["dataset_version"] = dataset_version(corpus_path) if corpus_path.exists() else None
     path = results_dir / RESULTS_FILE
     path.write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
@@ -275,7 +312,15 @@ def cli(argv: Sequence[str] | None = None) -> Path:
     return main(results_dir=ns.results_dir, reason=ns.reason, corpus=ns.corpus, n_boot=ns.n_boot)
 
 
-__all__ = ["HoldoutSealed", "SEALED_MESSAGE", "append_log_line", "cli", "evaluate", "main"]
+__all__ = [
+    "SEALED_MESSAGE",
+    "HoldoutSealed",
+    "append_log_line",
+    "cli",
+    "count_sealed_rows",
+    "evaluate",
+    "main",
+]
 
 if __name__ == "__main__":  # pragma: no cover
     cli()
