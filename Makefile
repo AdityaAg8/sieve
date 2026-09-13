@@ -2,7 +2,22 @@ ifeq ($(OS),Windows_NT)
 SHELL := C:/Program Files/Git/usr/bin/bash.exe
 endif
 
-.PHONY: setup lint test schemas up down serve baseline train bench eval-final readme corpus-stats
+.PHONY: setup lint test schemas up down serve baseline train train-all bench eval-final readme corpus-stats
+
+# `train`/`train-all` variables: PROFILE names a `bench/train.yaml` profile; SEED and FOLD are
+# the CLI's own `--seed`/`--fold`. MODEL_OUT follows the "models/<profile>-s<seed>/fold<fold>"
+# layout `bench/ablations/run.py` and `sieve/model/select.py` already assume ("models/<profile>-s*").
+PROFILE ?= deberta
+SEED ?= 0
+FOLD ?= 0
+MODEL_OUT ?= models/$(PROFILE)-s$(SEED)/fold$(FOLD)
+
+# `bench` variables: MODEL_DIR is the calibrated (`--fold all`) artefact `bench.analysis.errors`
+# reads thresholds from; FOLD_DIRS are the five per-fold artefacts its `--dirs` pools OOF logits
+# from. BENCH_CORPUS matches the CLIs' own `--corpus` default.
+MODEL_DIR ?= models/$(PROFILE)-s$(SEED)
+FOLD_DIRS ?= $(MODEL_DIR)/fold0 $(MODEL_DIR)/fold1 $(MODEL_DIR)/fold2 $(MODEL_DIR)/fold3 $(MODEL_DIR)/fold4
+BENCH_CORPUS ?= bench/data/labelled.jsonl
 
 setup:
 	uv sync --all-extras --group dev
@@ -36,15 +51,22 @@ baseline:
 	uv run python -m bench.baseline.run
 
 train:
-	uv run python -m sieve.model.train --config bench/train.yaml --profile deberta
+	uv run python -m sieve.model.train --config bench/train.yaml --profile $(PROFILE) --fold $(FOLD) --seed $(SEED) --out $(MODEL_OUT)
+
+train-all:
+	for f in 0 1 2 3 4; do \
+		uv run python -m sieve.model.train --config bench/train.yaml --profile $(PROFILE) --fold $$f --seed $(SEED) --out models/$(PROFILE)-s$(SEED)/fold$$f; \
+	done
 
 bench:
 	uv run python -m bench.ablations.run --matrix bench/ablations.yaml
-	uv run python -m bench.analysis.errors
+	uv run python -m bench.analysis.errors --dirs $(FOLD_DIRS) --corpus $(BENCH_CORPUS) --model-dir $(MODEL_DIR)
+	uv run python -m bench.analysis.judge_agreement
 	uv run python -m bench.demo
 
 eval-final:
-	SIEVE_FINAL=1 uv run python -m bench.eval_final
+	@test -n "$(REASON)" || (echo "make eval-final REASON=\"why the holdout is being opened\"" && exit 2)
+	SIEVE_FINAL=1 uv run python -m bench.eval_final --reason "$(REASON)"
 
 readme:
 	uv run python docs/scripts/readme_numbers.py
