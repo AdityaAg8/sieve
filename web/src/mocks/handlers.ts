@@ -110,13 +110,33 @@ function sarifFor(scanId: string) {
 
 const API = "*/api/v1";
 
+/**
+ * A test seam that lives entirely in the mock layer. A Playwright test can put a partial
+ * response under `sieve.mock.<name>` in `localStorage` before navigating, and the handler merges
+ * it over the default — which is how the suite exercises "judge on" and "judge off", or a
+ * non-provisional benchmark, without a second set of handlers. No application code reads this.
+ */
+function override(name: "models" | "bench"): Record<string, unknown> {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(window.localStorage.getItem(`sieve.mock.${name}`) ?? "{}") as Record<
+      string,
+      unknown
+    >;
+  } catch {
+    return {};
+  }
+}
+
 export const handlers = [
   http.get(`${API}/healthz`, () => HttpResponse.json({ status: "ok" })),
   http.get(`${API}/readyz`, () => HttpResponse.json({ status: "ok" })),
 
-  http.get(`${API}/models`, () => HttpResponse.json(mockModels)),
+  http.get(`${API}/models`, () => HttpResponse.json({ ...mockModels, ...override("models") })),
 
-  http.get(`${API}/bench/summary`, () => HttpResponse.json(provisionalBench)),
+  http.get(`${API}/bench/summary`, () =>
+    HttpResponse.json({ ...provisionalBench, ...override("bench") }),
+  ),
 
   http.post(`${API}/scans`, async () =>
     HttpResponse.json(queuedSummary(sampleSummary.id), { status: 202 }),

@@ -21,6 +21,21 @@ export const EXPECTED = {
 /** The widths PRD §14.8 names. */
 export const WIDTHS = [320, 375, 414, 768, 1280, 1920] as const;
 
+/**
+ * Merge a partial response over one of the MSW defaults for this page. Installed before the
+ * first navigation, so the handler sees it on the very first request.
+ */
+export async function mockOverride(
+  page: Page,
+  name: "models" | "bench",
+  value: Record<string, unknown>,
+): Promise<void> {
+  await page.addInitScript(
+    ([key, json]) => window.localStorage.setItem(key as string, json as string),
+    [`sieve.mock.${name}`, JSON.stringify(value)] as const,
+  );
+}
+
 export async function expectNoHorizontalScroll(page: Page, width: number): Promise<void> {
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - window.innerWidth,
