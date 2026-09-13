@@ -3,18 +3,11 @@
 from __future__ import annotations
 
 import hashlib
-import os
 from pathlib import Path
 
 import pytest
 
 from sieve.types import CorpusRecord
-
-# pyproject turns every warning into an error. `huggingface_hub` warns once per cold cache that
-# Windows cannot make symlinks, `transformers` swallows the resulting exception and re-raises a
-# misleading "can't load the configuration" OSError. Silence it at the source, before any import
-# of the hub triggers a download.
-os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
 
 
 def _fold_of(server_name: str, folds: int = 5) -> int:

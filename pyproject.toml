@@ -45,6 +45,7 @@ testpaths = ["tests"]
 filterwarnings = [
   "error",
   "ignore:The anyio.abc.BlockingPortal alias is deprecated:DeprecationWarning",
+  "ignore:`huggingface_hub` cache-system uses symlinks by default:UserWarning",
 ]
 pythonpath = ["."]
 markers = [
