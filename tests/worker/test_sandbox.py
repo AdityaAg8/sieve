@@ -70,17 +70,73 @@ def test_neither_the_api_nor_the_default_worker_may_reach_a_remote_server() -> N
         assert str(env.get("SIEVE_ALLOW_REMOTE_MCP")).lower() == "false", (
             f"{name} must pin SIEVE_ALLOW_REMOTE_MCP=false, not inherit it from .env"
         )
-        assert "SIEVE_SANDBOXED" not in env, f"{name} is not the sandbox"
+        # Pinned to "0", not omitted: an omitted variable is whatever `.env` says, and
+        # `env_file:` sets real environment variables (see `test_a_dotenv_cannot_open_...`).
+        assert str(env.get("SIEVE_SANDBOXED")) == "0", f"{name} must pin SIEVE_SANDBOXED=0"
 
 
-def test_only_the_sandbox_service_sets_the_second_gate() -> None:
-    sandboxed = [
-        name
-        for name, svc in COMPOSE["services"].items()
-        if "SIEVE_SANDBOXED" in (svc.get("environment") or {})
-    ]
-    assert sandboxed == ["sandbox-worker"]
-    assert str(SANDBOX["environment"]["SIEVE_SANDBOXED"]) == "1"
+GATED_SERVICES = ("api", "worker", "sandbox-worker")
+
+
+def effective_env(service: str, dotenv: dict[str, str] | None = None) -> dict[str, str]:
+    """The variables the container actually gets, in Compose's own precedence order.
+
+    Compose's `env_file:` sets *real* environment variables -- it is not pydantic's dotenv,
+    which only fills unset fields -- so anything in `.env` reaches `os.environ` unless the
+    service's `environment:` block overrides it. That is the merge this reproduces.
+    """
+    merged: dict[str, str] = dict(dotenv or {})
+    merged.update(
+        {k: str(v) for k, v in (COMPOSE["services"][service].get("environment") or {}).items()}
+    )
+    return merged
+
+
+@pytest.mark.parametrize("service", GATED_SERVICES)
+def test_every_gated_service_pins_the_second_gate_explicitly(service: str) -> None:
+    """Absent is not safe here: absent means "whatever .env says"."""
+    declared = COMPOSE["services"][service].get("environment") or {}
+    assert "SIEVE_SANDBOXED" in declared, f"{service} must pin SIEVE_SANDBOXED, not omit it"
+
+
+def test_the_second_gate_is_on_for_the_sandbox_and_off_everywhere_else() -> None:
+    assert effective_env("sandbox-worker")["SIEVE_SANDBOXED"] == "1"
+    assert effective_env("api")["SIEVE_SANDBOXED"] == "0"
+    assert effective_env("worker")["SIEVE_SANDBOXED"] == "0"
+
+
+@pytest.mark.parametrize("service", ["api", "worker"])
+def test_a_dotenv_cannot_open_the_second_gate(service: str) -> None:
+    """A developer's `.env` with SIEVE_SANDBOXED=1 must not reach the un-sandboxed services.
+
+    Without the explicit "0" pin the two gates are not independent: one line in a root `.env`
+    would satisfy `in_sandbox()` everywhere, leaving only the first gate standing (SC-1).
+    """
+    hostile = {"SIEVE_SANDBOXED": "1", "SIEVE_ALLOW_REMOTE_MCP": "true"}
+    merged = effective_env(service, hostile)
+    assert merged["SIEVE_SANDBOXED"] == "0"
+    assert merged["SIEVE_ALLOW_REMOTE_MCP"] == "false"
+
+    # And the same `.env` still leaves the sandbox itself working as intended.
+    sandbox = effective_env("sandbox-worker", hostile)
+    assert (sandbox["SIEVE_SANDBOXED"], sandbox["SIEVE_ALLOW_REMOTE_MCP"]) == ("1", "true")
+
+
+@pytest.mark.parametrize("value", ["0", "", "true", "yes", "1 ", " 1", "TRUE", "on"])
+def test_in_sandbox_accepts_only_the_literal_one(
+    value: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from sieve.worker import remote
+
+    monkeypatch.setenv(remote.SANDBOX_ENV_VAR, value)
+    assert remote.in_sandbox() is False
+
+
+def test_in_sandbox_is_true_for_exactly_one(monkeypatch: pytest.MonkeyPatch) -> None:
+    from sieve.worker import remote
+
+    monkeypatch.setenv(remote.SANDBOX_ENV_VAR, "1")
+    assert remote.in_sandbox() is True
 
 
 async def test_the_runtime_refuses_a_remote_fetch_outside_the_sandbox(

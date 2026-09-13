@@ -7,23 +7,24 @@ services:
   api:
     build: { context: ., dockerfile: Dockerfile.api }
     env_file: [{ path: .env, required: false }]
-    # SIEVE_ALLOW_REMOTE_MCP is pinned, not inherited: `environment:` beats `env_file:`, so a
-    # developer's .env cannot switch remote scanning on outside the sandbox (SC-1).
-    environment: { DATABASE_URL: postgresql+psycopg://sieve:sieve@postgres:5432/sieve, WEB_ORIGIN: http://localhost:3000, SIEVE_ALLOW_REMOTE_MCP: "false" }
+    # Both gates are pinned, not inherited. Compose's `env_file:` sets real environment
+    # variables (unlike pydantic's dotenv, which only fills unset fields), so without these
+    # two lines a root .env could open either gate here; `environment:` beats `env_file:` (SC-1).
+    environment: { DATABASE_URL: postgresql+psycopg://sieve:sieve@postgres:5432/sieve, WEB_ORIGIN: http://localhost:3000, SIEVE_ALLOW_REMOTE_MCP: "false", SIEVE_SANDBOXED: "0" }
     ports: ["8000:8000"]
     depends_on: { postgres: { condition: service_healthy } }
   worker:
     build: { context: ., dockerfile: Dockerfile.api }
     env_file: [{ path: .env, required: false }]
-    environment: { DATABASE_URL: postgresql+psycopg://sieve:sieve@postgres:5432/sieve, SIEVE_ALLOW_REMOTE_MCP: "false" }
+    environment: { DATABASE_URL: postgresql+psycopg://sieve:sieve@postgres:5432/sieve, SIEVE_ALLOW_REMOTE_MCP: "false", SIEVE_SANDBOXED: "0" }
     command: ["uv", "run", "python", "-m", "sieve.worker.main"]
     depends_on: { postgres: { condition: service_healthy } }
   sandbox-worker:
     profiles: ["remote"]
     build: { context: ., dockerfile: Dockerfile.sandbox }
     env_file: [{ path: .env, required: false }]
-    # SIEVE_SANDBOXED is the second, independent gate: the runtime refuses a remote fetch
-    # without it, and only this service sets it.
+    # SIEVE_SANDBOXED is the second gate, and it is independent only because api and worker
+    # pin it to "0": the runtime refuses a remote fetch unless it reads exactly "1" here.
     environment: { DATABASE_URL: postgresql+psycopg://sieve:sieve@postgres:5432/sieve, SIEVE_ALLOW_REMOTE_MCP: "true", SIEVE_SANDBOXED: "1" }
     read_only: true
     cap_drop: [ALL]
