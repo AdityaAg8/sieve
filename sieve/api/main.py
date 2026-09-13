@@ -13,7 +13,7 @@ from sieve.logging import configure_logging
 def create_app(*, stub: bool = False) -> FastAPI:
     # Before uvicorn builds its loop: psycopg cannot run async on Windows' ProactorEventLoop.
     use_selector_event_loop_on_windows()
-    configure_logging()
+    configure_logging(replace=False)
     app = FastAPI(
         title="Sieve API",
         version="1.0.0",

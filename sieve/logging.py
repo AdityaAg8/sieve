@@ -74,10 +74,18 @@ class DropToolContent(logging.Filter):
         return True
 
 
-def configure_logging(level: str | None = None) -> None:
+def configure_logging(level: str | None = None, *, replace: bool = True) -> None:
+    """Install the JSON handler on the root logger.
+
+    `replace=False` leaves an already-configured root alone, which is what the app factory
+    wants: under pytest the root logger belongs to the test runner, and stealing its handlers
+    would silence `caplog` for every other lane.
+    """
+    root_logger = logging.getLogger()
+    if not replace and root_logger.handlers:
+        return
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(JsonFormatter())
     handler.addFilter(DropToolContent())
-    root = logging.getLogger()
-    root.handlers = [handler]
-    root.setLevel((level or settings.log_level).upper())
+    root_logger.handlers = [handler]
+    root_logger.setLevel((level or settings.log_level).upper())

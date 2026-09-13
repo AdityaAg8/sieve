@@ -103,9 +103,15 @@ async def _main() -> None:
             continue
         with contextlib.suppress(NotImplementedError):
             loop.add_signal_handler(sig, stop.set)
+    from sieve.worker import purge
+
+    sessions = session_factory()
+    async with sessions() as session:
+        if await purge.ensure_scheduled(session):
+            log.info("purge.scheduled")
     log.info("worker.started")
     try:
-        await run_forever(stop=stop)
+        await run_forever(sessions, stop=stop)
     finally:
         await dispose_engine()
         log.info("worker.stopped")

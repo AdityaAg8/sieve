@@ -201,3 +201,28 @@ def test_the_formatter_is_valid_json_even_with_an_exception() -> None:
         )
     payload = json.loads(formatter.format(record))
     assert "ValueError" in payload["exc"]
+
+
+async def test_a_malformed_content_length_is_not_a_500(api: AsyncClient) -> None:
+    response = await api.post(
+        "/api/v1/scans",
+        content=b'{"source_type":"tools_json","tools_json":{"tools":[]}}',
+        headers={"content-type": "application/json", "content-length": "not-a-number"},
+    )
+    assert response.status_code < 500
+
+
+def test_configure_logging_leaves_an_already_configured_root_alone() -> None:
+    import logging as stdlib_logging
+
+    from sieve.logging import configure_logging
+
+    root = stdlib_logging.getLogger()
+    sentinel = stdlib_logging.NullHandler()
+    original = root.handlers
+    root.handlers = [sentinel]
+    try:
+        configure_logging(replace=False)
+        assert root.handlers == [sentinel], "pytest's caplog must survive app creation"
+    finally:
+        root.handlers = original

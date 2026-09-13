@@ -6,7 +6,7 @@ import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
-from sqlalchemy import CursorResult, text
+from sqlalchemy import CursorResult, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sieve.db.models import Job
@@ -29,6 +29,23 @@ async def purge_expired(session: AsyncSession) -> int:
 
 async def schedule_next(session: AsyncSession, *, after: timedelta = timedelta(days=1)) -> None:
     await enqueue(session, KIND, {}, run_after=datetime.now(UTC) + after)
+
+
+async def ensure_scheduled(session: AsyncSession) -> bool:
+    """Start the chain if nothing is carrying it.
+
+    `run()` re-enqueues itself, but only once it has run at all; without this a fresh
+    database would keep every scan forever because no purge job ever existed.
+    """
+    pending = (
+        await session.execute(
+            select(Job.id).where(Job.kind == KIND, Job.status.in_(("queued", "running"))).limit(1)
+        )
+    ).scalar_one_or_none()
+    if pending is not None:
+        return False
+    await enqueue(session, KIND, {}, run_after=datetime.now(UTC))
+    return True
 
 
 async def run(session: AsyncSession, job: Job) -> None:

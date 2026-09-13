@@ -69,10 +69,15 @@ class BodySizeLimitMiddleware:
             await self.app(scope, receive, send)
             return
 
-        declared = dict(scope.get("headers") or {}).get(b"content-length")
-        if declared is not None and int(declared) > self.max_bytes:
-            await self._too_large(send)
-            return
+        declared = dict(scope.get("headers") or []).get(b"content-length")
+        if declared is not None:
+            try:
+                announced = int(declared)
+            except ValueError:
+                announced = 0  # a malformed header is the body counter's problem, not a 500
+            if announced > self.max_bytes:
+                await self._too_large(send)
+                return
 
         seen = 0
         over = False

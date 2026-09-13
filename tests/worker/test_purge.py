@@ -92,3 +92,15 @@ async def test_the_purge_job_re_enqueues_itself(session: AsyncSession) -> None:
 async def test_a_future_purge_is_not_claimable_yet(session: AsyncSession) -> None:
     await purge.schedule_next(session)
     assert await claim(session, "worker-1") is None
+
+
+async def test_the_purge_chain_is_bootstrapped_once(session: AsyncSession) -> None:
+    """Nothing else enqueues the first purge, so a fresh database would never retain-purge."""
+    assert await purge.ensure_scheduled(session) is True
+    assert await purge.ensure_scheduled(session) is False
+
+    queued = (
+        await session.execute(select(func.count()).select_from(Job).where(Job.kind == purge.KIND))
+    ).scalar_one()
+    assert queued == 1
+    assert await claim(session, "worker-1") is not None, "the first one is due immediately"
