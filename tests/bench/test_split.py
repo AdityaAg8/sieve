@@ -112,3 +112,35 @@ def test_every_fold_is_used_when_there_are_enough_servers() -> None:
     assigned = assign(_corpus(40))
     folds = {r.fold for r in assigned if r.split == "dev"}
     assert folds == {0, 1, 2, 3, 4}
+
+
+# -- fix round 1: the seed must reach fold assignment, not just the holdout draw ----
+
+
+def _folds_by_server(records: list[CorpusRecord]) -> dict[str, int | None]:
+    return {r.server_name: r.fold for r in records if r.split == "dev"}
+
+
+def test_two_seeds_give_different_fold_membership() -> None:
+    # holdout=0.0 pins the holdout draw identical across seeds, so the only thing left that
+    # the seed can change is the fold assignment itself. Round-robinning over the *unshuffled*
+    # server list passes the weaker "different seeds, different folds" test purely because the
+    # holdout draw shifted the cursor.
+    a = _folds_by_server(assign(_corpus(40), seed=1, holdout=0.0))
+    b = _folds_by_server(assign(_corpus(40), seed=2, holdout=0.0))
+    assert set(a) == set(b) and len(a) == 40
+    assert any(a[s] != b[s] for s in a)
+
+
+def test_the_same_seed_gives_the_same_folds_with_no_holdout() -> None:
+    a = _folds_by_server(assign(_corpus(40), seed=1, holdout=0.0))
+    b = _folds_by_server(assign(_corpus(40), seed=1, holdout=0.0))
+    assert a == b
+
+
+def test_fold_counts_stay_balanced_whatever_the_seed() -> None:
+    for seed in (1, 2, 3, 17):
+        folds = list(_folds_by_server(assign(_corpus(40), seed=seed, holdout=0.0)).values())
+        counts = collections.Counter(folds)
+        assert set(counts) == {0, 1, 2, 3, 4}
+        assert max(counts.values()) - min(counts.values()) <= 1

@@ -28,6 +28,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
+from sieve.redact import redact_tool
 from sieve.types import CorpusRecord, ToolDefinition
 
 log = logging.getLogger(__name__)
@@ -42,7 +43,11 @@ _JSON_FENCE = re.compile(r"```json\s*\n(.*?)\n```", re.DOTALL)
 
 
 class ArtefactHashMismatch(Exception):  # noqa: N818 (name fixed by the lane's interface)
-    """The cached bytes do not hash to the value recorded in the pointer."""
+    """The bytes read do not hash to the value recorded as this artefact's provenance."""
+
+
+class NoArtefactRows(Exception):  # noqa: N818 (reads as a condition, not an error type)
+    """An artefact yielded no tool definitions. Publishing an empty slice silently is worse."""
 
 
 class ArtefactSource(BaseModel):
@@ -109,14 +114,20 @@ def _records_from(
 ) -> list[CorpusRecord]:
     out: list[CorpusRecord] = []
     for offset, entry in enumerate(_tool_entries(text, suffix=suffix)):
-        tool = ToolDefinition(
-            name=entry["name"],
-            title=entry.get("title"),
-            description=entry.get("description"),
-            inputSchema=entry.get("inputSchema") or {"type": "object"},
-            outputSchema=entry.get("outputSchema"),
-            annotations=entry.get("annotations"),
+        # PRD SC-5: a published artefact can carry a credential-shaped string, and this is
+        # the last point before it is written to disk. Redaction is idempotent.
+        tool, redacted = redact_tool(
+            ToolDefinition(
+                name=entry["name"],
+                title=entry.get("title"),
+                description=entry.get("description"),
+                inputSchema=entry.get("inputSchema") or {"type": "object"},
+                outputSchema=entry.get("outputSchema"),
+                annotations=entry.get("annotations"),
+            )
         )
+        if redacted:
+            log.info("redacted %s from %s", ", ".join(redacted), entry["name"])
         out.append(
             CorpusRecord(
                 id=f"{ID_PREFIX}{start + offset:04d}",
@@ -138,9 +149,22 @@ def _records_from(
     return out
 
 
+def _verify(path: Path, expected: str) -> bytes:
+    """Read the bytes and prove they are the artefact the citation names."""
+    body = path.read_bytes()
+    digest = hashlib.sha256(body).hexdigest()
+    if digest != expected:
+        raise ArtefactHashMismatch(
+            f"{path}: expected sha256 {expected}, found {digest}. `source_commit` is this "
+            "hash, so stamping it without checking would make the provenance a claim."
+        )
+    return body
+
+
 def _read(source: ArtefactSource, cache_dir: Path) -> tuple[str, str]:
-    """The artefact's text and its suffix, from the source's own path or the cache."""
+    """The artefact's verified text and its suffix, from the source's own path or the cache."""
     path = source.path or (cache_dir / Path(source.url).name)
+    _verify(path, source.sha256)
     return path.read_text(encoding="utf-8"), path.suffix
 
 
@@ -178,6 +202,12 @@ def collect(
             )
         )
 
+    if not records and not pointer_entries:
+        raise NoArtefactRows(
+            f"{len(sources)} source(s) yielded no tool definitions; refusing to write an "
+            f"empty {out}. Check the artefact shape (a JSON object needs a `tools` key)."
+        )
+    log.info("writing %d eval-only records and %d pointer(s)", len(records), len(pointer_entries))
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(
         "".join(r.model_dump_json() + "\n" for r in records), encoding="utf-8", newline="\n"
@@ -199,12 +229,7 @@ def reconstruct(pointers: list[Pointer], cache_dir: Path) -> list[CorpusRecord]:
         path = cache_dir / pointer.extract["path"]
         if not path.exists():
             raise FileNotFoundError(f"{path} is not in the artefact cache; fetch {pointer.url}")
-        digest = hashlib.sha256(path.read_bytes()).hexdigest()
-        if digest != pointer.sha256:
-            raise ArtefactHashMismatch(
-                f"{path}: expected sha256 {pointer.sha256}, found {digest}. Refusing to "
-                "rebuild the eval-only slice from bytes that are not the cited artefact."
-            )
+        _verify(path, pointer.sha256)
         text = path.read_text(encoding="utf-8")
         json_pointer = pointer.extract.get("json_pointer", "")
         if path.suffix == ".json" and json_pointer:

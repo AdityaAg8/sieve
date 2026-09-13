@@ -22,7 +22,14 @@ from typing import Any, Protocol
 import numpy as np
 
 from bench.collect.sandbox_capture import EXCLUSIONS_PATH, load_exclusions
-from bench.split.dedup import MiniLMEmbedder, text_of
+from bench.split.dedup import (
+    DEFAULT_THRESHOLD,
+    Embedder,
+    HashEmbedder,
+    MiniLMEmbedder,
+    near_duplicates,
+    text_of,
+)
 from sieve.serialise import serialise
 from sieve.types import CorpusRecord
 
@@ -35,15 +42,43 @@ DEFAULT_DEDUP_REPORT = Path("bench/results/dedup_dropped.json")
 TOKENIZERS: dict[str, str] = {
     "deberta-v3": "microsoft/deberta-v3-base",
     "modernbert": "answerdotai/ModernBERT-base",
+    "minilm": MiniLMEmbedder.MODEL,
 }
+#: Only this tokenizer may decide the §11.2 escalation — it is the one that truncates at 512.
+PAYLOAD_LOSS_TOKENIZER = "deberta-v3"
+LENGTH_TABLE_TOKENIZERS = ("deberta-v3", "modernbert")
+DEVELOPMENT_SPLIT = "dev"
+#: The eval-only slice is `real_poisoned` by construction (`bench.split.split.assign`).
+EVAL_ONLY_SOURCE = "real_poisoned"
 TRUNCATION_LIMIT = 512
 PAYLOAD_LOSS_ESCALATION = 0.10
 EXACT_SHARE_TARGET = 0.60
 HAND_AUTHORED_TARGET = 0.25
 
+#: Which serialisation marker carries each payload-bearing field (`sieve.serialise`).
+FIELD_MARKERS: dict[str, str] = {
+    "name": "[NAME]",
+    "title": "[TITLE]",
+    "description": "[DESC]",
+    "inputSchema": "[PARAM]",
+    "outputSchema": "[OUTPUT]",
+    "annotations": "[ANNOT]",
+}
+
 
 class Tokenizer(Protocol):
     def encode(self, text: str, add_special_tokens: bool = True) -> list[int]: ...
+
+
+class FastTokenizer(Tokenizer, Protocol):
+    """A tokenizer that can say *where* in the string each token came from."""
+
+    def __call__(
+        self,
+        text: str,
+        return_offsets_mapping: bool = False,
+        add_special_tokens: bool = True,
+    ) -> Any: ...
 
 
 def _counts(records: list[CorpusRecord]) -> dict[str, dict[str, int]]:
@@ -88,18 +123,43 @@ def token_table(
             "p95": float(np.percentile(lengths, 95)),
             "max": float(lengths.max()) if lengths.size else 0.0,
             "share_over_512": float((lengths > TRUNCATION_LIMIT).mean()) if lengths.size else 0.0,
-            "share_over_minilm_256": (
-                float((lengths > MiniLMEmbedder.MAX_TOKENS).mean()) if lengths.size else 0.0
-            ),
         }
     return out
 
 
-def payload_loss_share(records: list[CorpusRecord], tokenizer: Tokenizer) -> float:
+def minilm_over_256_share(records: list[CorpusRecord], tokenizer: Tokenizer) -> float:
+    """Share of records past MiniLM's 256-token dedup limit, per MiniLM's own tokenizer.
+
+    Measuring this off the DeBERTa or ModernBERT length table answers a different question:
+    three tokenizers disagree about what a token is, and the number published beside "MiniLM
+    truncates at 256" has to come from MiniLM.
+    """
+    if not records:
+        return 0.0
+    lengths = np.array([len(tokenizer.encode(text_of(r))) for r in records], dtype=float)
+    return float((lengths > MiniLMEmbedder.MAX_TOKENS).mean())
+
+
+def _payload_end_char(record: CorpusRecord, text: str) -> int:
+    """The character offset at which the last payload-bearing line of `text` ends."""
+    markers = {FIELD_MARKERS[f] for f in record.payload_fields if f in FIELD_MARKERS}
+    end = 0
+    cursor = 0
+    for line in text.split("\n"):
+        line_end = cursor + len(line)
+        if any(line.startswith(m) for m in markers):
+            end = max(end, line_end)
+        cursor = line_end + 1
+    return end
+
+
+def payload_loss_share(records: list[CorpusRecord], tokenizer: FastTokenizer) -> float:
     """Share of `poisoned` rows that would lose a `payload_fields` entry at 512 tokens.
 
-    The serialiser puts payload-bearing fields first, so a row loses evidence only when the
-    512-token cut falls before the last marked payload field.
+    Not "is the row longer than 512 tokens" — the serialiser puts payload-bearing fields
+    first precisely so that truncation removes *context*, so a long row usually keeps its
+    payload. The question is whether the 512-token cut falls before the last payload-bearing
+    line ends, which needs the tokenizer's offset mapping, not its length.
     """
     poisoned = [r for r in records if r.label == "poisoned" and r.payload_fields]
     if not poisoned:
@@ -107,12 +167,56 @@ def payload_loss_share(records: list[CorpusRecord], tokenizer: Tokenizer) -> flo
     lost = 0
     for record in poisoned:
         text = serialise(record.to_tool_record())
-        kept = tokenizer.encode(text)[:TRUNCATION_LIMIT]
-        # Re-tokenising the prefix is not possible without a decoder, so compare lengths:
-        # a row whose full serialisation exceeds the limit has lost its trailing fields.
-        if len(tokenizer.encode(text)) > len(kept):
+        payload_end = _payload_end_char(record, text)
+        if payload_end == 0:
+            continue
+        offsets = tokenizer(text, return_offsets_mapping=True, add_special_tokens=False)[
+            "offset_mapping"
+        ]
+        if len(offsets) <= TRUNCATION_LIMIT:
+            continue
+        kept_to = int(offsets[TRUNCATION_LIMIT - 1][1])
+        if kept_to < payload_end:
             lost += 1
     return lost / len(poisoned)
+
+
+def cross_boundary_near_duplicates(
+    records: list[CorpusRecord],
+    *,
+    embedder: Embedder,
+    threshold: float = DEFAULT_THRESHOLD,
+) -> list[tuple[str, str, float]]:
+    """Near-duplicate pairs that straddle the development / sealed-split boundary.
+
+    Deduplication is deliberately stratum-local (PRD §9.7): it never compares a record with
+    its mutation host, a sibling mutation, or a record of a different label, because dropping
+    any of those would break the mutation graph. The price is that a near-duplicate can
+    survive with one member used for every decision and its twin in the sealed split, which
+    quietly makes the sealed evaluation easier than it looks.
+
+    This is a **disclosure, not a gate**. Removing the pairs would do more damage than the
+    optimism they cause, so the count is published beside the leakage AUROC and the reader
+    judges it. Any label and any source qualify — a leak does not care about strata.
+    """
+    development = [r for r in records if r.split == DEVELOPMENT_SPLIT]
+    # The sealed side is everything assigned but not development, minus the eval-only slice,
+    # which is `real_poisoned` by construction and is never compared against anything.
+    sealed = [
+        r
+        for r in records
+        if r.split is not None and r.split != DEVELOPMENT_SPLIT and r.source != EVAL_ONLY_SOURCE
+    ]
+    if not development or not sealed:
+        return []
+    both = development + sealed
+    pairs = near_duplicates([text_of(r) for r in both], threshold, embedder=embedder)
+    boundary = len(development)
+    return [
+        (both[a].id, both[b].id, cosine)
+        for a, b, cosine in pairs
+        if (a < boundary) != (b < boundary)
+    ]
 
 
 def _load_tokenizers(names: dict[str, str]) -> tuple[dict[str, Tokenizer], dict[str, str]]:
@@ -132,19 +236,19 @@ def _load_tokenizers(names: dict[str, str]) -> tuple[dict[str, Tokenizer], dict[
 def build_report(
     records: list[CorpusRecord],
     *,
-    dropped_per_stratum: dict[str, list[str]],
+    dropped_per_stratum: dict[str, list[dict[str, Any]]],
     exclusions_path: Path,
     tokenizers: dict[str, Tokenizer],
     unavailable: dict[str, str],
+    cross_boundary_pairs: int | None = None,
 ) -> dict[str, Any]:
-    by_id = {r.id: r for r in records}
-    dropped_ids = [rid for ids in dropped_per_stratum.values() for rid in ids]
+    # The dropped rows are gone from `records` by the time this runs — dedup removed them —
+    # so the gate reads their labels from the dedup report, never from the corpus.
+    dropped = [row for rows in dropped_per_stratum.values() for row in rows]
     referenced = {r.mutation_of for r in records if r.mutation_of}
 
-    poisoned_dropped = sorted(
-        rid for rid in dropped_ids if rid in by_id and by_id[rid].label == "poisoned"
-    )
-    dropped_hosts_referenced = sorted(set(dropped_ids) & referenced)
+    poisoned_dropped = sorted(str(row["id"]) for row in dropped if row.get("label") == "poisoned")
+    dropped_hosts_referenced = sorted({str(row["id"]) for row in dropped} & referenced)
 
     exact = [r for r in records if r.schema_fidelity == "exact"]
     poisoned = [r for r in records if r.label == "poisoned"]
@@ -164,17 +268,29 @@ def build_report(
         "excluded_servers": dict(
             sorted(collections.Counter(e.reason for e in load_exclusions(exclusions_path)).items())
         ),
-        "tokens": token_table(records, tokenizers),
+        "tokens": token_table(
+            records,
+            {k: v for k, v in tokenizers.items() if k in LENGTH_TABLE_TOKENIZERS},
+        ),
         "tokenizers_unavailable": unavailable,
         "gates": {
             "poisoned_dropped": poisoned_dropped,
             "dropped_hosts_referenced": dropped_hosts_referenced,
         },
     }
-    if tokenizers:
-        first = next(iter(tokenizers.values()))
-        share = payload_loss_share(records, first)
+    if cross_boundary_pairs is not None:
+        report["cross_boundary_near_duplicate_pairs"] = cross_boundary_pairs
+    minilm = tokenizers.get("minilm")
+    if minilm is not None:
+        report["minilm_over_256_share"] = minilm_over_256_share(records, minilm)
+    # Only DeBERTa-v3 may answer this: it is the encoder that truncates at 512, and letting
+    # ModernBERT decide "escalate to ModernBERT" would be the wrong tokenizer voting for
+    # itself. When it is unavailable the keys are absent rather than wrong.
+    deberta = tokenizers.get(PAYLOAD_LOSS_TOKENIZER)
+    if deberta is not None:
+        share = payload_loss_share(records, deberta)  # type: ignore[arg-type]
         report["payload_loss_share_at_512"] = share
+        report["payload_loss_tokenizer"] = PAYLOAD_LOSS_TOKENIZER
         report["escalate_to_modernbert_1024"] = share > PAYLOAD_LOSS_ESCALATION
     return report
 
@@ -193,8 +309,22 @@ def _print_tables(report: dict[str, Any]) -> None:
     for name, table in report["tokens"].items():
         print(
             f"\ntokens [{name}] p50={table['p50']:.0f} p95={table['p95']:.0f} "
-            f"max={table['max']:.0f} over512={table['share_over_512']:.3f} "
-            f"over_minilm256={table['share_over_minilm_256']:.3f}"
+            f"max={table['max']:.0f} over512={table['share_over_512']:.3f}"
+        )
+    if "minilm_over_256_share" in report:
+        print(
+            f"\nover MiniLM's 256-token dedup limit: {report['minilm_over_256_share']:.3f} "
+            "(measured with MiniLM's own tokenizer)"
+        )
+    if "payload_loss_share_at_512" in report:
+        print(
+            f"payload lost at 512 tokens: {report['payload_loss_share_at_512']:.3f} "
+            f"(per {report['payload_loss_tokenizer']})"
+        )
+    if "cross_boundary_near_duplicate_pairs" in report:
+        print(
+            "cross-boundary near-duplicate pairs: "
+            f"{report['cross_boundary_near_duplicate_pairs']} (disclosed, not gated)"
         )
     for name, why in report["tokenizers_unavailable"].items():
         print(f"tokenizer {name} unavailable: {why}")
@@ -229,21 +359,29 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="skip the token-length tables (they download tokenizers from the Hub)",
     )
+    parser.add_argument(
+        "--embedder",
+        choices=("minilm", "hash"),
+        default="minilm",
+        help="embedder for the cross-boundary near-duplicate disclosure; `hash` is for tests",
+    )
     args = parser.parse_args(argv)
 
     records = _load(args.corpus)
-    dropped: dict[str, list[str]] = (
+    dropped: dict[str, list[dict[str, Any]]] = (
         json.loads(args.dedup_report.read_text(encoding="utf-8"))
         if args.dedup_report.exists()
         else {}
     )
     tokenizers, unavailable = ({}, {}) if args.no_tokenizers else _load_tokenizers(TOKENIZERS)
+    embedder: Embedder = MiniLMEmbedder() if args.embedder == "minilm" else HashEmbedder()
     report = build_report(
         records,
         dropped_per_stratum=dropped,
         exclusions_path=args.exclusions,
         tokenizers=tokenizers,
         unavailable=unavailable,
+        cross_boundary_pairs=len(cross_boundary_near_duplicates(records, embedder=embedder)),
     )
     _print_tables(report)
     args.out.parent.mkdir(parents=True, exist_ok=True)

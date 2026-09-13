@@ -153,3 +153,26 @@ def test_minilm_embedder_declares_the_published_model_and_limit() -> None:
 
     assert MiniLMEmbedder.MODEL == "sentence-transformers/all-MiniLM-L6-v2"
     assert MiniLMEmbedder.MAX_TOKENS == 256
+
+
+# -- fix round 1: the dropped-row report has to carry the label the gate needs ----
+
+
+def test_dropped_rows_report_carries_the_label_and_mutation_edge() -> None:
+    records = [
+        _record("a", "poisoned", "Get the weather.", source="synthetic_mutation"),
+        _record("b", "poisoned", "Get the weather.", source="synthetic_mutation"),
+    ]
+    _, dropped = dedup.run(records, embedder=HashEmbedder())
+    rows = dedup.dropped_rows(records, dropped)
+    assert rows == {
+        "poisoned/synthetic_mutation": [
+            {"id": "b", "label": "poisoned", "mutation_of": None, "source": "synthetic_mutation"}
+        ]
+    }
+
+
+def test_dropped_rows_report_covers_every_stratum_even_when_empty() -> None:
+    records = [_record("a", "benign", "Get the weather.")]
+    _, dropped = dedup.run(records, embedder=HashEmbedder())
+    assert dedup.dropped_rows(records, dropped) == {"benign/public_repo": []}

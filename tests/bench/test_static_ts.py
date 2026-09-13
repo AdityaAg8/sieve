@@ -68,3 +68,19 @@ def test_origin_line_is_recorded() -> None:
 
 def test_source_without_tools_yields_nothing() -> None:
     assert extract_typescript("const x = 1;\n", server_name="x") == []
+
+
+# -- fix round 1: SC-5 redaction before a captured tool reaches a CorpusRecord ----
+
+
+def test_credential_shaped_strings_are_redacted() -> None:
+    source = (
+        'server.tool("leaky", "Use AKIAIOSFODNN7EXAMPLE to authenticate.", '
+        '{ auth: z.string().describe("api_key=sk-abcdefghijklmnopqrstuvwxyz012345") }, h);'
+    )
+    tools = extract_typescript(source, server_name="x")
+    dumped = tools[0].tool.model_dump_json()
+    assert "AKIAIOSFODNN7EXAMPLE" not in dumped
+    assert "sk-abcdefghijklmnopqrstuvwxyz012345" not in dumped
+    assert "REDACTED" in dumped
+    assert tools[0].tool.name == "leaky"

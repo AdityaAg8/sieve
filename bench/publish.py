@@ -24,6 +24,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from bench.collect.registry import PERMISSIVE_LICENCES
 from sieve.types import CorpusRecord
 
 DEFAULT_CORPUS = Path("bench/data/corpus.jsonl")
@@ -33,7 +34,7 @@ DEFAULT_LEAKAGE = Path("bench/results/leakage_probe.json")
 DEFAULT_OUT = Path("bench/data/hub")
 DATASHEET = Path("bench/datasheet.md")
 
-EXCLUDED_LICENCES = frozenset({"MPL-2.0"})
+DEFAULT_POINTERS = Path("bench/data/real_poisoned.pointers.json")
 SPLIT_FILES = ("dev", "holdout", "eval_only")
 
 APACHE_ATTRIBUTION = """
@@ -67,12 +68,38 @@ def load(path: Path) -> list[CorpusRecord]:
     ]
 
 
-def check(records: list[CorpusRecord]) -> list[str]:
-    """Every reason this corpus must not be published. Empty means publishable."""
+def pointer_urls(pointers: Path) -> set[str]:
+    """The citations of sources whose licence forbids redistributing their text."""
+    if not pointers.exists():
+        return set()
+    entries = json.loads(pointers.read_text(encoding="utf-8"))
+    return {str(e["url"]) for e in entries if isinstance(e, dict) and e.get("url")}
+
+
+def check(records: list[CorpusRecord], *, blocked_urls: set[str] | None = None) -> list[str]:
+    """Every reason this corpus must not be published. Empty means publishable.
+
+    The licence test is an **allow-list**, not a deny-list. A deny-list of one entry passes
+    GPL-3.0, AGPL and the literal "All rights reserved" that `reconstruct()` stamps on rows
+    rebuilt from a non-redistributable pointer — and `write_folder` would upload them.
+
+    Pointer-derived rows are refused on top of that, whatever their licence string says: the
+    reason a pointer exists is that those bytes may not be redistributed, and a permissive
+    string on such a row is a mistake, not a permission.
+    """
     problems: list[str] = []
+    blocked = blocked_urls or set()
     for record in records:
-        if record.source_license in EXCLUDED_LICENCES:
-            problems.append(f"{record.id}: {record.source_license} is excluded (PRD SC-6)")
+        if record.source_license not in PERMISSIVE_LICENCES:
+            problems.append(
+                f"{record.id}: {record.source_license!r} is not on the permissive allow-list "
+                f"{sorted(PERMISSIVE_LICENCES)} (PRD SC-6)"
+            )
+        if record.source_repo in blocked:
+            problems.append(
+                f"{record.id}: derived from a non-redistributable pointer "
+                f"({record.source_repo}); its text is never published"
+            )
         missing = [
             field
             for field in ("source_repo", "source_commit", "source_license")
@@ -126,6 +153,12 @@ def _composition(records: list[CorpusRecord], stats: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _num(entry: dict[str, Any], key: str, fmt: str = ".3f") -> str:
+    """A number from a partially-written results file, or `?`. A half-run must not crash."""
+    value = entry.get(key)
+    return format(float(value), fmt) if isinstance(value, int | float) else "?"
+
+
 def _agreement(agreement: dict[str, Any]) -> str:
     if not agreement:
         return "_Agreement has not been computed yet (`python -m bench.label.kappa`)._"
@@ -136,33 +169,48 @@ def _agreement(agreement: dict[str, Any]) -> str:
             continue
         if which == "generator":
             lines.append(
-                f"- Blind-vs-generator agreement: {float(entry['blind_vs_generator']):.3f} "
-                f"over n = {entry['n']}. Not an inter-rater statistic."
+                f"- Blind-vs-generator agreement: {_num(entry, 'blind_vs_generator')} "
+                f"over n = {entry.get('n', '?')}. Not an inter-rater statistic."
             )
             continue
         name = "Inter-rater" if which == "inter" else "Test-retest"
         lines.append(
-            f"- {name} κ: overall {float(entry['kappa_overall']):.3f}, "
-            f"real subset {float(entry['kappa_real_subset']):.3f} "
-            f"(n = {entry['n_real_subset']}), sampler `{entry['sampler']}`."
+            f"- {name} κ: overall {_num(entry, 'kappa_overall')}, "
+            f"real subset {_num(entry, 'kappa_real_subset')} "
+            f"(n = {entry.get('n_real_subset', '?')}), sampler `{entry.get('sampler', '?')}`."
         )
         for label, per in (entry.get("per_class") or {}).items():
             lines.append(
-                f"  - `{label}`: observed {float(per['observed_agreement']):.3f}, "
-                f"AC1 {float(per['ac1']):.3f}, n = {per['n']}."
+                f"  - `{label}`: observed {_num(per, 'observed_agreement')}, "
+                f"AC1 {_num(per, 'ac1')}, n = {per.get('n', '?')}."
             )
+    return "\n".join(lines) or "_Agreement has not been computed yet._"
+
+
+def _leakage(leakage: dict[str, Any], stats: dict[str, Any]) -> str:
+    lines: list[str] = []
+    if leakage:
+        verdict = "passes" if leakage.get("passed") else "**fails**"
+        lines.append(
+            f"Pooled out-of-fold AUROC {_num(leakage, 'auroc')} over n = "
+            f"{leakage.get('n', '?')} `imperative_benign` rows; the gate is ≤ "
+            f"{_num(leakage, 'gate', '.2f')}, so this {verdict}."
+        )
+    else:
+        lines.append("_The probe has not been run yet (`python -m bench.analysis.leakage_probe`)._")
+    pairs = stats.get("cross_boundary_near_duplicate_pairs")
+    if pairs is not None:
+        lines.append("")
+        lines.append(
+            f"**Cross-boundary near-duplicate pairs: {pairs}.** Deduplication is deliberately "
+            "stratum-local — it never compares a record with its mutation host, a sibling "
+            "mutation, or a record of a different label — so near-duplicates can survive "
+            "across the dev/holdout boundary. This is the count of such pairs at the same "
+            "embedder and threshold dedup uses. It is a disclosure, not a gate: dropping "
+            "them would break the mutation graph, and hiding them would overstate what the "
+            "holdout measures."
+        )
     return "\n".join(lines)
-
-
-def _leakage(leakage: dict[str, Any]) -> str:
-    if not leakage:
-        return "_The probe has not been run yet (`python -m bench.analysis.leakage_probe`)._"
-    verdict = "passes" if leakage.get("passed") else "**fails**"
-    return (
-        f"Pooled out-of-fold AUROC {float(leakage['auroc']):.3f} over n = {leakage['n']} "
-        f"`imperative_benign` rows; the gate is ≤ {float(leakage['gate']):.2f}, so this "
-        f"{verdict}."
-    )
 
 
 def build_card(
@@ -175,10 +223,17 @@ def build_card(
 ) -> str:
     """The dataset card is the datasheet with the generated numbers substituted in."""
     text = datasheet.read_text(encoding="utf-8")
+    opened = stats.get("test_opened_log")
     return (
         text.replace("<!-- COMPOSITION -->", _composition(records, stats))
         .replace("<!-- AGREEMENT -->", _agreement(agreement))
-        .replace("<!-- LEAKAGE -->", _leakage(leakage))
+        .replace("<!-- LEAKAGE -->", _leakage(leakage, stats))
+        .replace(
+            "<!-- TEST_OPENED -->",
+            str(opened)
+            if opened
+            else "_The holdout has not been opened yet; `test_opened.log` is empty._",
+        )
     )
 
 
@@ -223,6 +278,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--leakage", type=Path, default=DEFAULT_LEAKAGE)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument(
+        "--pointers",
+        type=Path,
+        default=DEFAULT_POINTERS,
+        help="non-redistributable sources; any record citing one of these is refused",
+    )
+    parser.add_argument(
         "--dry-run", action="store_true", help="build the folder and upload nothing"
     )
     parser.add_argument("--repo-id", default=None, help="Hub dataset repo, e.g. user/sievebench")
@@ -231,7 +292,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--repo-id is required for a real upload; use --dry-run to build locally")
 
     records = load(args.corpus)
-    problems = check(records)
+    problems = check(records, blocked_urls=pointer_urls(args.pointers))
     if problems:
         for problem in problems:
             print(f"REFUSING TO PUBLISH: {problem}")

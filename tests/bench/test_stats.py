@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
+
+import pytest
 
 from bench import stats
+from sieve.serialise import serialise
 from sieve.types import CorpusRecord
 
 
@@ -57,14 +61,28 @@ def test_the_hand_authored_share_is_reported_against_the_target(
 def test_a_dropped_poisoned_row_fails_the_gate(
     tmp_path: Path, mini_records: list[CorpusRecord]
 ) -> None:
+    # The artefacts the pipeline actually produces: dedup already removed the row from the
+    # corpus, so the gate can only learn its label from the report.
     poisoned = next(r for r in mini_records if r.label == "poisoned")
+    survivors = [r for r in mini_records if r.id != poisoned.id]
     dedup_report = tmp_path / "dedup.json"
     dedup_report.write_text(
-        json.dumps({"poisoned/synthetic_mutation": [poisoned.id]}),
+        json.dumps(
+            {
+                "poisoned/synthetic_mutation": [
+                    {
+                        "id": poisoned.id,
+                        "label": "poisoned",
+                        "source": poisoned.source,
+                        "mutation_of": poisoned.mutation_of,
+                    }
+                ]
+            }
+        ),
         encoding="utf-8",
         newline="\n",
     )
-    code, report = _run(tmp_path, mini_records, "--dedup-report", str(dedup_report))
+    code, report = _run(tmp_path, survivors, "--dedup-report", str(dedup_report))
     assert code != 0
     assert report["gates"]["poisoned_dropped"] == [poisoned.id]
 
@@ -76,11 +94,23 @@ def test_a_dropped_row_a_mutation_references_fails_the_gate(
     assert mutation.mutation_of is not None
     dedup_report = tmp_path / "dedup.json"
     dedup_report.write_text(
-        json.dumps({"benign/public_repo": [mutation.mutation_of]}),
+        json.dumps(
+            {
+                "benign/public_repo": [
+                    {
+                        "id": mutation.mutation_of,
+                        "label": "benign",
+                        "source": "public_repo",
+                        "mutation_of": None,
+                    }
+                ]
+            }
+        ),
         encoding="utf-8",
         newline="\n",
     )
-    code, report = _run(tmp_path, mini_records, "--dedup-report", str(dedup_report))
+    survivors = [r for r in mini_records if r.id != mutation.mutation_of]
+    code, report = _run(tmp_path, survivors, "--dedup-report", str(dedup_report))
     assert code != 0
     assert mutation.mutation_of in report["gates"]["dropped_hosts_referenced"]
 
@@ -98,9 +128,23 @@ def test_dropped_counts_per_stratum_are_carried_through(
     )
     dedup_report = tmp_path / "dedup.json"
     dedup_report.write_text(
-        json.dumps({"benign/public_repo": [benign.id]}), encoding="utf-8", newline="\n"
+        json.dumps(
+            {
+                "benign/public_repo": [
+                    {
+                        "id": benign.id,
+                        "label": "benign",
+                        "source": "public_repo",
+                        "mutation_of": None,
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+        newline="\n",
     )
-    code, report = _run(tmp_path, mini_records, "--dedup-report", str(dedup_report))
+    survivors = [r for r in mini_records if r.id != benign.id]
+    code, report = _run(tmp_path, survivors, "--dedup-report", str(dedup_report))
     assert code == 0
     assert report["dropped_per_stratum"]["benign/public_repo"] == 1
 
@@ -141,13 +185,11 @@ def test_token_tables_are_reported_when_a_tokenizer_is_available(
     assert entry["n"] == len(mini_records)
     assert 0.0 <= entry["share_over_512"] <= 1.0
     assert "p50" in entry and "p95" in entry and "max" in entry
+    # The MiniLM statistic is emitted once, by MiniLM's own tokenizer — not per tokenizer.
+    assert "share_over_minilm_256" not in entry
 
 
 def test_payload_loss_at_512_triggers_the_escalation_note() -> None:
-    class ShortTokenizer:
-        def encode(self, text: str, add_special_tokens: bool = True) -> list[int]:
-            return list(range(len(text)))
-
     records: list[CorpusRecord] = []
     for i in range(10):
         records.append(
@@ -171,4 +213,182 @@ def test_payload_loss_at_512_triggers_the_escalation_note() -> None:
                 labelled_at="2026-09-11T00:00:00Z",  # type: ignore[arg-type]
             )
         )
-    assert stats.payload_loss_share(records, ShortTokenizer()) > 0.10
+    assert stats.payload_loss_share(records, CharTokenizer()) > 0.10
+
+
+# -- fix round 1: payload loss is about the payload, not the record length ----
+
+
+class CharTokenizer:
+    """A fast-tokenizer stand-in: one token per character, so offsets are exact and offline."""
+
+    def encode(self, text: str, add_special_tokens: bool = True) -> list[int]:
+        return list(range(len(text)))
+
+    def __call__(
+        self,
+        text: str,
+        return_offsets_mapping: bool = False,
+        add_special_tokens: bool = True,
+    ) -> dict[str, list[Any]]:
+        out: dict[str, list[Any]] = {"input_ids": list(range(len(text)))}
+        if return_offsets_mapping:
+            out["offset_mapping"] = [(i, i + 1) for i in range(len(text))]
+        return out
+
+
+def _poisoned(record_id: str, *, description: str, siblings: list[str], fields: list[str]):
+    return CorpusRecord(
+        id=record_id,
+        source="synthetic_mutation",
+        source_repo="r",
+        source_commit="c",
+        source_license="MIT",
+        capture_method="authored",
+        schema_fidelity="exact",
+        server_name="s",
+        tool={  # type: ignore[arg-type]
+            "name": "t",
+            "description": description,
+            "inputSchema": {"type": "object"},
+            "annotations": {"title": "TAIL-PAYLOAD " + "z" * 200},
+        },
+        sibling_tool_names=siblings,
+        label="poisoned",
+        payload_fields=fields,  # type: ignore[arg-type]
+        labeller="aditya",
+        labelled_at="2026-09-11T00:00:00Z",  # type: ignore[arg-type]
+    )
+
+
+def test_an_over_length_row_whose_payload_survives_the_cut_is_not_counted() -> None:
+    # [DESC] comes before [SIBLINGS] in the serialisation, so this row is far over 512
+    # characters yet loses no payload. Counting record length would count it.
+    survives = _poisoned(
+        "survives",
+        description="short payload",
+        siblings=["sibling" + str(i) for i in range(200)],
+        fields=["description"],
+    )
+    assert len(serialise(survives.to_tool_record())) > 512
+    assert stats.payload_loss_share([survives], CharTokenizer()) == 0.0
+
+
+def test_an_over_length_row_whose_payload_is_cut_is_counted() -> None:
+    # The payload is in `annotations`, which the serialiser emits after the parameters and
+    # therefore past the 512-character cut.
+    cut = _poisoned(
+        "cut",
+        description="x" * 600,
+        siblings=[],
+        fields=["annotations"],
+    )
+    assert stats.payload_loss_share([cut], CharTokenizer()) == 1.0
+
+
+def test_payload_loss_share_ignores_rows_with_no_payload_fields() -> None:
+    assert stats.payload_loss_share([], CharTokenizer()) == 0.0
+
+
+def test_the_escalation_is_computed_by_deberta_or_not_at_all(
+    tmp_path: Path, mini_records: list[CorpusRecord]
+) -> None:
+    corpus = _write(tmp_path / "c.jsonl", mini_records)
+    out = tmp_path / "s.json"
+    report = stats.build_report(
+        mini_records,
+        dropped_per_stratum={},
+        exclusions_path=tmp_path / "none.jsonl",
+        tokenizers={"modernbert": CharTokenizer()},
+        unavailable={"deberta-v3": "ImportError: no sentencepiece"},
+    )
+    # ModernBERT must never be the tokenizer that decides "escalate to ModernBERT".
+    assert "payload_loss_share_at_512" not in report
+    assert "escalate_to_modernbert_1024" not in report
+    assert report["tokenizers_unavailable"]["deberta-v3"].startswith("ImportError")
+    assert corpus.exists() and out.parent.exists()
+
+
+def test_the_escalation_records_which_tokenizer_produced_it(
+    mini_records: list[CorpusRecord], tmp_path: Path
+) -> None:
+    report = stats.build_report(
+        mini_records,
+        dropped_per_stratum={},
+        exclusions_path=tmp_path / "none.jsonl",
+        tokenizers={"deberta-v3": CharTokenizer(), "modernbert": CharTokenizer()},
+        unavailable={},
+    )
+    assert report["payload_loss_tokenizer"] == "deberta-v3"
+    assert "payload_loss_share_at_512" in report
+
+
+def test_the_minilm_share_is_measured_with_minilms_own_tokenizer(
+    mini_records: list[CorpusRecord],
+) -> None:
+    from transformers import AutoTokenizer
+
+    from bench.split.dedup import MiniLMEmbedder
+
+    minilm = AutoTokenizer.from_pretrained(MiniLMEmbedder.MODEL)
+    share = stats.minilm_over_256_share(mini_records, minilm)
+    assert 0.0 <= share <= 1.0
+    # The mini corpus is short, so nothing is over MiniLM's 256-token dedup limit. A
+    # DeBERTa/ModernBERT length table cannot answer this question on MiniLM's behalf.
+    assert share == 0.0
+    long_row = mini_records[0].model_copy(deep=True)
+    long_row.tool.description = "word " * 400
+    assert stats.minilm_over_256_share([long_row], minilm) == 1.0
+
+
+def test_cross_boundary_near_duplicates_are_disclosed(
+    tmp_path: Path, mini_records: list[CorpusRecord]
+) -> None:
+    from bench.split.split import assign
+
+    assigned = assign(mini_records)
+    dev = next(r for r in assigned if r.split == "dev")
+    holdout = next(r for r in assigned if r.split == "holdout")
+    planted = holdout.model_copy(deep=True)
+    planted.tool = dev.tool.model_copy(deep=True)
+    planted.sibling_tool_names = list(dev.sibling_tool_names)
+    records = [*assigned, planted.model_copy(update={"id": "planted"})]
+
+    corpus = _write(tmp_path / "c.jsonl", records)
+    out = tmp_path / "s.json"
+    code = stats.main(
+        [
+            "--corpus",
+            str(corpus),
+            "--out",
+            str(out),
+            "--no-tokenizers",
+            "--embedder",
+            "hash",
+        ]
+    )
+    assert code == 0  # a disclosure, never a gate
+    report = json.loads(out.read_text(encoding="utf-8"))
+    assert report["cross_boundary_near_duplicate_pairs"] >= 1
+
+
+def test_the_printed_tables_survive_a_report_with_tokenizers(
+    tmp_path: Path, mini_records: list[CorpusRecord], capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The `--no-tokenizers` path leaves `tokens` empty, so the per-tokenizer print loop was
+    # never executed by a test and a stale key in it reached the end-to-end run instead.
+    report = stats.build_report(
+        mini_records,
+        dropped_per_stratum={},
+        exclusions_path=tmp_path / "none.jsonl",
+        tokenizers={"deberta-v3": CharTokenizer(), "minilm": CharTokenizer()},
+        unavailable={"modernbert": "OSError: offline"},
+        cross_boundary_pairs=2,
+    )
+    stats._print_tables(report)
+    printed = capsys.readouterr().out
+    assert "tokens [deberta-v3]" in printed
+    assert "MiniLM's 256-token dedup limit" in printed
+    assert "payload lost at 512 tokens" in printed
+    assert "cross-boundary near-duplicate pairs: 2" in printed
+    assert "tokenizer modernbert unavailable" in printed

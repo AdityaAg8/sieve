@@ -16,12 +16,22 @@ import logging
 from typing import Any
 
 from bench.collect import ExtractedTool
+from sieve.redact import redact_tool
 from sieve.types import ToolDefinition
 
 log = logging.getLogger(__name__)
 
 _SCALARS = {"str": "string", "int": "integer", "float": "number", "bool": "boolean"}
 _SEQUENCES = {"list", "tuple", "set", "Sequence", "Iterable"}
+
+
+def _redacted(tool: ToolDefinition) -> ToolDefinition:
+    """PRD SC-5: a captured tool can carry a credential-shaped string, and this is the last
+    point before it becomes a corpus record. `name` is never touched — it is a join key."""
+    redacted, kinds = redact_tool(tool)
+    if kinds:
+        log.info("redacted %s from tool %s", ", ".join(kinds), tool.name)
+    return redacted
 
 
 def _annotation_schema(node: ast.expr | None) -> dict[str, Any]:
@@ -86,12 +96,14 @@ def _from_function(node: ast.FunctionDef | ast.AsyncFunctionDef) -> ExtractedToo
         properties[arg.arg] = _annotation_schema(arg.annotation)
         if not defaults.get(arg.arg, False):
             required.append(arg.arg)
-    tool = ToolDefinition(
-        name=str(_kwarg(call, "name") or node.name),
-        title=_kwarg(call, "title"),
-        description=_kwarg(call, "description") or _first_paragraph(ast.get_docstring(node)),
-        inputSchema={"type": "object", "properties": properties, "required": required},
-        annotations=_kwarg(call, "annotations"),
+    tool = _redacted(
+        ToolDefinition(
+            name=str(_kwarg(call, "name") or node.name),
+            title=_kwarg(call, "title"),
+            description=_kwarg(call, "description") or _first_paragraph(ast.get_docstring(node)),
+            inputSchema={"type": "object", "properties": properties, "required": required},
+            annotations=_kwarg(call, "annotations"),
+        )
     )
     return ExtractedTool(tool=tool, schema_fidelity="approx", origin_line=node.lineno)
 
@@ -113,13 +125,15 @@ def _from_literal_call(call: ast.Call) -> ExtractedTool | None:
             "skipping Tool(name=%r) at line %d: inputSchema is not a literal", name, call.lineno
         )
         return None
-    tool = ToolDefinition(
-        name=name,
-        title=_kwarg(call, "title"),
-        description=_kwarg(call, "description"),
-        inputSchema=schema,
-        outputSchema=_kwarg(call, "outputSchema"),
-        annotations=_kwarg(call, "annotations"),
+    tool = _redacted(
+        ToolDefinition(
+            name=name,
+            title=_kwarg(call, "title"),
+            description=_kwarg(call, "description"),
+            inputSchema=schema,
+            outputSchema=_kwarg(call, "outputSchema"),
+            annotations=_kwarg(call, "annotations"),
+        )
     )
     return ExtractedTool(tool=tool, schema_fidelity="exact", origin_line=call.lineno)
 

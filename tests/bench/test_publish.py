@@ -210,3 +210,124 @@ def test_a_real_upload_needs_a_repo_id(tmp_path: Path, mini_records: list[Corpus
                 str(tmp_path / "hub"),
             ]
         )
+
+
+# -- fix round 1: the licence gate is an allow-list, not a deny-list of one ----
+
+
+@pytest.mark.parametrize("licence", ["GPL-3.0", "AGPL-3.0", "All rights reserved", "MPL-2.0", ""])
+def test_any_licence_outside_the_permissive_set_is_refused(
+    tmp_path: Path, mini_records: list[CorpusRecord], licence: str
+) -> None:
+    records = _split(mini_records)
+    records[3] = records[3].model_copy(update={"source_license": licence})
+    code, _ = _run(tmp_path, records)
+    assert code != 0
+
+
+@pytest.mark.parametrize("licence", ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC"])
+def test_the_permissive_set_is_accepted(
+    tmp_path: Path, mini_records: list[CorpusRecord], licence: str
+) -> None:
+    records = _split(mini_records)
+    records[3] = records[3].model_copy(update={"source_license": licence})
+    code, _ = _run(tmp_path, records)
+    assert code == 0
+
+
+def test_a_pointer_derived_record_is_refused_even_with_a_permissive_licence(
+    tmp_path: Path, mini_records: list[CorpusRecord]
+) -> None:
+    # `reconstruct()` stamps the pointer's URL into source_repo. A permissive-looking licence
+    # string on a row whose bytes may not be redistributed must not be enough to publish it.
+    url = "https://example.invalid/labs/2025-04-tool-poisoning.md"
+    records = _split(mini_records)
+    records[6] = records[6].model_copy(
+        update={"source_repo": url, "source_license": "MIT", "split": "eval_only", "fold": None}
+    )
+    pointers = tmp_path / "pointers.json"
+    pointers.write_text(
+        json.dumps(
+            [
+                {
+                    "url": url,
+                    "sha256": "0" * 64,
+                    "licence": "All rights reserved",
+                    "extract": {"path": "x.md", "json_pointer": ""},
+                }
+            ]
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
+    code, _ = _run(tmp_path, records, "--pointers", str(pointers))
+    assert code != 0
+
+
+def test_an_empty_pointers_file_blocks_nothing(
+    tmp_path: Path, mini_records: list[CorpusRecord]
+) -> None:
+    pointers = tmp_path / "pointers.json"
+    pointers.write_text("[]\n", encoding="utf-8", newline="\n")
+    code, _ = _run(tmp_path, _split(mini_records), "--pointers", str(pointers))
+    assert code == 0
+
+
+def test_partial_agreement_and_leakage_json_do_not_crash_the_card(
+    tmp_path: Path, mini_records: list[CorpusRecord]
+) -> None:
+    agreement = tmp_path / "agreement.json"
+    agreement.write_text(json.dumps({"inter": {"n": 3}}), encoding="utf-8", newline="\n")
+    leakage = tmp_path / "leakage.json"
+    leakage.write_text(json.dumps({"passed": True}), encoding="utf-8", newline="\n")
+    code, hub = _run(
+        tmp_path,
+        _split(mini_records),
+        "--agreement",
+        str(agreement),
+        "--leakage",
+        str(leakage),
+    )
+    assert code == 0
+    assert (hub / "README.md").read_text(encoding="utf-8")
+
+
+def test_the_card_leaves_no_placeholder_behind(
+    tmp_path: Path, mini_records: list[CorpusRecord]
+) -> None:
+    _, hub = _run(tmp_path, _split(mini_records))
+    card = (hub / "README.md").read_text(encoding="utf-8")
+    for placeholder in (
+        "<!-- COMPOSITION -->",
+        "<!-- AGREEMENT -->",
+        "<!-- LEAKAGE -->",
+        "<!-- TEST_OPENED -->",
+    ):
+        assert placeholder not in card
+
+
+def test_the_card_discloses_the_cross_boundary_near_duplicate_count(
+    tmp_path: Path, mini_records: list[CorpusRecord]
+) -> None:
+    stats = tmp_path / "corpus_stats.json"
+    stats.write_text(
+        json.dumps({"n": 50, "cross_boundary_near_duplicate_pairs": 3}),
+        encoding="utf-8",
+        newline="\n",
+    )
+    hub = tmp_path / "hub"
+    code = publish.main(
+        [
+            "--dry-run",
+            "--corpus",
+            str(_corpus(tmp_path, _split(mini_records))),
+            "--stats",
+            str(stats),
+            "--out",
+            str(hub),
+        ]
+    )
+    assert code == 0
+    card = (hub / "README.md").read_text(encoding="utf-8")
+    assert "cross-boundary near-duplicate" in card.lower()
+    assert "3" in card

@@ -106,3 +106,68 @@ def test_too_few_rows_of_either_source_raises() -> None:
 def test_the_probe_is_reproducible_for_a_seed() -> None:
     records = _stratum(marker=True)
     assert run(records, seed=3).auroc == pytest.approx(run(records, seed=3).auroc)
+
+
+# -- fix round 1: the dev/holdout boundary is measured, not assumed clean ----
+
+
+def _split_pair(text_a: str, text_b: str) -> list[CorpusRecord]:
+    dev = _record("dev-0", "benign", text_a, "public_repo", "server-a").model_copy(
+        update={"split": "dev", "fold": 0}
+    )
+    holdout = _record("hold-0", "benign", text_b, "public_repo", "server-b").model_copy(
+        update={"split": "holdout", "fold": None}
+    )
+    return [dev, holdout]
+
+
+def test_a_planted_cross_boundary_near_duplicate_is_reported() -> None:
+    from bench.split.dedup import HashEmbedder
+    from bench.stats import cross_boundary_near_duplicates
+
+    text = "Reads a file from disk and returns its contents."
+    pairs = cross_boundary_near_duplicates(_split_pair(text, text), embedder=HashEmbedder())
+    assert [(a, b) for a, b, _ in pairs] == [("dev-0", "hold-0")]
+
+
+def test_unrelated_rows_across_the_boundary_are_not_reported() -> None:
+    from bench.split.dedup import HashEmbedder
+    from bench.stats import cross_boundary_near_duplicates
+
+    pairs = cross_boundary_near_duplicates(
+        _split_pair("Reads a file from disk.", "Launches a rocket towards orbit."),
+        embedder=HashEmbedder(),
+    )
+    assert pairs == []
+
+
+def test_pairs_inside_one_split_are_not_cross_boundary() -> None:
+    from bench.split.dedup import HashEmbedder
+    from bench.stats import cross_boundary_near_duplicates
+
+    text = "Reads a file from disk."
+    both_dev = [
+        _record("d0", "benign", text, "public_repo", "a").model_copy(
+            update={"split": "dev", "fold": 0}
+        ),
+        _record("d1", "benign", text, "public_repo", "b").model_copy(
+            update={"split": "dev", "fold": 1}
+        ),
+        _record("h0", "benign", "Unrelated.", "public_repo", "c").model_copy(
+            update={"split": "holdout", "fold": None}
+        ),
+    ]
+    assert cross_boundary_near_duplicates(both_dev, embedder=HashEmbedder()) == []
+
+
+def test_a_single_server_stratum_raises_rather_than_erroring_inside_sklearn() -> None:
+    records = [
+        _record(f"real-{i}", "imperative_benign", f"You MUST do {i}.", "public_repo", "only")
+        for i in range(25)
+    ]
+    records += [
+        _record(f"syn-{i}", "imperative_benign", f"You MUST do {i}.", "synthetic_mutation", "only")
+        for i in range(25)
+    ]
+    with pytest.raises(InsufficientStratum, match="server"):
+        run(records)

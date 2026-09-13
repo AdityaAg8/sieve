@@ -172,11 +172,37 @@ def run(
         )
         _, dropped = drop(stratum, pairs)
         dropped_per_stratum[name] = dropped
-        dropped_ids.update(dropped)
+        dropped_ids.update(dropped)  # `drop` already filtered the stratum; `kept` is rebuilt
+        # once below over the full corpus so record order is the caller's, not the strata's.
         if dropped:
             log.info("stratum %s: dropped %d near-duplicates", name, len(dropped))
     kept = [r for r in records if r.id not in dropped_ids]
     return kept, dropped_per_stratum
+
+
+def dropped_rows(
+    records: list[CorpusRecord], dropped_per_stratum: dict[str, list[str]]
+) -> dict[str, list[dict[str, str | None]]]:
+    """The dedup report, with each dropped row's label beside its id.
+
+    `bench.stats` gates on "no poisoned row was dropped". It reads this artefact *after*
+    dedup has already removed those rows from the corpus, so an id alone is unresolvable and
+    the gate could never fire. The label has to travel with the id.
+    """
+    by_id = {r.id: r for r in records}
+    return {
+        stratum: [
+            {
+                "id": rid,
+                "label": by_id[rid].label,
+                "source": by_id[rid].source,
+                "mutation_of": by_id[rid].mutation_of,
+            }
+            for rid in ids
+            if rid in by_id
+        ]
+        for stratum, ids in sorted(dropped_per_stratum.items())
+    }
 
 
 def _load(path: Path) -> list[CorpusRecord]:
@@ -209,13 +235,20 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     embedder: Embedder = MiniLMEmbedder() if args.embedder == "minilm" else HashEmbedder()
-    kept, dropped = run(_load(args.corpus), threshold=args.threshold, embedder=embedder)
+    records = _load(args.corpus)
+    kept, dropped = run(records, threshold=args.threshold, embedder=embedder)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(
         "".join(r.model_dump_json() + "\n" for r in kept), encoding="utf-8", newline="\n"
     )
     args.report.parent.mkdir(parents=True, exist_ok=True)
-    args.report.write_text(json.dumps(dropped, indent=2) + "\n", encoding="utf-8", newline="\n")
+    # The report carries each dropped row's label: `bench.stats` reads it after these rows
+    # are already gone from the corpus, so an id alone would leave its gate unfireable.
+    args.report.write_text(
+        json.dumps(dropped_rows(records, dropped), indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
     print(f"kept {len(kept)} of {len(kept) + sum(len(v) for v in dropped.values())}")
     return 0
 

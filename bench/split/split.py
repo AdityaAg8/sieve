@@ -63,22 +63,26 @@ def assign(
 
     rng = np.random.default_rng(seed)
     holdout_servers: set[str] = set()
-    dev_servers: list[str] = []
+    dev_by_signature: dict[str, list[str]] = {}
     for signature in sorted(by_signature):
         servers = by_signature[signature]
         order = rng.permutation(len(servers))
         shuffled = [servers[int(i)] for i in order]
+        # Per-stratum rounding can give a small stratum zero representation in the sealed
+        # split. Forcing one server instead overshoots the global 15% badly on a small corpus
+        # (seven servers across three strata would seal 43% of them), so this stays as it is
+        # and the gap is recorded as a known limitation rather than traded for a worse one.
         take = int(round(holdout * len(shuffled)))
         holdout_servers.update(shuffled[:take])
-        dev_servers.extend(shuffled[take:])
+        dev_by_signature[signature] = shuffled[take:]
 
-    # Round-robin within each signature keeps every fold's label mix comparable.
+    # Round-robin over the SHUFFLED remainder within each signature: this keeps every fold's
+    # label mix comparable *and* is the only place the seed can reach fold membership. Walking
+    # the unshuffled sorted list here made `seed` inert except through the holdout draw.
     fold_of: dict[str, int] = {}
     cursor = 0
-    for signature in sorted(by_signature):
-        for server in by_signature[signature]:
-            if server in holdout_servers:
-                continue
+    for signature in sorted(dev_by_signature):
+        for server in dev_by_signature[signature]:
             fold_of[server] = cursor % folds
             cursor += 1
 

@@ -110,6 +110,11 @@ is about.
 
 <!-- LEAKAGE -->
 
+Deduplication is stratum-local by design, so a near-duplicate can survive with one member in
+the development split and the other in the sealed evaluation split. That count is published
+above rather than removed: dropping the pairs would break the mutation graph, and leaving
+them unmentioned would overstate what the sealed split measures.
+
 ## LLM annotator
 
 The stage-2 judge's agreement with gold is reported here for completeness:

@@ -19,6 +19,7 @@ import tree_sitter_typescript as tst
 from tree_sitter import Language, Node, Parser
 
 from bench.collect import ExtractedTool
+from sieve.redact import redact_tool
 from sieve.types import ToolDefinition
 
 log = logging.getLogger(__name__)
@@ -33,6 +34,14 @@ _ZOD_TYPES = {
 }
 
 _LANGUAGE = Language(tst.language_typescript())
+
+
+def _redacted(tool: ToolDefinition) -> ToolDefinition:
+    """PRD SC-5: redact credential-shaped strings before the tool becomes a corpus record."""
+    redacted, kinds = redact_tool(tool)
+    if kinds:
+        log.info("redacted %s from tool %s", ", ".join(kinds), tool.name)
+    return redacted
 
 
 def _text(node: Node) -> str:
@@ -116,7 +125,9 @@ def _from_register_tool(name: str, args: list[Node], line: int) -> ExtractedTool
     title = _string_value(fields.get("title"))
     description = _string_value(fields.get("description"))
     schema = _shape_schema(fields.get("inputSchema"), tool_name=name)
-    tool = ToolDefinition(name=name, title=title, description=description, inputSchema=schema)
+    tool = _redacted(
+        ToolDefinition(name=name, title=title, description=description, inputSchema=schema)
+    )
     return ExtractedTool(tool=tool, schema_fidelity="approx", origin_line=line)
 
 
@@ -124,7 +135,7 @@ def _from_tool(name: str, args: list[Node], line: int) -> ExtractedTool | None:
     strings = [a for a in args if a.type == "string"]
     description = _string_value(strings[1]) if len(strings) > 1 else None
     schema = _shape_schema(next((a for a in args if a.type == "object"), None), tool_name=name)
-    tool = ToolDefinition(name=name, description=description, inputSchema=schema)
+    tool = _redacted(ToolDefinition(name=name, description=description, inputSchema=schema))
     return ExtractedTool(tool=tool, schema_fidelity="approx", origin_line=line)
 
 

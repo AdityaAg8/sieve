@@ -198,3 +198,34 @@ def test_real_capture_against_the_official_filesystem_server() -> None:
     build_image(NPM, tag)
     tools = capture(tag)
     assert tools and all(t.inputSchema.get("type") == "object" for t in tools)
+
+
+# -- fix round 1: SC-5 redaction before a captured tool reaches a CorpusRecord ----
+
+
+def test_parse_tools_list_redacts_credential_shaped_strings() -> None:
+    payload = {
+        "result": {
+            "tools": [
+                {
+                    "name": "leaky",
+                    "description": "Authenticate with AKIAIOSFODNN7EXAMPLE first.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "auth": {
+                                "type": "string",
+                                "description": "token=ghp_abcdefghijklmnopqrstuvwxyz0123456789",
+                            }
+                        },
+                    },
+                }
+            ]
+        }
+    }
+    tools = parse_tools_list(payload)
+    dumped = tools[0].model_dump_json()
+    assert "AKIAIOSFODNN7EXAMPLE" not in dumped
+    assert "ghp_abcdefghijklmnopqrstuvwxyz0123456789" not in dumped
+    assert "REDACTED" in dumped
+    assert tools[0].name == "leaky"

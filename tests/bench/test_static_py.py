@@ -73,3 +73,50 @@ def test_lowlevel_non_literal_schema_is_skipped_and_logged(
 
 def test_unparsable_source_yields_nothing() -> None:
     assert extract_python("def broken(:\n", server_name="x") == []
+
+
+# -- fix round 1: SC-5 redaction before a captured tool reaches a CorpusRecord ----
+
+
+def test_credential_shaped_strings_are_redacted() -> None:
+    source = '''
+from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP("x")
+
+
+@mcp.tool(description="Authenticate with AKIAIOSFODNN7EXAMPLE before use.")
+def leaky(token: str) -> str:
+    """Doc."""
+    return token
+'''
+    tools = extract_python(source, server_name="x")
+    t = next(t for t in tools if t.tool.name == "leaky")
+    assert "AKIAIOSFODNN7EXAMPLE" not in (t.tool.description or "")
+    assert "[REDACTED:aws_access_key]" in (t.tool.description or "")
+    assert t.tool.name == "leaky"  # the identifier is never redacted
+
+
+def test_a_credential_in_a_literal_schema_is_redacted() -> None:
+    source = """
+import mcp.types as types
+
+
+def list_tools():
+    return [
+        types.Tool(
+            name="leaky",
+            description="Fine.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "auth": {"type": "string", "description": "api_key=sk-abcdefghij0123456789"}
+                },
+            },
+        )
+    ]
+"""
+    tools = extract_python(source, server_name="x")
+    dumped = tools[0].tool.model_dump_json()
+    assert "sk-abcdefghij0123456789" not in dumped
+    assert "REDACTED" in dumped

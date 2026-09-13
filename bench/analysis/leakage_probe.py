@@ -57,16 +57,25 @@ def run(records: list[CorpusRecord], *, seed: int = 0) -> LeakageResult:
     texts = [text_of(r) for r in stratum]
     groups = np.array([r.server_name for r in stratum])
 
-    n_splits = min(5, len(set(groups.tolist())))
+    n_groups = len(set(groups.tolist()))
+    if n_groups < 2:
+        raise InsufficientStratum(
+            f"the imperative_benign stratum spans {n_groups} server(s); a grouped split needs "
+            "at least two, or the probe would be scored on the servers it trained on"
+        )
+    n_splits = min(5, n_groups)
     oof = np.zeros(len(stratum), dtype=float)
     for train, test in GroupKFold(n_splits=n_splits).split(texts, y, groups):
+        if len(set(y[train].tolist())) < 2:
+            # A fold that saw one source only cannot rank; 0.5 is the honest abstention.
+            oof[test] = 0.5
+            continue
         vectoriser = TfidfVectorizer(sublinear_tf=True, min_df=1, ngram_range=(1, 2))
         x_train = vectoriser.fit_transform([texts[i] for i in train])
         x_test = vectoriser.transform([texts[i] for i in test])
-        model = LogisticRegression(max_iter=1000, random_state=seed)
-        if len(set(y[train].tolist())) < 2:
-            oof[test] = 0.5
-            continue
+        # lbfgs is deterministic, so `random_state` would be inert; the seed belongs to the
+        # caller's reproducibility contract and is recorded, not passed somewhere it is ignored.
+        model = LogisticRegression(max_iter=1000)
         model.fit(x_train, y[train])
         oof[test] = model.predict_proba(x_test)[:, 1]
 

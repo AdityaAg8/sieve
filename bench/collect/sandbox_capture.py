@@ -25,6 +25,7 @@ import httpx
 from pydantic import BaseModel
 
 from bench.collect.registry import ServerCandidate
+from sieve.redact import redact_tool
 from sieve.types import ToolDefinition
 
 log = logging.getLogger(__name__)
@@ -138,7 +139,9 @@ def parse_tools_list(payload: dict[str, Any]) -> list[ToolDefinition]:
         if not isinstance(schema, dict):
             log.info("dropping tool %r: inputSchema is not an object", entry.get("name"))
             continue
-        out.append(
+        # PRD SC-5: a captured server can advertise a credential-shaped string, and this is
+        # the last point before it becomes a corpus record. Redaction is idempotent.
+        tool, kinds = redact_tool(
             ToolDefinition(
                 name=entry["name"],
                 title=entry.get("title"),
@@ -148,6 +151,9 @@ def parse_tools_list(payload: dict[str, Any]) -> list[ToolDefinition]:
                 annotations=entry.get("annotations"),
             )
         )
+        if kinds:
+            log.info("redacted %s from tool %s", ", ".join(kinds), tool.name)
+        out.append(tool)
     return out
 
 
