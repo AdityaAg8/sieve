@@ -25,7 +25,10 @@ from sieve.db.session import create_engine, use_selector_event_loop_on_windows
 from sieve.redact import redact_tool
 from sieve.types import Finding, TriageResult
 
-FIXTURE = Path("fixtures/verdicts/sample-27.json")
+# Anchored to the repository, not to the working directory: `make up` runs this from the repo
+# root, the containers run it from /app, and a test may run it from anywhere.
+REPO_ROOT = Path(__file__).resolve().parents[2]
+FIXTURE = REPO_ROOT / "fixtures" / "verdicts" / "sample-27.json"
 
 # A fixed id so `make up` always links to the same scan and a re-seed replaces it in place.
 SEED_SCAN_ID = uuid.UUID(int=0x5EED)

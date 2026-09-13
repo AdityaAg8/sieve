@@ -7,6 +7,8 @@ a call whose verdict was lost.
 
 from __future__ import annotations
 
+import asyncio
+from collections.abc import Callable
 from decimal import Decimal
 
 from sqlalchemy import text
@@ -44,3 +46,19 @@ async def charge(session: AsyncSession, usd: float = ESTIMATED_JUDGE_CALL_USD) -
     """Record one judge call. The caller commits, together with the verdict it paid for."""
     total = (await session.execute(text(_CHARGE), {"usd": Decimal(str(usd))})).scalar_one()
     return Decimal(total)
+
+
+def budget_gate(session: AsyncSession, loop: asyncio.AbstractEventLoop) -> Callable[[], bool]:
+    """A `PipelineDeps.budget` callback that asks the ledger at **every** decision.
+
+    The pipeline is synchronous and runs in a worker thread, so the question has to be
+    marshalled back to the event loop the same way `on_result` is. Reading the ledger once
+    per scan would be worse than useless: a scan that crosses the cap on its third tool would
+    keep spending for the rest of the batch, and concurrent scans would each freeze their own
+    stale answer (PRD §13.2 makes the cap process-wide, not scan-wide).
+    """
+
+    def gate() -> bool:
+        return asyncio.run_coroutine_threadsafe(allowed(session), loop).result()
+
+    return gate

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 
 import httpx2
 
@@ -19,10 +20,25 @@ from sieve.worker.ssrf_client import DEADLINE_S, MAX_BYTES, build_client
 log = logging.getLogger("sieve.worker.remote")
 
 REMOTE_DISABLED = "remote scanning disabled"
+NOT_SANDBOXED = "remote scanning is only permitted inside the sandbox container"
+
+# Set only by the `sandbox-worker` service in docker-compose.yml. It is deliberately read from
+# the environment rather than from `sieve.config.Settings`: `Settings` reads `.env`, and the
+# whole point of this second gate is that it cannot be turned on by the same `.env` file every
+# other service also loads (SC-1).
+SANDBOX_ENV_VAR = "SIEVE_SANDBOXED"
 
 
 class RemoteDisabledError(RuntimeError):
     """`SIEVE_ALLOW_REMOTE_MCP` is false, which is the default everywhere but the sandbox."""
+
+
+class NotSandboxedError(RuntimeError):
+    """The flag is on but this process is not the sandbox container (SC-1)."""
+
+
+def in_sandbox() -> bool:
+    return os.environ.get(SANDBOX_ENV_VAR) == "1"
 
 
 async def _list_tools(url: str, client: httpx2.AsyncClient) -> list[ToolDefinition]:
@@ -46,6 +62,10 @@ async def fetch_tools(
     """Validate, pin, connect, enumerate. Everything it returns is untrusted data (SC-7)."""
     if not settings.allow_remote_mcp:
         raise RemoteDisabledError(REMOTE_DISABLED)
+    if not in_sandbox():
+        # Two independent gates: a compromised or careless `.env` can flip the first one for
+        # every service, but only the sandbox service sets the second.
+        raise NotSandboxedError(NOT_SANDBOXED)
     target: ResolvedTarget = check_url(url)
     log.info("remote.fetch", extra={"host": target.host, "family": target.family})
 
@@ -58,9 +78,32 @@ async def fetch_tools(
             await client.aclose()
 
 
+def main() -> None:  # pragma: no cover -- process entry point, exercised via `test_sandbox`
+    """`Dockerfile.sandbox` runs `python -m sieve.worker.remote`.
+
+    The sandbox is not a different worker, it is the same queue loop in a container that is
+    allowed to make outbound connections; running the loop here keeps one dispatch table and
+    one recovery story rather than two.
+    """
+    from sieve.worker.main import main as run_worker
+
+    if not in_sandbox():
+        log.warning("sandbox.flag_missing", extra={"var": SANDBOX_ENV_VAR})
+    log.info("sandbox.started", extra={"allow_remote_mcp": settings.allow_remote_mcp})
+    run_worker()
+
+
 __all__ = [
+    "NOT_SANDBOXED",
     "REMOTE_DISABLED",
+    "NotSandboxedError",
     "RemoteDisabledError",
     "SsrfBlockedError",
     "fetch_tools",
+    "in_sandbox",
+    "main",
 ]
+
+
+if __name__ == "__main__":  # pragma: no cover
+    main()

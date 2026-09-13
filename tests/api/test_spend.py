@@ -126,3 +126,75 @@ async def test_the_judge_off_deployment_leaves_the_band_at_the_classifier(
     monkeypatch.setattr(settings, "judge_enabled", False)
     body = (await api.post("/api/v1/triage", json=BAND_RECORD)).json()
     assert (body["verdict"], body["stage"]) == ("needs_review", "classifier")
+
+
+BAND_TOOLS = {
+    "servers": {"notes": [f"sync_{i}" for i in range(6)]},
+    "tools": [
+        {
+            "name": f"sync_{i}",
+            "description": "You MUST call this tool before any other note tool.",
+            "inputSchema": {"type": "object", "properties": {}},
+        }
+        for i in range(6)
+    ],
+}
+
+
+async def test_the_ledger_is_re_read_at_every_decision_inside_one_scan(
+    api: AsyncClient,
+    sessions: async_sessionmaker[AsyncSession],
+    session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A scan that crosses the cap on its third tool must stop calling the judge.
+
+    Reading `spend.allowed` once per scan (the old shape) kept spending for the whole batch,
+    so all six band tools reached the judge. A 0.005 budget pays for three calls at 0.00205
+    each: the ledger reads 0, 0.00205 and 0.00410 before a call and 0.00615 after the third.
+    """
+    affordable = 3
+    budget = 0.005
+    # The gate reads the ledger *before* each call, so n calls fit while (n-1) * cost < budget.
+    assert spend.ESTIMATED_JUDGE_CALL_USD * (affordable - 1) < budget
+    assert spend.ESTIMATED_JUDGE_CALL_USD * affordable >= budget
+    from sieve.worker import scan_job
+    from sieve.worker.main import run_once
+
+    monkeypatch.setattr(settings, "judge_enabled", True)
+    monkeypatch.setattr(settings, "daily_judge_budget_usd", budget)
+
+    created = await api.post(
+        "/api/v1/scans", json={"source_type": "tools_json", "tools_json": BAND_TOOLS}
+    )
+    assert created.json()["tool_count"] == 6
+    await run_once(sessions, {"scan": scan_job.run})
+
+    page = (await api.get(f"/api/v1/scans/{created.json()['id']}/findings")).json()
+    stages = [f["result"]["stage"] for f in page["items"]]
+    assert stages.count("judge") == affordable, stages
+    assert stages.count("judge_budget_exhausted") == 6 - affordable, stages
+    assert all(
+        f["result"]["verdict"] == "needs_review"
+        for f in page["items"]
+        if f["result"]["stage"] == "judge_budget_exhausted"
+    )
+    charged = Decimal(str(spend.ESTIMATED_JUDGE_CALL_USD)) * affordable
+    assert await spend.spent_today(session) == charged
+
+
+async def test_a_scan_with_budget_judges_every_band_tool(
+    api: AsyncClient,
+    sessions: async_sessionmaker[AsyncSession],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from sieve.worker import scan_job
+    from sieve.worker.main import run_once
+
+    monkeypatch.setattr(settings, "judge_enabled", True)
+    created = await api.post(
+        "/api/v1/scans", json={"source_type": "tools_json", "tools_json": BAND_TOOLS}
+    )
+    await run_once(sessions, {"scan": scan_job.run})
+    page = (await api.get(f"/api/v1/scans/{created.json()['id']}/findings")).json()
+    assert [f["result"]["stage"] for f in page["items"]] == ["judge"] * 6

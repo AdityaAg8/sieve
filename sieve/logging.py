@@ -74,18 +74,30 @@ class DropToolContent(logging.Filter):
         return True
 
 
-def configure_logging(level: str | None = None, *, replace: bool = True) -> None:
-    """Install the JSON handler on the root logger.
+def _ensure_drop_filter(target: logging.Logger | logging.Handler) -> None:
+    if not any(isinstance(f, DropToolContent) for f in target.filters):
+        target.addFilter(DropToolContent())
 
-    `replace=False` leaves an already-configured root alone, which is what the app factory
-    wants: under pytest the root logger belongs to the test runner, and stealing its handlers
-    would silence `caplog` for every other lane.
+
+def configure_logging(level: str | None = None, *, replace: bool = True) -> None:
+    """Install the JSON handler, and the SC-5 filter *whatever* else is configured.
+
+    `replace=False` leaves an already-configured root's handlers alone -- under pytest the
+    root logger belongs to the test runner, and stealing its handlers would silence `caplog`
+    for every other lane. What it must never leave alone is `DropToolContent`: SC-5 is a
+    binding constraint, not a default, so the filter is attached to every root handler and to
+    the `sieve` logger regardless of who configured logging first.
     """
     root_logger = logging.getLogger()
-    if not replace and root_logger.handlers:
-        return
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(JsonFormatter())
-    handler.addFilter(DropToolContent())
-    root_logger.handlers = [handler]
-    root_logger.setLevel((level or settings.log_level).upper())
+    if replace or not root_logger.handlers:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(JsonFormatter())
+        root_logger.handlers = [handler]
+        root_logger.setLevel((level or settings.log_level).upper())
+
+    for existing in root_logger.handlers:
+        _ensure_drop_filter(existing)
+    # The root handlers are what actually enforce this for `sieve.*` children, since
+    # `callHandlers` walks ancestors' *handlers* and not their filters; the logger-level
+    # filter only covers records logged on `sieve` itself. Both are cheap, so do both.
+    _ensure_drop_filter(logging.getLogger("sieve"))

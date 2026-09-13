@@ -66,9 +66,18 @@ def client_ip(request: Request) -> str:
     return client.host if client is not None else UNKNOWN_IP
 
 
+def limits_for(bucket: str) -> tuple[int, int]:
+    """`WINDOWS` is built at import; the daily quota is read live so a test (or a redeploy)
+    that changes `SIEVE_DAILY_SCANS_PER_IP` is not ignored until the process restarts."""
+    limit, window = WINDOWS[bucket]
+    if bucket == "scans_day":
+        limit = settings.daily_scans_per_ip
+    return limit, window
+
+
 async def hit(session: AsyncSession, hashed_ip: str, bucket: str) -> RateDecision:
     """Count one request against a bucket. One UPSERT, so concurrency cannot double-spend."""
-    limit, window = WINDOWS[bucket]
+    limit, window = limits_for(bucket)
     row = (
         await session.execute(
             text(_UPSERT), {"ip_hash": hashed_ip, "bucket": bucket, "window": window}

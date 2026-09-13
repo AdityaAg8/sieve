@@ -26,7 +26,9 @@ URL = "https://target.example/mcp"
 
 @pytest.fixture(autouse=True)
 def remote_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Both gates open: the feature flag *and* the sandbox marker (see `test_sandbox.py`)."""
     monkeypatch.setattr(remote.settings, "allow_remote_mcp", True)
+    monkeypatch.setenv(remote.SANDBOX_ENV_VAR, "1")
 
 
 @pytest.fixture

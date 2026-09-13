@@ -36,25 +36,34 @@ def default_dispatch() -> Mapping[str, Handler]:
     return {"scan": scan_job.run, purge.KIND: purge.run}
 
 
-async def _beat(sessions: async_sessionmaker[AsyncSession], job_id: uuid.UUID) -> None:
+def worker_identity() -> str:
+    """Stable for the life of the process, and unique across processes on a host."""
+    host = os.uname().nodename if hasattr(os, "uname") else "worker"
+    return f"{host}:{os.getpid()}"
+
+
+async def _beat(
+    sessions: async_sessionmaker[AsyncSession], job_id: uuid.UUID, worker_id: str
+) -> None:
     while True:
         await asyncio.sleep(HEARTBEAT_S)
         async with sessions() as session:
-            await heartbeat(session, job_id)
+            if not await heartbeat(session, job_id, worker_id=worker_id):
+                return  # the lease is gone; another worker owns this job now
 
 
 async def run_once(
     sessions: async_sessionmaker[AsyncSession], dispatch: Mapping[str, Handler]
 ) -> bool:
     """One tick. Returns True when a job was processed, so the caller can skip its idle sleep."""
-    worker_id = f"{os.uname().nodename if hasattr(os, 'uname') else 'worker'}:{os.getpid()}"
+    worker_id = worker_identity()
     async with sessions() as session:
         await reap(session, visibility_s=VISIBILITY_S)
         job = await claim(session, worker_id, visibility_s=VISIBILITY_S)
     if job is None:
         return False
 
-    beat = asyncio.create_task(_beat(sessions, job.id))
+    beat = asyncio.create_task(_beat(sessions, job.id, worker_id))
     try:
         handler = dispatch.get(job.kind)
         if handler is None:
@@ -62,7 +71,8 @@ async def run_once(
         async with sessions() as session:
             await handler(session, job)
         async with sessions() as session:
-            await complete(session, job.id)
+            # Fenced: if this job was reaped mid-run, someone else owns it and this is a no-op.
+            await complete(session, job.id, worker_id=worker_id)
         log.info("job.done", extra={"job_id": str(job.id), "kind": job.kind})
     except Exception as exc:  # noqa: BLE001 -- a failed job must requeue, never kill the loop
         log.warning(
@@ -70,7 +80,7 @@ async def run_once(
             extra={"job_id": str(job.id), "kind": job.kind, "error": type(exc).__name__},
         )
         async with sessions() as session:
-            await fail(session, job.id, f"{type(exc).__name__}: {exc}")
+            await fail(session, job.id, f"{type(exc).__name__}: {exc}", worker_id=worker_id)
     finally:
         beat.cancel()
         with contextlib.suppress(asyncio.CancelledError):

@@ -65,7 +65,7 @@ async def test_heartbeat_moves_the_visibility_deadline(session: AsyncSession) ->
         update(Job).where(Job.id == job.id).values(heartbeat_at=text("now() - interval '30 s'"))
     )
     await session.commit()
-    await heartbeat(session, job.id)
+    await heartbeat(session, job.id, worker_id="worker-1")
     after = (await session.execute(select(Job.heartbeat_at).where(Job.id == job.id))).scalar_one()
     assert before is not None and after is not None and after > before - timedelta(seconds=30)
 
@@ -95,7 +95,7 @@ async def test_complete_marks_the_job_done(session: AsyncSession) -> None:
     await enqueue(session, "scan", {})
     job = await claim(session, "worker-1")
     assert job is not None
-    await complete(session, job.id)
+    await complete(session, job.id, worker_id="worker-1")
     status = (await session.execute(select(Job.status).where(Job.id == job.id))).scalar_one()
     assert status == "done"
     assert await claim(session, "worker-1") is None
@@ -105,7 +105,7 @@ async def test_fail_requeues_with_exponential_backoff(session: AsyncSession) -> 
     await enqueue(session, "scan", {})
     job = await claim(session, "worker-1")
     assert job is not None
-    await fail(session, job.id, "boom", backoff_base_s=10)
+    await fail(session, job.id, "boom", worker_id="worker-1", backoff_base_s=10)
     row = (
         await session.execute(
             select(Job.status, Job.last_error, Job.run_after, Job.locked_by).where(Job.id == job.id)
@@ -121,7 +121,7 @@ async def test_fail_requeues_with_exponential_backoff(session: AsyncSession) -> 
     await session.commit()
     job2 = await claim(session, "worker-1")
     assert job2 is not None and job2.attempts == 2
-    await fail(session, job2.id, "boom again", backoff_base_s=10)
+    await fail(session, job2.id, "boom again", worker_id="worker-1", backoff_base_s=10)
     run_after2 = (await session.execute(select(Job.run_after).where(Job.id == job.id))).scalar_one()
     assert run_after2 > datetime.now(UTC) + timedelta(seconds=15)
 
@@ -134,7 +134,7 @@ async def test_fail_at_max_attempts_marks_the_job_dead(session: AsyncSession) ->
 
     job = await claim(session, "worker-1")
     assert job is not None
-    await fail(session, job.id, "fatal")
+    await fail(session, job.id, "fatal", worker_id="worker-1")
     row = (await session.execute(select(Job.status, Job.last_error).where(Job.id == job_id))).one()
     assert row.status == "dead"
     assert row.last_error == "fatal"
@@ -142,9 +142,9 @@ async def test_fail_at_max_attempts_marks_the_job_dead(session: AsyncSession) ->
 
 
 async def test_fail_on_an_unknown_job_is_a_no_op(session: AsyncSession) -> None:
-    await fail(session, uuid.uuid4(), "nothing to see")
-    await complete(session, uuid.uuid4())
-    await heartbeat(session, uuid.uuid4())
+    assert await fail(session, uuid.uuid4(), "nothing to see", worker_id="w") is False
+    assert await complete(session, uuid.uuid4(), worker_id="w") is False
+    assert await heartbeat(session, uuid.uuid4(), worker_id="w") is False
 
 
 async def test_jobs_are_claimed_oldest_first(session: AsyncSession) -> None:
@@ -156,3 +156,54 @@ async def test_jobs_are_claimed_oldest_first(session: AsyncSession) -> None:
     await enqueue(session, "scan", {"n": 2})
     claimed = await claim(session, "worker-1")
     assert claimed is not None and claimed.id == first
+
+
+async def test_a_reaped_worker_can_no_longer_close_its_old_job(session: AsyncSession) -> None:
+    """`locked_by` is the fence token: without it two workers run one job and A closes B's.
+
+    Claim by A, reap, claim by B; A's `complete` and `heartbeat` must be no-ops, B's must work.
+    """
+    await enqueue(session, "scan", {})
+    first = await claim(session, "worker-a")
+    assert first is not None
+
+    await session.execute(
+        update(Job).where(Job.id == first.id).values(heartbeat_at=text("now() - interval '10 min'"))
+    )
+    await session.commit()
+    assert await reap(session, visibility_s=120) == 1
+
+    second = await claim(session, "worker-b")
+    assert second is not None and second.id == first.id
+
+    assert await heartbeat(session, first.id, worker_id="worker-a") is False
+    assert await complete(session, first.id, worker_id="worker-a") is False
+    status = (await session.execute(select(Job.status).where(Job.id == first.id))).scalar_one()
+    assert status == "running", "A must not close a job B is still executing"
+
+    assert await heartbeat(session, second.id, worker_id="worker-b") is True
+    assert await complete(session, second.id, worker_id="worker-b") is True
+    status = (await session.execute(select(Job.status).where(Job.id == first.id))).scalar_one()
+    assert status == "done"
+
+
+async def test_a_reaped_worker_can_no_longer_fail_its_old_job(session: AsyncSession) -> None:
+    await enqueue(session, "scan", {})
+    first = await claim(session, "worker-a")
+    assert first is not None
+    await session.execute(
+        update(Job).where(Job.id == first.id).values(heartbeat_at=text("now() - interval '10 min'"))
+    )
+    await session.commit()
+    await reap(session, visibility_s=120)
+    second = await claim(session, "worker-b")
+    assert second is not None
+
+    assert await fail(session, first.id, "A gave up", worker_id="worker-a") is False
+    row = (
+        await session.execute(select(Job.status, Job.last_error).where(Job.id == first.id))
+    ).one()
+    assert row.status == "running"
+    assert row.last_error is None, "A's error must not overwrite B's in-flight job"
+
+    assert await fail(session, second.id, "B gave up", worker_id="worker-b") is True

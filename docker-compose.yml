@@ -7,20 +7,24 @@ services:
   api:
     build: { context: ., dockerfile: Dockerfile.api }
     env_file: [{ path: .env, required: false }]
-    environment: { DATABASE_URL: postgresql+psycopg://sieve:sieve@postgres:5432/sieve, WEB_ORIGIN: http://localhost:3000 }
+    # SIEVE_ALLOW_REMOTE_MCP is pinned, not inherited: `environment:` beats `env_file:`, so a
+    # developer's .env cannot switch remote scanning on outside the sandbox (SC-1).
+    environment: { DATABASE_URL: postgresql+psycopg://sieve:sieve@postgres:5432/sieve, WEB_ORIGIN: http://localhost:3000, SIEVE_ALLOW_REMOTE_MCP: "false" }
     ports: ["8000:8000"]
     depends_on: { postgres: { condition: service_healthy } }
   worker:
     build: { context: ., dockerfile: Dockerfile.api }
     env_file: [{ path: .env, required: false }]
-    environment: { DATABASE_URL: postgresql+psycopg://sieve:sieve@postgres:5432/sieve }
+    environment: { DATABASE_URL: postgresql+psycopg://sieve:sieve@postgres:5432/sieve, SIEVE_ALLOW_REMOTE_MCP: "false" }
     command: ["uv", "run", "python", "-m", "sieve.worker.main"]
     depends_on: { postgres: { condition: service_healthy } }
   sandbox-worker:
     profiles: ["remote"]
     build: { context: ., dockerfile: Dockerfile.sandbox }
     env_file: [{ path: .env, required: false }]
-    environment: { DATABASE_URL: postgresql+psycopg://sieve:sieve@postgres:5432/sieve, SIEVE_ALLOW_REMOTE_MCP: "true" }
+    # SIEVE_SANDBOXED is the second, independent gate: the runtime refuses a remote fetch
+    # without it, and only this service sets it.
+    environment: { DATABASE_URL: postgresql+psycopg://sieve:sieve@postgres:5432/sieve, SIEVE_ALLOW_REMOTE_MCP: "true", SIEVE_SANDBOXED: "1" }
     read_only: true
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]

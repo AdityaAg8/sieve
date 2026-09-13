@@ -12,7 +12,7 @@ from sieve.types import BenchSummary
 
 router = APIRouter(tags=["bench"])
 
-RESULTS = Path("bench/results")
+RESULTS = Path(__file__).resolve().parents[3] / "bench" / "results"
 DEMO = RESULTS / "demo.json"
 ABLATIONS = RESULTS / "ablations.json"
 

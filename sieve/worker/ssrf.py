@@ -86,7 +86,12 @@ def _unwrapped(address: ipaddress.IPv6Address) -> ipaddress.IPv4Address | None:
 
 def is_blocked(raw: str) -> bool:
     """True when this literal is in any range §13.6 forbids."""
-    address = ipaddress.ip_address(raw)
+    try:
+        address = ipaddress.ip_address(raw)
+    except ValueError as exc:
+        # A scoped literal (`fe80::1%eth0`) or anything else `ipaddress` will not parse is
+        # something we cannot reason about, so it is refused, not passed through.
+        raise SsrfBlockedError(f"unparseable address {raw!r}") from exc
     if address in METADATA_ADDRESSES:
         return True
     if isinstance(address, ipaddress.IPv4Address):

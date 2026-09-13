@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from fastapi import APIRouter, Depends, Request
@@ -17,6 +18,10 @@ router = APIRouter(tags=["triage"])
 log = logging.getLogger("sieve.api.triage")
 
 
+def _always_allowed() -> bool:
+    return True
+
+
 @router.post("/triage", response_model=TriageResult)
 async def triage(
     record: ToolRecord,
@@ -27,15 +32,19 @@ async def triage(
     await ratelimit.enforce(request, session, "triage_min")
 
     stub = getattr(request.app.state, "stub", False)
-    budget_ok = True if stub else await spend.allowed(session)
     judge = get_judge() if settings.judge_enabled else None
     deps = PipelineDeps(
         classifier=get_classifier(),
         judge=judge,
         judge_enabled=settings.judge_enabled,
-        budget=lambda: budget_ok,
+        # Asked at the decision, not before it: the same gate the worker uses, so a request
+        # that arrives as the ledger crosses the cap is refused the judge, not handed a
+        # snapshot taken a moment earlier (PRD §13.2).
+        budget=_always_allowed if stub else spend.budget_gate(session, asyncio.get_running_loop()),
     )
-    result = run_triage(record, [], deps)
+    # Off the event loop: a real DeBERTa forward pass is CPU-bound, and `budget` marshals
+    # itself back, so the loop stays free to answer the ledger.
+    result = await asyncio.to_thread(run_triage, record, [], deps)
 
     if result.stage == "judge" and not stub:
         # Same transaction as the answer it paid for (PRD §13.2).

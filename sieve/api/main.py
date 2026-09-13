@@ -26,8 +26,10 @@ def create_app(*, stub: bool = False) -> FastAPI:
         allow_methods=["GET", "POST"],
         allow_headers=["Content-Type", "Idempotency-Key"],
     )
-    app.add_middleware(SecurityHeadersMiddleware)
+    # Order matters: the last one added is the outermost, and the body cap answers 413 itself
+    # without ever reaching the app, so the header middleware has to wrap it.
     app.add_middleware(BodySizeLimitMiddleware)
+    app.add_middleware(SecurityHeadersMiddleware)
     app.state.stub = stub
     for r in (scans, triage, findings, feedback, bench, models, health):
         app.include_router(r.router, prefix="/api/v1")

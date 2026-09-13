@@ -8,7 +8,6 @@ row and an SSE event land per tool rather than all 27 at the end.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import uuid
 from collections.abc import Callable
@@ -195,6 +194,8 @@ async def _load_remote(session: AsyncSession, scan: Scan) -> None:
 async def _triage(session: AsyncSession, scan_id: uuid.UUID, loaded: _Loaded) -> list[TriageResult]:
     loop = asyncio.get_running_loop()
 
+    by_id = {r.id: r for r in loaded.records}
+
     async def persist(record_id: str, result: TriageResult) -> None:
         tool_id = loaded.tool_ids[record_id]
         row = verdict_row(tool_id, result)
@@ -204,7 +205,7 @@ async def _triage(session: AsyncSession, scan_id: uuid.UUID, loaded: _Loaded) ->
             # can neither bank a free judge call nor charge for a verdict that was lost.
             await spend.charge(session)
         await session.commit()
-        record = next(r for r in loaded.records if r.id == record_id)
+        record = by_id[record_id]
         finding = Finding(
             id=str(row.id),
             scan_id=str(scan_id),
@@ -213,17 +214,16 @@ async def _triage(session: AsyncSession, scan_id: uuid.UUID, loaded: _Loaded) ->
             sibling_tool_names=record.sibling_tool_names,
             result=result,
         )
-        await _event(session, scan_id, "tool.verdict", json.loads(finding.model_dump_json()))
+        await _event(session, scan_id, "tool.verdict", finding.model_dump(mode="json"))
 
     def on_result(record_id: str, result: TriageResult) -> None:
         asyncio.run_coroutine_threadsafe(persist(record_id, result), loop).result()
 
-    budget_ok = await spend.allowed(session)
     return await asyncio.to_thread(
         triage_many,
         loaded.records,
         loaded.findings_by_id,
-        _deps(lambda: budget_ok),
+        _deps(spend.budget_gate(session, loop)),
         on_result=on_result,
         judge_budget=settings.judge_max_calls_per_scan,
     )
