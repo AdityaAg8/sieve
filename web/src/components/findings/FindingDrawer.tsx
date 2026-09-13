@@ -2,12 +2,15 @@
 
 import { useEffect, useRef } from "react";
 
+import { Evidence } from "@/components/evidence/Evidence";
 import type { Finding } from "@/lib/api";
+import { evidenceBlocks } from "@/lib/evidence";
 import { OWASP_MCP_TOP_10 } from "@/lib/links";
 import { owaspTitle, subLabelTitle } from "@/lib/owasp";
 import { CLASS_LABEL, STAGE_LABEL, formatProbability, stageNote } from "@/lib/verdict";
 
 import { DismissalReason } from "./DismissalReason";
+import { Feedback } from "./Feedback";
 import { VerdictChip } from "./VerdictChip";
 
 type Props = {
@@ -58,6 +61,7 @@ export function FindingDetail({
   const { result, tool } = finding;
   const scanner = result.scanner_findings[0];
   const note = stageNote(result);
+  const blocks = evidenceBlocks(tool, result.evidence_spans);
 
   return (
     <article className="flex h-full flex-col gap-6 overflow-y-auto p-6">
@@ -76,10 +80,23 @@ export function FindingDetail({
         </div>
       </header>
 
-      <section aria-label="Definition" className="flex flex-col gap-3">
+      <section aria-label="Definition" className="flex flex-col gap-4">
         <h3 className="t-eyebrow">Definition</h3>
-        <p className="t-ui text-ink-2">description</p>
-        <p className="quote p-3">{tool.description ?? "No description."}</p>
+        {blocks.length === 0 ? (
+          <p className="quote p-3">No description.</p>
+        ) : (
+          blocks.map((block) => (
+            <div key={block.label} className="flex flex-col gap-2">
+              <p className="t-mono text-ink-2 break-all">{block.label}</p>
+              <Evidence
+                text={block.text}
+                spans={block.spans}
+                field={block.field}
+                path={block.path}
+              />
+            </div>
+          ))
+        )}
       </section>
 
       <section aria-label="Verdicts" className="grid gap-6 sm:grid-cols-2">
@@ -154,6 +171,8 @@ export function FindingDetail({
           </ul>
         </section>
       ) : null}
+
+      <Feedback findingId={finding.id} />
 
       <section aria-label="Provenance" className="border-line-1 mt-auto border-t pt-4">
         <dl className="t-ui grid gap-x-6 gap-y-1 sm:grid-cols-2">
