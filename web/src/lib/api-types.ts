@@ -30,7 +30,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Submit Feedback */
+        /**
+         * Submit Feedback
+         * @description Agree/disagree on a verdict. Rate-limited, with a honeypot field (PRD §13.1).
+         */
         post: operations["submit_feedback_api_v1_findings__finding_id__feedback_post"];
         delete?: never;
         options?: never;
@@ -62,7 +65,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Model Info */
+        /**
+         * Get Model Info
+         * @description Thresholds come from the artefact, never from a constant here (PRD §11.4).
+         */
         get: operations["get_model_info_api_v1_models_get"];
         put?: never;
         post?: never;
@@ -79,7 +85,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Readyz */
+        /**
+         * Readyz
+         * @description Readiness checks the database and the model load (PRD §13.1).
+         */
         get: operations["readyz_api_v1_readyz_get"];
         put?: never;
         post?: never;
@@ -130,7 +139,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Scan Events */
+        /**
+         * Scan Events
+         * @description SSE. `Last-Event-ID` replays only what the client missed (PRD §13.1).
+         */
         get: operations["scan_events_api_v1_scans__scan_id__events_get"];
         put?: never;
         post?: never;
@@ -164,7 +176,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Scan Sarif */
+        /**
+         * Scan Sarif
+         * @description SARIF 2.1.0 for CI. The scanner's original verdict rides along in `properties`.
+         */
         get: operations["scan_sarif_api_v1_scans__scan_id__sarif_get"];
         put?: never;
         post?: never;
@@ -183,7 +198,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Triage */
+        /**
+         * Triage
+         * @description The synchronous hot path for the CLI and the MCP server -- the same `pipeline.triage`.
+         */
         post: operations["triage_api_v1_triage_post"];
         delete?: never;
         options?: never;
