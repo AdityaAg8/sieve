@@ -29,6 +29,12 @@ const PAIRS = [
   ["red-0", "bg-1", 4.5, "confirmed text on a surface"],
   ["ink-0", "red-fill", 4.5, "chip label on a filled confirmed chip"],
   ["line-2", "bg-0", 3.0, "strong hairline as a UI border"],
+  // Added by lane L6, one row per new (foreground, background) pair the app paints.
+  ["red-0", "bg-2", 4.5, "evidence text and marks on a raised quote surface"],
+  ["red-fill", "bg-0", 3.0, "the confirmed chip's filled square as a UI element"],
+  ["ink-0", "red-1", 4.5, "button label on the pressed primary fill"],
+  ["focus", "bg-0", 3.0, "the 2 px focus ring on the page"],
+  ["focus", "bg-1", 3.0, "the 2 px focus ring on a surface"],
 ];
 
 const channel = (c) => {
