@@ -163,12 +163,12 @@ def test_build_splits_is_deterministic(balanced_dev_records: list[CorpusRecord])
     assert _ids(a["train"]) == _ids(b["train"])
 
 
-def test_add_markers_grows_the_vocabulary_by_eight() -> None:
+def test_add_markers_grows_the_vocabulary_by_one_token_per_marker() -> None:
     tokenizer = AutoTokenizer.from_pretrained(TINY)
     before = len(tokenizer)
     after = add_markers(tokenizer)
     assert after == len(tokenizer)
-    assert after - before == len(MARKERS) == 8
+    assert after - before == len(MARKERS)
     assert tokenizer.tokenize("[DESC] x")[0] == "[DESC]"
 
 
