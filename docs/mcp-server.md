@@ -23,8 +23,9 @@ verdict on the wire is the same object the HTTP API and the CLI return.
 an explanation. It takes both ids because the API's findings route is scan-scoped and paged:
 the tool reads `GET /api/v1/scans/{scan_id}/findings` and follows `next_cursor` until the id
 turns up or the pages run out. An id the API does not carry is an **answer**, not an error —
-`found: false` with a `message` saying whether the scan or the finding was the missing one. A
-transport failure or a 5xx is a genuine error and comes back as one.
+`found: false` with a `message` saying whether the scan or the finding was the missing one (a
+404 also names `--api-url`, because "wrong scan id" and "right id, wrong Sieve" look identical
+from here). A transport failure, a redirect or a 5xx is a genuine error and comes back as one.
 
 ## Running it
 
@@ -94,7 +95,7 @@ The `initialize` reply, verbatim:
       "resources": { "listChanged": false, "subscribe": false },
       "tools": { "listChanged": false }
     },
-    "instructions": "Sieve triages MCP tool definitions. Send it a single tool definition or a whole tools/list response and it returns a verdict for each tool with the evidence behind it. It reads definitions as text; it does not start, connect to, or install any MCP server.",
+    "instructions": "Sieve triages MCP tool definitions. It classifies a single tool definition, or every tool in a tools/list response, and returns a verdict for each one with the evidence behind it. It reads definitions as text; it does not start, connect to, or install any MCP server.",
     "protocolVersion": "2025-11-25",
     "serverInfo": { "name": "sieve", "version": "0.1.0" }
   }
@@ -109,7 +110,7 @@ tool: triage_tool_definition | type = object | required = ['tool']
 tool: scan_tools_list | type = object | required = ['tools']
       Classifies every tool in a tools/list response and returns per-tool verdicts and counts.
 tool: explain_verdict | type = object | required = ['scan_id', 'finding_id']
-      Returns the evidence and reasoning stored for a previous finding id.
+      Returns the evidence and reasoning stored for a previous finding id. It needs the id of the scan that finding belongs to, and a Sieve API named by this server's --api-url.
 ```
 
 Both halves of that are pinned as tests:

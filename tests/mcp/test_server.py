@@ -10,8 +10,10 @@ from __future__ import annotations
 from typing import Any
 
 import httpx2
+import pytest
 from mcp.client import Client
 
+from sieve.config import settings
 from sieve.mcp_server.server import (
     EXPLAIN_VERDICT_DESCRIPTION,
     SCAN_TOOLS_LIST_DESCRIPTION,
@@ -96,6 +98,21 @@ async def test_scan_tools_list_refuses_more_tools_than_the_cap(deps: PipelineDep
         result = await client.call_tool("scan_tools_list", {"tools": [tool, tool, tool]})
 
     assert result.is_error is True
+    assert "2" in result.content[0].text  # type: ignore[union-attr]
+
+
+async def test_the_default_tool_cap_comes_from_settings(
+    deps: PipelineDeps, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A server built without `max_tools` takes `settings.max_tools_per_scan`, not a literal."""
+    monkeypatch.setattr(settings, "max_tools_per_scan", 2)
+    tool = {"name": "ok", "inputSchema": {"type": "object"}}
+    async with Client(build_server(deps=deps)) as client:
+        result = await client.call_tool("scan_tools_list", {"tools": [tool, tool, tool]})
+
+    assert result.is_error is True
+    assert "3 tools" in result.content[0].text  # type: ignore[union-attr]
+    assert "2-tool limit" in result.content[0].text  # type: ignore[union-attr]
 
 
 async def test_explain_verdict_without_an_api_url_is_an_error(deps: PipelineDeps) -> None:
@@ -154,6 +171,7 @@ def _api(
     pages: dict[str | None, dict[str, Any]] | None = None,
     *,
     status: int = 200,
+    headers: dict[str, str] | None = None,
     seen: list[str | None] | None = None,
 ) -> httpx2.AsyncClient:
     """A client answering `GET /api/v1/scans/s-1/findings` from `pages`, keyed by cursor."""
@@ -164,7 +182,7 @@ def _api(
         if seen is not None:
             seen.append(cursor)
         if status != 200 or pages is None:
-            return httpx2.Response(status)
+            return httpx2.Response(status, headers=headers)
         return httpx2.Response(200, json=pages[cursor])
 
     return httpx2.AsyncClient(transport=httpx2.MockTransport(handler))
@@ -253,7 +271,28 @@ async def test_explain_verdict_reports_an_unknown_scan_without_raising(
     assert result.is_error is False
     assert result.structured_content is not None
     assert result.structured_content["found"] is False
-    assert "s-1" in result.structured_content["message"]
+    message = result.structured_content["message"]
+    assert "s-1" in message
+    # A 404 is equally "wrong scan id" and "--api-url points somewhere else"; the message has
+    # to admit the second, or the caller debugs the wrong one.
+    assert "--api-url" in message
+
+
+async def test_explain_verdict_treats_a_redirect_as_a_transport_error(
+    deps: PipelineDeps,
+) -> None:
+    """Sieve does not follow a redirect for a findings page, and says where it was sent."""
+    async with _api(
+        status=302, headers={"Location": "https://elsewhere.test/api/v1/scans/s-1/findings"}
+    ) as http:
+        server = build_server(deps=deps, api_url="http://api.test", http_client=http)
+        async with Client(server) as client:
+            result = await client.call_tool(
+                "explain_verdict", {"scan_id": "s-1", "finding_id": "f-1"}
+            )
+
+    assert result.is_error is True
+    assert "elsewhere.test" in result.content[0].text  # type: ignore[union-attr]
 
 
 async def test_explain_verdict_surfaces_an_api_failure_as_an_error(deps: PipelineDeps) -> None:

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
+from contextlib import AsyncExitStack
 from typing import NamedTuple
 from urllib.parse import quote
 
@@ -46,9 +47,10 @@ SERVER_NAME = "sieve"
 #: Sent on `initialize`. Like the tool descriptions, plain prose that says what the server
 #: does and what it does not do.
 INSTRUCTIONS = (
-    "Sieve triages MCP tool definitions. Send it a single tool definition or a whole "
-    "tools/list response and it returns a verdict for each tool with the evidence behind it. "
-    "It reads definitions as text; it does not start, connect to, or install any MCP server."
+    "Sieve triages MCP tool definitions. It classifies a single tool definition, or every "
+    "tool in a tools/list response, and returns a verdict for each one with the evidence "
+    "behind it. It reads definitions as text; it does not start, connect to, or install any "
+    "MCP server."
 )
 
 TRIAGE_TOOL_DEFINITION_DESCRIPTION = (
@@ -57,7 +59,10 @@ TRIAGE_TOOL_DEFINITION_DESCRIPTION = (
 SCAN_TOOLS_LIST_DESCRIPTION = (
     "Classifies every tool in a tools/list response and returns per-tool verdicts and counts."
 )
-EXPLAIN_VERDICT_DESCRIPTION = "Returns the evidence and reasoning stored for a previous finding id."
+EXPLAIN_VERDICT_DESCRIPTION = (
+    "Returns the evidence and reasoning stored for a previous finding id. It needs the id of "
+    "the scan that finding belongs to, and a Sieve API named by this server's --api-url."
+)
 
 #: A stop on the `next_cursor` walk, so a Sieve API that paged forever could not hang a client.
 MAX_FINDING_PAGES = 200
@@ -129,6 +134,14 @@ async def fetch_findings_page(
         raise ToolError(f"could not reach the Sieve API at {url}: {exc}") from exc
     if response.status_code == 404:
         return None
+    if response.is_redirect:
+        # L5 treats a 3xx as fatal on its own outbound fetches; the same rule applies here. A
+        # findings page that moves is a misconfiguration worth naming, not one to chase.
+        where = response.headers.get("location", "(no Location header)")
+        raise ToolError(
+            f"the Sieve API redirected {url} to {where!r}; Sieve does not follow redirects "
+            f"when reading a findings page."
+        )
     if response.status_code >= 400:
         raise ToolError(f"the Sieve API answered {response.status_code} for that scan's findings.")
     try:
@@ -146,7 +159,13 @@ async def find_finding(
     for _ in range(MAX_FINDING_PAGES):
         page = await fetch_findings_page(client, api_url, scan_id, cursor)
         if page is None:
-            return Lookup(None, f"that Sieve API has no scan {scan_id!r}.")
+            # 404 is equally "wrong scan id" and "right id, wrong API": say both, because a
+            # caller told only the first will go looking in the wrong place.
+            return Lookup(
+                None,
+                f"no scan {scan_id!r} at {api_url} -- either that scan id is not this API's, "
+                f"or --api-url does not point at the Sieve that holds it.",
+            )
         for finding in page.items:
             if finding.id == finding_id:
                 return Lookup(finding, "")
@@ -239,12 +258,14 @@ def build_server(
                 "explain_verdict reads stored findings from a Sieve API, and this server was "
                 "started without one. Restart it with --api-url http://host:port to enable it."
             )
-        if http_client is not None:
-            lookup = await find_finding(http_client, api_url, scan_id, finding_id)
-        else:
-            timeout = float(settings.remote_timeout_seconds)
-            async with httpx2.AsyncClient(timeout=timeout) as owned:
-                lookup = await find_finding(owned, api_url, scan_id, finding_id)
+        async with AsyncExitStack() as stack:
+            # An injected client belongs to the caller and is left open; one opened here is
+            # closed by the stack. Either way there is one call to `find_finding`.
+            client = http_client
+            if client is None:
+                timeout = float(settings.remote_timeout_seconds)
+                client = await stack.enter_async_context(httpx2.AsyncClient(timeout=timeout))
+            lookup = await find_finding(client, api_url, scan_id, finding_id)
 
         if lookup.finding is None:
             log.info("explain_verdict: not found")
