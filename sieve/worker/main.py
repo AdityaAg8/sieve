@@ -112,9 +112,11 @@ async def _main() -> None:
 
 
 def main() -> None:  # pragma: no cover -- process entry point
+    from sieve.db.session import use_selector_event_loop_on_windows
     from sieve.logging import configure_logging
 
     configure_logging()
+    use_selector_event_loop_on_windows()
     asyncio.run(_main())
 
 

@@ -55,7 +55,12 @@ async def claim(session: AsyncSession, worker_id: str, *, visibility_s: int = 12
         .bindparams(bindparam("worker_id", worker_id))
         .columns(*Job.__table__.columns)
     )
-    result = await session.execute(select(Job).from_statement(statement))
+    # `populate_existing`: RETURNING gives the post-UPDATE row, but a session that already
+    # loaded this job would otherwise hand back the stale identity-map copy (`attempts` one
+    # behind), which is exactly the value the reaper and the backoff depend on.
+    result = await session.execute(
+        select(Job).from_statement(statement).execution_options(populate_existing=True)
+    )
     job = result.scalars().first()
     await session.commit()
     return job

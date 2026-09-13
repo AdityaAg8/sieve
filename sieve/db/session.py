@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import sys
 from collections.abc import AsyncIterator
 
 from sqlalchemy.ext.asyncio import (
@@ -15,6 +17,21 @@ from sieve.config import settings
 
 _engine: AsyncEngine | None = None
 _sessions: async_sessionmaker[AsyncSession] | None = None
+
+
+def use_selector_event_loop_on_windows() -> None:
+    """psycopg refuses to run async on Windows' default `ProactorEventLoop`.
+
+    It raises "Psycopg cannot use the 'ProactorEventLoop' to run in async mode", so every
+    entry point that opens an async connection -- the API, the worker and the test suite --
+    installs the selector policy first. A no-op everywhere but win32.
+    """
+    if sys.platform != "win32":
+        return
+    policy = asyncio.get_event_loop_policy()
+    if isinstance(policy, asyncio.WindowsSelectorEventLoopPolicy):
+        return
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
 def psycopg_dsn(url: str) -> str:

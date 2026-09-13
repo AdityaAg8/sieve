@@ -16,7 +16,11 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from sieve.config import settings
 from sieve.db.migrate import upgrade_head
-from sieve.db.session import create_engine, psycopg_dsn
+from sieve.db.session import create_engine, psycopg_dsn, use_selector_event_loop_on_windows
+
+# Import time, not fixture time: pytest-asyncio builds its loops from the policy in force when
+# it creates them, which is before any fixture of ours runs.
+use_selector_event_loop_on_windows()
 
 SKIP_REASON = "Postgres not reachable at DATABASE_URL"
 
