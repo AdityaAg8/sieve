@@ -31,9 +31,9 @@ IDLE_SLEEP_S = 1.0
 
 def default_dispatch() -> Mapping[str, Handler]:
     """Imported lazily so the loop starts even when a handler's extras are not installed."""
-    from sieve.worker import purge
+    from sieve.worker import purge, scan_job
 
-    return {purge.KIND: purge.run}
+    return {"scan": scan_job.run, purge.KIND: purge.run}
 
 
 async def _beat(sessions: async_sessionmaker[AsyncSession], job_id: uuid.UUID) -> None:

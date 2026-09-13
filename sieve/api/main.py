@@ -7,11 +7,13 @@ from sieve.api.middleware import BodySizeLimitMiddleware, SecurityHeadersMiddlew
 from sieve.api.routes import bench, feedback, findings, health, models, scans, triage
 from sieve.config import settings
 from sieve.db.session import use_selector_event_loop_on_windows
+from sieve.logging import configure_logging
 
 
 def create_app(*, stub: bool = False) -> FastAPI:
     # Before uvicorn builds its loop: psycopg cannot run async on Windows' ProactorEventLoop.
     use_selector_event_loop_on_windows()
+    configure_logging()
     app = FastAPI(
         title="Sieve API",
         version="1.0.0",
