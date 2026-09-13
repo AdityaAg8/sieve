@@ -42,7 +42,11 @@ class it was dismissed as.
 
 - Three-class taxonomy and the rule that separates the middle class:
   [ADR-001](docs/adr/0001-three-class-taxonomy.md).
-- The rest of the architecture decisions: [`docs/adr/`](docs/adr/README.md).
+- Why two stages with an abstain band: [ADR-002](docs/adr/0002-two-stage-routing.md).
+- Why the primary metric is a false-positive rate at near-complete recall:
+  [ADR-003](docs/adr/0003-fpr-at-near-complete-recall.md).
+- Everything an attacker gets to touch, and the test that proves each mitigation:
+  [THREAT_MODEL.md](THREAT_MODEL.md).
 
 ## Quickstart (Windows and Unix)
 
@@ -173,7 +177,9 @@ targets and reported whatever they come out as:
 ## Links
 
 - Spec: [`docs/superpowers/specs/2026-09-11-sieve-prd-v2.md`](docs/superpowers/specs/2026-09-11-sieve-prd-v2.md)
+- Threat model: [THREAT_MODEL.md](THREAT_MODEL.md)
 - Architecture decisions: [`docs/adr/`](docs/adr/README.md)
+- Write-up (a skeleton; unpublished): [`docs/writeup.md`](docs/writeup.md)
 - Datasheet: [`bench/datasheet.md`](bench/datasheet.md)
 - MCP server: [`docs/mcp-server.md`](docs/mcp-server.md)
 - Dataset, model and write-up URLs: none yet. The web front end reads them from

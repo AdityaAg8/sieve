@@ -1,5 +1,7 @@
 # ADR-001: Three-class taxonomy
 
+<!-- pending: LABELLING_GUIDE.md -->
+
 ## Status
 
 Proposed — drafted from PRD §9.1 in Phase 0. The human finalises this ADR's text.
