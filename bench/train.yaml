@@ -1,2 +1,54 @@
 # top-level profiles key; L3 owns contents
-profiles: {}
+#
+# Hyperparameters are PRD §11.3. `precision` is a binding safety setting, not a speed knob:
+# DeBERTa-v3's disentangled attention is numerically fragile in reduced precision, so it trains
+# in FP32 and `sieve.model.train` refuses bf16 for it without --allow-reduced-precision
+# (PRD §7.2). Fold, seed, mode and num_labels are CLI arguments, never defaults in this file.
+corpus: bench/data/labelled.jsonl
+
+profiles:
+  deberta:
+    base_model: microsoft/deberta-v3-base
+    max_length: 512
+    lr: 2.0e-5
+    warmup_ratio: 0.06
+    batch_size: 16
+    epochs: 8
+    patience: 2
+    precision: fp32
+    class_weights: true
+
+  modernbert:
+    base_model: answerdotai/ModernBERT-base
+    max_length: 512
+    lr: 3.0e-5
+    warmup_ratio: 0.06
+    batch_size: 16
+    epochs: 8
+    patience: 2
+    precision: bf16
+    class_weights: true
+
+  # Ablation row 5's long-context configuration; primary if the §11.2 truncation rule fires.
+  modernbert-1024:
+    base_model: answerdotai/ModernBERT-base
+    max_length: 1024
+    lr: 3.0e-5
+    warmup_ratio: 0.06
+    batch_size: 16
+    epochs: 8
+    patience: 2
+    precision: bf16
+    class_weights: true
+
+  # CI smoke profile only. Never published, never an ablation row.
+  tiny:
+    base_model: prajjwal1/bert-tiny
+    max_length: 128
+    lr: 5.0e-4
+    warmup_ratio: 0.06
+    batch_size: 16
+    epochs: 2
+    patience: 1
+    precision: fp32
+    class_weights: true
