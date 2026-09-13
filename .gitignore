@@ -39,3 +39,7 @@ models/
 Thumbs.db
 .idea/
 .vscode/
+
+# next dev writes these agent notes into web/; not project files
+web/AGENTS.md
+web/CLAUDE.md
