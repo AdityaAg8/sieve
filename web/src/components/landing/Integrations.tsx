@@ -25,7 +25,7 @@ export function Integrations() {
       <ul className="mt-10 grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
         {INTEGRATIONS.map((integration) => (
           <li key={integration.name} className="border-line-1 flex flex-col gap-1 border-t pt-4">
-            <p className="t-mono text-ink-0 break-words">{integration.name}</p>
+            <p className="t-ui text-ink-0 break-words">{integration.name}</p>
             <p className="t-ui text-ink-2">{integration.role}</p>
           </li>
         ))}

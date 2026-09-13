@@ -1,3 +1,10 @@
+/* Sieve · web front end · lane L6
+ * macrostructure: instrument bench (hero + tick-railed sections) · genre: technical/editorial
+ * tone: forensic, austere · anchor hue: semantic red (--red-0 / --red-fill), never decorative
+ * nav: wordmark + three destinations · footer: one retention sentence + three artefact links
+ * tokens: web/src/styles/tokens.css (Phase 0 contract; this file adds no colour of its own)
+ * Hallmark · pre-emit critique: P5 H5 E4 S5 R4 V4 — see web/DESIGN.md
+ */
 @import "tailwindcss";
 @import "./tokens.css";
 
@@ -12,6 +19,45 @@ body {
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
+}
+
+/* No double-tap zoom delay on controls, and a deliberate tap highlight rather than the OS blue. */
+a,
+button,
+[role="tab"],
+summary,
+label {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* A scroll inside a dialog stays inside it. */
+dialog {
+  overscroll-behavior: contain;
+}
+
+/* Headings are link targets on the benchmark page; keep them clear of the viewport edge. */
+:where(h2, h3)[id] {
+  scroll-margin-top: 2rem;
+}
+
+/*
+ * Display headings set their own line breaks rather than leaving a widow. Deliberately not
+ * applied to every heading: a balanced line re-wraps when its contents change, and the results
+ * page's group headings carry a count that changes on every event.
+ */
+:where(h1) {
+  text-wrap: balance;
+}
+
+/*
+ * A heading is never allowed to push the page wider than the viewport. Tool ids and compound
+ * names have no break opportunity, so the engine is given permission to break inside a word as
+ * a last resort.
+ */
+:where(h1, h2, h3) {
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 ::selection {
@@ -154,6 +200,8 @@ body {
     font-size: 15px;
     font-weight: 500;
     line-height: 1;
+    /* A control's label never wraps to a second line — a two-line button reads as a bug. */
+    white-space: nowrap;
     cursor: pointer;
     transition:
       color var(--dur-1) var(--ease-out),
@@ -183,7 +231,8 @@ body {
     border-color: var(--line-2);
   }
 
-  .btn-secondary:not(:disabled):hover {
+  .btn-secondary:not(:disabled):hover,
+  .btn-secondary:not(:disabled):active {
     border-color: var(--ink-0);
   }
 
@@ -194,7 +243,8 @@ body {
     padding-inline: 12px;
   }
 
-  .btn-quiet:not(:disabled):hover {
+  .btn-quiet:not(:disabled):hover,
+  .btn-quiet:not(:disabled):active {
     color: var(--ink-0);
   }
 
@@ -215,6 +265,25 @@ body {
     overflow-x: auto;
     max-width: 100%;
     contain: paint;
+  }
+
+  /* A fixed-height box whose overflow scrolls inside it. `contain: paint` for the same reason
+     `.scroll-x` needs it. */
+  .scroll-y {
+    overflow-y: auto;
+    /* Reserve the scrollbar's width from the start: a gutter that appears when the stream fills
+       the box would reflow every row already in it. */
+    scrollbar-gutter: stable;
+    contain: paint;
+  }
+
+  /* The same, but only once there is room for a console layout; below that the page scrolls. */
+  @media (width >= 64rem) {
+    .scroll-y-lg {
+      overflow-y: auto;
+      scrollbar-gutter: stable;
+      contain: paint;
+    }
   }
 
   /* A quoted string from an analysed tool definition. Always monospace, always on a raised fill. */

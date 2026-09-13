@@ -4,7 +4,9 @@ import { EXPECTED, WIDTHS, expectNoHorizontalScroll } from "./helpers";
 
 async function heroSentence(page: Page): Promise<string> {
   const heading = page.getByRole("heading", { level: 1 });
-  await expect(heading).toContainText("Sieve confirmed");
+  // The sentence is in the DOM from first paint with `—` in place of each number, so wait for a
+  // digit rather than for the words.
+  await expect(heading).toContainText(/Sieve confirmed \d/);
   return ((await heading.textContent()) ?? "").replace(/\s+/g, " ").trim();
 }
 

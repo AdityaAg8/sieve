@@ -38,7 +38,7 @@ export function FindingRow({ finding, selected, onOpen }: Props) {
         data-verdict={result.verdict}
         aria-current={selected ? "true" : undefined}
         onClick={() => onOpen(finding)}
-        className={`u-interactive bg-bg-1 relative w-full rounded-2 border px-4 py-3 text-left before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:content-[''] ${marker} ${
+        className={`u-interactive bg-bg-1 relative w-full rounded-2 border px-4 py-3 text-left before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:content-[''] sm:h-28 ${marker} ${
           selected ? "border-line-2" : "border-line-1 hover:border-line-2"
         }`}
       >

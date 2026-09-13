@@ -21,25 +21,33 @@ export function Hero() {
   return (
     <section
       aria-labelledby="hero-heading"
-      className="mx-auto grid max-w-[84rem] gap-12 px-4 pt-14 pb-20 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-16"
+      className="mx-auto grid max-w-[84rem] gap-12 px-4 pt-14 pb-20 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-center lg:gap-16"
     >
       <div className="flex flex-col items-start gap-7">
         <p className="t-eyebrow">Triage, not detection</p>
 
-        <h1 id="hero-heading" className="t-display text-ink-1 max-w-[16ch]">
-          {scan.isPending || scan.isError ? (
-            <span className="sr-only">Reading the sample scan…</span>
-          ) : null}
-          {scan.data ? (
-            <>
-              The scanner flagged{" "}
-              <span className="t-num text-ink-0">{scan.data.scanner_flagged}</span>. Sieve confirmed{" "}
-              <span className="t-num text-red-0">{scan.data.confirmed}</span>.
-            </>
-          ) : (
-            <span aria-hidden="true" className="bg-bg-1 block h-[2.1em] w-full rounded-2" />
-          )}
+        {/*
+          The sentence is always in the DOM and only the two numerals change, so the heading's
+          box never resizes and the page's largest element causes no layout shift. A number that
+          has not arrived reads `—`, the same way an unmeasured metric does.
+        */}
+        {/* Two blocks, one clause each: the two counts then sit one above the other, which is
+            the whole comparison the sentence is making. */}
+        <h1 id="hero-heading" className="t-display text-ink-1 max-w-[18ch]">
+          <span className="block">
+            The scanner flagged{" "}
+            <span className="t-num text-ink-0">{scan.data ? scan.data.scanner_flagged : "—"}</span>.
+          </span>{" "}
+          <span className="block">
+            Sieve confirmed{" "}
+            <span className="t-num text-red-0">{scan.data ? scan.data.confirmed : "—"}</span>.
+          </span>
         </h1>
+        {scan.isPending ? (
+          <p className="sr-only" aria-live="polite">
+            Reading the sample scan…
+          </p>
+        ) : null}
 
         <p className="t-body text-ink-1 max-w-[52ch]">
           A scanner tells you what matched a pattern. Sieve reads every tool definition the way an
@@ -83,14 +91,15 @@ function SieveSkeleton() {
       </div>
       {[0, 1, 2].map((tray) => (
         <div key={tray} className="flex flex-col gap-2">
-          <div className="bg-bg-1 h-3 w-24 rounded-1" />
-          <div className="border-line-1 flex min-h-11 flex-wrap gap-1.5 border-t pt-2">
+          <div className="bg-bg-1 h-4 w-24 rounded-1" />
+          <div className="border-line-1 flex h-[7.5rem] flex-wrap content-start gap-1.5 border-t pt-2">
             {[0, 1, 2].map((chip) => (
               <div key={chip} className="bg-bg-1 h-6 w-28 rounded-1" />
             ))}
           </div>
         </div>
       ))}
+      <div className="border-line-1 h-12 border-t" />
     </div>
   );
 }

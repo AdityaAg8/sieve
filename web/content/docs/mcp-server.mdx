@@ -13,7 +13,7 @@ pipeline as everything else.
 ## What it will not do
 
 The MCP server never connects to the server it is asked about. It reads definitions you hand it.
-Fetching a remote server's `tools/list` happens only in the sandboxed worker, on its own network,
+Fetching a remote server’s `tools/list` happens only in the sandboxed worker, on its own network,
 behind a feature flag that is off by default — and never as a side effect of an agent asking a
 question.
 

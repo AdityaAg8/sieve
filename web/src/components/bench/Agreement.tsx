@@ -71,12 +71,15 @@ export function Agreement({ agreement }: { agreement: AgreementData | undefined 
 
 function Stat({ term, value, note }: { term: string; value: string; note: string }) {
   return (
+    // A `<dl>`'s `div` may only wrap `dt` and `dd`, so the note lives inside the term.
     <div className="rail flex flex-col gap-1 pl-5">
       <dd className="t-h2 t-num text-ink-0">
         <Num>{value}</Num>
       </dd>
-      <dt className="t-ui text-ink-1">{term}</dt>
-      <p className="t-ui text-ink-2">{note}</p>
+      <dt className="t-ui text-ink-1">
+        <span data-testid="agreement-term">{term}</span>
+        <span className="t-ui text-ink-2 mt-1 block font-normal">{note}</span>
+      </dt>
     </div>
   );
 }

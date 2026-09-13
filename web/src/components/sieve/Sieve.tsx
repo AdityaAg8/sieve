@@ -175,8 +175,10 @@ export function Sieve({ data, autoplay = true, replayable = true, onComplete }: 
       <div className="flex flex-col gap-4">
         {byTray.map((tray) => (
           <section key={tray.verdict} aria-label={tray.label} className="flex flex-col gap-2">
+            {/* A label, not a heading: the section already carries the accessible name, and an
+                `h3` here would skip a level under the hero's `h1`. */}
             <header className="flex items-baseline justify-between gap-3">
-              <h3 className="t-eyebrow">{tray.label}</h3>
+              <p className="t-eyebrow">{tray.label}</p>
               <span
                 data-testid={`sieve-tray-count-${tray.verdict}`}
                 className="t-ui t-num text-ink-2"
@@ -185,7 +187,12 @@ export function Sieve({ data, autoplay = true, replayable = true, onComplete }: 
               </span>
             </header>
 
-            <div className="border-line-1 flex min-h-11 flex-wrap items-start gap-1.5 border-t pt-2">
+            {/*
+              A fixed tray height, not a minimum: the sieve then occupies exactly the same box
+              before and after the data arrives, which is what keeps the landing page's
+              cumulative layout shift at zero. A full tray scrolls inside itself.
+            */}
+            <div className="scroll-y border-line-1 flex h-[7.5rem] flex-wrap content-start items-start gap-1.5 border-t pt-2">
               {tray.items.length === 0 ? (
                 <span className="t-ui text-ink-3">None</span>
               ) : (
@@ -259,7 +266,13 @@ function Tile({
 }: TileProps) {
   const dismissed = item.verdict === "dismissed";
   const finalScale = dismissed ? 0.92 : 1;
-  const finalOpacity = dismissed ? 0.6 : 1;
+  /**
+   * PRD §14.4 settles dismissed tiles at 60 % opacity. That would put `--ink-3` at 2.54:1 on
+   * `--bg-0` — below the AA floor PRD §14.8 requires and the contrast gate enforces — so the
+   * de-emphasis is carried by the 0.92 scale and the `--ink-3` colour alone. §14.8 wins over
+   * §14.4 where they disagree; see docs/handoffs/L6.md.
+   */
+  const finalOpacity = 1;
 
   const appearance = settled
     ? {

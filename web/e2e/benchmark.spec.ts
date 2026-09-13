@@ -105,10 +105,10 @@ test.describe("benchmark page", () => {
     // Three per-class rows, each with observed agreement and AC1.
     await expect(agreement.locator("tbody tr")).toHaveCount(3);
 
-    const blindLabels = await agreement
-      .locator("dt", { hasText: "Blind-vs-generator" })
-      .allTextContents();
-    expect(blindLabels.every((label) => !label.includes("κ"))).toBe(true);
+    // The statistic's own name never carries a κ; only the caveat beneath it mentions one.
+    const terms = await agreement.getByTestId("agreement-term").allTextContents();
+    expect(terms).toContain("Blind-vs-generator agreement");
+    expect(terms.filter((term) => term.includes("κ"))).toEqual(["κ, real subset", "κ, overall"]);
   });
 
   test("renders one holdout row per log line", async ({ page }) => {

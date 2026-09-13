@@ -49,6 +49,7 @@ export function UploadConfig() {
       <input
         id={fieldId}
         type="file"
+        name="mcp_config"
         accept=".json,application/json"
         aria-describedby={hintId}
         onChange={(event) => void onFile(event.target.files?.[0])}

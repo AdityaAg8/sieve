@@ -14,7 +14,7 @@ export function ConfusionMatrix({ matrix }: { matrix: Matrix | undefined }) {
     <BenchSection
       id="confusion"
       title="Confusion matrix"
-      lede="Rows are the true class, columns are Sieve's. The highlighted cell is
+      lede="Rows are the true class, columns are Sieve’s. The highlighted cell is
         imperative-benign read as poisoned — the false positive the whole pipeline exists to
         remove."
     >

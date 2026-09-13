@@ -43,7 +43,7 @@ export function CommandPalette({
       overlayClassName="bg-bg-0/80 fixed inset-0 z-40"
     >
       <Command.Input
-        placeholder="Search tools, or type a command"
+        placeholder="Search tools, or type a command…"
         className="t-body text-ink-0 border-line-1 placeholder:text-ink-2 w-full border-b bg-transparent px-4 py-3 outline-none"
       />
 

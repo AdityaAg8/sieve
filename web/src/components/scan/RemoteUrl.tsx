@@ -34,7 +34,10 @@ export function RemoteUrl() {
       <input
         id={fieldId}
         type="url"
+        name="remote_url"
         inputMode="url"
+        autoComplete="off"
+        spellCheck={false}
         value={text}
         onChange={(event) => setText(event.target.value)}
         aria-describedby={hintId}

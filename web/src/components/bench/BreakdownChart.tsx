@@ -61,7 +61,13 @@ export function BreakdownChart({
         </EmptyNote>
       ) : (
         <>
-          <div className="h-72 w-full min-w-0 overflow-hidden" data-testid={`${id}-chart`}>
+          {/* The chart is the picture; the table below it is the data. Only one of them needs to
+                be in the accessibility tree, and it is the table. */}
+          <div
+            aria-hidden="true"
+            className="h-72 w-full min-w-0 overflow-hidden"
+            data-testid={`${id}-chart`}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 8, right: 8, bottom: 24, left: 8 }} barGap={2}>
                 <CartesianGrid stroke="var(--line-1)" vertical={false} />

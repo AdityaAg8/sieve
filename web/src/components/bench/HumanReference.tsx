@@ -15,7 +15,7 @@ export function HumanReference({ points }: { points: HumanPoint[] }) {
       id="human-reference"
       title="Human reference point"
       lede="The second annotator read the same rows blind. Their recall and false-positive rate are
-        the scale against which the model's numbers mean anything at all."
+        the scale against which the model’s numbers mean anything at all."
     >
       {points.length === 0 ? (
         <EmptyNote>

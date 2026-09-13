@@ -29,7 +29,7 @@ export default function DocsIndexPage() {
             >
               {doc.title}
             </Link>
-            <p className="t-ui text-ink-2 mt-2 max-w-[44ch]">{doc.blurb}</p>
+            <p className="t-ui text-ink-2 mt-2 max-w-[46ch]">{doc.blurb}</p>
           </li>
         ))}
       </ul>

@@ -52,6 +52,29 @@ export function ResultsScreen({ scanId, initialFindingId = null }: { scanId: str
   );
 
   const counts = useMemo(() => verdictCounts(findings), [findings]);
+
+  /**
+   * What the scan says its final split will be. Reserving those rows from first paint is what
+   * keeps a live-filling list from shifting: a confirmed verdict that arrives after twenty
+   * dismissed ones lands in a slot that already exists. Narrowed to the active filter, and
+   * dropped entirely once the stream has finished.
+   */
+  const reserved = useMemo(() => {
+    // Nothing left to reserve once the stream is done, or if the summary never arrived: the
+    // reservation is exactly what is on screen, filter included.
+    if (live.status === "complete" || streamFailed || scan.isError) return verdictCounts(visible);
+    const summary = scan.data;
+    // `null` means "not yet knowable": the list waits rather than rendering groups it will have
+    // to re-order a moment later.
+    if (!summary) return null;
+    const all = {
+      confirmed: summary.confirmed,
+      needs_review: summary.needs_review,
+      dismissed: summary.dismissed,
+    };
+    if (!filter) return all;
+    return { confirmed: 0, needs_review: 0, dismissed: 0, [filter]: all[filter] };
+  }, [scan.data, scan.isError, live.status, streamFailed, filter, visible]);
   const openFinding = findings.find((f) => f.id === openId) ?? null;
   const { exportSarif, message: exportMessage } = useSarifExport(scanId);
 
@@ -103,7 +126,14 @@ export function ResultsScreen({ scanId, initialFindingId = null }: { scanId: str
   const judgeOff = models.data?.judge_enabled === false;
 
   return (
-    <div className="mx-auto max-w-[84rem] px-4 py-10 sm:px-8">
+    /*
+     * From `lg` up this is a console, not a document: the verdict bar and the filters stay put
+     * and the evidence scrolls beside them. That is better for the job — a reviewer keeps the
+     * counts in view while reading — and it is also what makes the page's cumulative layout
+     * shift structural rather than lucky: the list's box is a fixed size from first paint, so a
+     * stream that fills it over two seconds never moves anything outside it.
+     */
+    <div className="mx-auto max-w-[84rem] px-4 py-10 sm:px-8 lg:flex lg:h-dvh lg:flex-col">
       <header className="flex flex-col gap-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex flex-col gap-2">
@@ -127,9 +157,13 @@ export function ResultsScreen({ scanId, initialFindingId = null }: { scanId: str
           streaming={live.status === "streaming"}
         />
 
-        {judgeOff ? (
-          <p className="t-ui text-ink-2 border-line-1 border-l-2 pl-3">{JUDGE_OFF_NOTICE}</p>
-        ) : null}
+        {/* The slot is reserved whether or not the notice fills it: the judge flag arrives a
+            moment after first paint, and a line appearing here would move the whole list. */}
+        <div className="min-h-5">
+          {judgeOff ? (
+            <p className="t-ui text-ink-2 border-line-1 border-l-2 pl-3">{JUDGE_OFF_NOTICE}</p>
+          ) : null}
+        </div>
 
         {exportMessage ? (
           <p role="status" className="t-ui text-ink-1">
@@ -138,8 +172,8 @@ export function ResultsScreen({ scanId, initialFindingId = null }: { scanId: str
         ) : null}
       </header>
 
-      <div className="mt-10 grid gap-8 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">
-        <aside aria-label="Filters and shortcuts" className="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
+      <div className="mt-10 grid gap-8 lg:min-h-0 lg:flex-1 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">
+        <aside aria-label="Filters and shortcuts" className="flex flex-col gap-6 lg:self-start">
           <nav aria-label="Filter by verdict">
             <ul className="flex flex-wrap gap-2 lg:flex-col">
               <FilterButton active={filter === null} onClick={() => setFilter(null)}>
@@ -167,16 +201,19 @@ export function ResultsScreen({ scanId, initialFindingId = null }: { scanId: str
           </dl>
         </aside>
 
-        <FindingList
-          findings={visible}
-          loading={loading}
-          toolCount={scan.data?.tool_count ?? live.expected ?? null}
-          selectedId={selectedId}
-          onOpen={(finding) => {
-            setSelectedId(finding.id);
-            setOpenId(finding.id);
-          }}
-        />
+        <div className="scroll-y-lg lg:min-h-0 lg:pr-3">
+          <FindingList
+            findings={visible}
+            loading={loading}
+            toolCount={scan.data?.tool_count ?? live.expected ?? null}
+            expected={reserved}
+            selectedId={selectedId}
+            onOpen={(finding) => {
+              setSelectedId(finding.id);
+              setOpenId(finding.id);
+            }}
+          />
+        </div>
       </div>
 
       <FindingDrawer

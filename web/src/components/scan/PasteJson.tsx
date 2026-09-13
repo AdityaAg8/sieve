@@ -36,6 +36,7 @@ export function PasteJson({ initialText = "" }: { initialText?: string }) {
         value={text}
         onChange={(event) => setText(event.target.value)}
         spellCheck={false}
+        autoComplete="off"
         rows={14}
         aria-describedby={hintId}
         aria-invalid={touched && !ready}

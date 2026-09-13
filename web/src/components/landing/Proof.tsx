@@ -74,12 +74,22 @@ export function Proof() {
 
       <dl className="mt-10 grid gap-8 sm:grid-cols-2 xl:grid-cols-4">
         {slots.map((slot) => (
+          // A `<dl>`'s `div` may only wrap `dt` and `dd`, so the qualifier lives inside the
+          // term rather than in a sibling paragraph.
           <div key={slot.label} className="rail flex flex-col gap-2 pl-5">
-            <dd className="t-display t-num text-ink-0 text-[40px] leading-none">{slot.value}</dd>
-            <dt className="t-ui text-ink-1">{slot.label}</dt>
-            <p className="t-ui text-ink-2">
-              {slot.value === NO_NUMBER ? NO_NUMBER_LABEL : slot.note}
-            </p>
+            <dd
+              className={`t-display t-num text-[40px] leading-none ${
+                slot.value === NO_NUMBER ? "text-ink-3" : "text-ink-0"
+              }`}
+            >
+              {slot.value}
+            </dd>
+            <dt className="t-ui text-ink-1">
+              {slot.label}
+              <span className="t-ui text-ink-2 mt-1 block font-normal">
+                {slot.value === NO_NUMBER ? NO_NUMBER_LABEL : slot.note}
+              </span>
+            </dt>
           </div>
         ))}
       </dl>
