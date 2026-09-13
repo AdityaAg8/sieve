@@ -19,7 +19,17 @@ mcp = ["mcp"]
 bench = ["textual", "httpx", "tree-sitter", "tree-sitter-python", "tree-sitter-typescript", "jsonschema"]
 
 [dependency-groups]
-dev = ["pytest", "pytest-asyncio", "pytest-cov", "hypothesis", "ruff", "mypy", "pytest-recording", "respx", "types-requests", "pip-audit", "types-pyyaml"]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "hypothesis",
+    "ruff",
+    "mypy",
+    "types-requests",
+    "pip-audit",
+    "types-pyyaml",
+]
 
 [tool.ruff]
 line-length = 100
