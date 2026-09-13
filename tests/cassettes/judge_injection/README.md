@@ -1,11 +1,29 @@
-Recorded VCR cassettes for the judge self-defence suite (PRD §12.5).
+# Judge self-defence cassettes
 
-Empty until recorded once against the live model:
+Judge-level JSONL recordings for the two-sided injection gate (PRD §12.5, §12.4):
 
-    ANTHROPIC_API_KEY=... uv run pytest tests/test_judge_injection.py --record-mode=once
+- `dev.jsonl` — `tests/test_judge_injection.py` (the release gate)
+- `holdout.jsonl` — `tests/test_judge_injection_holdout.py` (sealed, run once in Phase 4)
 
-The suite SKIPS, per case, while a cassette is absent and no key is set.
-`x-api-key` and `authorization` are filtered out of every recording.
+Each line is one call: `{request_hash, model, usage, output}`. No tool text, no headers, no
+credentials — so there is nothing here to filter an API key out of, and the file is safe to
+commit. `sieve/judge/record.py` writes and replays them; `make bench` uses the same mechanism.
 
-Known blocker: vcrpy 8.3.0 ships an httpx stub only, and anthropic 1.5.0 is built on
-httpx2, so nothing is intercepted today. See docs/handoffs/L4.md.
+## Why not vcrpy / respx
+
+Both patch `httpx`. The installed `anthropic` (1.5.0) is built on `httpx2`, so neither
+intercepts a single request — verified: a VCR cassette recorded zero interactions while the
+call went to the live network. Recording at the judge boundary works and is the layer the
+PRD already specifies for `bench/results/judge_outputs.jsonl`. HTTP behaviour is unit-tested
+against `httpx2.MockTransport` in `tests/judge/test_client.py`.
+
+## Recording (once, with a key)
+
+```
+SIEVE_RERECORD=1 ANTHROPIC_API_KEY=... uv run pytest tests/test_judge_injection.py
+SIEVE_RERECORD=1 ANTHROPIC_API_KEY=... uv run pytest tests/test_judge_injection_holdout.py -m holdout
+```
+
+Recording truncates the target cassette first, so a re-record replaces rather than grows it.
+Until a cassette exists, its suite SKIPS with that command as the reason; it never passes
+silently.
