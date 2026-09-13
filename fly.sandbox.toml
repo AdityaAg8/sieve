@@ -1,0 +1,64 @@
+# Fly.io app config for Sieve's sandboxed MCP-fetch worker (PRD SC-1). A separate Fly app from
+# fly.toml on purpose: `sieve.worker.remote` is the ONLY process anywhere allowed to fetch an
+# untrusted MCP server, gated by BOTH SIEVE_ALLOW_REMOTE_MCP=true and SIEVE_SANDBOXED=1 below --
+# mirroring docker-compose.yml's `sandbox-worker` service (profiles: ["remote"], read_only
+# rootfs, cap_drop: [ALL], security_opt: no-new-privileges, tmpfs /tmp, no published ports).
+#
+# What this mirrors from docker-compose.yml, and what Fly Machines cannot express -- documented
+# here rather than silently dropped, per this task's brief:
+#
+#   - read_only rootfs        -> Fly Machines have no read-only-rootfs flag. The closest
+#                                available control is below: no [[mounts]] volume is attached,
+#                                so there is no *persistent* writable disk, but the machine's
+#                                own ephemeral filesystem is still writable during a run.
+#   - cap_drop: [ALL]         -> no per-Machine capability-drop setting in fly.toml or
+#                                `fly machine run`. Fly Machines already run as unprivileged
+#                                Firecracker microVMs -- a different isolation boundary, not a
+#                                drop-in substitute for a dropped-caps container.
+#   - security_opt:
+#     no-new-privileges       -> same: not a Fly config surface. sieve/worker/ssrf.py's guard
+#                                (address pinning, redirect refusal, the byte/time caps in
+#                                sieve/worker/ssrf_client.py) is the real control on this path,
+#                                not the container boundary -- true on both platforms.
+#   - tmpfs /tmp              -> not independently declarable in fly.toml; do not assume Fly's
+#                                own /tmp handling on shared-cpu Machines is the same contract.
+#   - no published ports      -> matched exactly: no [http_service] / [[services]] block below.
+#                                sieve/worker/remote.py only polls Postgres (grep confirms no
+#                                uvicorn/aiohttp/socket bind anywhere under sieve/worker/), so
+#                                there is nothing for Fly's proxy to route to or wake on inbound
+#                                traffic. Fly's own docs say this plainly (Blueprints ->
+#                                Long-Running Tasks -> Common problems): "Worker machines
+#                                without an `[http_service]` are not managed by the proxy for
+#                                autostop." True traffic-driven, on-demand wake is therefore NOT
+#                                expressible for this app.
+#
+# Scale-to-zero here is a documented, manual operator action instead of a Fly proxy feature:
+# the resting state is zero Machines running --
+#   fly scale count sandbox=0 --app sieve-sandbox
+# -- scaled to 1 only around a batch of remote-MCP jobs, then back to 0 immediately after
+# (docs/deploy.md, "Sandbox worker" section, carries the exact commands and when to run them).
+app = "sieve-sandbox"    # placeholder: rename to your Fly org's app name before deploy
+primary_region = "iad"
+
+kill_signal = "SIGINT"
+kill_timeout = "30s"
+
+[build]
+  dockerfile = "Dockerfile.sandbox"
+
+[processes]
+  sandbox = "uv run python -m sieve.worker.remote"
+
+# Both gates pinned here, not inherited -- same discipline as docker-compose.yml and fly.toml:
+# a secret or env leak on the api/worker app cannot open remote fetches there (it is pinned to
+# "false"/"0" over there), and this app's closed-by-default posture does not depend on any
+# other app's config either.
+[env]
+  SIEVE_ALLOW_REMOTE_MCP = "true"
+  SIEVE_SANDBOXED = "1"
+  PYTHONUTF8 = "1"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 2
+  memory = "2gb"

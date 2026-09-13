@@ -1,3 +1,24 @@
+# Downloads the pinned ONNX artefact from the Hub at build time, so the running container
+# needs no network at cold start (sieve/model/infer.py's runtime `snapshot_download` then just
+# validates the already-cached files). Skips cleanly -- no network touched at all -- whenever
+# SIEVE_MODEL_ID is left at its "fixture" default, which is what this box's build and CI both
+# use; fly.toml overrides both build args at `fly deploy` time for a real deployment.
+# huggingface_hub==0.36.2 matches the version uv.lock already resolves for the `model` extra.
+FROM python:3.12-slim AS artefact
+ARG SIEVE_MODEL_ID=fixture
+ARG SIEVE_MODEL_REVISION=main
+# Carried as real env vars (not string-interpolated into the python -c source below) so an
+# odd repo id or revision can never be read as anything but a literal string value.
+ENV SIEVE_MODEL_ID=${SIEVE_MODEL_ID} SIEVE_MODEL_REVISION=${SIEVE_MODEL_REVISION}
+WORKDIR /artefact
+RUN pip install --no-cache-dir "huggingface_hub==0.36.2"
+RUN mkdir -p /artefact/cache && \
+    if [ "$SIEVE_MODEL_ID" = "fixture" ]; then \
+      echo "SIEVE_MODEL_ID=fixture: skipping the Hub download, no network needed for this build"; \
+    else \
+      python -c "import os; from huggingface_hub import snapshot_download; snapshot_download(os.environ['SIEVE_MODEL_ID'], revision=os.environ.get('SIEVE_MODEL_REVISION') or None, cache_dir='/artefact/cache')"; \
+    fi
+
 FROM python:3.12-slim AS base
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1
 RUN pip install --no-cache-dir uv
@@ -7,6 +28,7 @@ RUN uv sync --frozen --no-dev --extra api --extra judge --extra cli --extra mcp 
 COPY sieve ./sieve
 COPY fixtures ./fixtures
 COPY bench/results ./bench/results
+COPY --from=artefact /artefact/cache ./model-cache
 RUN uv sync --frozen --no-dev --extra api --extra judge --extra cli --extra mcp
 EXPOSE 8000
 CMD ["uv", "run", "uvicorn", "sieve.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

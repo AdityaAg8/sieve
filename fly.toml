@@ -1,0 +1,70 @@
+# Fly.io app config for Sieve's API + queue worker (Task 11.4 -- config only; `fly deploy` is
+# never run by an agent). Two process groups share one app and one image (Dockerfile.api):
+# only `api` gets a public listener, matching docker-compose.yml's `api`/`worker` services,
+# which also pin SIEVE_ALLOW_REMOTE_MCP=false and SIEVE_SANDBOXED=0 below. The one process
+# allowed to fetch an untrusted MCP server (PRD SC-1) lives in fly.sandbox.toml, its own app.
+app = "sieve-api"        # placeholder: rename to your Fly org's app name before deploy
+primary_region = "iad"   # placeholder: pick the region nearest your Fly Postgres cluster
+
+kill_signal = "SIGINT"
+kill_timeout = "30s"
+
+[build]
+  dockerfile = "Dockerfile.api"
+
+  # Defaults keep the artefact-download stage a no-op: SIEVE_MODEL_ID="fixture" makes
+  # Dockerfile.api's `artefact` stage skip the Hub download entirely, so this box's build (and
+  # CI's) needs no network for it. A real deployment overrides both at `fly deploy` time:
+  #   fly deploy --build-arg SIEVE_MODEL_ID=<you>/sieve-triage-deberta-v3-base \
+  #              --build-arg SIEVE_MODEL_REVISION=<sha> --config fly.toml
+  [build.args]
+    SIEVE_MODEL_ID = "fixture"
+    SIEVE_MODEL_REVISION = "main"
+
+# `alembic upgrade head` runs once per release, before the new version takes traffic, via the
+# same `sieve.db.migrate` module the seed and the tests use (docs/handoffs/L5.md).
+[deploy]
+  release_command = "uv run python -m sieve.db.migrate"
+
+[processes]
+  api = "uv run uvicorn sieve.api.main:app --host 0.0.0.0 --port 8000"
+  worker = "uv run python -m sieve.worker.main"
+
+# Both gates are pinned here, not inherited -- the same discipline docker-compose.yml uses for
+# its `api`/`worker` services (see the comment there): a secret or env leak on this app can
+# never open a remote MCP fetch, because it is never the app with SIEVE_SANDBOXED=1 either.
+# ANTHROPIC_API_KEY, DATABASE_URL, SNYK_TOKEN and SIEVE_IP_HASH_SALT are deliberately absent
+# from this table -- they are secrets, set with `fly secrets set` (docs/deploy.md), and
+# DATABASE_URL specifically arrives via `fly postgres attach`, not a literal here.
+[env]
+  SIEVE_ALLOW_REMOTE_MCP = "false"
+  SIEVE_SANDBOXED = "0"
+  WEB_ORIGIN = "https://sieve.example.vercel.app"   # placeholder: the deployed web/ origin
+  PYTHONUTF8 = "1"
+  # The build's `artefact` stage bakes a pinned Hub snapshot into the image's own HF cache
+  # layout (matching sieve/model/infer.py's `snapshot_download(..., cache_dir=...)` call, so
+  # the runtime lookup is served from disk). HF_HUB_OFFLINE=1 stops that same call from making
+  # a network round-trip to revalidate the snapshot at cold start. It is a no-op whenever
+  # SIEVE_MODEL_ID="fixture", since FIXTURE_ID short-circuits before any Hub call.
+  HF_HUB_OFFLINE = "1"
+  SIEVE_MODEL_CACHE = "/app/model-cache"
+
+[http_service]
+  internal_port = 8000
+  processes = ["api"]
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1   # the public demo needs to answer cold; PRD does not ask this to scale to zero
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "15s"
+    method = "GET"
+    path = "/api/v1/readyz"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 2
+  memory = "2gb"
