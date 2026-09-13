@@ -16,6 +16,7 @@ from sieve.model.infer import (
 from sieve.model.thresholds import ThresholdsMissing
 from sieve.protocols import Classifier, FakeClassifier
 from sieve.types import LABELS
+from tests.model.artefacts import CALIBRATION, build_calibrated_tiny
 
 # Targeted, not blanket: the project turns warnings into errors on purpose. Only the
 # noise `transformers`/`torch` emit on a CPU training or export run is filtered, so a
@@ -27,15 +28,6 @@ pytestmark = [
     # torch.onnx traces the graph and warns about constant tensors on every export.
     pytest.mark.filterwarnings("ignore::torch.jit.TracerWarning"),
 ]
-
-CALIBRATION = {
-    "temperature": 1.25,
-    "t_low": 0.2,
-    "t_high": 0.8,
-    "val_recall_at_t_low": 0.99,
-    "val_precision_at_t_high": 0.96,
-    "routing_rate": 0.2,
-}
 
 
 def _texts(n: int = 5) -> list[str]:
@@ -51,40 +43,7 @@ def _texts(n: int = 5) -> list[str]:
 @pytest.fixture(scope="module")
 def calibrated_tiny(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, Path]:
     """`(torch_dir, onnx_dir)` for a trained tiny model with an operating point written in."""
-    from sieve.model.data import load_corpus
-    from sieve.model.export import export
-    from sieve.model.train import main as train_main
-
-    root = tmp_path_factory.mktemp("infer")
-    records = load_corpus(Path("fixtures/corpus/mini-50.jsonl"))
-    servers = sorted({r.server_name for r in records})
-    fold_of = {name: i % 5 for i, name in enumerate(servers)}
-    corpus = root / "corpus.jsonl"
-    corpus.write_text(
-        "".join(
-            r.model_copy(update={"split": "dev", "fold": fold_of[r.server_name]}).model_dump_json()
-            + "\n"
-            for r in records
-        ),
-        encoding="utf-8",
-        newline="\n",
-    )
-    torch_dir = root / "tiny-f0-s0"
-    train_main(
-        [
-            "--config", "bench/train.yaml", "--profile", "tiny", "--fold", "0",
-            "--seed", "0", "--corpus", str(corpus), "--out", str(torch_dir),
-        ]
-    )  # fmt: skip
-    onnx_dir = export(torch_dir, root / "onnx")
-    for directory in (torch_dir, onnx_dir):
-        path = directory / "sieve_config.json"
-        config = json.loads(path.read_text(encoding="utf-8"))
-        config.update(CALIBRATION)
-        path.write_text(
-            json.dumps(config, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
-        )
-    return torch_dir, onnx_dir
+    return build_calibrated_tiny(tmp_path_factory.mktemp("infer"))
 
 
 # ------------------------------------------------------------------------ pure helpers

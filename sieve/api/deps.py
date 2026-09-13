@@ -1,4 +1,4 @@
-"""Phase 0 stub-backed dependencies.
+"""The dependencies every surface shares: the fixture store and the two model factories.
 
 `FixtureStore` loads `fixtures/verdicts/sample-27.json` and serves it back for every scan
 created in stub mode. L5 replaces it with a DB-backed store behind the same three methods
@@ -7,17 +7,25 @@ created in stub mode. L5 replaces it with a DB-backed store behind the same thre
 `stub_classifier()` / `stub_judge()` return `FakeClassifier()` / `FakeJudge()` imported from
 `sieve.protocols` -- never redefined here -- so the stub API and every lane's tests exercise
 the same two fakes.
+
+`get_classifier()` and `get_judge()` are the seams to L3 and L4. Both are configuration-
+driven and cached per process: the classifier because loading an ONNX session is expensive,
+the judge because one HTTP connection pool per process is one more than a judge per request.
+Both say at INFO which implementation is live, so "the fake was running in production" is
+answerable from a log rather than from a guess.
 """
 
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 from sieve.config import settings
+from sieve.model.infer import FIXTURE_ID, load_classifier
 from sieve.protocols import Classifier, FakeClassifier, FakeJudge, Judge
 from sieve.types import (
     Finding,
@@ -30,6 +38,8 @@ from sieve.types import (
     TriageResult,
     Verdict,
 )
+
+log = logging.getLogger("sieve.api.deps")
 
 FIXTURE_PATH = Path("fixtures/verdicts/sample-27.json")
 
@@ -132,13 +142,50 @@ def stub_judge() -> Judge:
     return FakeJudge()
 
 
+#: `(model_id, model_revision, model_cache) -> classifier`, one entry deep. Loading an ONNX
+#: session and a tokenizer costs seconds; every surface in this process shares the instance,
+#: and a settings change (tests, a reload) rebuilds it because the key moved.
+_CLASSIFIER: tuple[tuple[str, str | None, str], Classifier] | None = None
+
+
 def get_classifier() -> Classifier:
     """The active classifier for the API, the worker and the CLI.
 
-    Still the shared fake: L3 replaces this body with the ONNX / `transformers` artefact
-    loader keyed on `settings.model_id`, and every caller picks the change up for free.
+    `SIEVE_MODEL_ID=fixture` (the default) is the shared `FakeClassifier`; anything else is an
+    artefact directory or a Hub id, resolved by L3's `sieve.model.infer.load_classifier`. A
+    configured artefact that will not load raises -- `ThresholdsMissing` for an uncalibrated
+    one -- rather than falling back to the fake, because a fake serving production traffic
+    under a real model id is the one failure nothing downstream can detect.
     """
-    return stub_classifier()
+    global _CLASSIFIER
+    key = (settings.model_id, settings.model_revision, settings.model_cache)
+    if _CLASSIFIER is not None and _CLASSIFIER[0] == key:
+        return _CLASSIFIER[1]
+
+    if settings.model_id == FIXTURE_ID:
+        log.info("classifier: the shared FakeClassifier (SIEVE_MODEL_ID=%s)", FIXTURE_ID)
+        classifier: Classifier = stub_classifier()
+    else:
+        log.info(
+            "classifier: loading %s (revision=%s, onnx=%s)",
+            settings.model_id,
+            settings.model_revision,
+            settings.use_onnx,
+        )
+        classifier = load_classifier(
+            settings.model_id,
+            revision=settings.model_revision,
+            use_onnx=settings.use_onnx,
+            cache_dir=Path(settings.model_cache).expanduser(),
+        )
+        log.info(
+            "classifier: %s active, t_low=%s t_high=%s from the artefact",
+            classifier.model_version,
+            classifier.thresholds.t_low,
+            classifier.thresholds.t_high,
+        )
+    _CLASSIFIER = (key, classifier)
+    return classifier
 
 
 def get_judge() -> Judge:
