@@ -1,0 +1,25 @@
+{
+  "_readme": [
+    "The trained artefacts the clean-clone reproduction gate needs, and where to get them.",
+    "`models/` is git-ignored: a clone can never carry these, so they are SUPPLIED to the",
+    "reproduction rather than committed with it. This file is how a machine finds them.",
+    "",
+    "EVERY ENTRY IS PENDING. `hub_repo`, `revision` and `files` are filled in by a human,",
+    "once, after the Hub push (`python -m sieve.model.push --model-dir ... --repo ...`), from",
+    "the push's own output. Nothing here may be guessed: a repo id nobody pushed to, a",
+    "revision nobody resolved or a digest nobody computed would make the gate verify a",
+    "fiction. While `revision` is null the gate reports 'artefact missing' and skips.",
+    "",
+    "`files` maps a path inside the artefact directory to its lowercase sha256. Verified by",
+    "`bench/artefacts.py` before any reproduction runs, which is also what gives",
+    "THREAT_MODEL.md's residual risk 9 (no artefact digest) something to check."
+  ],
+  "artefacts": {
+    "deberta-v3-base-s0": { "hub_repo": null, "revision": null, "files": {} },
+    "deberta-v3-base-s1": { "hub_repo": null, "revision": null, "files": {} },
+    "deberta-v3-base-s2": { "hub_repo": null, "revision": null, "files": {} },
+    "deberta-v3-base-desc-s0": { "hub_repo": null, "revision": null, "files": {} },
+    "deberta-v3-base-desc-s1": { "hub_repo": null, "revision": null, "files": {} },
+    "deberta-v3-base-desc-s2": { "hub_repo": null, "revision": null, "files": {} }
+  }
+}

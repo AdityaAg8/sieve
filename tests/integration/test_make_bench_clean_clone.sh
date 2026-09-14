@@ -4,34 +4,51 @@
 #
 # `bench/results/` is never edited by hand, which is a claim about where those numbers came
 # from. This script is what makes the claim checkable: clone the repository into a temporary
-# directory, with **no `.env` and no `ANTHROPIC_API_KEY`**, regenerate the four rows that need
-# neither an API key nor a judge cassette, and require the regenerated rows to be byte-identical
+# directory, with **no `.env`, no `ANTHROPIC_API_KEY` and no cached results**, regenerate the
+# four rows that need neither an API key nor a judge cassette, and require them byte-identical
 # to the ones the clone was carrying.
 #
 # The comparison is against the **clone's** copy, snapshotted before the run, not against the
 # working tree: the claim is about committed bytes, and an uncommitted edit beside this script
 # must not be able to satisfy it.
 #
-# Rows 1-4 are the classifier-only and baseline-replay rows: the Cisco YARA baseline, TF-IDF, and
-# the two encoder serialisations. `SIEVE_JUDGE_ENABLED=false` is belt-and-braces -- none of the
-# four names a judge -- and `bench.ablations.run` calls `require_offline()` itself.
+# ## Artefacts are supplied, never committed
 #
-# Exit codes, and they are the interface the weekly workflow reads:
+# `models/` is git-ignored (a few hundred megabytes of weights do not belong in git), so a
+# clone can never *carry* a trained artefact. It is handed one instead:
+#
+#   SIEVE_ARTEFACTS_DIR   a directory laid out like `models/` -- one subdirectory per artefact
+#                         (`deberta-v3-base-s0`, ...). Copied into the clone and made read-only
+#                         there, so the reproduction cannot write back into the source.
+#
+# The weekly workflow fills that variable by fetching the artefacts named in
+# `bench/artefacts.json` at their pinned revisions and verifying every listed sha256
+# (`python -m bench.artefacts --dest ...`). Locally, point it at your own `models/`.
+#
+# Unset or empty, this script exits 3. It never trains anything and never invents a number.
+#
+# ## Exit codes -- the interface the weekly workflow reads
 #
 #   0  the four rows reproduced byte-for-byte
-#   1  they did not, or the run failed
-#   3  a prerequisite artefact is not in the clone, so **nothing was measured**
+#   1  they did not
+#   3  a prerequisite is not available, so **nothing was measured**
 #
-# 3 is not a pass. A trained artefact is a runbook step (`make train-all`, then `make bench`), so
-# until one is committed this script reports "artefact missing" and the weekly workflow reports a
-# skip. Reporting green for a reproduction that never ran is the one outcome this file exists to
-# prevent.
+# Any other non-zero code is a failure of a step rather than a verdict: `set -euo pipefail`
+# means `git clone`, `cp`, `uv sync` and `bench.ablations.run` propagate their own status
+# unchanged (uv's 2, a signal's 128+n, and so on). The weekly workflow treats **every code
+# except 0 and 3 as an error**, so an unforeseen failure is never mistaken for a verdict.
 #
-# Usage:  bash tests/integration/test_make_bench_clean_clone.sh
+# 3 is not a pass. Reporting green for a reproduction that never ran is the one outcome this
+# file exists to prevent.
+#
+# Usage:
+#   bash tests/integration/test_make_bench_clean_clone.sh                    # skips, exit 3
+#   SIEVE_ARTEFACTS_DIR=models bash tests/integration/test_make_bench_clean_clone.sh
 set -euo pipefail
 
 ROWS="1,2,3,4"
 SEEDS="${SEEDS:-0,1,2}"
+ARTEFACTS="${SIEVE_ARTEFACTS_DIR:-}"
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo="$(cd "$here/../.." && pwd)"
@@ -39,7 +56,24 @@ repo="$(cd "$here/../.." && pwd)"
 workdir="$(mktemp -d)"
 clone="$workdir/sieve"
 committed="$workdir/committed-ablations.json"
-trap 'rm -rf "$workdir"' EXIT
+# The copied artefacts are made read-only; directories have to be writable again before the
+# temporary tree can be removed.
+cleanup() { chmod -R u+w "$workdir" 2>/dev/null || true; rm -rf "$workdir"; }
+trap cleanup EXIT
+
+skip() {
+  echo "SKIP: $1" >&2
+  shift
+  printf '  - %s\n' "$@" >&2
+  echo "Nothing was reproduced. See docs/handoffs/11.3.md." >&2
+  exit 3
+}
+
+if [ -z "$ARTEFACTS" ] || [ -z "$(ls -A "$ARTEFACTS" 2>/dev/null)" ]; then
+  skip "artefact missing -- SIEVE_ARTEFACTS_DIR is unset or empty" \
+    "set it to a directory laid out like models/, or" \
+    "fill in bench/artefacts.json and run: uv run python -m bench.artefacts --dest <dir>"
+fi
 
 echo "== cloning $repo into $clone"
 git clone --quiet --no-hardlinks "$repo" "$clone"
@@ -51,6 +85,13 @@ if [ -e "$clone/.env" ]; then
   exit 1
 fi
 
+echo "== supplying artefacts from $ARTEFACTS"
+mkdir -p "$clone/models"
+cp -R "$ARTEFACTS"/. "$clone/models/"
+# Read-only inside the clone: the reproduction reads artefacts, and a run that wrote to one
+# would be reading back something it had produced.
+find "$clone/models" -type f -exec chmod a-w {} +
+
 missing=()
 require() { [ -e "$clone/$1" ] || missing+=("$1"); }
 require "bench/results/ablations.json"
@@ -61,15 +102,17 @@ for seed in ${SEEDS//,/ }; do
   require "models/deberta-v3-base-s$seed"
   require "models/deberta-v3-base-desc-s$seed"
 done
-
 if [ ${#missing[@]} -ne 0 ]; then
-  echo "SKIP: artefact missing -- nothing was reproduced. The clean clone has no:" >&2
-  printf '  - %s\n' "${missing[@]}" >&2
-  echo "Train and publish them first (see docs/handoffs/11.3.md)." >&2
-  exit 3
+  skip "artefact missing -- the prepared clone has no:" "${missing[@]}"
 fi
 
 cp "$clone/bench/results/ablations.json" "$committed"
+
+# A clone's `uv sync` installs base + dev only, and row 2 imports `sieve.model.tfidf`, which
+# imports scikit-learn. Both extras, in the clone, so this script and the weekly workflow agree
+# about what the reproduction runs against.
+echo "== syncing the clone's environment"
+(cd "$clone" && uv sync --extra model --extra bench --group dev)
 
 echo "== regenerating rows $ROWS with no key and the judge off"
 (
@@ -80,44 +123,11 @@ echo "== regenerating rows $ROWS with no key and the judge off"
 )
 
 echo "== comparing rows $ROWS against the committed file"
-# Run inside the clone's environment: the step above already built it, and the comparison itself
-# needs nothing but the standard library.
+# `bench.reproduce` rather than an inline heredoc: the comparison is the half of this gate that
+# can be wrong quietly, so it is an importable module with its own tests
+# (tests/bench/test_reproduce.py). Run from the clone, whose environment is already built.
 cd "$clone"
-COMMITTED="$committed" REGENERATED="$clone/bench/results/ablations.json" ROWS="$ROWS" \
-  uv run python - <<'PY'
-"""Byte-compare the selected rows, and say which key differs when they do not match."""
-import json
-import os
-import sys
-
-wanted = {int(x) for x in os.environ["ROWS"].split(",")}
-
-
-def rows(path: str) -> dict[int, str]:
-    with open(path, encoding="utf-8") as fh:
-        payload = json.load(fh)
-    found = {}
-    for row in payload["rows"]:
-        if int(row["row"]) in wanted:
-            found[int(row["row"])] = json.dumps(row, indent=2, sort_keys=True)
-    return found
-
-
-committed, regenerated = rows(os.environ["COMMITTED"]), rows(os.environ["REGENERATED"])
-
-missing = sorted(wanted - set(committed))
-if missing:
-    print(f"SKIP: the committed file has no row(s) {missing}; nothing to compare", file=sys.stderr)
-    raise SystemExit(3)
-
-bad = [n for n in sorted(wanted) if committed[n] != regenerated.get(n)]
-if bad:
-    for n in bad:
-        print(f"--- row {n}: committed", file=sys.stderr)
-        print(committed[n], file=sys.stderr)
-        print(f"+++ row {n}: regenerated", file=sys.stderr)
-        print(regenerated.get(n, "<absent>"), file=sys.stderr)
-    raise SystemExit(1)
-
-print(f"OK: rows {sorted(wanted)} reproduced byte-for-byte from a clean clone")
-PY
+uv run python -m bench.reproduce \
+  --committed "$committed" \
+  --regenerated "$clone/bench/results/ablations.json" \
+  --rows "$ROWS"

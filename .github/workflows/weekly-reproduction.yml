@@ -1,12 +1,15 @@
 name: weekly-reproduction
 # Does the published benchmark still come out of a clean clone? `bench/results/` is never edited
 # by hand (PRD M6a), and this is the job that keeps that from being an unchecked claim: clone the
-# repository with no `.env` and no `ANTHROPIC_API_KEY`, regenerate ablation rows 1-4 -- the ones
-# that need neither a key nor a judge cassette -- and require them byte-identical.
+# repository with no `.env`, no `ANTHROPIC_API_KEY` and no cached results, regenerate ablation
+# rows 1-4 -- the ones that need neither a key nor a judge cassette -- and require them
+# byte-identical.
 #
-# Exit 3 from the script means a prerequisite artefact is not committed yet, so **nothing was
-# measured**. That is reported as a warning and never as a pass: the whole point of this job is
-# that a green tick means a reproduction happened.
+# The trained artefacts are **supplied**, not committed: `models/` is git-ignored, so a clone can
+# never carry one. They are fetched from the Hub at the revisions pinned in `bench/artefacts.json`
+# and every listed sha256 is verified before the reproduction runs. While that manifest is
+# pending -- which it is until a human has pushed the artefacts and filled it in -- this job
+# reports a warning and stops. **Nothing here ever reports a reproduction that did not happen.**
 on:
   schedule:
     - cron: "0 5 * * 0"   # Sundays, 05:00 UTC
@@ -16,23 +19,51 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PYTHONUTF8: "1"
+      # Outside the checkout on purpose: the script clones the checkout, and an artefact tree
+      # sitting inside it would travel into the clone by a route this gate is not testing.
+      ARTEFACTS: ${{ runner.temp }}/artefacts
     steps:
       # Full history: the script clones this checkout, and a clone of a shallow repository is a
       # different object than a clone of the repository.
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
       - uses: astral-sh/setup-uv@v5
+        with: { enable-cache: true, cache-dependency-glob: "uv.lock" }
+      # `bench.artefacts` imports `huggingface_hub` (the `model` extra) to download.
+      - run: uv sync --extra model --extra bench --group dev
+      # 0 fetched and every digest verified, 3 the manifest is pending, anything else is a real
+      # failure (a bad digest is 1, and a bad digest is never something to carry on past).
+      - id: artefacts
+        run: |
+          set +e
+          uv run python -m bench.artefacts --dest "$ARTEFACTS"
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+      - name: stop if the manifest is pending
+        if: steps.artefacts.outputs.code != '0'
+        env:
+          CODE: ${{ steps.artefacts.outputs.code }}
+        run: |
+          if [ "$CODE" = "3" ]; then
+            echo "::warning::skipped -- bench/artefacts.json is pending, so nothing was fetched and nothing was reproduced"
+            exit 0
+          fi
+          echo "::error::fetching or verifying the artefacts failed (exit $CODE)"
+          exit 1
       - id: reproduce
+        if: steps.artefacts.outputs.code == '0'
+        env:
+          SIEVE_ARTEFACTS_DIR: ${{ runner.temp }}/artefacts
         run: |
           set +e
           bash tests/integration/test_make_bench_clean_clone.sh
           echo "code=$?" >> "$GITHUB_OUTPUT"
       - name: report
+        if: steps.artefacts.outputs.code == '0'
         env:
           CODE: ${{ steps.reproduce.outputs.code }}
         run: |
           case "$CODE" in
             0) echo "::notice::ablation rows 1-4 reproduced byte-for-byte from a clean clone" ;;
-            3) echo "::warning::skipped -- a prerequisite artefact is not committed, so nothing was reproduced" ;;
+            3) echo "::warning::skipped -- a prerequisite is not available, so nothing was reproduced" ;;
             *) echo "::error::the clean-clone reproduction failed (exit $CODE)"; exit 1 ;;
           esac
