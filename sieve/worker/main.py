@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from sieve.db.models import Job
 from sieve.db.session import dispose_engine, session_factory
+from sieve.worker.errors import safe_error
 from sieve.worker.queue import claim, complete, fail, heartbeat, reap
 
 log = logging.getLogger("sieve.worker")
@@ -80,7 +81,9 @@ async def run_once(
             extra={"job_id": str(job.id), "kind": job.kind, "error": type(exc).__name__},
         )
         async with sessions() as session:
-            await fail(session, job.id, f"{type(exc).__name__}: {exc}", worker_id=worker_id)
+            # `last_error` is storage, and an exception message can quote untrusted tool text
+            # back at us (SC-5, review 11.1 F5): redacted and bounded before it lands.
+            await fail(session, job.id, safe_error(exc), worker_id=worker_id)
     finally:
         beat.cancel()
         with contextlib.suppress(asyncio.CancelledError):

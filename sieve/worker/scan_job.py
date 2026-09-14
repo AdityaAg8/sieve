@@ -35,6 +35,7 @@ from sieve.types import (
     ToolRecord,
     TriageResult,
 )
+from sieve.worker.errors import safe_error
 
 log = logging.getLogger("sieve.worker.scan")
 
@@ -251,7 +252,10 @@ async def run(session: AsyncSession, job: Job) -> None:
         triaged = await _triage(session, scan_id, loaded)
         await _finish(session, scan, triaged)
     except Exception as exc:
-        detail = f"{type(exc).__name__}: {exc}"
+        # `scans.error` is stored, returned by `GET /scans/{id}` and streamed on `scan.failed`,
+        # so an exception message is a writer like any other: redacted and bounded before it
+        # becomes data (SC-5; security review 11.1, finding F5).
+        detail = safe_error(exc)
         # Whatever was half-written when this blew up is discarded first. A verdict row only
         # becomes durable when its `_VerdictBatch` flush commits, together with the charge that
         # paid for it (PRD §13.2) -- so the rollback either loses both or neither, never a

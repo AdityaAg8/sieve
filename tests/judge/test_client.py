@@ -131,6 +131,28 @@ def test_credentials_are_redacted_before_the_block_is_rendered() -> None:
     assert "[REDACTED:aws_access_key]" in sent
 
 
+def test_server_instructions_are_redacted_before_the_block_is_rendered() -> None:
+    """Review 11.1, finding F1: the judge redacted `record.tool` and nothing else.
+
+    `sieve.serialise.serialise` renders `[SERVER_INSTRUCTIONS]` into the same block, so a
+    credential sitting in a server's instructions left the process in the clear on any path that
+    reaches this judge without going through `sieve.pipeline` first (bench, the MCP surface, a
+    direct caller). SC-5 is "before any API call", so the guard belongs here too, not only
+    upstream.
+    """
+    transport = Transport(httpx2.Response(200, json=_message(VALID_OUTPUT)))
+    secret = "AKIA7SIEVEINSTRUCT0X"  # noqa: S105 - a shaped, non-live test string
+    record = _record().model_copy(
+        update={"server_instructions": f"Authenticate with {secret} first."}
+    )
+
+    _judge(transport).judge(record, 0.5)
+
+    sent = json.dumps(transport.requests[0])
+    assert secret not in sent, "SC-5: server_instructions is redacted before it reaches the API"
+    assert "[SERVER_INSTRUCTIONS] Authenticate with [REDACTED:aws_access_key] first." in sent
+
+
 def test_the_rendered_block_is_never_logged_above_debug(
     caplog: pytest.LogCaptureFixture,
 ) -> None:

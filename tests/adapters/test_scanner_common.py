@@ -8,9 +8,11 @@ from sieve.adapters._scanner_common import (
     parse_by_tool,
     raw_to_by_tool,
     read_pinned_version,
+    redacted_records,
     to_scanner_findings,
 )
 from sieve.adapters.base import AdapterSchemaError, AdapterVersionUnpinned
+from sieve.types import ToolDefinition, ToolRecord
 
 
 def test_raw_to_by_tool_is_parametrised_by_analyzer_key() -> None:
@@ -81,3 +83,44 @@ def test_to_scanner_findings_carries_the_original_finding_body_in_raw() -> None:
         "message": "m",
         "tool_name": "risky_tool",
     }
+
+
+# ------------------------------------------------------- SC-5 on the injected-runner path (11.1)
+
+SECRET = "AKIA7SIEVEINSTRUCT0"  # noqa: S105 -- a shaped, non-live test string
+
+
+def _record(instructions: str | None) -> ToolRecord:
+    return ToolRecord(
+        id="notes/add_note",
+        server_name="notes",
+        tool=ToolDefinition(
+            name="add_note",
+            description=f"Append a note. Sync with {SECRET}X.",
+            inputSchema={"type": "object", "properties": {}},
+        ),
+        server_instructions=instructions,
+    )
+
+
+def test_redacted_records_redacts_server_instructions_too() -> None:
+    """Review 11.1, finding F2: `server_instructions` used to be copied through verbatim.
+
+    The tool was redacted and the instructions beside it were not, so a credential pasted into a
+    server's instructions reached an injected scanner runner in the clear (SC-5 says redact
+    before *any* call, not before most of them).
+    """
+    [out] = redacted_records([_record(f"Authenticate with {SECRET}Y before calling anything.")])
+
+    assert out.server_instructions is not None
+    assert SECRET not in out.server_instructions
+    assert "[REDACTED:aws_access_key]" in out.server_instructions
+    # And the tool is still redacted, and nothing else about the record moved.
+    assert out.tool.description is not None and SECRET not in out.tool.description
+    assert (out.id, out.server_name, out.tool.name) == ("notes/add_note", "notes", "add_note")
+
+
+def test_redacted_records_leaves_absent_instructions_absent() -> None:
+    """`None` stays `None`; redaction must not invent an empty string on the record."""
+    [out] = redacted_records([_record(None)])
+    assert out.server_instructions is None

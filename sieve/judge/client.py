@@ -29,7 +29,7 @@ from sieve.config import settings
 from sieve.judge.render import new_nonce, render_tool_block
 from sieve.judge.schema import FEWSHOT, SYSTEM_PROMPT
 from sieve.protocols import JudgeFailure, JudgeOutput
-from sieve.redact import redact_tool
+from sieve.redact import redact, redact_tool
 from sieve.serialise import serialise
 from sieve.types import ToolDefinition, ToolRecord
 
@@ -164,7 +164,18 @@ class AnthropicJudge:
         # maps every non-budget failure to `stage = judge_failed` regardless.
         try:
             redacted_tool, kinds = redact_tool(record.tool)
-            safe = record.model_copy(update={"tool": redacted_tool})
+            # `server_instructions` lives on the record, not on the `ToolDefinition`, so
+            # `redact_tool` never sees it -- and `serialise` renders it into the very block this
+            # method sends (security review 11.1, finding F1). The pipeline redacts it upstream;
+            # doing it again here is what makes SC-5 true of *this* class rather than of one
+            # caller of it, which is what `bench`, the MCP surface and the injection suite need.
+            instructions = record.server_instructions
+            if instructions is not None:
+                instructions, instruction_kinds = redact(instructions)
+                kinds = sorted({*kinds, *instruction_kinds})
+            safe = record.model_copy(
+                update={"tool": redacted_tool, "server_instructions": instructions}
+            )
             nonce = new_nonce()
             block = render_tool_block(safe, nonce=nonce)
             # SC-5: the block is the raw (redacted) tool text. DEBUG only, never INFO.

@@ -14,7 +14,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from sieve.adapters.base import AdapterSchemaError, AdapterVersionUnpinned
-from sieve.redact import redact_tool
+from sieve.redact import redact, redact_tool
 from sieve.types import ScannerFinding, ScannerName, ToolRecord
 
 
@@ -123,17 +123,28 @@ def redacted_tool_dicts(records: list[ToolRecord]) -> list[dict[str, Any]]:
 
 
 def redacted_records(records: list[ToolRecord]) -> list[ToolRecord]:
-    """Redact credential-shaped strings (SC-5) before records are handed to an injected runner."""
+    """Redact credential-shaped strings (SC-5) before records are handed to an injected runner.
+
+    `server_instructions` is redacted here too (security review 11.1, finding F2). It used to be
+    copied through verbatim beside a redacted tool, which meant a credential pasted into a
+    server's instructions left the process in the clear on the one path that has no second
+    chance to catch it: the runner is injected, so nothing downstream of this function belongs
+    to Sieve. `redact_tool` cannot do it, because the instructions live on the record, not on
+    the `ToolDefinition`.
+    """
     out = []
     for r in records:
         redacted, _kinds = redact_tool(r.tool)
+        instructions = r.server_instructions
+        if instructions is not None:
+            instructions, _ = redact(instructions)
         out.append(
             ToolRecord(
                 id=r.id,
                 server_name=r.server_name,
                 tool=redacted,
                 sibling_tool_names=r.sibling_tool_names,
-                server_instructions=r.server_instructions,
+                server_instructions=instructions,
             )
         )
     return out
