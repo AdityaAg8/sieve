@@ -9,6 +9,12 @@ Input and output schemas are generated from the Pydantic models in `sieve/types.
 wire contract of a verdict is the same object the API and the CLI return. Argument validation
 is the SDK's: a submitted "tool" that is not a `ToolDefinition` comes back as `isError: true`
 with the offending field names, and never reaches the pipeline.
+
+One asymmetry worth stating rather than discovering: `scan_tools_list` scores a **strictly
+smaller feature set** than the API does for the same tools. Its `_record` has nowhere to put
+`server_instructions` -- the wire shape does not carry them -- and `serialise` renders that
+field, so a verdict can legitimately differ between the two surfaces for one tool definition.
+Widening `_record` means widening the input contract, which is a contracts change.
 """
 
 from __future__ import annotations

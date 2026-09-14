@@ -26,7 +26,14 @@ def _close_the_hub_session() -> Iterator[None]:
 
 
 def close_hub_session() -> None:
-    """Close and drop `huggingface_hub`'s cached session. Never raises; teardown is not a gate."""
+    """Close and drop `huggingface_hub`'s cached session. Never raises; teardown is not a gate.
+
+    `huggingface_hub.utils._http` is private and there is no public equivalent, so the version
+    it was read against is recorded here: **huggingface_hub 0.36.2**. The `ImportError` guard
+    below is what turns a rename in a later release into a skipped teardown rather than a broken
+    suite, and the CI cache key already pins `tests/model/hub_fixtures.txt`; a bump that moves
+    these two names shows up as the `ResourceWarning` this function exists to prevent.
+    """
     try:
         from huggingface_hub.utils._http import get_session, reset_sessions
     except ImportError:  # pragma: no cover - the hub is always installed with the model extra

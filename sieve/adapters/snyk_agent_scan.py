@@ -53,6 +53,11 @@ class _ExclusiveFileLock:
     per platform and don't compose well with a single code path). Held across the whole
     read-check-run-write sequence in `SnykAdapter.scan`, not just the counter file access, so two
     processes racing at the cap cannot both observe count 24 and both invoke the runner.
+
+    There is no automatic stale-lock recovery, and that is deliberate: a holder that crashes
+    wedges the counter for `timeout` seconds and then raises a `TimeoutError` naming this path,
+    which is loud and human-recoverable -- **delete the `.lock` file**. Reclaiming it on a
+    timeout instead would reopen the double-invocation race the lock exists to close (SC-2).
     """
 
     def __init__(self, path: Path, timeout: float = 30.0, poll_interval: float = 0.02) -> None:

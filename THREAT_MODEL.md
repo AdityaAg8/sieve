@@ -75,7 +75,7 @@ privilege. One row per threat that the code actually answers; the test column is
 | 8 | A7 | **E** — remote scanning is enabled somewhere it should not be | Two independent gates, both pinned explicitly on the API and the default worker; a `.env` file cannot open the second one; the flag is required *even inside* the sandbox | `tests/worker/test_sandbox.py::test_neither_the_api_nor_the_default_worker_may_reach_a_remote_server`, `tests/worker/test_sandbox.py::test_a_dotenv_cannot_open_the_second_gate` |
 | 9 | A7 | **E** — the sandbox is not actually sandboxed | The compose service runs its own image, read-only, no host mount, dropped capabilities, opt-in profile | `tests/worker/test_sandbox.py::test_the_sandbox_is_locked_down`, `tests/worker/test_sandbox.py::test_the_sandbox_is_opt_in` |
 | 10 | A4, A6 | **I** — a credential in a submitted tool definition is stored or forwarded | `redact_tool` runs at every writer and every outbound call: before the insert (`sieve/api/store.py`), in the pipeline, in the judge client, in the CLI's API client, in every scanner adapter and in corpus capture | `tests/test_redact.py::test_redact_tool_walks_schema`, `tests/test_redact.py::test_private_key_block`, `tests/cli/test_net.py::test_triage_client_sends_redacted_text_only` |
-| 11 | A4 | **I** — tool text leaks into logs | `sieve/logging.py`'s `DropToolContent` filter removes content keys above DEBUG and is installed even on an already-configured root logger | `tests/api/test_middleware.py::test_a_scan_log_line_carries_the_scan_id_and_no_tool_text`, `tests/api/test_middleware.py::test_the_sc5_filter_is_installed_even_on_a_pre_configured_root` |
+| 11 | A4 | **I** — tool text leaks into logs | `sieve/logging.py`'s `DropToolContent` filter removes content keys above DEBUG and is installed even on an already-configured root logger. **Corrected in fix round 2 (I4)**: this row used to claim the whole path, and it did not cover exception tracebacks. `DropToolContent` only rewrites the named content keys taken from `extra`, while `JsonFormatter` adds an `exc` key of its own from `record.exc_info` — and the caller that matters, `AnthropicJudge.judge`'s `LOGGER.exception`, fires from inside the `try` that wraps `redact_tool`, the one place where the record is knowingly not yet redacted. `JsonFormatter` now passes the formatted traceback through `safe_detail` | `tests/api/test_middleware.py::test_a_scan_log_line_carries_the_scan_id_and_no_tool_text`, `tests/api/test_middleware.py::test_the_sc5_filter_is_installed_even_on_a_pre_configured_root`, `tests/integration/test_secret_never_logged.py::test_a_secret_in_a_traceback_is_redacted_before_the_log_record_is_formatted` |
 | 12 | A3 | **D** — spend abuse: someone drains the judge budget | A Postgres-backed daily ledger, re-read at **every** routing decision rather than once per scan; exhaustion routes band tools to `needs_review` with `stage = judge_budget_exhausted` instead of failing open | `tests/api/test_spend.py::test_the_cap_closes_the_gate`, `tests/api/test_spend.py::test_an_exhausted_ledger_routes_a_band_tool_to_needs_review`, `tests/api/test_spend.py::test_fifty_concurrent_charges_are_exact` |
 | 13 | A3, A6 | **D** — request flooding | Per-IP per-minute and per-day quotas enforced in one statement, so two concurrent requests cannot both pass the boundary; reads are not limited | `tests/api/test_ratelimit.py::test_the_11th_scan_in_a_minute_is_429`, `tests/api/test_ratelimit.py::test_concurrent_hits_cannot_both_pass_the_boundary` |
 | 14 | A6 | **D/I** — feedback spam, and the IPs it would collect | A honeypot field: a filled one returns 204 and stores nothing; a real submission stores a salted SHA-256 of the client IP, never the address | `tests/api/test_middleware.py::test_a_filled_honeypot_is_204_and_stores_nothing`, `tests/api/test_middleware.py::test_real_feedback_is_stored_with_a_hashed_ip`, `tests/api/test_ratelimit.py::test_the_ip_hash_is_salted_and_never_the_raw_ip` |
@@ -92,6 +92,9 @@ privilege. One row per threat that the code actually answers; the test column is
 | 25 | A1 | **D** — a hostile MCP client hangs or floods the Sieve MCP server | `scan_tools_list` refuses more than `max_tools_per_scan` tools; the paged finding walk has a page cap and a repeated-cursor check; a redirect from the configured API is an error, not a hop | `tests/mcp/test_server.py::test_scan_tools_list_refuses_more_tools_than_the_cap`, `tests/mcp/test_server.py::test_explain_verdict_treats_a_redirect_as_a_transport_error` |
 | 26 | A2, A6 | **T** — malformed input reaches storage, or turns into a 500 | Every request body is a Pydantic v2 model and the OpenAPI schema is frozen and diffed in CI; an unsupported source type is 422, a malformed cursor is 400 rather than 500, and more tools than the cap is 413 | `tests/api/test_scans.py::test_a_source_type_without_its_payload_is_422`, `tests/api/test_scans.py::test_a_malformed_cursor_is_400_not_500`, `tests/test_api_contract.py::test_committed_openapi_matches_live` |
 | 27 | A6 | **T** — SQL injection | Every query is typed SQLAlchemy; the two raw statements (the rate-limit upsert and the spend charge) use bound parameters and no string concatenation. The guarantee is structural, so the tests below exercise those two statements rather than proving the absence of a pattern | `tests/api/test_ratelimit.py::test_the_count_survives_a_new_session`, `tests/api/test_spend.py::test_fifty_concurrent_charges_are_exact` |
+| 28 | A7 | **E** — script injection in the published GitHub Action | Every `${{ … }}` reaches a `run:` body through `env:`, never as text: an expression is substituted into the script before bash parses it, so `$( … )` and backticks inside a caller-supplied input execute with the *caller's* `GITHUB_TOKEN`, quotes or no quotes. This is a published composite action (PRD §15.2), so the untrusted input is somebody else's workflow | `tests/cli/test_action_yml.py::test_no_run_body_interpolates_a_github_expression` |
+| 29 | A7 | **E/D** — a remote scan is claimed by a worker that is not the sandbox | `remote_url` scans are enqueued as their own job kind, `scan.remote`, and `claim()` filters on the kinds its caller can dispatch inside the same `FOR UPDATE SKIP LOCKED` statement. The plain worker claims `("scan","purge")` and never sees the remote kind. The SC-1 gates always held — the wrong worker *refused* rather than fetching — so this is availability, not disclosure: before it, the job was claimed, refused, requeued and finally `dead` | `tests/worker/test_main.py::test_the_plain_worker_never_claims_a_remote_scan_job`, `tests/worker/test_main.py::test_the_sandbox_worker_claims_a_remote_scan_job`, `tests/worker/test_queue.py::test_a_claim_never_takes_a_kind_the_worker_did_not_ask_for` |
+| 30 | A4, A6 | **I** — a credential inside a submitted `remote_url` is stored and re-exported | `ScanCreate.remote_url` refuses at the boundary what the sandbox would refuse anyway (https, no in-URL credentials, a host, port 443) as a 422 rather than a `202` and a dead job; and `ingest()` passes the URL through `redact()` before it becomes `scans.source_ref`, which is stored, returned by `GET /scans/{id}` and exported in SARIF. This was the only writer in the codebase that did not redact (fix round 2, I3) | `tests/api/test_scans.py::test_an_unfetchable_remote_url_is_422_at_the_boundary`, `tests/api/test_scans.py::test_a_credential_in_a_remote_url_query_never_reaches_source_ref` |
 
 ## The mitigations PRD §17.3 names
 
@@ -265,6 +268,45 @@ contracts PR — so it was handed on as one, and the contracts PR landed it.
   `tests/test_redact.py::test_redact_tool_gives_two_credential_keys_in_one_object_distinct_placeholders`,
   `tests/test_redact.py::test_redact_tool_placeholder_never_collides_with_a_literal_key_that_comes_first`,
   `tests/test_redact.py::test_redact_tool_preserves_order_of_remaining_keys`.
+
+### Closed by the whole-branch review (fix round 2)
+
+Four seams no per-task reviewer could see, because each is a property of two files agreeing
+rather than of one file being wrong. Numbered by the review's own labels, not by this section.
+
+- **C1 — the published GitHub Action was a script-injection sink.** `action/action.yml`
+  interpolated `${{ inputs.config }}`, `${{ inputs.fail-on }}` and a step output directly into
+  two `run:` bodies. An expression is substituted into the script *text* before bash parses it,
+  so `$( … )` and backticks inside a caller-supplied input execute — the surrounding double
+  quotes do nothing — with the caller's own `GITHUB_TOKEN`. A third party wiring
+  `config: ${{ github.event.inputs.path }}` on a `workflow_dispatch`, or a PR-body-derived
+  path, got arbitrary command execution in their runner. Plainly an oversight rather than a
+  decision: the two *other* steps in the same file already did it correctly through `env:`.
+  Row 28 above. `tests/cli/test_action_yml.py::test_no_run_body_interpolates_a_github_expression`.
+- **I1 — remote scans were not routed to the sandbox.** Availability, not disclosure: the SC-1
+  gates held, so the wrong worker refused rather than fetching. But `claim()` had no kind filter
+  and both images returned the same dispatch table, so the plain worker won the race, raised
+  "remote scanning disabled", requeued, and after `max_attempts` left a `dead` job and a
+  `failed` scan. With `fly scale count sandbox=0` documented as the sandbox's resting state
+  (`docs/deploy.md`), that made the whole remote feature fail by construction rather than wait.
+  Row 29 above.
+- **I2 — a four-statement window stranded a scan at `queued`.** `_reset`, the `running` commit
+  and the `scan.started` event sat outside `scan_job.run`'s `try:`. A failure in any of them
+  requeued the job while `scans.status` stayed `queued`, `scans.error` stayed NULL and no
+  `scan.failed` was emitted — so the SSE stream never terminated and a client polled a scan with
+  no live job behind it. Every other failure in that function was handled correctly.
+  `tests/worker/test_scan_job.py::test_a_failure_in_reset_fails_the_scan_instead_of_stranding_it_at_queued`.
+- **I3 — `source_ref` was the one writer that did not redact.** `ScanCreate.remote_url` was a
+  bare `str | None`, and `ingest()` passed it straight to `scans.source_ref`, which is stored,
+  returned by `GET /scans/{id}` and exported in SARIF. A URL like
+  `https://host/mcp?api_key=…` matches `generic_assignment`, and `check_url` refuses in-URL
+  credentials only much later, inside the sandbox, long after the row is durable. The URL is now
+  redacted at ingest and syntactically validated at POST (422 instead of a `202` and a dead job).
+  Row 30 above. One consequence worth stating: the sandbox later fetches what was *stored*, so a
+  URL whose query carried a credential is dialled without it. That is the intended trade — Sieve
+  does not keep a credential in order to replay it.
+- **I4 — exception tracebacks bypassed the SC-5 log filter.** Row 11 above used to over-claim;
+  it is corrected there, with the test.
 
 ### Open
 
