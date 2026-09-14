@@ -6,6 +6,7 @@ import socket
 from collections.abc import Sequence
 from typing import Any
 
+import httpcore2
 import httpx2
 import pytest
 
@@ -15,6 +16,7 @@ from sieve.worker.ssrf import ResolvedTarget, SsrfBlockedError
 from sieve.worker.ssrf_client import (
     GuardTransport,
     PinnedBackend,
+    PinnedTransport,
     RedirectBlockedError,
     ResponseTooLargeError,
     build_client,
@@ -59,6 +61,30 @@ async def test_the_host_header_is_the_name_while_the_socket_goes_to_the_ip() -> 
 
     assert seen[0].headers["host"] == "target.example"
     assert str(seen[0].url) == URL
+
+
+def test_the_pinned_transport_builds_exactly_one_connection_pool(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Fix round 2, M6: `super().__init__()` built a pool that line 68 then threw away.
+
+    The discarded pool was never closed -- an object with a live `aclose` nobody ever awaits, in
+    a suite that runs with `-W error`, where a GC-timed `ResourceWarning` surfaces as an
+    exception inside whichever test happens to be running.
+    """
+    built: list[object] = []
+    real_pool = httpcore2.AsyncConnectionPool
+
+    def counting(*args: Any, **kwargs: Any) -> Any:
+        pool = real_pool(*args, **kwargs)
+        built.append(pool)
+        return pool
+
+    monkeypatch.setattr(httpcore2, "AsyncConnectionPool", counting)
+    transport = PinnedTransport(TARGET)
+    assert len(built) == 1, f"{len(built)} pools built; the extra one is never closed"
+    assert transport._pool is built[0]
+    assert transport._pool._network_backend is transport.backend
 
 
 async def test_the_pinned_backend_dials_the_literal_not_the_name() -> None:

@@ -9,13 +9,19 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+from collections.abc import Mapping
+from typing import TYPE_CHECKING
 
 import httpx2
 
 from sieve.config import settings
 from sieve.types import ToolDefinition
+from sieve.worker.queue import REMOTE_SCAN_KIND
 from sieve.worker.ssrf import ResolvedTarget, SsrfBlockedError, check_url
 from sieve.worker.ssrf_client import DEADLINE_S, MAX_BYTES, build_client
+
+if TYPE_CHECKING:
+    from sieve.worker.main import Handler
 
 log = logging.getLogger("sieve.worker.remote")
 
@@ -80,30 +86,47 @@ async def fetch_tools(
             await client.aclose()
 
 
+def sandbox_dispatch() -> Mapping[str, Handler]:
+    """The one job kind this image exists for, and the only image that may claim it (SC-1).
+
+    `scan.remote` maps to the ordinary scan handler: the difference between the two kinds is
+    *who is allowed to run it*, not what running it does -- `scan_job.run` branches on
+    `scans.source_type` and enumerates the server through this module. Keeping the handler
+    shared is what keeps one triage path across every surface (PRD §13.3).
+    """
+    from sieve.worker import scan_job
+
+    return {REMOTE_SCAN_KIND: scan_job.run}
+
+
 def main() -> None:  # pragma: no cover -- process entry point, exercised via `test_sandbox`
     """`Dockerfile.sandbox` runs `python -m sieve.worker.remote`.
 
     The sandbox is not a different worker, it is the same queue loop in a container that is
-    allowed to make outbound connections; running the loop here keeps one dispatch table and
-    one recovery story rather than two.
+    allowed to make outbound connections -- so it runs `sieve.worker.main`'s loop over its own
+    dispatch table rather than reimplementing one. What it does *not* share is the job kinds:
+    claiming only `scan.remote` is the other half of the plain worker refusing to, and together
+    they are what route a remote scan to the one process that can run it.
     """
     from sieve.worker.main import main as run_worker
 
     if not in_sandbox():
         log.warning("sandbox.flag_missing", extra={"var": SANDBOX_ENV_VAR})
     log.info("sandbox.started", extra={"allow_remote_mcp": settings.allow_remote_mcp})
-    run_worker()
+    run_worker(sandbox_dispatch())
 
 
 __all__ = [
     "NOT_SANDBOXED",
     "REMOTE_DISABLED",
+    "REMOTE_SCAN_KIND",
     "NotSandboxedError",
     "RemoteDisabledError",
     "SsrfBlockedError",
     "fetch_tools",
     "in_sandbox",
     "main",
+    "sandbox_dispatch",
 ]
 
 

@@ -35,7 +35,7 @@ from sieve.types import (
     TriageResult,
     Verdict,
 )
-from sieve.worker.queue import enqueue
+from sieve.worker.queue import REMOTE_SCAN_KIND, SCAN_KIND, enqueue
 
 
 class BadCursorError(ValueError):
@@ -282,7 +282,12 @@ class DbStore:
             raise
         # The row is durable before the job exists, so a crash between the two leaves a
         # `queued` scan a human can re-enqueue -- never a job pointing at nothing.
-        await enqueue(self.session, "scan", {"scan_id": str(scan.id)})
+        #
+        # A `remote_url` scan has to enumerate an untrusted server before it can triage anything,
+        # and only the sandbox image may do that (SC-1). Routing it by *kind* is what keeps the
+        # plain worker from claiming a job it can only refuse (fix round 2, I1).
+        kind = REMOTE_SCAN_KIND if req.source_type == "remote_url" else SCAN_KIND
+        await enqueue(self.session, kind, {"scan_id": str(scan.id)})
         return _summary(scan)
 
     async def record_event(self, scan_id: uuid.UUID, type_: str, payload: dict[str, Any]) -> None:

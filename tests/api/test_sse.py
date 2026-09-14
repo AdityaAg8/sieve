@@ -17,6 +17,7 @@ from sieve.api.sse import parse_last_event_id
 from sieve.api.store import DbStore
 from sieve.worker import scan_job
 from sieve.worker.main import run_once
+from sieve.worker.queue import REMOTE_SCAN_KIND, SCAN_KIND
 
 TOOLS = json.loads(Path("fixtures/tools/sample-27.json").read_text(encoding="utf-8"))
 
@@ -40,7 +41,7 @@ async def completed_scan(api: AsyncClient, sessions: async_sessionmaker[AsyncSes
         "/api/v1/scans", json={"source_type": "tools_json", "tools_json": TOOLS}
     )
     scan_id: str = created.json()["id"]
-    await run_once(sessions, {"scan": scan_job.run})
+    await run_once(sessions, {SCAN_KIND: scan_job.run})
     return scan_id
 
 
@@ -94,7 +95,8 @@ async def test_a_failed_scan_terminates_the_stream(
         json={"source_type": "remote_url", "remote_url": "https://example.invalid/mcp"},
     )
     scan_id = created.json()["id"]
-    await run_once(sessions, {"scan": scan_job.run})
+    # `remote_url` scans are `scan.remote` jobs, claimed only by the sandbox image (I1).
+    await run_once(sessions, {REMOTE_SCAN_KIND: scan_job.run})
     events = parse_sse(await read_events(api, f"/api/v1/scans/{scan_id}/events"))
     assert [e[1] for e in events] == ["scan.started", "scan.failed"]
     assert "remote scanning disabled" in json.loads(events[-1][2])["error"]

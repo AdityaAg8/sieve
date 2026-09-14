@@ -135,6 +135,15 @@ fly scale count sandbox=1 --app sieve-sandbox   # before a batch that needs remo
 fly scale count sandbox=0 --app sieve-sandbox   # back to the resting, zero-cost state
 ```
 
+**A `remote_url` scan posted while `sandbox=0` waits; it does not fail.** Both apps poll the same
+`jobs` table, but they claim different **kinds**: `POST /scans` enqueues `scan.remote` for a
+`remote_url` source and plain `scan` for everything else, `sieve.worker.main` claims
+`("scan", "purge")`, and `sieve.worker.remote` claims `("scan.remote",)`. A claim filters on the
+kind inside the same `FOR UPDATE SKIP LOCKED` statement, so the `api`/`worker` app cannot take a
+job it would only refuse. Before this routing existed, the plain worker won the race, raised
+"remote scanning disabled", requeued, and finally marked the job `dead` -- which, with this
+resting state, made the remote feature fail by construction rather than queue.
+
 ## Rollback
 
 **There is no `fly releases rollback` command in current flyctl.** Fly's own Rollback Guide is

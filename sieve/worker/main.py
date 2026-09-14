@@ -12,14 +12,14 @@ import logging
 import os
 import signal
 import uuid
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from sieve.db.models import Job
 from sieve.db.session import dispose_engine, session_factory
 from sieve.worker.errors import safe_error
-from sieve.worker.queue import claim, complete, fail, heartbeat, reap
+from sieve.worker.queue import SCAN_KIND, claim, complete, fail, heartbeat, reap
 
 log = logging.getLogger("sieve.worker")
 
@@ -31,10 +31,15 @@ IDLE_SLEEP_S = 1.0
 
 
 def default_dispatch() -> Mapping[str, Handler]:
-    """Imported lazily so the loop starts even when a handler's extras are not installed."""
+    """Imported lazily so the loop starts even when a handler's extras are not installed.
+
+    `scan.remote` is deliberately absent: this image cannot reach a remote server (SC-1), so it
+    must not claim a job that needs to. `sieve.worker.remote.sandbox_dispatch` is the table that
+    carries it.
+    """
     from sieve.worker import purge, scan_job
 
-    return {"scan": scan_job.run, purge.KIND: purge.run}
+    return {SCAN_KIND: scan_job.run, purge.KIND: purge.run}
 
 
 def worker_identity() -> str:
@@ -54,13 +59,23 @@ async def _beat(
 
 
 async def run_once(
-    sessions: async_sessionmaker[AsyncSession], dispatch: Mapping[str, Handler]
+    sessions: async_sessionmaker[AsyncSession],
+    dispatch: Mapping[str, Handler],
+    *,
+    kinds: Sequence[str] | None = None,
 ) -> bool:
-    """One tick. Returns True when a job was processed, so the caller can skip its idle sleep."""
+    """One tick. Returns True when a job was processed, so the caller can skip its idle sleep.
+
+    `kinds` defaults to exactly what `dispatch` can handle, which is the property that keeps a
+    `scan.remote` job on the queue until the sandbox asks for it. It is a parameter rather than
+    always derived so a caller can claim a kind it has no handler for on purpose -- that is how
+    "an unknown kind fails the job, not the worker" is still reachable and still tested.
+    """
     worker_id = worker_identity()
+    claimable = tuple(dispatch) if kinds is None else tuple(kinds)
     async with sessions() as session:
         await reap(session, visibility_s=VISIBILITY_S)
-        job = await claim(session, worker_id, visibility_s=VISIBILITY_S)
+        job = await claim(session, worker_id, claimable, visibility_s=VISIBILITY_S)
     if job is None:
         return False
 
@@ -107,7 +122,7 @@ async def run_forever(
                 await asyncio.wait_for(stop.wait(), timeout=IDLE_SLEEP_S)
 
 
-async def _main() -> None:
+async def _main(dispatch: Mapping[str, Handler] | None = None) -> None:
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
     for name in ("SIGTERM", "SIGINT"):
@@ -122,9 +137,9 @@ async def _main() -> None:
     async with sessions() as session:
         if await purge.ensure_scheduled(session):
             log.info("purge.scheduled")
-    log.info("worker.started")
+    log.info("worker.started", extra={"kinds": sorted(dispatch or default_dispatch())})
     try:
-        await run_forever(sessions, stop=stop)
+        await run_forever(sessions, dispatch, stop=stop)
     finally:
         from sieve.api.deps import close_judge
 
@@ -133,13 +148,14 @@ async def _main() -> None:
         log.info("worker.stopped")
 
 
-def main() -> None:  # pragma: no cover -- process entry point
+def main(dispatch: Mapping[str, Handler] | None = None) -> None:  # pragma: no cover -- entry point
+    """`dispatch` is how the sandbox image runs this same loop over its own job kinds."""
     from sieve.db.session import use_selector_event_loop_on_windows
     from sieve.logging import configure_logging
 
     configure_logging()
     use_selector_event_loop_on_windows()
-    asyncio.run(_main())
+    asyncio.run(_main(dispatch))
 
 
 if __name__ == "__main__":  # pragma: no cover

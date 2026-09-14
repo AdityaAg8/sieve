@@ -13,12 +13,17 @@ services:
     environment: { DATABASE_URL: postgresql+psycopg://sieve:sieve@postgres:5432/sieve, WEB_ORIGIN: http://localhost:3000, SIEVE_ALLOW_REMOTE_MCP: "false", SIEVE_SANDBOXED: "0" }
     ports: ["8000:8000"]
     depends_on: { postgres: { condition: service_healthy } }
+  # Claims `scan` and `purge` jobs only. `scan.remote` is a job kind of its own, left on the
+  # queue for `sandbox-worker` below -- this image cannot reach a remote server (SC-1), and a
+  # worker that claimed one could only refuse it until the job died as `dead`.
   worker:
     build: { context: ., dockerfile: Dockerfile.api }
     env_file: [{ path: .env, required: false }]
     environment: { DATABASE_URL: postgresql+psycopg://sieve:sieve@postgres:5432/sieve, SIEVE_ALLOW_REMOTE_MCP: "false", SIEVE_SANDBOXED: "0" }
     command: ["uv", "run", "python", "-m", "sieve.worker.main"]
     depends_on: { postgres: { condition: service_healthy } }
+  # The only service that claims `scan.remote`, and it claims nothing else: the two workers
+  # poll the same table and never compete for each other's work.
   sandbox-worker:
     profiles: ["remote"]
     build: { context: ., dockerfile: Dockerfile.sandbox }

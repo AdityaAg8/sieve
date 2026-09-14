@@ -3,12 +3,18 @@
 `SELECT … FOR UPDATE SKIP LOCKED` is what makes this safe with more than one worker: the row
 is locked inside the same statement that claims it, so two workers racing on one job see one
 winner and one empty result, with no advisory locks and no external broker.
+
+A claim is also filtered by **kind**, because not every worker can run every job. `claim` takes
+the kinds its caller is able to dispatch and will not take anything else off the queue: a
+`scan.remote` job left alone by the plain worker waits for the sandbox instead of being claimed,
+refused, and eventually killed as `dead` (fix round 2, I1).
 """
 
 from __future__ import annotations
 
 import logging
 import uuid
+from collections.abc import Sequence
 from datetime import datetime
 from typing import Any, cast
 
@@ -19,12 +25,22 @@ from sieve.db.models import Job
 
 log = logging.getLogger("sieve.worker.queue")
 
+#: An ordinary scan: the tools are already in the database, so any worker can triage them.
+SCAN_KIND = "scan"
+
+#: A scan that has to *enumerate* an untrusted server first. Only the sandbox image may do that
+#: (SC-1), so it is a kind of its own rather than a `scan` the wrong worker can win: the plain
+#: worker used to claim these, raise "remote scanning disabled", requeue, and finally mark the
+#: job `dead` -- and with `fly scale count sandbox=0` documented as the resting state, that made
+#: every remote scan fail by construction. `jobs.kind` is free text, so this needs no migration.
+REMOTE_SCAN_KIND = "scan.remote"
+
 # `FOR UPDATE SKIP LOCKED` inside a CTE, then an UPDATE joined to it: one statement, one
 # round trip, and the losing worker's CTE simply selects nothing.
 _CLAIM_SQL = """
 WITH next AS (
   SELECT id FROM jobs
-  WHERE status = 'queued' AND run_after <= now()
+  WHERE status = 'queued' AND kind = ANY(:kinds) AND run_after <= now()
   ORDER BY created_at
   FOR UPDATE SKIP LOCKED
   LIMIT 1
@@ -51,11 +67,23 @@ async def enqueue(
     return job.id
 
 
-async def claim(session: AsyncSession, worker_id: str, *, visibility_s: int = 120) -> Job | None:
-    """Claim one ready job, or `None`. `visibility_s` is the deadline `reap` enforces."""
+async def claim(
+    session: AsyncSession,
+    worker_id: str,
+    kinds: Sequence[str],
+    *,
+    visibility_s: int = 120,
+) -> Job | None:
+    """Claim one ready job of a kind this worker can run, or `None`.
+
+    `kinds` is not a filter for convenience, it is a capability declaration: a worker that
+    cannot enumerate a remote server must never take that job off the queue, because claiming
+    it is what turns "wait for the sandbox" into "fail after `max_attempts`". `visibility_s` is
+    the deadline `reap` enforces.
+    """
     statement = (
         text(_CLAIM_SQL)
-        .bindparams(bindparam("worker_id", worker_id))
+        .bindparams(bindparam("worker_id", worker_id), bindparam("kinds", list(kinds)))
         .columns(*Job.__table__.columns)
     )
     # `populate_existing`: RETURNING gives the post-UPDATE row, but a session that already

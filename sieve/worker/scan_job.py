@@ -239,13 +239,20 @@ async def run(session: AsyncSession, job: Job) -> None:
         log.info("scan.missing", extra={"scan_id": raw_id})
         return
 
-    await _reset(session, scan_id)
-    scan.status = "running"
-    scan.error = None
-    await session.commit()
-    await _event(session, scan_id, "scan.started", {"scan_id": raw_id})
-
+    # Everything that touches the database is inside the `try`. Four statements used to sit
+    # outside it -- the reset, the `running` commit and the `scan.started` event -- and an
+    # exception in any of them propagated to `run_once`, which logged `job.failed` and requeued
+    # while `scans.status` stayed `queued`, `scans.error` stayed NULL, no `scan.failed` was
+    # emitted and the SSE stream never terminated. A client then polled a `queued` scan with no
+    # live job behind it. Every other failure in this function was already handled correctly;
+    # this was the one window that was not (fix round 2, I2).
     try:
+        await _reset(session, scan_id)
+        scan.status = "running"
+        scan.error = None
+        await session.commit()
+        await _event(session, scan_id, "scan.started", {"scan_id": raw_id})
+
         if scan.source_type == "remote_url":
             await _load_remote(session, scan)
         loaded = await _load(session, scan_id)

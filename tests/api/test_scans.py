@@ -14,14 +14,21 @@ from sieve.api.routes.scans import MAX_IDEMPOTENCY_KEY_BYTES
 from sieve.config import settings
 from sieve.worker import scan_job
 from sieve.worker.main import run_once
+from sieve.worker.queue import REMOTE_SCAN_KIND, SCAN_KIND
 
 TOOLS = json.loads(Path("fixtures/tools/sample-27.json").read_text(encoding="utf-8"))
 SCANNER = json.loads(Path("fixtures/scanner/cisco-yara-sample-27.json").read_text(encoding="utf-8"))
-DISPATCH = {"scan": scan_job.run}
+DISPATCH = {SCAN_KIND: scan_job.run}
+#: The sandbox image's table: the only one that claims `scan.remote` (fix round 2, I1).
+SANDBOX_DISPATCH = {REMOTE_SCAN_KIND: scan_job.run}
 
 
 async def tick(sessions: async_sessionmaker[AsyncSession]) -> bool:
     return await run_once(sessions, DISPATCH)
+
+
+async def sandbox_tick(sessions: async_sessionmaker[AsyncSession]) -> bool:
+    return await run_once(sessions, SANDBOX_DISPATCH)
 
 
 async def test_a_posted_scan_is_queued_then_completed_by_the_worker(
@@ -270,7 +277,14 @@ async def test_a_remote_scan_fails_closed_while_remote_mcp_is_disabled(
         json={"source_type": "remote_url", "remote_url": "https://example.invalid/mcp"},
     )
     assert created.status_code == 202
-    await tick(sessions)
+    # Fix round 2, I1: the plain worker leaves a `scan.remote` job alone -- it cannot reach a
+    # remote server, so claiming one could only end as a `dead` job and a `failed` scan.
+    assert await tick(sessions) is False
+    waiting = (await api.get(f"/api/v1/scans/{created.json()['id']}")).json()
+    assert waiting["status"] == "queued"
+
+    # The sandbox claims it, and *that* is where the flag refuses the fetch and fails closed.
+    assert await sandbox_tick(sessions) is True
     summary = (await api.get(f"/api/v1/scans/{created.json()['id']}")).json()
     assert summary["status"] == "failed"
     assert "remote scanning disabled" in summary["error"]

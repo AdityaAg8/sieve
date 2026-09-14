@@ -10,12 +10,25 @@ from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from sieve.db.models import Job
-from sieve.worker.queue import claim, complete, enqueue, fail, heartbeat, reap
+from sieve.worker.queue import (
+    REMOTE_SCAN_KIND,
+    SCAN_KIND,
+    claim,
+    complete,
+    enqueue,
+    fail,
+    heartbeat,
+    reap,
+)
+
+#: What a plain worker can run. `claim` takes a capability declaration, not a convenience
+#: filter, so every call site has to say what it is able to handle (fix round 2, I1).
+KINDS = (SCAN_KIND, "purge")
 
 
 async def test_enqueue_then_claim_round_trip(session: AsyncSession) -> None:
     job_id = await enqueue(session, "scan", {"scan_id": "abc"})
-    claimed = await claim(session, "worker-1")
+    claimed = await claim(session, "worker-1", KINDS)
     assert claimed is not None
     assert claimed.id == job_id
     assert claimed.status == "running"
@@ -26,13 +39,13 @@ async def test_enqueue_then_claim_round_trip(session: AsyncSession) -> None:
 
 
 async def test_an_empty_queue_claims_nothing(session: AsyncSession) -> None:
-    assert await claim(session, "worker-1") is None
+    assert await claim(session, "worker-1", KINDS) is None
 
 
 async def test_a_future_run_after_is_not_claimed(session: AsyncSession) -> None:
     later = datetime.now(UTC) + timedelta(minutes=5)
     await enqueue(session, "purge", {}, run_after=later)
-    assert await claim(session, "worker-1") is None
+    assert await claim(session, "worker-1", KINDS) is None
 
 
 async def test_two_concurrent_claims_never_return_the_same_job(
@@ -45,7 +58,7 @@ async def test_two_concurrent_claims_never_return_the_same_job(
 
         async def one(worker: str) -> Job | None:
             async with sessions() as s:
-                return await claim(s, worker)
+                return await claim(s, worker, KINDS)
 
         first, second = await asyncio.gather(one("worker-a"), one("worker-b"))
         claimed = [j for j in (first, second) if j is not None]
@@ -58,7 +71,7 @@ async def test_two_concurrent_claims_never_return_the_same_job(
 
 async def test_heartbeat_moves_the_visibility_deadline(session: AsyncSession) -> None:
     await enqueue(session, "scan", {})
-    job = await claim(session, "worker-1")
+    job = await claim(session, "worker-1", KINDS)
     assert job is not None
     before = job.heartbeat_at
     await session.execute(
@@ -72,7 +85,7 @@ async def test_heartbeat_moves_the_visibility_deadline(session: AsyncSession) ->
 
 async def test_a_stale_job_is_reaped_and_can_be_reclaimed(session: AsyncSession) -> None:
     await enqueue(session, "scan", {})
-    job = await claim(session, "worker-gone")
+    job = await claim(session, "worker-gone", KINDS)
     assert job is not None
     await session.execute(
         update(Job).where(Job.id == job.id).values(heartbeat_at=text("now() - interval '10 min'"))
@@ -80,30 +93,30 @@ async def test_a_stale_job_is_reaped_and_can_be_reclaimed(session: AsyncSession)
     await session.commit()
 
     assert await reap(session, visibility_s=120) == 1
-    again = await claim(session, "worker-2")
+    again = await claim(session, "worker-2", KINDS)
     assert again is not None and again.id == job.id
     assert again.attempts == 2, "a reaped job keeps its attempt history"
 
 
 async def test_a_live_job_is_not_reaped(session: AsyncSession) -> None:
     await enqueue(session, "scan", {})
-    assert await claim(session, "worker-1") is not None
+    assert await claim(session, "worker-1", KINDS) is not None
     assert await reap(session, visibility_s=120) == 0
 
 
 async def test_complete_marks_the_job_done(session: AsyncSession) -> None:
     await enqueue(session, "scan", {})
-    job = await claim(session, "worker-1")
+    job = await claim(session, "worker-1", KINDS)
     assert job is not None
     await complete(session, job.id, worker_id="worker-1")
     status = (await session.execute(select(Job.status).where(Job.id == job.id))).scalar_one()
     assert status == "done"
-    assert await claim(session, "worker-1") is None
+    assert await claim(session, "worker-1", KINDS) is None
 
 
 async def test_fail_requeues_with_exponential_backoff(session: AsyncSession) -> None:
     await enqueue(session, "scan", {})
-    job = await claim(session, "worker-1")
+    job = await claim(session, "worker-1", KINDS)
     assert job is not None
     await fail(session, job.id, "boom", worker_id="worker-1", backoff_base_s=10)
     row = (
@@ -119,7 +132,7 @@ async def test_fail_requeues_with_exponential_backoff(session: AsyncSession) -> 
     # Second failure backs off further than the first (10 * 2^1 vs 10 * 2^0).
     await session.execute(update(Job).where(Job.id == job.id).values(run_after=text("now()")))
     await session.commit()
-    job2 = await claim(session, "worker-1")
+    job2 = await claim(session, "worker-1", KINDS)
     assert job2 is not None and job2.attempts == 2
     await fail(session, job2.id, "boom again", worker_id="worker-1", backoff_base_s=10)
     run_after2 = (await session.execute(select(Job.run_after).where(Job.id == job.id))).scalar_one()
@@ -132,13 +145,13 @@ async def test_fail_at_max_attempts_marks_the_job_dead(session: AsyncSession) ->
     await session.execute(update(Job).where(Job.id == job_id).values(max_attempts=1))
     await session.commit()
 
-    job = await claim(session, "worker-1")
+    job = await claim(session, "worker-1", KINDS)
     assert job is not None
     await fail(session, job.id, "fatal", worker_id="worker-1")
     row = (await session.execute(select(Job.status, Job.last_error).where(Job.id == job_id))).one()
     assert row.status == "dead"
     assert row.last_error == "fatal"
-    assert await claim(session, "worker-1") is None
+    assert await claim(session, "worker-1", KINDS) is None
 
 
 async def test_fail_on_an_unknown_job_is_a_no_op(session: AsyncSession) -> None:
@@ -154,7 +167,7 @@ async def test_jobs_are_claimed_oldest_first(session: AsyncSession) -> None:
     )
     await session.commit()
     await enqueue(session, "scan", {"n": 2})
-    claimed = await claim(session, "worker-1")
+    claimed = await claim(session, "worker-1", KINDS)
     assert claimed is not None and claimed.id == first
 
 
@@ -164,7 +177,7 @@ async def test_a_reaped_worker_can_no_longer_close_its_old_job(session: AsyncSes
     Claim by A, reap, claim by B; A's `complete` and `heartbeat` must be no-ops, B's must work.
     """
     await enqueue(session, "scan", {})
-    first = await claim(session, "worker-a")
+    first = await claim(session, "worker-a", KINDS)
     assert first is not None
 
     await session.execute(
@@ -173,7 +186,7 @@ async def test_a_reaped_worker_can_no_longer_close_its_old_job(session: AsyncSes
     await session.commit()
     assert await reap(session, visibility_s=120) == 1
 
-    second = await claim(session, "worker-b")
+    second = await claim(session, "worker-b", KINDS)
     assert second is not None and second.id == first.id
 
     assert await heartbeat(session, first.id, worker_id="worker-a") is False
@@ -189,14 +202,14 @@ async def test_a_reaped_worker_can_no_longer_close_its_old_job(session: AsyncSes
 
 async def test_a_reaped_worker_can_no_longer_fail_its_old_job(session: AsyncSession) -> None:
     await enqueue(session, "scan", {})
-    first = await claim(session, "worker-a")
+    first = await claim(session, "worker-a", KINDS)
     assert first is not None
     await session.execute(
         update(Job).where(Job.id == first.id).values(heartbeat_at=text("now() - interval '10 min'"))
     )
     await session.commit()
     await reap(session, visibility_s=120)
-    second = await claim(session, "worker-b")
+    second = await claim(session, "worker-b", KINDS)
     assert second is not None
 
     assert await fail(session, first.id, "A gave up", worker_id="worker-a") is False
@@ -207,3 +220,33 @@ async def test_a_reaped_worker_can_no_longer_fail_its_old_job(session: AsyncSess
     assert row.last_error is None, "A's error must not overwrite B's in-flight job"
 
     assert await fail(session, second.id, "B gave up", worker_id="worker-b") is True
+
+
+# --- kind routing (fix round 2, I1) ------------------------------------------------------------
+
+
+async def test_a_claim_never_takes_a_kind_the_worker_did_not_ask_for(
+    session: AsyncSession,
+) -> None:
+    await enqueue(session, REMOTE_SCAN_KIND, {"scan_id": "abc"})
+    assert await claim(session, "worker-1", KINDS) is None
+    claimed = await claim(session, "worker-sandbox", [REMOTE_SCAN_KIND])
+    assert claimed is not None
+    assert claimed.kind == REMOTE_SCAN_KIND
+
+
+async def test_a_claim_with_no_kinds_at_all_takes_nothing(session: AsyncSession) -> None:
+    """An empty capability list is a worker that can run nothing, not a wildcard."""
+    await enqueue(session, SCAN_KIND, {"scan_id": "abc"})
+    assert await claim(session, "worker-1", []) is None
+
+
+async def test_an_unwanted_kind_does_not_hide_a_wanted_one_behind_it(
+    session: AsyncSession,
+) -> None:
+    """`ORDER BY created_at` picks the oldest *claimable* row, not the oldest row."""
+    await enqueue(session, REMOTE_SCAN_KIND, {"scan_id": "older"})
+    await enqueue(session, SCAN_KIND, {"scan_id": "newer"})
+    claimed = await claim(session, "worker-1", KINDS)
+    assert claimed is not None
+    assert claimed.payload == {"scan_id": "newer"}

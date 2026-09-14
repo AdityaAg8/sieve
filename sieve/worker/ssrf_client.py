@@ -62,8 +62,19 @@ class PinnedBackend(httpcore2.AnyIOBackend):
 
 
 class PinnedTransport(httpx2.AsyncHTTPTransport):
+    """`AsyncHTTPTransport` over a pool that dials the pinned literal.
+
+    `AsyncHTTPTransport.__init__` builds an `AsyncConnectionPool` of its own and takes no
+    `network_backend`, so calling it and then reassigning `self._pool` left the first pool
+    unreferenced and unclosed -- one more object with a live `aclose` nobody ever awaits, in a
+    suite that runs under `-W error` where a GC-timed `ResourceWarning` surfaces as an exception
+    inside whichever test happens to be running (fix round 2, M6). The pool is therefore built
+    once, here. That is the complete contract: `self._pool` is the only attribute the base class
+    touches -- `handle_async_request`, `aclose` and the async context manager all read it and
+    nothing else.
+    """
+
     def __init__(self, target: ResolvedTarget, *, verify: ssl.SSLContext | bool = True) -> None:
-        super().__init__(verify=verify)
         self.backend = PinnedBackend(target.ip)
         self._pool = httpcore2.AsyncConnectionPool(
             ssl_context=httpx2.create_ssl_context(verify=verify),

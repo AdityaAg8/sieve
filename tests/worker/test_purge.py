@@ -10,7 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from sieve.db.models import Job, Scan, Tool, VerdictRow
 from sieve.worker import purge
+from sieve.worker.main import default_dispatch
 from sieve.worker.queue import claim, enqueue
+
+#: Exactly what the plain worker advertises; `claim` takes a capability list (fix round 2, I1).
+KINDS = tuple(default_dispatch())
 
 
 async def make_scan(session: AsyncSession, *, expires_in: timedelta) -> uuid.UUID:
@@ -74,7 +78,7 @@ async def test_purging_nothing_is_not_an_error(session: AsyncSession) -> None:
 async def test_the_purge_job_re_enqueues_itself(session: AsyncSession) -> None:
     await make_scan(session, expires_in=timedelta(days=-1))
     await enqueue(session, purge.KIND, {})
-    job = await claim(session, "worker-1")
+    job = await claim(session, "worker-1", KINDS)
     assert job is not None
 
     await purge.run(session, job)
@@ -91,7 +95,7 @@ async def test_the_purge_job_re_enqueues_itself(session: AsyncSession) -> None:
 
 async def test_a_future_purge_is_not_claimable_yet(session: AsyncSession) -> None:
     await purge.schedule_next(session)
-    assert await claim(session, "worker-1") is None
+    assert await claim(session, "worker-1", KINDS) is None
 
 
 async def test_the_purge_chain_is_bootstrapped_once(session: AsyncSession) -> None:
@@ -103,4 +107,4 @@ async def test_the_purge_chain_is_bootstrapped_once(session: AsyncSession) -> No
         await session.execute(select(func.count()).select_from(Job).where(Job.kind == purge.KIND))
     ).scalar_one()
     assert queued == 1
-    assert await claim(session, "worker-1") is not None, "the first one is due immediately"
+    assert await claim(session, "worker-1", KINDS) is not None, "the first one is due immediately"
