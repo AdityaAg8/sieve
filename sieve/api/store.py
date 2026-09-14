@@ -64,6 +64,8 @@ class Store(Protocol):
 
     async def all_findings(self, scan_id: str) -> list[Finding] | None: ...
 
+    #: A **repo-relative file path** for SARIF's `artifactLocation.uri`, or None when this
+    #: surface has none. Not `scans.source_ref`: a server-name list or a URL is not a path.
     async def source_path(self, scan_id: str) -> str | None: ...
 
 
@@ -411,14 +413,20 @@ class DbStore:
         return None if page is None else page.items
 
     async def source_path(self, scan_id: str) -> str | None:
-        """`scans.source_ref`: the config path or URL the tools came from, for SARIF locations."""
-        try:
-            key = uuid.UUID(scan_id)
-        except ValueError:
-            return None
-        return (
-            await self.session.execute(select(Scan.source_ref).where(Scan.id == key))
-        ).scalar_one_or_none()
+        """Always `None`: the API has no repo-relative path to attribute a finding to.
+
+        SARIF's `physicalLocation.artifactLocation.uri` is a **file**, and `scans.source_ref` is
+        never one: for `mcp_config` it is a comma-joined list of server names
+        (`sieve/api/ingest.py`), for `remote_url` a redacted URL, and NULL otherwise. Emitting
+        any of those made GitHub code scanning either drop the location or attribute the finding
+        to a path that does not exist in the repository -- worse than no location at all (fix
+        round 2, M3). The CLI's `--output` path *is* repo-relative, and that surface still passes
+        it (`sieve/cli/app.py`), which is where SARIF locations come from.
+
+        Kept as a method rather than deleted so the `Store` protocol still says who decides this;
+        a future surface that does know a path answers here.
+        """
+        return None
 
 
 async def get_store(request: Request, session: AsyncSession = Depends(get_session)) -> Store:
