@@ -91,6 +91,26 @@ Per-tier: {{per_tier}}
 
 Per-concealment: {{per_concealment}}
 
+### Judge self-defence (injection suites)
+
+Three numbers belong here, and they are reported separately because they answer three different
+questions. A single "injection resistance" figure would be the claim PRD §12.5 refuses to make:
+
+1. the **dev gate**, `tests/test_judge_injection.py`: the suite the prompt was tuned against,
+   which is a gate and must pass;
+2. the **holdout**, `tests/test_judge_injection_holdout.py`: run once per version against cases
+   the prompt has never seen, written to `bench/results/judge_injection_holdout.json`, and
+   **reported, not gated**;
+3. the **external** benchmark, whichever public set is cited, run unchanged.
+
+No prompt change may follow a holdout run for the version it measured; if the result is bad, that
+is the result and the next version is where it is addressed.
+
+**Not yet measured.** No slot is templated above because there is no artefact to fill one from:
+recording the holdout is a one-shot human step (docs/handoffs/11.3.md), and until it has run,
+Sieve's injection resistance is a design claim, as THREAT_MODEL.md's residual risk 8 also says.
+Task 11.6 fills the three in, with slots, once they exist.
+
 ### Serving
 
 | | |

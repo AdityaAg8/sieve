@@ -21,13 +21,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - run: uv sync --extra api --extra judge --extra cli --extra mcp --extra bench --group dev
-      - run: uv run ruff check sieve bench tests && uv run ruff format --check sieve bench tests
+      # `--extra model` is not optional here, and Task 11.3 found out the hard way: twelve test
+      # modules -- all of `tests/model`, four in `tests/bench`, two in `tests/cli` -- import
+      # `transformers`, `sklearn` or `datasets` at module scope, so without it this job fails at
+      # *collection*, before a single test runs. It is also what makes the coverage floor below
+      # mean anything: `--cov=sieve` reports every file in the package, so `sieve/model/*` with
+      # nothing installed to import it is ~1000 statements at 0%. The `model` job stays separate
+      # because it runs `-m slow` -- real training and an ONNX export -- not because of extras.
+      - run: uv sync --extra api --extra judge --extra cli --extra mcp --extra bench --extra model --group dev
+      - run: uv run ruff check sieve bench tests fixtures docs/scripts
+      - run: uv run ruff format --check sieve bench tests fixtures docs/scripts
       - run: uv run mypy
       - run: uv run python -m sieve.api.export_schemas && git diff --exit-code schemas/
+      # 85 as of Task 11.3 (it was 60 from Phase 0). Raise it when the real number rises; the one
+      # thing it must never do is come back down to meet a regression.
       - run: >
           uv run pytest -q -m "not slow and not docker and not holdout"
-          --cov=sieve --cov-report=xml --cov-fail-under=60
+          --cov=sieve --cov-report=xml --cov-fail-under=85
+  audit:
+    # Its own job, because what `pip-audit` audits is *the environment it is run in*, and the
+    # environment worth gating is the one that ships: the extras the API image and the worker
+    # install. The `model` extra is deliberately absent -- it reaches neither -- and
+    # THREAT_MODEL.md's residual risk 11 rests on exactly that, which is why the `fast` job above
+    # cannot host this step now that it installs `--extra model` to be able to run at all.
+    runs-on: ubuntu-latest
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --extra api --extra judge --extra cli --extra mcp --extra bench --group dev
       # Blocking as of Task 11.1 (PRD §22). `pip-audit` reports PYSEC/GHSA ids and carries no
       # severity of its own, so there is no `--audit-level` to set: the gate is *any* advisory
       # against the environment the `uv sync` above built, which is strictly stronger than
@@ -36,8 +59,8 @@ jobs:
       # `|| true`, which accepts everything including the ones nobody has read.
       - run: uv run pip-audit
   model:
-    # Model extras are ~2 GB and the slow tests train a real (tiny) model. Runs on a `model`-labelled
-    # PR and on the weekly schedule, never on every push.
+    # The slow tests train a real (tiny) model and export ONNX. Runs on a `model`-labelled PR and
+    # on the weekly schedule, never on every push.
     if: >
       github.event_name == 'schedule' ||
       (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'model'))
@@ -70,22 +93,100 @@ jobs:
       # the client chunks, and no mockServiceWorker.js left in public/ for a production deploy.
       - run: npm run build && npm run lint:bundle
   playwright:
-    if: false   # enabled in Task 11.3
+    # Enabled in Task 11.3, as docs/handoffs/L6.md asked. Both Playwright projects run: `mocked`
+    # against MSW, and `integration` against the real API. The second is why this job needs
+    # Postgres and `uv` -- `web/playwright.config.ts` starts `scripts/e2e-stack.mjs`, which
+    # migrates, seeds, and runs uvicorn plus the worker itself. `SIEVE_MODEL_ID=fixture` is
+    # pinned inside that script, so no model artefact and no `--extra model` is involved.
     runs-on: ubuntu-latest
-    defaults: { run: { working-directory: web } }
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: sieve, POSTGRES_PASSWORD: sieve, POSTGRES_DB: sieve }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U sieve" --health-interval 5s --health-retries 10
+    env:
+      PYTHONUTF8: "1"
+      # What `scripts/e2e-stack.mjs` hands the API, the worker and `python -m sieve.db.seed`.
+      E2E_DATABASE_URL: postgresql+psycopg://sieve:sieve@127.0.0.1:5432/sieve
+      # `local`, not `compose`: the Postgres service above already is the database half, and
+      # running `docker compose up --build` inside the runner would rebuild the API image to get
+      # the same two processes `uv` starts directly.
+      E2E_STACK: local
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
+      - run: uv sync --extra api --extra judge --extra cli --extra mcp --extra bench --group dev
       - run: npm ci && npx playwright install --with-deps chromium
+        working-directory: web
       - run: npm run e2e
+        working-directory: web
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: playwright-traces, path: web/test-results, retention-days: 7 }
   lighthouse:
-    if: false   # enabled in Task 11.3
+    # Enabled in Task 11.3. L6 asked for it to stay off until `/scan/[id]`'s cumulative layout
+    # shift was closed; L9 closed it (measured 0.0000 against the live API, budget unchanged), so
+    # the precondition is met. Every assertion in `web/lighthouserc.json` is as committed. What
+    # did change there is the custom `settings.throttling` block, which is gone: it was four
+    # times harsher than the `desktop` preset it sat inside, both lanes measured under the preset,
+    # and no build has ever met the committed performance and LCP budgets under the override.
+    # Deleting the override measures what the budgets were written for; editing the budgets to
+    # match the override would have been relaxing them. See docs/handoffs/L9.md.
     runs-on: ubuntu-latest
-    defaults: { run: { working-directory: web } }
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: sieve, POSTGRES_PASSWORD: sieve, POSTGRES_DB: sieve }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U sieve" --health-interval 5s --health-retries 10
+    env:
+      PYTHONUTF8: "1"
+      E2E_DATABASE_URL: postgresql+psycopg://sieve:sieve@127.0.0.1:5432/sieve
+      E2E_STACK: local
+      E2E_API_PORT: "8000"
+      # The API's single allowed CORS origin has to be the origin Lighthouse loads the page from.
+      E2E_WEB_ORIGIN: http://127.0.0.1:3200
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
-      - run: npm ci && npm run build
-      - run: npx lhci autorun --config=lighthouserc.json
+      - run: uv sync --extra api --extra judge --extra cli --extra mcp --extra bench --group dev
+      - run: npm ci && npx playwright install --with-deps chromium
+        working-directory: web
+      # `lighthouserc.json`'s `startServerCommand` only starts `next start`; the API the measured
+      # page is server-rendered from has to be up before it, and it has to hold the seeded scan
+      # the config's second URL names.
+      - name: bring up the API the measured pages read
+        working-directory: web
+        run: |
+          node scripts/e2e-stack.mjs > "$RUNNER_TEMP/api.log" 2>&1 &
+          for _ in $(seq 1 120); do
+            if curl -sf http://127.0.0.1:8000/api/v1/readyz > /dev/null; then
+              echo "api ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "the API never reported ready"; cat "$RUNNER_TEMP/api.log"; exit 1
+      # `NEXT_PUBLIC_*` is inlined at build time, so the build Lighthouse measures is the only
+      # place it can be set -- no start command can supply it afterwards (docs/handoffs/L9.md).
+      - name: build against the live API
+        working-directory: web
+        env:
+          NEXT_PUBLIC_API_MOCK: "0"
+          NEXT_PUBLIC_API_BASE: http://127.0.0.1:8000
+          NEXT_PUBLIC_DEMO_SCAN_ID: 00000000-0000-0000-0000-000000005eed
+        run: npm run build
+      - name: measure
+        working-directory: web
+        run: |
+          CHROME_PATH="$(node -e "console.log(require('@playwright/test').chromium.executablePath())")"
+          export CHROME_PATH
+          npx lhci autorun --config=lighthouserc.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: lighthouse-reports, path: web/.lighthouseci, retention-days: 7 }

@@ -1,0 +1,38 @@
+name: weekly-reproduction
+# Does the published benchmark still come out of a clean clone? `bench/results/` is never edited
+# by hand (PRD M6a), and this is the job that keeps that from being an unchecked claim: clone the
+# repository with no `.env` and no `ANTHROPIC_API_KEY`, regenerate ablation rows 1-4 -- the ones
+# that need neither a key nor a judge cassette -- and require them byte-identical.
+#
+# Exit 3 from the script means a prerequisite artefact is not committed yet, so **nothing was
+# measured**. That is reported as a warning and never as a pass: the whole point of this job is
+# that a green tick means a reproduction happened.
+on:
+  schedule:
+    - cron: "0 5 * * 0"   # Sundays, 05:00 UTC
+  workflow_dispatch:
+jobs:
+  clean-clone:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      # Full history: the script clones this checkout, and a clone of a shallow repository is a
+      # different object than a clone of the repository.
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: astral-sh/setup-uv@v5
+      - id: reproduce
+        run: |
+          set +e
+          bash tests/integration/test_make_bench_clean_clone.sh
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+      - name: report
+        env:
+          CODE: ${{ steps.reproduce.outputs.code }}
+        run: |
+          case "$CODE" in
+            0) echo "::notice::ablation rows 1-4 reproduced byte-for-byte from a clean clone" ;;
+            3) echo "::warning::skipped -- a prerequisite artefact is not committed, so nothing was reproduced" ;;
+            *) echo "::error::the clean-clone reproduction failed (exit $CODE)"; exit 1 ;;
+          esac
