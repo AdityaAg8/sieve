@@ -19,12 +19,15 @@ const TOKEN_VALUES = new Map(
 const MIRROR = /lint-tokens-allow:\s*mirrors\s+--([a-z0-9-]+)/;
 // A font-family/fontFamily declaration is only a violation when its value isn't a token
 // reference — `var(--font-*)` is the only permitted value anywhere outside tokens.css.
-const PATTERNS = [
+const COLOUR_PATTERNS = [
   [/#[0-9a-fA-F]{3,8}\b/, "raw hex colour"],
   [/\b(rgb|rgba|hsl|hsla|oklch|oklab)\(/, "raw colour function"],
+];
+const FONT_PATTERNS = [
   [/font-family\s*:(?!\s*var\(--font-)/, "font-family declaration"],
   [/\bfontFamily\s*:(?!\s*["'`]?var\(--font-)/, "fontFamily style prop"],
 ];
+const PATTERNS = [...COLOUR_PATTERNS, ...FONT_PATTERNS];
 const files = [];
 (function walk(dir) {
   for (const name of readdirSync(dir)) {
@@ -47,11 +50,19 @@ for (const f of files) {
       if (expected === undefined) {
         console.error(`${rel}:${i + 1}: mirrors --${token}, which tokens.css does not define`);
         failures++;
-      } else if (literals.some((hex) => hex !== expected)) {
+      } else if (literals.length === 0 || literals.some((hex) => hex !== expected)) {
         console.error(
-          `${rel}:${i + 1}: claims to mirror --${token} (${expected}) but spells ${literals.join(", ")}`,
+          `${rel}:${i + 1}: claims to mirror --${token} (${expected}) but spells ${literals.join(", ") || "no literal"}`,
         );
         failures++;
+      }
+      // The hatch covers the colour literal it declares, and nothing else: a `font-family` on
+      // the same line is still a violation.
+      for (const [re, why] of FONT_PATTERNS) {
+        if (re.test(line)) {
+          console.error(`${rel}:${i + 1}: ${why}: ${line.trim()}`);
+          failures++;
+        }
       }
       return;
     }
