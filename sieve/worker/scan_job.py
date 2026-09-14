@@ -8,7 +8,9 @@ row and an SSE event land per tool rather than all 27 at the end.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
+import time
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -17,7 +19,6 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from sqlalchemy import delete, insert, select
-from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sieve.api import spend
@@ -43,42 +44,68 @@ REMOTE_DISABLED = "remote scanning disabled"
 #: is the one authorised knob; the PRD does not pin a number.
 VERDICT_BATCH_SIZE = 25
 
-#: `verdicts.created_at` is server-side only (`func.now()`); `verdict_row()` never sets it, so
-#: a bulk Core INSERT must leave it out too, or it would insert a literal NULL instead of
-#: letting the default fire.
-_VERDICT_INSERT_COLUMNS = [c.key for c in sa_inspect(VerdictRow).columns if c.key != "created_at"]
+_SA_INSTANCE_STATE = "_sa_instance_state"
 
 
 def _verdict_values(row: VerdictRow) -> dict[str, Any]:
-    """`row`'s column values as a plain dict, for `insert(VerdictRow)` executed many-at-once."""
-    return {key: getattr(row, key) for key in _VERDICT_INSERT_COLUMNS}
+    """`row`'s explicitly-assigned column values, for `insert(VerdictRow)` executed many-at-once.
+
+    Reads `vars(row)` rather than a fixed column list. On a transient instance that was never
+    `session.add`ed, an attribute nobody assigned is simply absent from `__dict__` -- `verdict_
+    row()` never sets `created_at` (server-side `func.now()`), so it is omitted here too, and
+    SQLAlchemy applies the column's own default for anything missing from the dict, whether
+    that default is server-side (`created_at`) or Python-side (`id`'s `uuid.uuid4`, via
+    `_uuid_pk()` -- see tests/worker/test_batching.py's guard for exactly this). Deriving the
+    key set from the instance rather than a hand-maintained list is what keeps that guarantee
+    even if a future `VerdictRow` column gets a default `verdict_row()` forgets to set.
+    """
+    return {key: value for key, value in vars(row).items() if key != _SA_INSTANCE_STATE}
 
 
 @dataclass
 class _VerdictBatch:
     """Buffers verdict rows so `INSERT INTO verdicts` happens once per `VERDICT_BATCH_SIZE`
-    rows instead of once per tool.
+    rows (or every `flush_interval_s`, whichever comes first) instead of once per tool.
 
-    `scan_events` is untouched by this: one row (and one `pg_notify`, PRD's `scan_events_notify`
-    trigger) per verdict, added and committed only when its verdict row is -- flushing the two
-    together is what keeps "never bank an uncharged verdict" true (tests/integration/
-    test_judge_cost.py): a verdict's ledger charge already landed in this same open transaction
-    (`spend.charge` does not commit) by the time it is buffered here, so a crash before the next
-    flush loses the charge and the row together, and a commit lands both together.
+    The time bound is what keeps a small scan streaming effectively per-tool: the results page
+    and the sieve animation depend on live, per-tool filling (PRD §14.4), and a 27-tool scan
+    that shows nothing until 25 of them land is a product regression, not a performance win. A
+    500-tool scan still batches, because 25 rows accumulate long before the interval elapses.
+
+    `scan_events` is untouched by either trigger: one row (and one `pg_notify`, PRD's
+    `scan_events_notify` trigger) per verdict, added and committed only when its verdict row is
+    -- flushing the two together is what keeps "never bank an uncharged verdict" true
+    (tests/integration/test_judge_cost.py): a verdict's ledger charge already landed in this
+    same open transaction (`spend.charge` does not commit) by the time it is buffered here, so a
+    crash before the next flush loses the charge and the row together, and a commit lands both
+    together.
     """
 
     session: AsyncSession
     scan_id: uuid.UUID
+    #: `settings.verdict_flush_ms / 1000`; the caller supplies it so this class carries no
+    #: literal of its own and a test can pass whatever it needs to exercise the time bound.
+    flush_interval_s: float
     batch_size: int = VERDICT_BATCH_SIZE
     _rows: list[VerdictRow] = field(default_factory=list)
     _payloads: list[dict[str, Any]] = field(default_factory=list)
+    #: `time.monotonic()` when the buffer went from empty to non-empty; `None` while empty.
+    _oldest_pending_at: float | None = field(default=None, init=False, repr=False)
 
     def add(self, row: VerdictRow, payload: dict[str, Any]) -> None:
+        if not self._rows:
+            self._oldest_pending_at = time.monotonic()
         self._rows.append(row)
         self._payloads.append(payload)
 
     async def maybe_flush(self) -> None:
         if len(self._rows) >= self.batch_size:
+            await self.flush()
+            return
+        if (
+            self._oldest_pending_at is not None
+            and time.monotonic() - self._oldest_pending_at >= self.flush_interval_s
+        ):
             await self.flush()
 
     async def flush(self) -> None:
@@ -86,12 +113,13 @@ class _VerdictBatch:
             return
         rows, payloads = self._rows, self._payloads
         self._rows, self._payloads = [], []
+        self._oldest_pending_at = None
         # `render_nulls=True`: without it, the ORM excludes NULL columns per row so each one's
         # server-side default still fires, but `reasoning`/`remediation`/`judge_model` are NULL
         # on every non-judge verdict -- a batch mixing judge and non-judge stages would
-        # otherwise fragment back into one INSERT per row (SQLAlchemy 2.0.23+; verdicts never
-        # rely on server defaults for these columns, so treating their NULLs as ordinary values
-        # is exact, not an approximation).
+        # otherwise fragment back into one INSERT per row (SQLAlchemy 2.0.23+; every column
+        # `_verdict_values` sends a `None` for is one `verdict_row()` set explicitly to `None`,
+        # never a stand-in for "unset", so treating it as an ordinary value is exact).
         await self.session.execute(
             insert(VerdictRow).execution_options(render_nulls=True),
             [_verdict_values(r) for r in rows],
@@ -279,7 +307,7 @@ async def _triage(session: AsyncSession, scan_id: uuid.UUID, loaded: _Loaded) ->
     deps = _deps(spend.budget_gate(session, loop))
     spent = Decimal(0)
     sources: set[str] = set()
-    batch = _VerdictBatch(session, scan_id)
+    batch = _VerdictBatch(session, scan_id, flush_interval_s=settings.verdict_flush_ms / 1000)
 
     async def persist(record_id: str, result: TriageResult) -> None:
         nonlocal spent
@@ -310,14 +338,27 @@ async def _triage(session: AsyncSession, scan_id: uuid.UUID, loaded: _Loaded) ->
     def on_result(record_id: str, result: TriageResult) -> None:
         asyncio.run_coroutine_threadsafe(persist(record_id, result), loop).result()
 
-    results = await asyncio.to_thread(
-        triage_many,
-        loaded.records,
-        loaded.findings_by_id,
-        deps,
-        on_result=on_result,
-        judge_budget=settings.judge_max_calls_per_scan,
-    )
+    try:
+        results = await asyncio.to_thread(
+            triage_many,
+            loaded.records,
+            loaded.findings_by_id,
+            deps,
+            on_result=on_result,
+            judge_budget=settings.judge_max_calls_per_scan,
+        )
+    except Exception:
+        # Whatever is still pending here was already computed and, if judged, already charged
+        # in this same open transaction (the verdict that actually failed is never added to the
+        # batch -- its charge raises inside `persist` before `batch.add` runs) -- so this can
+        # only flush fully-paid-for rows, never bank the one that blew up. Flushing them rather
+        # than letting `run`'s rollback discard them is what keeps a failed scan showing the
+        # real progress it made instead of nothing at all (PRD §14.4). Best-effort: if the flush
+        # itself is what is failing (e.g. the connection is what died), there is nothing left to
+        # save, and the original exception is what `run` needs to see either way.
+        with contextlib.suppress(Exception):
+            await batch.flush()
+        raise
     await batch.flush()
     return _Triaged(
         results=results,

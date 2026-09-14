@@ -35,6 +35,12 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     snyk_max_invocations: int = 25
     web_origin: str = Field(default="http://localhost:3000", validation_alias="WEB_ORIGIN")
+    # Task 11.2: the worker's verdict-insert batching (`sieve.worker.scan_job._VerdictBatch`) is
+    # bounded by size (25 rows) AND time, so a small scan still fills the results page and the
+    # sieve animation per tool (PRD §14.4) instead of waiting for a 25-row batch that a short
+    # scan may never reach. This is the only place the interval is defined; the worker reads it,
+    # never a literal.
+    verdict_flush_ms: int = 250
 
 
 settings = Settings()
