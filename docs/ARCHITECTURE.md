@@ -222,7 +222,7 @@ injection gate and the un-pinned artefact digest among them.
   alone. `make help` lists every target.
 - **Deployed:** the API and worker as Fly apps (`fly.toml`, plus `fly.sandbox.toml` for the
   sandboxed worker), the web app on Vercel. Rollback is a redeploy of a previous image tag.
-  [`deploy.md`](deploy.md) has the whole procedure and the full environment-variable table.
+  [`docs/deploy.md`](deploy.md) has the whole procedure and the full environment-variable table.
 - **CI** (`.github/workflows/ci.yml`): a fast test job with an 85% coverage floor, a blocking
   dependency audit, a model job for the slow training tests, a web job (lint, design-token gate,
   contrast gate, type check, build, bundle check), Playwright end-to-end against both a mocked

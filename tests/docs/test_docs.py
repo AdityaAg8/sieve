@@ -17,6 +17,7 @@ README = REPO / "README.md"
 THREAT_MODEL = REPO / "THREAT_MODEL.md"
 ADR_DIR = REPO / "docs" / "adr"
 WRITEUP = REPO / "docs" / "writeup.md"
+ARCHITECTURE = REPO / "docs" / "ARCHITECTURE.md"
 
 LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 TEST_REFERENCE = re.compile(r"`(tests/[^`]+?)`")
@@ -33,7 +34,7 @@ def _pending(text: str) -> set[str]:
 
 
 def _docs() -> list[Path]:
-    return [README, THREAT_MODEL, WRITEUP, *sorted(ADR_DIR.glob("*.md"))]
+    return [README, THREAT_MODEL, WRITEUP, ARCHITECTURE, *sorted(ADR_DIR.glob("*.md"))]
 
 
 @pytest.mark.parametrize("doc", _docs(), ids=lambda p: p.name)
