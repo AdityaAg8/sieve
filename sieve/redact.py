@@ -42,30 +42,73 @@ def redact(text: str) -> tuple[str, list[str]]:
     return out, kinds
 
 
-def _walk(obj: Any, kinds: list[str], key_counter: list[int]) -> Any:
+def _matches_credential(text: str) -> list[str]:
+    """Which `_PATTERNS` kinds fire anywhere in `text`, without rewriting it.
+
+    Used only to decide whether a dict *key* is credential-shaped; `redact()` remains the single
+    function that actually rewrites text, so value-side behaviour is unchanged by this helper.
+    """
+    _, kinds = redact(text)
+    return kinds
+
+
+class _KeyCounter:
+    """Monotonically increasing id for key placeholders, shared across one `redact_tool` call.
+
+    Numbers are handed out in first-seen (pre-order DFS) order and never reused -- including a
+    number skipped by `_next_key_placeholder` because it collided with an existing key -- so
+    numbering stays deterministic for a given input while every placeholder text minted in the
+    call is still guaranteed unique.
+    """
+
+    def __init__(self) -> None:
+        self._value = 0
+
+    def next(self) -> int:
+        self._value += 1
+        return self._value
+
+
+def _next_key_placeholder(counter: _KeyCounter, taken: set[Any]) -> str:
+    """The next `<REDACTED:key:N>` placeholder that collides with none of `taken`.
+
+    PRD SC-7: tool definitions are attacker-controlled, so a schema can plant a literal key that
+    already looks like a placeholder (e.g. `<REDACTED:key:1>`) beside a genuinely
+    credential-shaped one. Without this check, whichever entry `_walk` processes second would
+    silently overwrite the other via plain dict assignment -- evidence suppression in a triage
+    tool. `taken` must be the union of the object's original key set (covers a not-yet-visited
+    literal sibling later in the same dict) and the keys already written into the rebuilt dict
+    (covers a placeholder minted earlier for an earlier sibling in this same dict); the caller is
+    responsible for passing both.
+    """
+    while True:
+        candidate = f"<REDACTED:key:{counter.next()}>"
+        if candidate not in taken:
+            return candidate
+
+
+def _walk(obj: Any, kinds: list[str], counter: _KeyCounter) -> Any:
     if isinstance(obj, str):
         red, k = redact(obj)
         kinds.extend(k)
         return red
     if isinstance(obj, dict):
-        out: dict[Any, Any] = {}
+        out: dict[str, Any] = {}
+        original_keys = set(obj.keys())
         for key, value in obj.items():
-            new_key: Any = key
+            new_key = key
             if isinstance(key, str):
-                _, key_kinds = redact(key)
+                key_kinds = _matches_credential(key)
                 if key_kinds:
-                    # A credential-shaped key (e.g. an AWS key used as a JSON-schema property
-                    # name, F9) is replaced wholesale rather than patched in place: a partial
-                    # substitution could still collide with a sibling key, and the placeholder
-                    # must stay a clean, valid object key on its own. The counter is shared
-                    # across the whole `redact_tool` call so two redacted keys never collide.
+                    # Replaced wholesale rather than patched in place: a partial substitution
+                    # could still collide with a sibling key, and the placeholder must stand on
+                    # its own as a clean, valid object key.
                     kinds.extend(key_kinds)
-                    key_counter[0] += 1
-                    new_key = f"<REDACTED:key:{key_counter[0]}>"
-            out[new_key] = _walk(value, kinds, key_counter)
+                    new_key = _next_key_placeholder(counter, original_keys | out.keys())
+            out[new_key] = _walk(value, kinds, counter)
         return out
     if isinstance(obj, list):
-        return [_walk(v, kinds, key_counter) for v in obj]
+        return [_walk(v, kinds, counter) for v in obj]
     return obj
 
 
@@ -76,14 +119,18 @@ def redact_tool(tool: ToolDefinition) -> tuple[ToolDefinition, list[str]]:
     must match TOOL_NAME_RE, so a redaction there would both break joins and fail validation.
 
     A dict key that matches one of `_PATTERNS` (e.g. a JSON-schema property named after an AWS
-    key) is replaced by `<REDACTED:key:N>`, numbered in first-seen order over the whole call so
-    two redacted keys can never collide and the schema stays a valid object. Values are still
-    redacted in place as before. Already-redacted output does not match any pattern, so a second
-    pass is a no-op: redaction is idempotent.
+    key) is replaced by `<REDACTED:key:N>`, `N` assigned in first-seen order over the whole call.
+    The placeholder is chosen to collide with neither the object's original keys nor a
+    placeholder already minted earlier in the same object (`_next_key_placeholder`), so the
+    rebuilt dict never has two logical entries collapse into one -- even against an
+    attacker-supplied schema that plants a literal key shaped like a placeholder (PRD SC-7).
+    Values are still redacted in place as before. Already-redacted output contains no key or
+    value that matches any pattern in `_PATTERNS`, so a second pass changes nothing: redaction is
+    idempotent.
     """
     kinds: list[str] = []
     data = tool.model_dump()
     name = data.pop("name")
-    data = _walk(data, kinds, [0])
+    data = _walk(data, kinds, _KeyCounter())
     data["name"] = name
     return ToolDefinition.model_validate(data), sorted(set(kinds))

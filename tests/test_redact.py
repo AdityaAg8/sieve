@@ -147,3 +147,113 @@ def test_redact_tool_key_redaction_is_idempotent() -> None:
     assert once.model_dump() == twice.model_dump()
     assert kinds_once == ["aws_access_key"]
     assert kinds_twice == []
+
+
+# ----------------------------------- fix round 1: placeholder/literal-key collisions (PRD SC-7)
+
+
+def test_redact_tool_placeholder_never_collides_with_a_literal_key_that_comes_first() -> None:
+    # A schema is attacker-controlled (SC-7): a literal key already shaped like a placeholder can
+    # sit right next to a genuinely credential-shaped one. Whichever is processed second must not
+    # silently overwrite the other's entry (evidence suppression).
+    td = ToolDefinition(
+        name="t",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "<REDACTED:key:1>": {"marker": "literal"},
+                "AKIAIOSFODNN7EXAMPLE": {"marker": "credential"},
+            },
+        },
+    )
+    red, kinds = redact_tool(td)
+    props = red.inputSchema["properties"]
+    assert len(props) == 2, "both entries must survive, not one overwriting the other"
+    assert props["<REDACTED:key:1>"] == {"marker": "literal"}
+    other_keys = [k for k in props if k != "<REDACTED:key:1>"]
+    assert len(other_keys) == 1
+    assert other_keys[0] != "<REDACTED:key:1>"
+    assert props[other_keys[0]] == {"marker": "credential"}
+    assert "aws_access_key" in kinds
+
+
+def test_redact_tool_placeholder_never_collides_with_a_literal_key_that_comes_after() -> None:
+    td = ToolDefinition(
+        name="t",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "AKIAIOSFODNN7EXAMPLE": {"marker": "credential"},
+                "<REDACTED:key:1>": {"marker": "literal"},
+            },
+        },
+    )
+    red, _ = redact_tool(td)
+    props = red.inputSchema["properties"]
+    assert len(props) == 2, "both entries must survive, not one overwriting the other"
+    assert props["<REDACTED:key:1>"] == {"marker": "literal"}
+    other_keys = [k for k in props if k != "<REDACTED:key:1>"]
+    assert len(other_keys) == 1
+    assert props[other_keys[0]] == {"marker": "credential"}
+
+
+def test_redact_tool_skips_past_every_taken_placeholder_number() -> None:
+    td = ToolDefinition(
+        name="t",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "<REDACTED:key:1>": {"marker": "one"},
+                "<REDACTED:key:2>": {"marker": "two"},
+                "AKIAIOSFODNN7EXAMPLE": {"marker": "credential"},
+            },
+        },
+    )
+    red, _ = redact_tool(td)
+    props = red.inputSchema["properties"]
+    assert len(props) == 3
+    assert props["<REDACTED:key:1>"] == {"marker": "one"}
+    assert props["<REDACTED:key:2>"] == {"marker": "two"}
+    assert props["<REDACTED:key:3>"] == {"marker": "credential"}
+
+
+def test_redact_tool_is_idempotent_on_adversarial_placeholder_collisions() -> None:
+    td = ToolDefinition(
+        name="t",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "<REDACTED:key:1>": {"marker": "literal"},
+                "AKIAIOSFODNN7EXAMPLE": {"marker": "credential"},
+            },
+        },
+    )
+    once, _ = redact_tool(td)
+    twice, kinds_twice = redact_tool(once)
+    assert once.model_dump() == twice.model_dump()
+    assert kinds_twice == []
+    # The literal placeholder-shaped key survived the first pass untouched; a second pass must
+    # not rename it either (it still doesn't match any credential pattern).
+    assert once.inputSchema["properties"]["<REDACTED:key:1>"] == {"marker": "literal"}
+
+
+def test_redact_tool_leaves_empty_string_key_untouched() -> None:
+    td = ToolDefinition(
+        name="t",
+        inputSchema={"type": "object", "properties": {"": {"type": "string"}}},
+    )
+    red, kinds = redact_tool(td)
+    assert list(red.inputSchema["properties"].keys()) == [""]
+    assert kinds == []
+
+
+def test_redact_tool_leaves_non_string_key_untouched() -> None:
+    # JSON has no non-string keys, but `inputSchema` is `dict[str, Any]`: pydantic validates only
+    # the top level, so an inner dict (e.g. "properties") can still carry a non-string key as-is.
+    td = ToolDefinition(
+        name="t",
+        inputSchema={"type": "object", "properties": {1: {"type": "string"}}},
+    )
+    red, kinds = redact_tool(td)
+    assert list(red.inputSchema["properties"].keys()) == [1]
+    assert kinds == []
