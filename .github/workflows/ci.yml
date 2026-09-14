@@ -28,7 +28,13 @@ jobs:
       - run: >
           uv run pytest -q -m "not slow and not docker and not holdout"
           --cov=sieve --cov-report=xml --cov-fail-under=60
-      - run: uv run pip-audit || true   # informational until Phase 4 makes it blocking
+      # Blocking as of Task 11.1 (PRD §22). `pip-audit` reports PYSEC/GHSA ids and carries no
+      # severity of its own, so there is no `--audit-level` to set: the gate is *any* advisory
+      # against the environment the `uv sync` above built, which is strictly stronger than
+      # "high and critical only". Accepted advisories, if there ever are any, go in an explicit
+      # `--ignore-vuln <ID>` list here and in THREAT_MODEL.md's residual risks -- never behind
+      # `|| true`, which accepts everything including the ones nobody has read.
+      - run: uv run pip-audit
   model:
     # Model extras are ~2 GB and the slow tests train a real (tiny) model. Runs on a `model`-labelled
     # PR and on the weekly schedule, never on every push.
@@ -51,6 +57,12 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
       - run: npm ci
+      # Blocking for high and critical as of Task 11.1 (PRD §22). `--audit-level` sets the exit
+      # code only; `--omit=dev` is what makes the gate meaningful rather than noisy, because the
+      # devDependencies are build and measurement tools (`@lhci/cli` and its Puppeteer tree) that
+      # never reach a browser, and npm's only "fix" for them is a major downgrade. Everything
+      # under `dependencies` -- the code that is actually served -- is audited.
+      - run: npm audit --audit-level=high --omit=dev
       - run: npm run lint && npm run lint:tokens && npm run lint:contrast && npx tsc --noEmit
       - run: npm test
       # `postbuild` runs scripts/check-no-msw.mjs; `lint:bundle` repeats it so the step that

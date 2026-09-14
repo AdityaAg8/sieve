@@ -146,9 +146,21 @@ log filter (row 11) is the second half of the same rule.
 
 `uv.lock` and `package-lock.json` are committed; scanner versions are pinned in
 `bench/versions.lock`; three compiled wheels are capped one release below the versions Windows
-Smart App Control blocks (`lessons.md`). `pip-audit` runs in CI but is **informational**
-(`|| true` in `.github/workflows/ci.yml`); PRD §22 makes it blocking for high and critical in
-Phase 4, and it is not blocking today.
+Smart App Control blocks (`lessons.md`).
+
+Both audits **block** as of Task 11.1 (PRD §22). In `.github/workflows/ci.yml`, `pip-audit` runs
+without `|| true` and `npm audit --audit-level=high --omit=dev` runs in the `web` job. Two notes
+on what those gates actually mean:
+
+- `pip-audit` reports PYSEC and GHSA ids and carries no severity of its own, so there is no
+  `--audit-level` to set. The gate is therefore *any* advisory against the environment the job's
+  `uv sync` builds, which is stricter than "high and critical only". An accepted advisory would
+  have to be named in an explicit `--ignore-vuln` list beside the step and repeated below; there
+  are none today, and the CI dependency set audits clean.
+- `npm audit` is scoped to `--omit=dev`, so it gates the code that is actually served. The
+  devDependencies are build and measurement tools — `@lhci/cli` and the Puppeteer tree under it
+  — whose 7 high advisories npm can only "fix" by a major downgrade to `@lhci/cli@0.1.0`. That is
+  recorded as residual risk 8 rather than papered over with a downgrade nobody wants.
 
 ### Install-time code execution in corpus capture
 
@@ -161,42 +173,131 @@ been run on this machine: no Docker daemon was available, so the real capture te
 
 ## Residual risks
 
-Open, known, and deliberately not fixed inside Phase 3. Each is a decision a reviewer may
-disagree with, which is why each names the code rather than a feeling.
+Open, known, and deliberately not fixed. Each is a decision a reviewer may disagree with, which
+is why each names the code rather than a feeling. Task 11.1's security review owns this section.
 
-1. **`ip_hash` is a bare salted SHA-256**, not a KDF (`sieve/api/ratelimit.py`, PRD §13.2). The IP
-   space is small enough to enumerate against a known salt. The salt is per deployment and the
-   hash is only used for quotas and feedback attribution, but a reviewer would be right to ask for
-   a slow hash or a rotating salt. Task 11.1 owns the decision.
-2. **`socket.getaddrinfo` in the SSRF guard is a blocking call on the worker's event loop**
-   (`sieve/worker/ssrf.py`). A slow or hostile resolver stalls the loop; the 10 s deadline bounds
-   the fetch, not the resolution.
-3. **`server_instructions` is not redacted on the scanner-adapter path.**
-   `sieve/adapters/_scanner_common.py::redacted_records` redacts the tool and then copies
-   `server_instructions` through verbatim, so a credential pasted into a server's instructions
-   reaches an injected scanner runner unredacted. The pipeline and the judge client do redact it.
-4. **Judge spend is charged from a positional read of `last_usage`.**
+### Closed by the Task 11.1 review
+
+Kept rather than deleted: "we looked at this and fixed it" is a different claim from "nobody
+ever raised it", and a reader coming from an older copy of this document deserves to find out
+which one applies. Each line names the test that holds it now.
+
+- **`ip_hash` was a bare salted SHA-256** (`sieve/api/ratelimit.py`, PRD §13.2, Phase 3 item 1).
+  It is now `HMAC-SHA256(key=SIEVE_IP_HASH_SALT, message=ip)`. The ruling asked for a reason
+  either way, so: a KDF was rejected. The message is an IP address, so the space is ~2^32 and a
+  slow hash adds no entropy to it — an Argon2 tuned to 100 ms buys about five bits of work
+  against an attacker who wants one address confirmed, and costs that 100 ms on every request
+  `hit()` serves, which is a self-inflicted denial of service on the code path whose whole job is
+  preventing one. What protects the pseudonym is that the key is secret and per deployment, and
+  the primitive for "secret key, public message" is a MAC: `sha256(key ‖ message)` is
+  length-extendable and has no proof in this role, HMAC has both. A second, smaller hole went
+  with it: the salt ships as a placeholder, so a deployment that never set it was pseudonymising
+  under a value anyone can read out of this repository. That is now a warning at start-up, not a
+  refusal, because a checkout that will not boot is not a control anyone keeps.
+  `tests/api/test_ratelimit.py::test_the_ip_hash_is_salted_and_never_the_raw_ip`,
+  `tests/api/test_ratelimit.py::test_the_shipped_default_salt_is_said_out_loud_at_startup`.
+- **`socket.getaddrinfo` blocked the worker's event loop** (`sieve/worker/ssrf.py`, Phase 3
+  item 2). `check_url` is now a coroutine resolving through `loop.getaddrinfo` under its own
+  five-second deadline, so an attacker-chosen nameserver can no longer hold the loop — and the
+  heartbeat that keeps this worker's job lease alive — for as long as it pleases.
+  `tests/worker/test_ssrf.py::test_a_slow_resolver_does_not_stall_the_event_loop`,
+  `tests/worker/test_ssrf.py::test_a_resolver_that_never_answers_is_refused_on_the_deadline`.
+  What is *not* closed is below, as risk 1.
+- **`server_instructions` escaped redaction on two paths** (Phase 3 item 3). The known one was
+  `sieve/adapters/_scanner_common.py`; the review found a second, in `sieve/judge/client.py`,
+  which redacted `record.tool` and copied the instructions beside it straight into the block it
+  sends to the Anthropic API. The pipeline redacts upstream of the judge, so the second needed a
+  caller reaching the judge directly — `bench`, the MCP surface, the injection suite — but SC-5
+  reads "before any API call", not "before most of them".
+  `tests/judge/test_client.py::test_server_instructions_are_redacted_before_the_block_is_rendered`,
+  `tests/adapters/test_scanner_common.py::test_redacted_records_redacts_server_instructions_too`.
+- **`Idempotency-Key` was a second, unauthenticated name for a scan.** New in this review. There
+  are no accounts, so an unguessable id is the only thing between a scan and anyone who asks;
+  the header was globally unique and client-chosen, so a guessed value returned whoever had
+  claimed it first. It is now namespaced by the caller's own address hash and length-bounded.
+  `tests/api/test_scans.py::test_an_idempotency_key_is_scoped_to_the_client_that_chose_it`.
+- **SSE streams were unbounded.** New in this review. Reads are unlimited by design (row 13), but
+  a live stream is not a read: each holds a dedicated `LISTEN` connection outside the pool and
+  outside every per-IP quota, so one known scan id exhausted Postgres from one host and took the
+  rate-limited routes down with it. Capped process-wide in `sieve/api/sse.py`, refused with 503.
+  `tests/api/test_sse.py::test_concurrent_streams_are_capped_and_the_slots_come_back`.
+- **A failure message was an unredacted, unbounded writer.** New in this review. `scans.error` is
+  stored, returned by `GET /scans/{id}` *and* streamed on `scan.failed`, and it was built from
+  `f"{type(exc).__name__}: {exc}"` — a string the libraries on that path fill with the input they
+  rejected, which is attacker-controlled tool text (SC-7). `sieve/worker/errors.py` now redacts
+  and bounds it, as it does `jobs.last_error`.
+  `tests/integration/test_secret_never_logged.py::test_a_secret_inside_a_failure_message_is_redacted_before_it_is_stored`,
+  `tests/worker/test_main.py::test_a_credential_in_an_exception_never_reaches_jobs_last_error`.
+- **`pip-audit` did not block** (Phase 3 item 6). It does now, as does `npm audit`; see
+  "Dependency risk" above for what each gate covers.
+
+The end-to-end claim those redaction fixes add up to — paste an AWS key into a tool, press scan,
+and it appears in no row, no `scan_events` payload, no SSE frame, no SARIF document, no outbound
+request body and no log record *at any level, DEBUG included* — is asserted against a live
+database and the real worker by
+`tests/integration/test_secret_never_logged.py::test_a_secret_in_a_tool_description_reaches_no_row_no_event_and_no_log`.
+
+### Open
+
+1. **A hostile resolver can still occupy an executor thread.** Nothing in CPython interrupts a
+   blocking `getaddrinfo`, so when `sieve/worker/ssrf.py`'s deadline fires the coroutine is
+   cancelled and the thread is not. The loop is free, which was the finding; the default executor
+   is not unbounded-safe, and a sustained campaign of never-answering names would still starve it.
+   Accepted: remote scanning is off by default, sandbox-only, behind two gates, and the sandbox
+   runs one job at a time.
+2. **Judge spend is charged from a positional read of `last_usage`.**
    `sieve/api/spend.py::judge_call_cost` reads a mutable attribute the judge set during the call
    that just returned, rather than a cost the call itself returns. One shared judge object used
    concurrently could charge one call's usage to another; today the pipeline is one call at a
-   time per scan. A judge that reports no usage falls back to the PRD §12.4 estimate.
-5. **The judge self-defence gate has never run against a real model.** Rows 2 and the injection
-   section say so. Until it is recorded, Sieve's injection resistance is a design claim.
-6. **`pip-audit` does not block.** See above.
+   time per scan. A judge that reports no usage falls back to the PRD §12.4 estimate. Accepted by
+   ruling in Task 11.1 and re-verified there: changing it means changing the `Judge` protocol in
+   `sieve/protocols.py`, which is a contracts PR, not a security fix.
+3. **`sieve/redact.py` walks values, not keys.** A credential used as a JSON-schema *property
+   name* — `{"properties": {"AKIA…": {...}}}` — is rendered by `sieve/serialise.py` into a
+   `[PARAM]` line and survives into the database, the judge's block and SARIF. Accepted as low:
+   a key is a field name, so this is a place credentials are pasted by accident rather than by
+   habit, and redacting a key would change the schema's shape for every consumer of it. That file
+   is not Task 11.1's to edit (PRD §19); it is handed on as a contracts change.
+4. **A worker failure still tells the client *what* failed.** The message is redacted and bounded
+   now, but it still names the exception type and, for a blocked remote scan, the address a host
+   resolved to. Accepted: the only party who can read a scan's error is the party who created
+   that scan, and an operator with no error text cannot diagnose a failed scan at all.
+5. **Reads have no quota.** `GET /findings` and `GET /sarif` will assemble up to
+   `max_tools_per_scan` findings per request, unlimited times, for anyone holding a scan id.
+   Accepted as the document has accepted it since Phase 3 (row 13); the SSE cap above closes the
+   expensive half of it, which was the half that could take the database with it.
+6. **The judge self-defence gate has never run against a real model.** Row 2 and the injection
+   section say so. Until it is recorded, Sieve's injection resistance is a design claim, and this
+   review changes nothing about that: it is **unmeasured**.
 7. **No artefact digest.** The Hub revision pin is optional and unset; nothing verifies the bytes
    of a downloaded model against a recorded SHA.
-8. **The `real_poisoned` slice and the holdout are tiny.** Every interval published from them is a
-   cluster bootstrap over a small number of servers and is wide by construction. A number with a
-   wide interval is not a claim.
-9. **The Action installs from PyPI, where Sieve is not published.** `.github/workflows/self-scan.yml` fails at that
-   step today (L7 hand-off). Nothing depends on it for security, but a green self-scan badge is
-   not available as evidence.
+8. **Seven high npm advisories live in `web/`'s devDependencies.** All seven resolve to
+   `@lhci/cli` and the Puppeteer tree beneath it (`tmp` GHSA-52f5-9888-hmc6 and
+   GHSA-ph9p-34f9-6g65, `extract-zip` GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3), and npm's
+   only remediation is a major downgrade to `@lhci/cli@0.1.0`. Accepted: Lighthouse CI is a
+   measurement tool that runs in CI and ships nothing to a browser, and the CI gate is scoped to
+   `--omit=dev` for exactly that reason. `npm audit --audit-level=high --omit=dev` reports zero.
+9. **Nine `transformers` advisories are open in the `model` extra.** PYSEC-2025-217,
+   PYSEC-2026-2288, PYSEC-2026-2289, PYSEC-2026-2290 and PYSEC-2026-3929 against
+   `transformers==4.57.6`; every fix version is a `5.x` major. Accepted for now, and *not*
+   suppressed with `--ignore-vuln`: the `model` extra is installed by neither the API image, nor
+   the worker, nor the CI job that runs the blocking audit, so the gate does not need an
+   exception to stay green. Upgrading is the model lane's call, since a major `transformers` bump
+   moves the training path the published numbers come from.
+10. **The `real_poisoned` slice and the holdout are tiny.** Every interval published from them is
+    a cluster bootstrap over a small number of servers and is wide by construction. A number with
+    a wide interval is not a claim.
+11. **The Action installs from PyPI, where Sieve is not published.**
+    `.github/workflows/self-scan.yml` fails at that step today (L7 hand-off). Nothing depends on
+    it for security, but a green self-scan badge is not available as evidence.
 
 <!-- human: rewrite -->
 **Which of these are accepted and which are scheduled** is a judgement call the human owns. The
-agent's reading is that 1 and 3 are small fixes that should land before any public deployment, 2
-matters only under load, 5 blocks publishing any claim about injection resistance, and 6 and 7
-block a release rather than a demo.
+agent's reading after Task 11.1 is that 3 is the only open item that still leaks data and should
+go into the next contracts PR; 9 blocks a release of the model lane rather than of this one; 6
+and 7 block publishing a claim about injection resistance and about artefact integrity
+respectively; and 1, 2, 4, 5 and 8 are bounded by deployment facts that a different deployment
+would invalidate.
 
 ## Out of scope
 
