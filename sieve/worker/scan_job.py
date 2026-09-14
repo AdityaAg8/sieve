@@ -11,11 +11,13 @@ import asyncio
 import logging
 import uuid
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
+from typing import Any
 from urllib.parse import urlsplit
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, insert, select
+from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sieve.api import spend
@@ -36,6 +38,67 @@ from sieve.types import (
 log = logging.getLogger("sieve.worker.scan")
 
 REMOTE_DISABLED = "remote scanning disabled"
+
+#: Task 11.2: a 500-tool scan was issuing 500 round trips for a table that only needs 20. This
+#: is the one authorised knob; the PRD does not pin a number.
+VERDICT_BATCH_SIZE = 25
+
+#: `verdicts.created_at` is server-side only (`func.now()`); `verdict_row()` never sets it, so
+#: a bulk Core INSERT must leave it out too, or it would insert a literal NULL instead of
+#: letting the default fire.
+_VERDICT_INSERT_COLUMNS = [c.key for c in sa_inspect(VerdictRow).columns if c.key != "created_at"]
+
+
+def _verdict_values(row: VerdictRow) -> dict[str, Any]:
+    """`row`'s column values as a plain dict, for `insert(VerdictRow)` executed many-at-once."""
+    return {key: getattr(row, key) for key in _VERDICT_INSERT_COLUMNS}
+
+
+@dataclass
+class _VerdictBatch:
+    """Buffers verdict rows so `INSERT INTO verdicts` happens once per `VERDICT_BATCH_SIZE`
+    rows instead of once per tool.
+
+    `scan_events` is untouched by this: one row (and one `pg_notify`, PRD's `scan_events_notify`
+    trigger) per verdict, added and committed only when its verdict row is -- flushing the two
+    together is what keeps "never bank an uncharged verdict" true (tests/integration/
+    test_judge_cost.py): a verdict's ledger charge already landed in this same open transaction
+    (`spend.charge` does not commit) by the time it is buffered here, so a crash before the next
+    flush loses the charge and the row together, and a commit lands both together.
+    """
+
+    session: AsyncSession
+    scan_id: uuid.UUID
+    batch_size: int = VERDICT_BATCH_SIZE
+    _rows: list[VerdictRow] = field(default_factory=list)
+    _payloads: list[dict[str, Any]] = field(default_factory=list)
+
+    def add(self, row: VerdictRow, payload: dict[str, Any]) -> None:
+        self._rows.append(row)
+        self._payloads.append(payload)
+
+    async def maybe_flush(self) -> None:
+        if len(self._rows) >= self.batch_size:
+            await self.flush()
+
+    async def flush(self) -> None:
+        if not self._rows:
+            return
+        rows, payloads = self._rows, self._payloads
+        self._rows, self._payloads = [], []
+        # `render_nulls=True`: without it, the ORM excludes NULL columns per row so each one's
+        # server-side default still fires, but `reasoning`/`remediation`/`judge_model` are NULL
+        # on every non-judge verdict -- a batch mixing judge and non-judge stages would
+        # otherwise fragment back into one INSERT per row (SQLAlchemy 2.0.23+; verdicts never
+        # rely on server defaults for these columns, so treating their NULLs as ordinary values
+        # is exact, not an approximation).
+        await self.session.execute(
+            insert(VerdictRow).execution_options(render_nulls=True),
+            [_verdict_values(r) for r in rows],
+        )
+        for payload in payloads:
+            self.session.add(ScanEvent(scan_id=self.scan_id, type="tool.verdict", payload=payload))
+        await self.session.commit()
 
 
 @dataclass
@@ -161,10 +224,10 @@ async def run(session: AsyncSession, job: Job) -> None:
         await _finish(session, scan, triaged)
     except Exception as exc:
         detail = f"{type(exc).__name__}: {exc}"
-        # Whatever was half-written when this blew up is discarded first. Without the
-        # rollback, a verdict added but not yet charged (the failure can land between
-        # `session.add` and `spend.charge`) would be flushed by the commit below -- a judged
-        # verdict with no ledger row beside it, the inverse of the PRD §13.2 invariant.
+        # Whatever was half-written when this blew up is discarded first. A verdict row only
+        # becomes durable when its `_VerdictBatch` flush commits, together with the charge that
+        # paid for it (PRD §13.2) -- so the rollback either loses both or neither, never a
+        # judged verdict with no ledger row beside it.
         await session.rollback()
         scan.status = "failed"
         scan.error = detail
@@ -216,22 +279,22 @@ async def _triage(session: AsyncSession, scan_id: uuid.UUID, loaded: _Loaded) ->
     deps = _deps(spend.budget_gate(session, loop))
     spent = Decimal(0)
     sources: set[str] = set()
+    batch = _VerdictBatch(session, scan_id)
 
     async def persist(record_id: str, result: TriageResult) -> None:
         nonlocal spent
         tool_id = loaded.tool_ids[record_id]
         row = verdict_row(tool_id, result)
-        session.add(row)
         if result.stage == "judge":
             # The judge answered this record a moment ago and the loop is sequential, so
             # `last_usage` is this call's usage -- what it actually cost, not the estimate.
             usd, source = spend.judge_call_cost(deps.judge)
-            # One transaction for the verdict and the money it cost (PRD §13.2), so a crash
-            # can neither bank a free judge call nor charge for a verdict that was lost.
+            # Same (still open) transaction the verdict's batch will flush in (PRD §13.2), so a
+            # crash before the next flush can neither bank a free judge call nor charge for a
+            # verdict that was lost -- see `_VerdictBatch`.
             await spend.charge(session, usd)
             spent += Decimal(str(usd))
             sources.add(source)
-        await session.commit()
         record = by_id[record_id]
         finding = Finding(
             id=str(row.id),
@@ -241,7 +304,8 @@ async def _triage(session: AsyncSession, scan_id: uuid.UUID, loaded: _Loaded) ->
             sibling_tool_names=record.sibling_tool_names,
             result=result,
         )
-        await _event(session, scan_id, "tool.verdict", finding.model_dump(mode="json"))
+        batch.add(row, finding.model_dump(mode="json"))
+        await batch.maybe_flush()
 
     def on_result(record_id: str, result: TriageResult) -> None:
         asyncio.run_coroutine_threadsafe(persist(record_id, result), loop).result()
@@ -254,6 +318,7 @@ async def _triage(session: AsyncSession, scan_id: uuid.UUID, loaded: _Loaded) ->
         on_result=on_result,
         judge_budget=settings.judge_max_calls_per_scan,
     )
+    await batch.flush()
     return _Triaged(
         results=results,
         judge_cost_usd=spent,

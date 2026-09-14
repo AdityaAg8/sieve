@@ -19,6 +19,10 @@ MODEL_DIR ?= models/$(PROFILE)-s$(SEED)
 FOLD_DIRS ?= $(MODEL_DIR)/fold0 $(MODEL_DIR)/fold1 $(MODEL_DIR)/fold2 $(MODEL_DIR)/fold3 $(MODEL_DIR)/fold4
 BENCH_CORPUS ?= bench/data/labelled.jsonl
 
+# `bench/latency.py` variables: LATENCY_BASE_URL is the running deployment `make serve` (or a
+# real deployment) answers on; the script's own defaults name everything else (Task 11.2).
+LATENCY_BASE_URL ?= http://127.0.0.1:8000
+
 setup:
 	uv sync --all-extras --group dev
 	cd web && npm ci
@@ -73,6 +77,10 @@ bench:
 	uv run python -m bench.analysis.errors --dirs $(FOLD_DIRS) --corpus $(BENCH_CORPUS) --model-dir $(MODEL_DIR)
 	uv run python -m bench.analysis.judge_agreement
 	uv run python -m bench.demo
+	# Task 11.2: p50/p95/p99 for POST /api/v1/triage against whatever's already running at
+	# LATENCY_BASE_URL (`make serve` in another terminal, or a real deployment) -- 20
+	# concurrent, PRD M6a: never edit bench/results/latency.json by hand.
+	uv run python -m bench.latency --base-url $(LATENCY_BASE_URL)
 
 eval-final:
 	@test -n "$(REASON)" || (echo "make eval-final REASON=\"why the holdout is being opened\"" && exit 2)
