@@ -86,7 +86,11 @@ def test_the_stride_table_is_one_contiguous_block_of_numbered_rows() -> None:
         body.append(line)
     numbers = [int(line.split("|")[1].strip()) for line in body]
     assert numbers == list(range(1, len(numbers) + 1)), f"rows are not 1..n in order: {numbers}"
-    assert len(numbers) == 27, f"the STRIDE-lite table has {len(numbers)} rows, expected 27"
+    # 27 at the end of Phase 3; 28-30 added by fix round 2 (the Action's expression-injection
+    # sink, job-kind routing for remote scans, and `remote_url` validation + redaction). The
+    # count is a tripwire for a row appended without a test beside it -- `test_every_test_named_
+    # in_the_threat_model_exists` above is what actually resolves the names.
+    assert len(numbers) == 30, f"the STRIDE-lite table has {len(numbers)} rows, expected 30"
 
     # And nothing that looks like a row may sit outside the block it belongs to.
     rows_in_file = [line for line in lines if re.match(r"^\| \d+ \| A", line)]
