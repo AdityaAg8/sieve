@@ -43,6 +43,10 @@ MAX_IDLE_S = 300.0
 #: find out what is going on. It is a code constant rather than a setting because the PRD does
 #: not pin a number and a deployment that needs a different one is a deployment whose database
 #: sizing changed too.
+#:
+#: The cap is **per process**, because the counter is. A deployment running uvicorn with
+#: `--workers N` therefore permits `64 * N` listeners and has to divide this number by N, or
+#: raise `max_connections` to match. The demo runs one worker process.
 MAX_CONCURRENT_STREAMS = 64
 
 _live_streams = 0
@@ -159,13 +163,16 @@ async def stream(
     max_idle_s: float = MAX_IDLE_S,
     slot: StreamSlot | None = None,
 ) -> AsyncIterator[ServerSentEvent]:
-    key = uuid.UUID(scan_id)
     cursor = last_event_id or 0
     idle = 0.0
     # `finally` rather than a context manager: this generator is closed three different ways --
     # it returns on a terminal event, it is thrown a `GeneratorExit` when the browser tab shuts,
-    # and it raises if the database goes away. All three have to give the slot back (F4).
+    # and it raises if the database goes away. All three have to give the slot back (F4). The
+    # `UUID` parse is inside it for the same reason: the route has already refused an unparseable
+    # id with a 404, but a slot held by a generator that raised on its first line would be a slot
+    # nothing ever returns.
     try:
+        key = uuid.UUID(scan_id)
         async with _Listener() as listener:
             while True:
                 async with sessions() as session:
