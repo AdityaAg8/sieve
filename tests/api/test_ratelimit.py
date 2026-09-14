@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import hmac
 import json
+import logging
 from pathlib import Path
 
 import pytest
@@ -12,6 +14,7 @@ from httpx import AsyncClient
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from sieve.api.main import DEFAULT_IP_HASH_SALT, create_app
 from sieve.api.ratelimit import WINDOWS, client_ip, hit, ip_hash
 from sieve.config import settings
 from sieve.db.models import RateLimit
@@ -30,10 +33,22 @@ RECORD = {
 
 
 def test_the_ip_hash_is_salted_and_never_the_raw_ip() -> None:
-    """An unsalted hash of a 32-bit space is enumerable in seconds (PRD §13.2)."""
+    """An unsalted hash of a 32-bit space is enumerable in seconds (PRD §13.2).
+
+    Security review 11.1, finding F7: the salt is a *key*, not a per-row salt, so the primitive
+    is HMAC-SHA256 keyed by it rather than `sha256(salt || ip)`. The old construction is also
+    asserted absent, because "we changed it" is the only part of this a future edit could undo
+    by accident.
+    """
     hashed = ip_hash("203.0.113.7")
     assert hashed != hashlib.sha256(b"203.0.113.7").hexdigest()
-    assert hashed == hashlib.sha256((settings.ip_hash_salt + "203.0.113.7").encode()).hexdigest()
+    assert hashed != hashlib.sha256((settings.ip_hash_salt + "203.0.113.7").encode()).hexdigest()
+    assert (
+        hashed
+        == hmac.new(
+            settings.ip_hash_salt.encode("utf-8"), b"203.0.113.7", hashlib.sha256
+        ).hexdigest()
+    )
     assert "203.0.113.7" not in hashed
 
 
@@ -41,6 +56,38 @@ def test_a_different_salt_gives_a_different_hash(monkeypatch: pytest.MonkeyPatch
     first = ip_hash("203.0.113.7")
     monkeypatch.setattr(settings, "ip_hash_salt", "another-deployment")
     assert ip_hash("203.0.113.7") != first
+
+
+def test_the_shipped_default_salt_is_said_out_loud_at_startup(
+    caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A key everyone can read from the repository is not a key (finding F7).
+
+    `ip_hash_salt` defaults to a placeholder so a checkout runs, which means a deployment that
+    never set it pseudonymises every client IP under a value an attacker already has. It cannot
+    be a hard refusal -- `make up` and every test build an app -- so it is a warning that names
+    the variable, and this test is what keeps it from being silently deleted.
+    """
+
+    def warnings() -> list[str]:
+        # The variable name rides in `extra`, which `caplog.text` does not render; the JSON
+        # formatter the deployment actually runs does.
+        return [
+            str(getattr(r, "detail", ""))
+            for r in caplog.records
+            if r.name == "sieve.api" and r.getMessage() == "ip_hash.default_salt"
+        ]
+
+    monkeypatch.setattr(settings, "ip_hash_salt", DEFAULT_IP_HASH_SALT)
+    with caplog.at_level(logging.WARNING, logger="sieve.api"):
+        create_app()
+    assert any("SIEVE_IP_HASH_SALT" in detail for detail in warnings())
+
+    caplog.clear()
+    monkeypatch.setattr(settings, "ip_hash_salt", "a-real-per-deployment-key")
+    with caplog.at_level(logging.WARNING, logger="sieve.api"):
+        create_app()
+    assert warnings() == []
 
 
 class FakeRequest:

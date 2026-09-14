@@ -29,6 +29,64 @@ TERMINAL = frozenset({"scan.completed", "scan.failed"})
 POLL_INTERVAL_S = 1.0
 MAX_IDLE_S = 300.0
 
+#: How many live streams this process will hold at once (security review 11.1, finding F4).
+#:
+#: Reads are unlimited by design (see THREAT_MODEL.md row 13), but a stream is not a read. Each
+#: one holds a **dedicated** psycopg connection for `LISTEN scan_events` for its whole lifetime
+#: -- outside the SQLAlchemy pool, and outside every per-IP quota, because the quotas are on the
+#: three POST routes. Unbounded, one known scan id (the demo's, which is linked from the landing
+#: page) was enough to open connections from a single host until Postgres hit `max_connections`
+#: and *every* route started failing, including the ones that are rate-limited.
+#:
+#: 64 is chosen against Postgres's default `max_connections = 100`: 64 listeners plus the
+#: engine's own pool (5 + 10 overflow) plus the worker's leaves room to connect with `psql` and
+#: find out what is going on. It is a code constant rather than a setting because the PRD does
+#: not pin a number and a deployment that needs a different one is a deployment whose database
+#: sizing changed too.
+MAX_CONCURRENT_STREAMS = 64
+
+_live_streams = 0
+
+
+class StreamsBusyError(RuntimeError):
+    """This process is already holding `MAX_CONCURRENT_STREAMS`. Answered as 503, never queued."""
+
+
+class StreamSlot:
+    """One reservation. Released exactly once, whether the stream ended, failed or was dropped."""
+
+    __slots__ = ("_held",)
+
+    def __init__(self) -> None:
+        self._held = True
+
+    def release(self) -> None:
+        global _live_streams
+        if self._held:
+            self._held = False
+            _live_streams -= 1
+
+
+def acquire_slot() -> StreamSlot:
+    """Reserve a stream, or raise `StreamsBusyError`.
+
+    Taken by the route *before* the response starts, not by `stream()` on its first `__anext__`:
+    an async generator's body does not run until it is iterated, so a check-then-construct in
+    the route would leave a window in which every concurrent request passes the check and none
+    of them has incremented yet. There is no `await` between the test and the increment here, so
+    on a single-threaded event loop this is atomic.
+    """
+    global _live_streams
+    if _live_streams >= MAX_CONCURRENT_STREAMS:
+        raise StreamsBusyError(f"already streaming {_live_streams} scans")
+    _live_streams += 1
+    return StreamSlot()
+
+
+def live_streams() -> int:
+    """How many slots are held right now. For the 503 path and for tests."""
+    return _live_streams
+
 
 def parse_last_event_id(raw: str | None) -> int | None:
     """`Last-Event-ID` is attacker-controlled: a non-integer replays from the start, not a 500."""
@@ -99,25 +157,33 @@ async def stream(
     last_event_id: int | None = None,
     poll_interval_s: float = POLL_INTERVAL_S,
     max_idle_s: float = MAX_IDLE_S,
+    slot: StreamSlot | None = None,
 ) -> AsyncIterator[ServerSentEvent]:
     key = uuid.UUID(scan_id)
     cursor = last_event_id or 0
     idle = 0.0
-    async with _Listener() as listener:
-        while True:
-            async with sessions() as session:
-                rows = await _fetch(session, key, cursor)
-            for row in rows:
-                cursor = row.id
-                idle = 0.0
-                yield ServerSentEvent(
-                    id=str(row.id),
-                    event=row.type,
-                    data=json.dumps(row.payload, ensure_ascii=False),
-                )
-                if row.type in TERMINAL:
+    # `finally` rather than a context manager: this generator is closed three different ways --
+    # it returns on a terminal event, it is thrown a `GeneratorExit` when the browser tab shuts,
+    # and it raises if the database goes away. All three have to give the slot back (F4).
+    try:
+        async with _Listener() as listener:
+            while True:
+                async with sessions() as session:
+                    rows = await _fetch(session, key, cursor)
+                for row in rows:
+                    cursor = row.id
+                    idle = 0.0
+                    yield ServerSentEvent(
+                        id=str(row.id),
+                        event=row.type,
+                        data=json.dumps(row.payload, ensure_ascii=False),
+                    )
+                    if row.type in TERMINAL:
+                        return
+                if idle >= max_idle_s:
                     return
-            if idle >= max_idle_s:
-                return
-            await listener.wait(poll_interval_s)
-            idle += poll_interval_s
+                await listener.wait(poll_interval_s)
+                idle += poll_interval_s
+    finally:
+        if slot is not None:
+            slot.release()

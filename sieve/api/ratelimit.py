@@ -3,14 +3,26 @@
 In Postgres, not in the process: the demo runs more than one process, a restart must not
 reset a quota, and an in-process token bucket gives an attacker a free quota per worker.
 
-`ip_hash = SHA-256(SIEVE_IP_HASH_SALT + client_ip)`. The salt matters: IPv4 is a 32-bit
-space, so an unsalted digest is reversible by enumeration in seconds. The raw IP is never
-stored and never logged (SC-5).
+`ip_hash = HMAC-SHA256(key=SIEVE_IP_HASH_SALT, message=client_ip)`. The salt matters: IPv4 is
+a 32-bit space, so an unsalted digest is reversible by enumeration in seconds. The raw IP is
+never stored and never logged (SC-5).
+
+**Why HMAC and not a KDF** (security review 11.1, finding F7; PRD §13.2's residual risk 1).
+The input is an IP address, so the message space is 2^32 for IPv4 and, in practice, not much
+larger for IPv6. A slow hash cannot fix that: at one hash per microsecond an Argon2 tuned to
+100 ms only buys ~5 log2 bits of work against an attacker who wants *one* address confirmed,
+while costing that same 100 ms on every request `hit()` serves -- a self-inflicted DoS on the
+one code path that exists to prevent DoS. What actually protects the pseudonym is that the
+key is secret and per-deployment, and the primitive for "secret key, public message" is a
+MAC, not a digest of their concatenation: `sha256(key || message)` is a construction with a
+known length-extension weakness and no security proof in this role, and HMAC is the standard
+one that has both. The cost is one extra compression block per request.
 """
 
 from __future__ import annotations
 
 import hashlib
+import hmac
 import math
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -53,7 +65,10 @@ class RateDecision:
 
 
 def ip_hash(ip: str) -> str:
-    return hashlib.sha256((settings.ip_hash_salt + ip).encode("utf-8")).hexdigest()
+    """A keyed pseudonym for one client address. See the module docstring for why HMAC."""
+    return hmac.new(
+        settings.ip_hash_salt.encode("utf-8"), ip.encode("utf-8"), hashlib.sha256
+    ).hexdigest()
 
 
 def client_ip(request: Request) -> str:

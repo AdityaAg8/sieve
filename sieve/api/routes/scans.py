@@ -19,6 +19,35 @@ from sieve.types import ScanCreate, ScanSummary
 
 router = APIRouter(tags=["scans"])
 
+#: `scans.idempotency_key` is a unique-indexed `Text` column, so an unbounded header is free
+#: write volume against an index. 255 bytes is well past any real client's key.
+MAX_IDEMPOTENCY_KEY_BYTES = 255
+
+
+def _scoped_idempotency_key(request: Request) -> str | None:
+    """The `Idempotency-Key` header, namespaced by the caller's own address hash.
+
+    Security review 11.1, finding F3 (OWASP API1, CWE-639). There is no authentication here by
+    design, which means an unguessable scan id is the only thing standing between a scan and
+    anyone who asks for it. A globally unique, client-chosen `Idempotency-Key` was a *second*
+    name for the same row: POSTing a guessed key (`1`, `test`, a build number) returned whoever
+    had claimed it first, id and counts included, and the id is the whole findings page.
+
+    Namespacing by `ip_hash` keeps the property idempotency is for -- the client that made a
+    scan replays its own -- and removes the one it was never meant to have. Note the limit of
+    the scope: behind a proxy with `SIEVE_TRUST_PROXY=false` every caller hashes to the proxy's
+    address and shares one namespace again, exactly as the per-IP quotas already do.
+    """
+    raw = request.headers.get("Idempotency-Key")
+    if not raw:
+        return None
+    if len(raw.encode("utf-8")) > MAX_IDEMPOTENCY_KEY_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Idempotency-Key is at most {MAX_IDEMPOTENCY_KEY_BYTES} bytes",
+        )
+    return f"{ratelimit.ip_hash(ratelimit.client_ip(request))}:{raw}"
+
 
 @router.post("/scans", status_code=202, response_model=ScanSummary)
 async def create_scan(
@@ -29,6 +58,8 @@ async def create_scan(
     session: AsyncSession = Depends(get_session),
 ) -> ScanSummary:
     await ratelimit.enforce(request, session, "scans_min", "scans_day")
+    # Read before the body is parsed: a malformed header is answered without paying for ingest.
+    key = _scoped_idempotency_key(request)
     try:
         data = ingest(req)
     except IngestError as exc:
@@ -42,7 +73,6 @@ async def create_scan(
             detail=f"a scan carries at most {settings.max_tools_per_scan} tools",
         )
 
-    key = request.headers.get("Idempotency-Key")
     if key:
         existing = await store.get_by_idempotency_key(key)
         if existing is not None:
@@ -90,8 +120,19 @@ async def scan_events(
     if await store.get_scan(scan_id) is None:
         raise HTTPException(status_code=404, detail="scan not found")
     last = sse.parse_last_event_id(request.headers.get("Last-Event-ID"))
+    # A live stream holds a dedicated Postgres LISTEN connection, so the number of them is
+    # capped process-wide (security review 11.1, finding F4). Reserved here, before the response
+    # starts, so the refusal is a 503 a client can retry rather than a half-opened stream.
+    try:
+        slot = sse.acquire_slot()
+    except sse.StreamsBusyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="too many live event streams; retry shortly or poll /findings",
+            headers={"Retry-After": "5"},
+        ) from exc
     return EventSourceResponse(
-        sse.stream(session_factory(), scan_id, last_event_id=last),
+        sse.stream(session_factory(), scan_id, last_event_id=last, slot=slot),
         media_type="text/event-stream",
     )
 

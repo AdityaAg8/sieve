@@ -6,9 +6,12 @@ import json
 from pathlib import Path
 from typing import Any
 
+import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from sieve.api.routes.scans import MAX_IDEMPOTENCY_KEY_BYTES
+from sieve.config import settings
 from sieve.worker import scan_job
 from sieve.worker.main import run_once
 
@@ -127,6 +130,49 @@ async def test_a_different_idempotency_key_creates_a_new_scan(api: AsyncClient) 
     first = await api.post("/api/v1/scans", json=body, headers={"Idempotency-Key": "k1"})
     second = await api.post("/api/v1/scans", json=body, headers={"Idempotency-Key": "k2"})
     assert first.json()["id"] != second.json()["id"]
+
+
+async def test_an_idempotency_key_is_scoped_to_the_client_that_chose_it(
+    api: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Security review 11.1, finding F3 (OWASP API1, CWE-639).
+
+    There are no accounts, so an unguessable scan id is the only thing between a scan and
+    anyone who asks for it. `Idempotency-Key` used to be a second name for the same row --
+    globally unique, client-chosen and unauthenticated -- so `Idempotency-Key: 1` handed back
+    whoever had claimed that key first, id and counts included, and from the id the whole
+    findings page follows. Namespacing the key by the caller's own address hash keeps replay
+    working for the client that made the scan and makes a guessed key useless to anyone else.
+    """
+    monkeypatch.setattr(settings, "trust_proxy", True)
+    body = {"source_type": "tools_json", "tools_json": TOOLS}
+
+    def post(ip: str) -> object:
+        return api.post(
+            "/api/v1/scans",
+            json=body,
+            headers={"Idempotency-Key": "shared", "X-Forwarded-For": ip},
+        )
+
+    mine = await post("198.51.100.1")  # type: ignore[misc]
+    theirs = await post("203.0.113.9")  # type: ignore[misc]
+    assert (mine.status_code, theirs.status_code) == (202, 202), "neither is a replay of the other"
+    assert mine.json()["id"] != theirs.json()["id"]
+
+    replay = await post("198.51.100.1")  # type: ignore[misc]
+    assert replay.status_code == 200, "the client that chose the key still replays its own scan"
+    assert replay.json()["id"] == mine.json()["id"]
+
+
+async def test_an_oversized_idempotency_key_is_400_not_a_row(api: AsyncClient) -> None:
+    """The key is stored in a unique-indexed column; an unbounded header is free write volume."""
+    body = {"source_type": "tools_json", "tools_json": TOOLS}
+    response = await api.post(
+        "/api/v1/scans",
+        json=body,
+        headers={"Idempotency-Key": "k" * (MAX_IDEMPOTENCY_KEY_BYTES + 1)},
+    )
+    assert response.status_code == 400
 
 
 async def test_too_many_tools_is_413(api: AsyncClient) -> None:
