@@ -108,7 +108,10 @@ def test_judge_flag_is_computed_once_and_reused() -> None:
     assert len(triage_steps) == 2
     for step in triage_steps:
         assert "JUDGE_INPUT" not in step["run"]  # resolved once, upstream, not duplicated here
-        assert "steps.judge-flag.outputs.flag" in step["run"]  # ...and reused from there
+        # ...and reused from there. Through `env:` since fix round 2's C1: no `run:` body on this
+        # action interpolates an expression any more, step outputs included.
+        assert step["env"]["JUDGE_FLAG"] == "${{ steps.judge-flag.outputs.flag }}"
+        assert "$JUDGE_FLAG" in str(step["run"])
     resolve_step = _step(doc, "Resolve judge flag")
     assert resolve_step["env"]["JUDGE_INPUT"] == "${{ inputs.judge }}"
 
@@ -117,6 +120,58 @@ def test_comment_step_only_runs_on_pull_request() -> None:
     doc = _load()
     comment_step = _step(doc, "Comment on the pull request")
     assert "github.event_name == 'pull_request'" in comment_step["if"]
+
+
+def test_no_run_body_interpolates_a_github_expression() -> None:
+    """Fix round 2, C1: `${{ … }}` is substituted into the script *text* before bash parses it.
+
+    The surrounding double quotes do not help -- `$( … )` and backticks run inside them -- so a
+    caller who wires an input to event-derived data gets command execution in their own runner.
+    Every value reaches a `run:` body through `env:` instead, which bash expands as data.
+    """
+    doc = _load()
+    offenders = [
+        str(step.get("name"))
+        for step in doc["runs"]["steps"]
+        if "run" in step and "${{" in str(step["run"])
+    ]
+    assert not offenders, f"steps interpolating an expression into a `run:` body: {offenders}"
+
+
+def test_tools_input_is_declared_optional_and_reaches_both_triage_steps() -> None:
+    """Fix round 2, M5: the realistic CI usage is a committed `tools/list` dump, because SC-1
+    forbids spawning the configured server and a config alone carries no tool definitions."""
+    doc = _load()
+    assert "tools" in doc["inputs"], "action.yml declares no `tools` input"
+    assert not doc["inputs"]["tools"].get("required")
+    assert doc["inputs"]["tools"]["default"] == ""
+    triage_steps = [s for s in doc["runs"]["steps"] if str(s.get("name", "")).startswith("Triage")]
+    assert len(triage_steps) == 2
+    for step in triage_steps:
+        assert step["env"]["TOOLS"] == "${{ inputs.tools }}"
+        assert "$TOOLS" in str(step["run"])
+
+
+def test_the_action_says_out_loud_that_a_config_only_run_reports_zero_tools() -> None:
+    """Fix round 2, M5: PRD §15.2's worked example reads as though a config produces findings."""
+    doc = _load()
+    prose = f"{doc['description']} {doc['inputs']['config']['description']}"
+    assert "reports zero tools" in prose, prose
+    readme = (ACTION_YML.parents[1] / "README.md").read_text(encoding="utf-8")
+    assert "reports zero tools" in readme
+
+
+def test_self_scan_gates_the_sarif_upload_and_the_comment_on_a_non_fork_pr() -> None:
+    """Fix round 2, M4: a fork PR gets a read-only token, so both writes would fail.
+
+    Gated rather than moved to `pull_request_target`, which would check out and run the fork's
+    own code with a writable token -- the very thing C1 is about.
+    """
+    doc = yaml.safe_load(SELF_SCAN_YML.read_text(encoding="utf-8"))
+    action_step = next(s for s in doc["jobs"]["sieve"]["steps"] if s.get("uses") == "./action")
+    gate = "${{ github.event.pull_request.head.repo.fork == false }}"
+    assert action_step["with"]["upload-sarif"] == gate
+    assert action_step["with"]["comment"] == gate
 
 
 def test_self_scan_workflow_parses_and_uses_the_local_action() -> None:

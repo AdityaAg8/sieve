@@ -108,8 +108,10 @@ def _ingest(
         if config is not None:
             text = ingest.read_text(str(config))
             doc = ingest.load_json(text, what=str(config))
-            ingest.parse_static_config(doc)  # validated, then discarded: parse-only (SC-1)
-            return [], {}, "mcp_config", str(config)
+            ingest.parse_static_config(doc)  # validates the shape; parse-only (SC-1)
+            # Only what the config declares for itself: SC-1 forbids starting a server to ask
+            # it, so a config that declares no `tools` array triages nothing (PRD §15.2).
+            return ingest.declared_tools(doc), {}, "mcp_config", str(config)
 
         assert input_arg is not None  # the mutual-exclusion checks above guarantee this
         text = ingest.read_text(input_arg)
@@ -244,8 +246,9 @@ def triage(
 
     if not records:
         # Nothing to score: skip the classifier/judge/API entirely rather than paying for a
-        # model load (or the one `--offline` download) that would classify zero texts. The
-        # `--config --static` path (SC-1: always zero tools) hits this on every invocation.
+        # model load (or the one `--offline` download) that would classify zero texts. A
+        # `--config --static` run over a config that declares no tools (SC-1: nothing is
+        # started to enumerate them) hits this on every invocation.
         results: list[TriageResult] = []
     else:
         try:

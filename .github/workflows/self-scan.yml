@@ -15,5 +15,9 @@ jobs:
           config: fixtures/mcp-config/sample.mcp.json
           sieve-version: local
           fail-on: confirmed
-          upload-sarif: true
-          comment: true
+          # A fork PR's GITHUB_TOKEN is read-only whatever `permissions:` above asks for, so
+          # both writes would fail the job on every outside contribution. Gated rather than
+          # moved to `pull_request_target`, which would run the fork's own code with a writable
+          # token -- the injection shape this action's C1 fix exists to close.
+          upload-sarif: ${{ github.event.pull_request.head.repo.fork == false }}
+          comment: ${{ github.event.pull_request.head.repo.fork == false }}

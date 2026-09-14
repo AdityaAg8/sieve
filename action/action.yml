@@ -1,11 +1,15 @@
 name: "Sieve triage"
-description: "Triage an MCP server's tools for prompt-injection and tool-poisoning risk (SC-1: parses the config only, never spawns the server). Run actions/checkout before this action -- sieve-version: local needs the repo already checked out, and the composite steps below are loaded from it either way."
+description: "Triage an MCP server's tools for prompt-injection and tool-poisoning risk (SC-1: parses the config only, never spawns the server, so a config-only run reports zero tools unless the config declares a `tools` array -- pass `tools:` a committed tools/list dump to triage a real tool set). Run actions/checkout before this action -- sieve-version: local needs the repo already checked out, and the composite steps below are loaded from it either way."
 author: "Sieve"
 
 inputs:
   config:
-    description: "Path to the MCP config (mcp.json) to parse, relative to the repo root."
+    description: "Path to the MCP config (mcp.json) to parse, relative to the repo root. Parsed, never executed, so it contributes only the tools it declares statically; a config that declares none reports zero tools (SC-1) -- use `tools` for a real tool set."
     required: true
+  tools:
+    description: "Optional path to a committed tools/list JSON dump (the output of an MCP tools/list call). When set, this is what is triaged and `config` is ignored -- the only way a CI run can report findings without Sieve running the server (SC-1)."
+    required: false
+    default: ""
   sieve-version:
     description: >
       What to install: a PyPI version (e.g. "0.1.0"), the literal string "local" to install
@@ -38,6 +42,11 @@ inputs:
 runs:
   using: "composite"
   steps:
+    # Every `${{ … }}` below reaches its script through `env:`, never through the `run:` body.
+    # An expression is substituted into the script *text* before bash parses it, so `$( … )` and
+    # backticks inside a caller-supplied input execute -- with the caller's own GITHUB_TOKEN --
+    # even when the reference sits inside double quotes. As an environment variable the same
+    # value is data that bash expands, and never text bash parses.
     - name: Install uv
       uses: astral-sh/setup-uv@v5
 
@@ -71,9 +80,17 @@ runs:
       shell: bash
       env:
         ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+        CONFIG: ${{ inputs.config }}
+        TOOLS: ${{ inputs.tools }}
+        JUDGE_FLAG: ${{ steps.judge-flag.outputs.flag }}
       run: |
-        sieve triage --config "${{ inputs.config }}" --static --offline --format sarif \
-          --output sieve.sarif --fail-on never ${{ steps.judge-flag.outputs.flag }}
+        if [ -n "$TOOLS" ]; then
+          set -- "$TOOLS"
+        else
+          set -- --config "$CONFIG" --static
+        fi
+        sieve triage "$@" --offline --format sarif \
+          --output sieve.sarif --fail-on never $JUDGE_FLAG
 
     - name: Upload SARIF to Code Scanning
       if: inputs.upload-sarif == 'true'
@@ -86,12 +103,22 @@ runs:
       shell: bash
       env:
         GITHUB_TOKEN: ${{ github.token }}
-      run: python "${{ github.action_path }}/comment.py" sieve.sarif
+        ACTION_PATH: ${{ github.action_path }}
+      run: python "$ACTION_PATH/comment.py" sieve.sarif
 
     - name: Triage (exit code)
       shell: bash
       env:
         ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+        CONFIG: ${{ inputs.config }}
+        TOOLS: ${{ inputs.tools }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        JUDGE_FLAG: ${{ steps.judge-flag.outputs.flag }}
       run: |
-        sieve triage --config "${{ inputs.config }}" --static --offline \
-          --fail-on "${{ inputs.fail-on }}" ${{ steps.judge-flag.outputs.flag }}
+        if [ -n "$TOOLS" ]; then
+          set -- "$TOOLS"
+        else
+          set -- --config "$CONFIG" --static
+        fi
+        sieve triage "$@" --offline \
+          --fail-on "$FAIL_ON" $JUDGE_FLAG

@@ -105,6 +105,7 @@ and `sieve/cli/app.py::_resolve_exit_code` documents that reading.
 - uses: ./action   # a published `owner/sieve-action@v1` reference does not exist yet
   with:
     config: .mcp.json
+    tools: .github/sieve/tools-list.json   # optional, and the only way to get findings
     fail-on: confirmed
     upload-sarif: "true"
 ```
@@ -113,6 +114,14 @@ The composite action in [`action/`](action/action.yml) installs the CLI, runs it
 mode, uploads SARIF to Code Scanning and posts a PR comment. It installs `sieve` from PyPI, where
 Sieve is **not published yet**, so `.github/workflows/self-scan.yml` fails at that step today
 (L7 hand-off).
+
+**A config-only run reports zero tools**, unless the config declares a `tools` array of its own.
+That is SC-1, not a gap: listing a server's tools means running it, and Sieve never runs a server
+it is asked to scan. So `config:` on its own is a provenance check — it says which servers a repo
+wires up, and confirms the file parses — and `fail-on` can never fire from it. To triage a real
+tool set in CI, commit a `tools/list` dump and point `tools:` at it; that path produces findings,
+SARIF locations and a PR comment. The same asymmetry is recorded in
+[`THREAT_MODEL.md`](THREAT_MODEL.md) row 24.
 
 ### MCP server
 

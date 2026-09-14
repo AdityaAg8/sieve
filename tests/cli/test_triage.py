@@ -16,6 +16,7 @@ import huggingface_hub
 import pytest
 from typer.testing import CliRunner
 
+from sieve.cli import ingest as cli_ingest
 from sieve.cli import net
 from sieve.cli.app import EXIT_FINDINGS, EXIT_INPUT, EXIT_MODEL, EXIT_OK, app
 from sieve.protocols import FakeClassifier
@@ -401,6 +402,71 @@ def test_config_static_never_loads_a_classifier(monkeypatch: pytest.MonkeyPatch)
     )
     assert result.exit_code == EXIT_OK, result.output
     assert json.loads(result.stdout) == []
+
+
+def _declared_config(tmp_path: Path) -> Path:
+    """An `mcp.json` whose entry declares its tools statically -- nothing is spawned to find
+    them, which is the one shape SC-1 lets a config contribute a tool from."""
+    path = tmp_path / "declared.mcp.json"
+    path.write_text(
+        json.dumps(
+            {
+                "mcpServers": {
+                    "weather": {
+                        "command": "npx",
+                        "tools": [
+                            {
+                                "name": "get_forecast",
+                                "description": "Return the forecast for a place.",
+                                "inputSchema": {"type": "object"},
+                            }
+                        ],
+                    },
+                    "docs-index": {"url": "https://docs.example.invalid/mcp"},
+                }
+            }
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
+    return path
+
+
+def test_config_static_lifts_statically_declared_tools(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Fix round 2, M5: the API lifts a `tools` array out of an `mcp_config` entry and the CLI
+    discarded it, so one config ingested two ways gave two different answers (PRD §13.3)."""
+    connect_calls: list[object] = []
+    monkeypatch.setattr(socket.socket, "connect", lambda self, *a, **kw: connect_calls.append(a))
+    result = runner.invoke(
+        app,
+        [
+            "triage",
+            "--config",
+            str(_declared_config(tmp_path)),
+            "--static",
+            "--no-judge",
+            "--format",
+            "json",
+        ],
+    )
+    assert result.exit_code in (EXIT_OK, EXIT_FINDINGS), result.output
+    assert connect_calls == [], "SC-1: parsing a config still spawns and dials nothing"
+    payload = json.loads(result.stdout)
+    assert [item["tool"]["name"] for item in payload] == ["get_forecast"]
+
+
+def test_the_cli_and_the_api_lift_the_same_records_from_one_config(tmp_path: Path) -> None:
+    """Both surfaces call one helper, so they cannot drift apart again."""
+    from sieve.api.ingest import ingest as api_ingest
+    from sieve.types import ScanCreate
+
+    doc = json.loads(_declared_config(tmp_path).read_text(encoding="utf-8"))
+    from_api = api_ingest(ScanCreate(source_type="mcp_config", mcp_config=doc)).records
+    from_cli = cli_ingest.declared_tools(doc)
+    assert from_cli == from_api
+    assert from_cli, "the fixture declares a tool; a lift that returns nothing proves nothing"
 
 
 def test_config_without_static_is_an_input_error() -> None:

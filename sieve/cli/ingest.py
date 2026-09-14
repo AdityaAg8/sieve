@@ -6,10 +6,13 @@ Three shapes of input, three loaders:
 - A scanner's own native report (`--from cisco-yara|sarif`) -- `load_from_scanner` below, which
   has no tool descriptions to work with (a scanner report never carries one), only tool names
   and whatever findings the scanner attached to them.
-- An `mcp.json` config (`--config PATH --static`) -- parsed by
-  `sieve.adapters.static_json.load_mcp_config` and never used for anything else: SC-1 forbids
-  spawning the configured server, and listing tools requires exactly that, so this path always
-  yields zero `ToolRecord`s (PRD §15.1, "parse only").
+- An `mcp.json` config (`--config PATH --static`) -- its shape validated by
+  `sieve.adapters.static_json.load_mcp_config`, its statically declared tools lifted by
+  `sieve.tools_doc.records_from_mcp_config`. SC-1 forbids spawning the configured server, and
+  listing a server's tools requires exactly that, so this path yields **only** what the config
+  declares for itself: for a config that declares nothing, zero `ToolRecord`s (PRD §15.1,
+  "parse only"). The API lifts the same array from the same helper, so the two surfaces ingest
+  one config identically (PRD §13.3).
 """
 
 from __future__ import annotations
@@ -23,6 +26,7 @@ from typing import Any, Literal
 from sieve.adapters import sarif_in
 from sieve.adapters.base import get_adapter
 from sieve.adapters.static_json import ConfigEntry, load_mcp_config, load_tools_list
+from sieve.tools_doc import records_from_mcp_config
 from sieve.types import ScannerFinding, ToolDefinition, ToolRecord
 
 ScannerFrom = Literal["cisco-yara", "sarif"]
@@ -105,3 +109,14 @@ def parse_static_config(doc: Any) -> list[ConfigEntry]:
     if not isinstance(doc, dict):
         raise IngestError("--config input must be a JSON object")
     return load_mcp_config(doc)
+
+
+def declared_tools(doc: Any) -> list[ToolRecord]:
+    """The tools an `mcp.json` declares statically -- the only ones a parse can know about.
+
+    Shares `sieve.tools_doc` with `sieve/api/ingest.py` rather than re-deriving the lift, so a
+    config posted to the API and the same config handed to `--config --static` cannot disagree.
+    """
+    if not isinstance(doc, dict):
+        raise IngestError("--config input must be a JSON object")
+    return records_from_mcp_config(doc)

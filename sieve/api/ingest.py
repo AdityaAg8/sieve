@@ -3,6 +3,9 @@
 SC-1: nothing here starts a process or opens a socket. An `mcp_config` is read for the server
 names and any statically declared tools; a `remote_url` is handed to the sandboxed worker,
 which is the only code allowed to talk to an untrusted server.
+
+The two static shapes themselves are parsed by `sieve/tools_doc.py`, which the CLI imports too,
+so one config ingested by either surface yields the same records (PRD §13.3).
 """
 
 from __future__ import annotations
@@ -10,7 +13,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from sieve.types import ScanCreate, ScannerFinding, ScannerName, ToolDefinition, ToolRecord
+from sieve.tools_doc import records_from_mcp_config, records_from_payload, server_names
+from sieve.types import ScanCreate, ScannerFinding, ScannerName, ToolRecord
 
 
 class IngestError(ValueError):
@@ -22,48 +26,6 @@ class Ingested:
     source_ref: str | None = None
     records: list[ToolRecord] = field(default_factory=list)
     findings_by_id: dict[str, list[ScannerFinding]] = field(default_factory=dict)
-
-
-def _tool_objects(payload: Any) -> list[dict[str, Any]]:
-    if isinstance(payload, list):
-        return [t for t in payload if isinstance(t, dict)]
-    if isinstance(payload, dict):
-        tools = payload.get("tools")
-        if isinstance(tools, list):
-            return [t for t in tools if isinstance(t, dict)]
-    return []
-
-
-def _servers(payload: Any) -> dict[str, list[str]]:
-    if isinstance(payload, dict):
-        servers = payload.get("servers")
-        if isinstance(servers, dict):
-            return {
-                str(name): [str(t) for t in tools]
-                for name, tools in servers.items()
-                if isinstance(tools, list)
-            }
-    return {}
-
-
-def _records(payload: Any, *, instructions: str | None = None) -> list[ToolRecord]:
-    servers = _servers(payload)
-    owner = {tool: server for server, tools in servers.items() for tool in tools}
-    records: list[ToolRecord] = []
-    for raw in _tool_objects(payload):
-        tool = ToolDefinition.model_validate(raw)
-        server = owner.get(tool.name, str(raw.get("server_name") or "unknown"))
-        siblings = [t for t in servers.get(server, []) if t != tool.name]
-        records.append(
-            ToolRecord(
-                id=f"{server}/{tool.name}",
-                server_name=server,
-                tool=tool,
-                sibling_tool_names=siblings,
-                server_instructions=instructions,
-            )
-        )
-    return records
 
 
 def _scanner_findings(
@@ -109,23 +71,16 @@ def ingest(req: ScanCreate) -> Ingested:
     if req.source_type == "mcp_config":
         if not req.mcp_config:
             raise IngestError("mcp_config is required for source_type 'mcp_config'")
-        servers = req.mcp_config.get("mcpServers")
-        names = sorted(servers) if isinstance(servers, dict) else []
-        source_ref = ",".join(names)
-        # Parse only: a config names servers, it does not describe their tools. Anything the
-        # config declares statically is triaged; enumerating the rest needs the sandbox.
-        for name in names:
-            entry = servers[name] if isinstance(servers, dict) else None
-            if isinstance(entry, dict) and isinstance(entry.get("tools"), list):
-                records.extend(_records({"servers": {name: []}, "tools": entry["tools"]}))
+        source_ref = ",".join(server_names(req.mcp_config))
+        records = records_from_mcp_config(req.mcp_config)
     elif req.tools_json is not None:
-        records = _records(req.tools_json)
+        records = records_from_payload(req.tools_json)
     elif req.source_type == "tools_json":
         raise IngestError("tools_json is required for source_type 'tools_json'")
 
     findings_by_id: dict[str, list[ScannerFinding]] = {}
     if req.scanner_report is not None:
-        records = records or _records(req.scanner_report)
+        records = records or records_from_payload(req.scanner_report)
         findings_by_id = _scanner_findings(
             req.scanner_report, req.scanner or "static_json", records
         )
