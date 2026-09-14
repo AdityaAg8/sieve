@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette import EventSourceResponse
+from starlette.background import BackgroundTask
 
 from sieve.api import ratelimit, sse
 from sieve.api.ingest import IngestError, ingest
@@ -34,9 +35,21 @@ def _scoped_idempotency_key(request: Request) -> str | None:
     had claimed it first, id and counts included, and the id is the whole findings page.
 
     Namespacing by `ip_hash` keeps the property idempotency is for -- the client that made a
-    scan replays its own -- and removes the one it was never meant to have. Note the limit of
-    the scope: behind a proxy with `SIEVE_TRUST_PROXY=false` every caller hashes to the proxy's
-    address and shares one namespace again, exactly as the per-IP quotas already do.
+    scan replays its own -- and removes the one it was never meant to have.
+
+    **The namespace is exactly as strong as `client_ip`**, so both of its limits are this
+    route's limits too (review round 1, finding 2):
+
+    * With `SIEVE_TRUST_PROXY=false` behind a proxy, every caller hashes to the proxy's own
+      address, so the namespace *collapses* to one and the guessed-key read is back. That is a
+      misconfiguration, not a design: the setting exists because trusting the header when
+      nothing appends it is the worse failure, and the same collapse already applies to the
+      per-IP quotas.
+    * With `SIEVE_TRUST_PROXY=true` the address is `X-Forwarded-For`'s **right-most** entry,
+      which is sound for **exactly one** appending hop -- the `docs/deploy.md` topology. The
+      left-most entry is attacker-written and must never be used here: it would let anyone who
+      knows a victim's address name it and read the victim's scan. Behind two or more hops the
+      namespace collapses as in the first case -- fewer namespaces, never someone else's.
     """
     raw = request.headers.get("Idempotency-Key")
     if not raw:
@@ -134,6 +147,17 @@ async def scan_events(
     return EventSourceResponse(
         sse.stream(session_factory(), scan_id, last_event_id=last, slot=slot),
         media_type="text/event-stream",
+        # Two releases, because the generator's own `finally` is not reachable in every case
+        # (review round 1, finding 1). `EventSourceResponse.__call__` awaits `http.response.
+        # start` inside a task group that also runs `_listen_for_disconnect`; a cancellation at
+        # that first await -- a client that aborts immediately, a shutdown grace period --
+        # leaves the generator **never started**, and closing an async generator that has not
+        # run to its first `yield` runs no `finally` at all. The count is process-global and
+        # monotonic, so each such race would burn a slot permanently and eventually 503 every
+        # client until a restart. `__call__` awaits `self.background` after the task group
+        # exits, cancelled or not; `StreamSlot.release` is idempotent, so whichever path gets
+        # there first is the one that counts.
+        background=BackgroundTask(slot.release),
     )
 
 

@@ -3,14 +3,18 @@
 from __future__ import annotations
 
 import json
+from collections.abc import AsyncIterator
 from pathlib import Path
 
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from starlette.requests import Request
 
 from sieve.api import sse
+from sieve.api.routes.scans import scan_events
 from sieve.api.sse import parse_last_event_id
+from sieve.api.store import DbStore
 from sieve.worker import scan_job
 from sieve.worker.main import run_once
 
@@ -142,6 +146,59 @@ async def test_a_disconnected_stream_gives_its_slot_back(
         async for _chunk in response.aiter_text():
             break  # walk away mid-stream, as a closed browser tab does
     assert sse.live_streams() == 0
+
+
+async def test_closing_a_never_started_generator_runs_no_finally() -> None:
+    """The language fact that makes finding 1 a leak rather than a theory.
+
+    An async generator's body does not run until its first `__anext__`, and `aclose()` on one
+    that never started is a no-op -- no `finally`, no cleanup. So a reservation released only
+    inside the generator is released only if something iterated it at least once.
+    """
+    ran = False
+
+    async def generator() -> AsyncIterator[int]:
+        nonlocal ran
+        try:
+            yield 1
+        finally:
+            ran = True
+
+    await generator().aclose()
+    assert ran is False, "which is why the slot also needs a release outside the generator"
+
+
+async def test_a_stream_that_is_never_started_still_gives_its_slot_back(
+    api: AsyncClient, sessions: async_sessionmaker[AsyncSession], session: AsyncSession
+) -> None:
+    """Review round 1, finding 1: the slot is taken before anything iterates the generator.
+
+    `EventSourceResponse.__call__` awaits `http.response.start` inside a task group that also
+    runs `_listen_for_disconnect`. A cancellation at that first await -- a client that aborts
+    immediately, a server-shutdown grace period -- leaves the generator un-started, and the test
+    above shows that closing such a generator runs no `finally`. Because the count is
+    process-global and monotonic, every one of those races used to burn a slot for the life of
+    the process, until all 64 were gone and every SSE client got a 503.
+
+    The route is called directly here rather than over HTTP, because the point is the window
+    between the reservation and the first iteration -- which a successful request closes.
+    """
+    scan_id = await completed_scan(api, sessions)
+    before = sse.live_streams()
+
+    request = Request(
+        {"type": "http", "method": "GET", "path": "/", "query_string": b"", "headers": []}
+    )
+    response = await scan_events(scan_id, request, DbStore(session))
+
+    assert sse.live_streams() == before + 1, "reserved before the response starts"
+    assert response.background is not None, "the release cannot live only in the generator"
+
+    # Exactly what `EventSourceResponse.__call__` does once its task group exits, cancelled or
+    # not -- and nothing has iterated the body.
+    await response.background()
+
+    assert sse.live_streams() == before, "the slot came back without the generator ever running"
 
 
 def test_a_hostile_last_event_id_is_ignored_not_fatal() -> None:

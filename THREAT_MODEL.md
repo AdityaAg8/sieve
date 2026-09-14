@@ -237,6 +237,16 @@ request body and no log record *at any level, DEBUG included* — is asserted ag
 database and the real worker by
 `tests/integration/test_secret_never_logged.py::test_a_secret_in_a_tool_description_reaches_no_row_no_event_and_no_log`.
 
+The review's own first round added two more fixes on top: the SSE reservation is released by a
+`BackgroundTask` as well as by the generator's `finally`, because a stream cancelled before its
+first iteration never runs that `finally` and the count is monotonic; and `client_ip` now reads
+`X-Forwarded-For`'s **right-most** entry under `SIEVE_TRUST_PROXY=true`. The second matters more
+than it looks: every hop *appends*, so the left-most entry is written by the caller, and once
+`ip_hash` began namespacing `Idempotency-Key` a spoofable left-most entry turned quota evasion
+back into the cross-client read the namespacing existed to stop.
+`tests/api/test_sse.py::test_a_stream_that_is_never_started_still_gives_its_slot_back`,
+`tests/api/test_ratelimit.py::test_a_spoofed_left_most_forwarded_for_does_not_become_the_client`.
+
 ### Open
 
 1. **A hostile resolver can still occupy an executor thread.** Nothing in CPython interrupts a
@@ -266,38 +276,58 @@ database and the real worker by
    `max_tools_per_scan` findings per request, unlimited times, for anyone holding a scan id.
    Accepted as the document has accepted it since Phase 3 (row 13); the SSE cap above closes the
    expensive half of it, which was the half that could take the database with it.
-6. **The judge self-defence gate has never run against a real model.** Row 2 and the injection
+6. **The SSE cap is global, not per IP.** `MAX_CONCURRENT_STREAMS` in `sieve/api/sse.py` counts
+   streams, not clients, so a single host can hold all 64 and deny the live stream to everyone
+   else. Accepted, and bounded in a way the original problem was not: the database is protected,
+   every other route keeps answering, and a client with no stream still gets its results by
+   polling `GET /findings` — the fallback `web/src/components/findings/useScanFeed.ts` already
+   takes when a stream fails. The reason it is not per IP is risk 7 below: a per-IP cap has to
+   decide a denial from `client_ip`, and `client_ip` is only as honest as `SIEVE_TRUST_PROXY`.
+   The cap is also **per process**, so `--workers N` permits `64 * N`.
+7. **`client_ip` assumes exactly one appending proxy hop.** Under `SIEVE_TRUST_PROXY=true`,
+   `sieve/api/ratelimit.py` takes `X-Forwarded-For`'s right-most entry, which is the address our
+   own trusted proxy wrote — sound for the one-hop topology in `docs/deploy.md` (a single Fly app
+   behind Fly's proxy). Behind **two or more** hops every caller collapses to the inner proxy's
+   address: all quotas become one shared quota, and all `Idempotency-Key` namespaces become one
+   namespace. Accepted, and note the direction of the failure — it is fewer namespaces, never
+   somebody else's, so it degrades availability and never becomes a cross-client read. The same
+   collapse happens with `SIEVE_TRUST_PROXY=false` behind any proxy at all. A deployment that
+   adds a second hop has to count hops here rather than trust a header.
+   `tests/api/test_ratelimit.py::test_forwarded_for_is_only_trusted_behind_a_proxy`.
+8. **The judge self-defence gate has never run against a real model.** Row 2 and the injection
    section say so. Until it is recorded, Sieve's injection resistance is a design claim, and this
    review changes nothing about that: it is **unmeasured**.
-7. **No artefact digest.** The Hub revision pin is optional and unset; nothing verifies the bytes
+9. **No artefact digest.** The Hub revision pin is optional and unset; nothing verifies the bytes
    of a downloaded model against a recorded SHA.
-8. **Seven high npm advisories live in `web/`'s devDependencies.** All seven resolve to
-   `@lhci/cli` and the Puppeteer tree beneath it (`tmp` GHSA-52f5-9888-hmc6 and
-   GHSA-ph9p-34f9-6g65, `extract-zip` GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3), and npm's
-   only remediation is a major downgrade to `@lhci/cli@0.1.0`. Accepted: Lighthouse CI is a
-   measurement tool that runs in CI and ships nothing to a browser, and the CI gate is scoped to
-   `--omit=dev` for exactly that reason. `npm audit --audit-level=high --omit=dev` reports zero.
-9. **Nine `transformers` advisories are open in the `model` extra.** PYSEC-2025-217,
-   PYSEC-2026-2288, PYSEC-2026-2289, PYSEC-2026-2290 and PYSEC-2026-3929 against
-   `transformers==4.57.6`; every fix version is a `5.x` major. Accepted for now, and *not*
-   suppressed with `--ignore-vuln`: the `model` extra is installed by neither the API image, nor
-   the worker, nor the CI job that runs the blocking audit, so the gate does not need an
-   exception to stay green. Upgrading is the model lane's call, since a major `transformers` bump
-   moves the training path the published numbers come from.
-10. **The `real_poisoned` slice and the holdout are tiny.** Every interval published from them is
+10. **Seven high npm advisories live in `web/`'s devDependencies.** All seven resolve to
+    `@lhci/cli` and the Puppeteer tree beneath it (`tmp` GHSA-52f5-9888-hmc6 and
+    GHSA-ph9p-34f9-6g65, `extract-zip` GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3), and npm's
+    only remediation is a major downgrade to `@lhci/cli@0.1.0`. Accepted: Lighthouse CI is a
+    measurement tool that runs in CI and ships nothing to a browser, and the CI gate is scoped to
+    `--omit=dev` for exactly that reason. `npm audit --audit-level=high --omit=dev` reports zero.
+11. **Nine `transformers` advisories are open in the `model` extra.** PYSEC-2025-217,
+    PYSEC-2026-2288, PYSEC-2026-2289, PYSEC-2026-2290 and PYSEC-2026-3929 against
+    `transformers==4.57.6`; every fix version is a `5.x` major. Accepted for now, and *not*
+    suppressed with `--ignore-vuln`: the `model` extra is installed by neither the API image, nor
+    the worker, nor the CI job that runs the blocking audit, so the gate does not need an
+    exception to stay green. Upgrading is the model lane's call, since a major `transformers` bump
+    moves the training path the published numbers come from.
+12. **The `real_poisoned` slice and the holdout are tiny.** Every interval published from them is
     a cluster bootstrap over a small number of servers and is wide by construction. A number with
     a wide interval is not a claim.
-11. **The Action installs from PyPI, where Sieve is not published.**
+13. **The Action installs from PyPI, where Sieve is not published.**
     `.github/workflows/self-scan.yml` fails at that step today (L7 hand-off). Nothing depends on
     it for security, but a green self-scan badge is not available as evidence.
 
 <!-- human: rewrite -->
 **Which of these are accepted and which are scheduled** is a judgement call the human owns. The
-agent's reading after Task 11.1 is that 3 is the only open item that still leaks data and should
-go into the next contracts PR; 9 blocks a release of the model lane rather than of this one; 6
-and 7 block publishing a claim about injection resistance and about artefact integrity
-respectively; and 1, 2, 4, 5 and 8 are bounded by deployment facts that a different deployment
-would invalidate.
+agent's reading after Task 11.1 and its first review round is that **3** is the only open item
+that still leaks data and should go into the next contracts PR; **11** blocks a release of the
+model lane rather than of this one; **8** and **9** block publishing a claim about injection
+resistance and about artefact integrity respectively; **7** is the one to re-read the day the
+deployment topology changes, because its assumption is about the network and not about this code;
+and 1, 2, 4, 5, 6 and 10 are bounded by deployment facts that a different deployment would
+invalidate.
 
 ## Out of scope
 

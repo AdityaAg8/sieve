@@ -101,7 +101,34 @@ def test_forwarded_for_is_only_trusted_behind_a_proxy(monkeypatch: pytest.Monkey
     monkeypatch.setattr(settings, "trust_proxy", False)
     assert client_ip(request) == "10.0.0.9"  # type: ignore[arg-type]
     monkeypatch.setattr(settings, "trust_proxy", True)
-    assert client_ip(request) == "1.2.3.4", "left-most entry only"  # type: ignore[arg-type]
+    assert client_ip(request) == "10.0.0.1", "right-most entry only"  # type: ignore[arg-type]
+
+
+def test_a_spoofed_left_most_forwarded_for_does_not_become_the_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Review round 1, finding 2: left-most is the attacker's string, not the proxy's.
+
+    Every hop *appends*, so a caller who sends `X-Forwarded-For: <victim>` gets `<victim>,
+    <caller>` by the time it reaches us. Reading left-most handed back whatever the caller
+    wrote -- quota evasion on its own, and a cross-client read once `ip_hash` began namespacing
+    `Idempotency-Key`. Right-most is the entry our own trusted proxy appended.
+    """
+    monkeypatch.setattr(settings, "trust_proxy", True)
+    victim, attacker = "203.0.113.7", "198.51.100.9"
+    spoofed = FakeRequest({"x-forwarded-for": f"{victim}, {attacker}"}, "10.0.0.9")
+
+    assert client_ip(spoofed) == attacker  # type: ignore[arg-type]
+    assert ip_hash(client_ip(spoofed)) != ip_hash(victim)  # type: ignore[arg-type]
+
+
+def test_a_forwarded_for_with_nothing_in_it_falls_back_to_the_peer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A header of separators and spaces is no answer; everyone must not share one pseudonym."""
+    monkeypatch.setattr(settings, "trust_proxy", True)
+    assert client_ip(FakeRequest({"x-forwarded-for": " , "}, "10.0.0.9")) == "10.0.0.9"  # type: ignore[arg-type]
+    assert client_ip(FakeRequest({"x-forwarded-for": ""}, "10.0.0.9")) == "10.0.0.9"  # type: ignore[arg-type]
 
 
 def test_a_missing_peer_is_not_a_crash(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -72,11 +72,31 @@ def ip_hash(ip: str) -> str:
 
 
 def client_ip(request: Request) -> str:
-    """`X-Forwarded-For`'s left-most entry, and only behind a proxy we chose to trust."""
+    """`X-Forwarded-For`'s **right-most** entry behind a trusted proxy; the socket peer otherwise.
+
+    Right-most, not left-most (security review 11.1 round 1, finding 2). Left-most is the
+    internet's claim about who the client is, and the internet is what writes it: every hop
+    *appends*, so a caller who sends `X-Forwarded-For: <victim>` has our proxy append its own
+    view and produce `<victim>, <caller>`. Reading left-most then hands the attacker back the
+    string they chose. On its own that is quota evasion; once `ip_hash` also namespaces
+    `Idempotency-Key` (`sieve/api/routes/scans.py`) it is worse, because an attacker who knows a
+    victim's address can re-enter the victim's namespace and read their scan — which is exactly
+    the BOLA that namespacing was added to close.
+
+    The right-most entry is the only one this deployment can vouch for: it is the one *our*
+    trusted proxy wrote. That is correct for **exactly one** appending hop, which is the topology
+    `docs/deploy.md` describes — a single Fly app behind Fly's own proxy. Behind two or more
+    hops every caller collapses to the inner proxy's address: a quota collapse, never a
+    cross-client read, recorded in THREAT_MODEL.md's residual risks.
+    """
     if settings.trust_proxy:
         forwarded = request.headers.get("x-forwarded-for")
         if forwarded:
-            return forwarded.split(",")[0].strip()
+            # A header of nothing but separators and spaces is no answer at all; fall through to
+            # the peer rather than pseudonymising everyone who sends one under `""`.
+            entries = [entry.strip() for entry in forwarded.split(",") if entry.strip()]
+            if entries:
+                return entries[-1]
     client = request.client
     return client.host if client is not None else UNKNOWN_IP
 

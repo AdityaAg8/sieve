@@ -143,25 +143,39 @@ async def test_an_idempotency_key_is_scoped_to_the_client_that_chose_it(
     whoever had claimed that key first, id and counts included, and from the id the whole
     findings page follows. Namespacing the key by the caller's own address hash keeps replay
     working for the client that made the scan and makes a guessed key useless to anyone else.
+
+    Every caller below sends a two-entry `X-Forwarded-For`, because that is the shape the API
+    actually receives behind one appending proxy, and the caller's real address is the
+    **right-most** entry (review round 1, finding 2). The left-most entry is whatever the caller
+    typed, which is the point of the last assertion.
     """
     monkeypatch.setattr(settings, "trust_proxy", True)
     body = {"source_type": "tools_json", "tools_json": TOOLS}
+    mine_ip, theirs_ip = "198.51.100.1", "203.0.113.9"
 
-    def post(ip: str) -> object:
+    def post(ip: str, *, claims: str = "192.0.2.50") -> object:
+        # `claims` is the entry the caller wrote; `ip` is the one the proxy appended.
         return api.post(
             "/api/v1/scans",
             json=body,
-            headers={"Idempotency-Key": "shared", "X-Forwarded-For": ip},
+            headers={"Idempotency-Key": "shared", "X-Forwarded-For": f"{claims}, {ip}"},
         )
 
-    mine = await post("198.51.100.1")  # type: ignore[misc]
-    theirs = await post("203.0.113.9")  # type: ignore[misc]
+    mine = await post(mine_ip)  # type: ignore[misc]
+    theirs = await post(theirs_ip)  # type: ignore[misc]
     assert (mine.status_code, theirs.status_code) == (202, 202), "neither is a replay of the other"
     assert mine.json()["id"] != theirs.json()["id"]
 
-    replay = await post("198.51.100.1")  # type: ignore[misc]
+    replay = await post(mine_ip)  # type: ignore[misc]
     assert replay.status_code == 200, "the client that chose the key still replays its own scan"
     assert replay.json()["id"] == mine.json()["id"]
+
+    # And the namespace cannot be entered by claiming to be its owner: the attacker names the
+    # victim in the entry they control, and still gets their own scan, not the victim's.
+    forged = await post(theirs_ip, claims=mine_ip)  # type: ignore[misc]
+    assert forged.status_code == 200, "a replay of the attacker's own earlier scan"
+    assert forged.json()["id"] == theirs.json()["id"]
+    assert forged.json()["id"] != mine.json()["id"], "a spoofed left-most entry reaches nobody"
 
 
 async def test_an_oversized_idempotency_key_is_400_not_a_row(api: AsyncClient) -> None:

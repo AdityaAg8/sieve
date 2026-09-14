@@ -44,9 +44,19 @@ MAX_IDLE_S = 300.0
 #: not pin a number and a deployment that needs a different one is a deployment whose database
 #: sizing changed too.
 #:
-#: The cap is **per process**, because the counter is. A deployment running uvicorn with
-#: `--workers N` therefore permits `64 * N` listeners and has to divide this number by N, or
-#: raise `max_connections` to match. The demo runs one worker process.
+#: Two limits of the cap, both deliberate, both recorded in THREAT_MODEL.md's residual risks:
+#:
+#: * It is **per process**, because the counter is. A deployment running uvicorn with
+#:   `--workers N` permits `64 * N` listeners and has to divide this number by N, or raise
+#:   `max_connections` to match. The demo runs one worker process.
+#: * It is **global, not per IP**. One host can hold all 64 slots and deny the stream to
+#:   everyone else -- the quotas that would stop that are on the POST routes, and this is a GET.
+#:   What that host can no longer do is take the *database* with it, which was the finding: the
+#:   cap converts an outage of every route into a degradation of one, and `GET /findings` still
+#:   answers, which is the fallback `web/src/components/findings/useScanFeed.ts` already takes
+#:   when a stream fails. A per-IP cap needs `client_ip`, and `client_ip` is only as honest as
+#:   `SIEVE_TRUST_PROXY` -- so it would read a spoofable header to decide a denial, which trades
+#:   this bounded problem for an unbounded one.
 MAX_CONCURRENT_STREAMS = 64
 
 _live_streams = 0

@@ -31,7 +31,10 @@ class Settings(BaseSettings):
     max_tools_per_scan: int = 500
     scan_ttl_days: int = 7
     trust_proxy: bool = False
-    ip_hash_salt: str = "change-me-per-deployment"  # PRD §13.2: SHA-256(salt + client_ip)
+    # PRD §13.2, as built: an HMAC-SHA256 *key*, not a prefix -- `sieve.api.ratelimit.ip_hash`
+    # computes HMAC-SHA256(key=ip_hash_salt, message=client_ip). See that module for why a MAC
+    # rather than a digest of the concatenation, and why not a KDF.
+    ip_hash_salt: str = "change-me-per-deployment"  # noqa: S105 -- a placeholder, not a secret
     log_level: str = "INFO"
     snyk_max_invocations: int = 25
     web_origin: str = Field(default="http://localhost:3000", validation_alias="WEB_ORIGIN")
