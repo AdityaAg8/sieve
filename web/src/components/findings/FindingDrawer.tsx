@@ -181,7 +181,7 @@ export function FindingDetail({
           <Row term="Judge" value={result.judge_model ?? (judgeEnabled === false ? "Disabled on this deployment" : "Not used")} />
           {/* A non-breaking space: the provenance grid's value column is narrow at 320 px, and
               "240" on one line with "ms" on the next is not a measurement. */}
-          <Row term="Latency" value={`${result.latency_ms} ms`} />
+          <Row term="Latency" value={`${result.latency_ms}\u00a0ms`} />
         </dl>
       </section>
     </article>

@@ -12,7 +12,9 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     globals: true,
-    include: ["src/**/*.test.{ts,tsx}"],
+    // `scripts/` too: the token linter's interesting cases are the ones it must reject, and a
+    // test for those has to live outside the tree the linter itself walks.
+    include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.mjs"],
     // The fetchers build absolute URLs from this base, so `fetch` resolves under Node.
     env: { NEXT_PUBLIC_API_BASE: "http://localhost:3000", NEXT_PUBLIC_API_MOCK: "1" },
   },

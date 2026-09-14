@@ -9,6 +9,15 @@ const nextConfig: NextConfig = {
    * them from overwriting each other. Unset everywhere else, so the default stays `.next`.
    */
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  /**
+   * `src/app/layout.tsx` reads `--bg-0` out of `src/styles/tokens.css` for the `theme-color`
+   * meta (see `src/styles/tokens.server.ts`). The read is a runtime `fs` call against a path
+   * built from `process.cwd()`, which the tracer cannot follow, so a deployment that ships only
+   * traced files would start without the stylesheet and the layout would throw. Name it.
+   */
+  outputFileTracingIncludes: {
+    "/*": ["src/styles/tokens.css"],
+  },
   env: {
     /**
      * Off. The app talks to the real API (lane L9); MSW is a test dependency now, kept for the

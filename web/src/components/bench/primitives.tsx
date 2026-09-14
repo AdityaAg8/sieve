@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
 import { NO_NUMBER, NO_NUMBER_LABEL } from "@/lib/bench";
 
 /**
@@ -49,14 +53,45 @@ export function BenchSection({
 /**
  * Tables scroll inside their own box; the page never scrolls sideways.
  *
- * The box is a tab stop. Below about 414 px every one of these tables is wider than its box, and
- * a scroll container with no focusable content is content a keyboard cannot reach at all — the
- * columns past the fold are simply unreadable without a pointer. `role="group"` and the label
- * are what stop that tab stop from being an unannounced one.
+ * The box is a tab stop **while it actually scrolls**. Below about 414 px every one of these
+ * tables is wider than its box, and a scroll container with no focusable content is content a
+ * keyboard cannot reach at all — the columns past the fold are unreadable without a pointer. At
+ * 1280 px none of them overflow, and nine dead tab stops between the reader and the footer is a
+ * different kind of harm, so the stop is taken away again when there is nothing to scroll.
+ *
+ * It starts present and is removed after measuring, never the other way round: the server render
+ * and the first client paint both keep it, so a keyboard user on a narrow screen cannot lose the
+ * table in the window before hydration.
+ *
+ * `role="group"` and the label are what stop the stop from being an unannounced one.
  */
 export function TableWrap({ label, children }: { label: string; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [scrolls, setScrolls] = useState(true);
+
+  useEffect(() => {
+    const box = ref.current;
+    if (!box) return;
+    const measure = () => setScrolls(box.scrollWidth > box.clientWidth);
+    measure();
+
+    // The box's width changes with the viewport; the table's changes when the benchmark's rows
+    // arrive. Either can start or stop the overflow, so both are observed.
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(box);
+    if (box.firstElementChild) observer.observe(box.firstElementChild);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="scroll-x border-line-1 rounded-2 border" tabIndex={0} role="group" aria-label={label}>
+    <div
+      ref={ref}
+      className="scroll-x border-line-1 rounded-2 border"
+      tabIndex={scrolls ? 0 : -1}
+      role="group"
+      aria-label={label}
+    >
       <table className="w-full border-collapse text-left">{children}</table>
     </div>
   );

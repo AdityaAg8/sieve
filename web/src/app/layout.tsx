@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 
 import { Footer } from "@/components/shell/Footer";
 import { Nav } from "@/components/shell/Nav";
+import { pageBackgroundColour } from "@/styles/tokens.server";
 
 import { Providers } from "./providers";
 import "../styles/globals.css";
@@ -54,12 +55,12 @@ export const metadata: Metadata = {
  * is painted from this, and a charcoal page under a white address bar is the one part of the
  * dark-only rule the stylesheet cannot reach.
  *
- * A meta tag takes a literal, not `var(--bg-0)`, so this is the single colour value spelled
- * outside `tokens.css`. It is not an exception on trust: `scripts/lint-tokens.mjs` reads the
- * token and fails the lint if this line stops matching it.
+ * A `<meta>` content attribute cannot hold `var(--bg-0)`, so the value is read out of
+ * `tokens.css` when the server evaluates this module. No colour is spelled here; `tokens.css`
+ * remains the only file that names one.
  */
 export const viewport: Viewport = {
-  themeColor: "#131316", // lint-tokens-allow: mirrors --bg-0
+  themeColor: pageBackgroundColour(),
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
