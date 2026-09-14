@@ -7,7 +7,7 @@
  * that is missing renders as `—` with "metric to confirm" beside it — never as a zero, never as
  * a plausible placeholder (PRD §14.2).
  *
- * Lane L8 owns the producer. `docs/handoffs/L6.md` lists these keys as the request.
+ * The API owns the producer; these are the keys this view requires of it.
  */
 import type { BenchSummary } from "./api";
 

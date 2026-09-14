@@ -279,7 +279,7 @@ function Tile({
    * PRD §14.4 settles dismissed tiles at 60 % opacity. That would put `--ink-3` at 2.54:1 on
    * `--bg-0` — below the AA floor PRD §14.8 requires and the contrast gate enforces — so the
    * de-emphasis is carried by the 0.92 scale and the `--ink-3` colour alone. §14.8 wins over
-   * §14.4 where they disagree; see docs/handoffs/L6.md.
+   * §14.4 where they disagree.
    */
   const finalOpacity = 1;
 

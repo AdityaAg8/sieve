@@ -149,7 +149,7 @@ log filter (row 11) is the second half of the same rule.
 
 `uv.lock` and `package-lock.json` are committed; scanner versions are pinned in
 `bench/versions.lock`; three compiled wheels are capped one release below the versions Windows
-Smart App Control blocks (`lessons.md`).
+Smart App Control blocks.
 
 Both audits **block** as of Task 11.1 (PRD §22). In `.github/workflows/ci.yml`, `pip-audit` runs
 without `|| true` and `npm audit --audit-level=high --omit=dev` runs in the `web` job. Two notes

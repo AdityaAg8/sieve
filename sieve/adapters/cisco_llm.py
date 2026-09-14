@@ -15,7 +15,7 @@ The committed fixture `tests/adapters/data/cisco-llm-sample.AUTHORED.json` is au
 captured: it mirrors `fixtures/scanner/cisco-yara-sample-27.raw.json`'s real `--raw` shape for a
 `yara_analyzer` block, with the block renamed to `llm_analyzer` and its two flagged tools'
 `mcp_taxonomies` descriptions rewritten to read like a language-model's prose judgement (no
-imperative keyword to regex-match) rather than a YARA rule hit — see `lessons.md`. The
+imperative keyword to regex-match) rather than a YARA rule hit. The
 `.AUTHORED.` marker in the filename is deliberate (review round 1, minor): nothing here was ever
 produced by a real LLM analyzer run.
 """

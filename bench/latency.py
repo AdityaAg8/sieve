@@ -8,7 +8,7 @@ Wired into the Makefile `bench` target so a latency figure ships with every publ
 but PRD M6a's rule still holds: `bench/results/latency.json` is a generated artefact, never
 hand-edited, and a number this script produces on a box with no trained ONNX int8 artefact
 (`SIEVE_MODEL_ID=fixture`, the classifier `sample-27.json`'s scan runs on) is a smoke number,
-not a published one -- see docs/handoffs/task-11.2.md. `model_id` is read back from the
+not a published one. `model_id` is read back from the
 deployment's own `GET /api/v1/models` rather than taken on faith from an argument, so the
 figure can never be mislabelled as measuring an artefact the server was not actually running --
 and when that read-back id is the fixture/fake classifier, `main()` refuses to write anywhere
@@ -184,7 +184,7 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Any]:
     if model_id in FIXTURE_MODEL_IDS and _is_under(ns.results_dir, BENCH_RESULTS_DIR):
         # PRD M6a: bench/results/ holds only generated, *published* artefacts. A run against
         # the fixture/fake classifier (no trained ONNX int8 artefact, or a stub app) is a smoke
-        # number, never that -- see docs/handoffs/task-11.2.md. Quoted above, not written here.
+        # number, never that: quote it in a report if you like, but never write it here.
         raise SystemExit(
             f"refusing to write {path}: model_id={model_id!r} is the fixture/fake classifier, "
             f"not a published artefact (PRD M6a) -- pass --results-dir outside {BENCH_RESULTS_DIR} "

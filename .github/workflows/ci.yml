@@ -116,7 +116,7 @@ jobs:
       # the client chunks, and no mockServiceWorker.js left in public/ for a production deploy.
       - run: npm run build && npm run lint:bundle
   playwright:
-    # Enabled in Task 11.3, as docs/handoffs/L6.md asked. Both Playwright projects run: `mocked`
+    # Both Playwright projects run: `mocked`
     # against MSW, and `integration` against the real API. The second is why this job needs
     # Postgres and `uv` -- `web/playwright.config.ts` starts `scripts/e2e-stack.mjs`, which
     # migrates, seeds, and runs uvicorn plus the worker itself. `SIEVE_MODEL_ID=fixture` is
@@ -158,7 +158,7 @@ jobs:
     # times harsher than the `desktop` preset it sat inside, both lanes measured under the preset,
     # and no build has ever met the committed performance and LCP budgets under the override.
     # Deleting the override measures what the budgets were written for; editing the budgets to
-    # match the override would have been relaxing them. See docs/handoffs/L9.md.
+    # match the override would have been relaxing them.
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -198,7 +198,7 @@ jobs:
           done
           echo "the API never reported ready"; cat "$RUNNER_TEMP/api.log"; exit 1
       # `NEXT_PUBLIC_*` is inlined at build time, so the build Lighthouse measures is the only
-      # place it can be set -- no start command can supply it afterwards (docs/handoffs/L9.md).
+      # place it can be set -- no start command can supply it afterwards.
       - name: build against the live API
         working-directory: web
         env:

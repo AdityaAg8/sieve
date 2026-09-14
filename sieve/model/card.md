@@ -107,7 +107,7 @@ No prompt change may follow a holdout run for the version it measured; if the re
 is the result and the next version is where it is addressed.
 
 **Not yet measured.** No slot is templated above because there is no artefact to fill one from:
-recording the holdout is a one-shot human step (docs/handoffs/11.3.md), and until it has run,
+recording the holdout is a one-shot human step (`docs/RUNBOOK.md` §3), and until it has run,
 Sieve's injection resistance is a design claim, as THREAT_MODEL.md's residual risk 8 also says.
 Task 11.6 fills the three in, with slots, once they exist.
 

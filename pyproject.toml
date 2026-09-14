@@ -31,7 +31,7 @@ model = [
     "datasets",
     # <1.9.1 for the same Windows Smart App Control reason as numpy and psycopg: the newest
     # scikit-learn wheels are blocked on the dev box. Not a compatibility constraint -- do not
-    # "helpfully" unpin it without reading lessons.md first.
+    # "helpfully" unpin it without testing on a Windows box with Smart App Control on.
     "scikit-learn<1.9.1",
     "onnxruntime",
     "optimum[onnxruntime]",

@@ -22,7 +22,7 @@ kill_timeout = "30s"
     SIEVE_MODEL_REVISION = "main"
 
 # `alembic upgrade head` runs once per release, before the new version takes traffic, via the
-# same `sieve.db.migrate` module the seed and the tests use (docs/handoffs/L5.md).
+# same `sieve.db.migrate` module the seed and the tests use.
 [deploy]
   release_command = "uv run python -m sieve.db.migrate"
 

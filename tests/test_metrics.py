@@ -183,7 +183,7 @@ def test_gwet_ac1_hand_checked() -> None:
     assert gwet_ac1(a, b) > cohens_kappa(a, b)
 
 
-# The three tests below close coverage gaps that the SAC blocker (see lessons.md) had masked:
+# The three tests below close coverage gaps that the blocked-wheel install problem had masked:
 # they exercise branches the tests above never reach, following the same "100% is a gate, not
 # an aspiration" rationale as the coverage-only tests earlier in this file.
 

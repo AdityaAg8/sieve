@@ -8,7 +8,7 @@
  * `FOO=bar npm run start` in the JSON would do it on a POSIX shell and silently not on Windows.
  *
  * `NEXT_PUBLIC_API_BASE` is a *build-time* value and cannot be set here: the build that `lhci`
- * measures has to be made with it. See docs/handoffs/L9.md.
+ * measures has to be made with it.
  */
 import { spawn } from "node:child_process";
 import { dirname, resolve } from "node:path";

@@ -5,17 +5,17 @@
   --bg-2: #212126;   /* raised, hover */
   --bg-3: #292930;   /* active, selected */
   --line-1: #2B2B31; /* hairline */
-  --line-2: #616169; /* strong — 3.02:1 on --bg-0, deviates from PRD §14.2 #3B3B43 (1.67:1, fails the 3:1 UI-border floor); see lessons.md */
+  --line-2: #616169; /* strong — 3.02:1 on --bg-0, deviates from PRD §14.2 #3B3B43 (1.67:1, fails the 3:1 UI-border floor) */
 
   /* ink */
   --ink-0: #F7F7F5;  /* headings, primary */
   --ink-1: #D4D4D2;  /* body */
   --ink-2: #8E8E95;  /* muted, labels */
-  --ink-3: #82828A;  /* faint, dismissed — 4.55:1 on --bg-1 (the binding pair); deviates from PRD §14.2 #7A7A82 (4.36:1, fails AA), see lessons.md */
+  --ink-3: #82828A;  /* faint, dismissed — 4.55:1 on --bg-1 (the binding pair); deviates from PRD §14.2 #7A7A82 (4.36:1, fails AA) */
 
   /* signal: red is semantic */
   --red-0: #FF5147;                    /* text, borders, the sieve line — 5.6:1 on --bg-0 */
-  --red-fill: #D22C22;                 /* filled chips and buttons, with --ink-0 text on top — 4.75:1; deviates from PRD §14.2 #E8382F (3.89:1, fails AA), see lessons.md */
+  --red-fill: #D22C22;                 /* filled chips and buttons, with --ink-0 text on top — 4.75:1; deviates from PRD §14.2 #E8382F (3.89:1, fails AA) */
   --red-1: #B8281F;                    /* pressed fill */
   --red-wash: rgb(232 56 47 / 0.14);   /* evidence highlight background */
   --red-glow: rgb(255 81 71 / 0.35);   /* permitted ONLY on the sieve line */

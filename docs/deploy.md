@@ -77,14 +77,14 @@ hash or a version string) instead of Fly's default `deployment-<id>` tag -- it i
 tags").
 
 `fly.toml`'s `[deploy] release_command` runs `uv run python -m sieve.db.migrate` (the same
-`alembic upgrade head` wrapper the seed and the test suite use, per `docs/handoffs/L5.md`)
+`alembic upgrade head` wrapper the seed and the test suite use)
 against the new release before it takes traffic. First deploy only, once migrations have run:
 
 ```bash
 fly ssh console --app sieve-api -C "uv run python -m sieve.db.seed"
 ```
 
-The seed is idempotent (`docs/handoffs/L5.md`): it inserts the fixed-id sample scan
+The seed is idempotent: it inserts the fixed-id sample scan
 (`00000000-0000-0000-0000-000000005eed`) the landing page's "Try the sample" control points at,
 replacing it in place on every run.
 
@@ -219,14 +219,13 @@ values are fine to type at the prompt:
 | --- | --- | --- |
 | `NEXT_PUBLIC_API_BASE` | `web/src/lib/config.ts` (`apiBase()`) | empty string, for same-origin (the deployed setup proxies `/api/*` to the Fly api app, or set the api app's public URL if it does not) |
 | `API_INTERNAL_URL` | `web/src/lib/config.ts` (`serverApiBase()`) | `https://sieve-api.fly.dev` -- the address a Vercel server component reaches the API on |
-| `NEXT_PUBLIC_DEMO_SCAN_ID` | `web/src/lib/config.ts` (`demoScanId()`) | `00000000-0000-0000-0000-000000005eed` -- the id `sieve.db.seed` inserts (`docs/handoffs/L5.md`) |
+| `NEXT_PUBLIC_DEMO_SCAN_ID` | `web/src/lib/config.ts` (`demoScanId()`) | `00000000-0000-0000-0000-000000005eed` -- the id `sieve.db.seed` inserts |
 
 **Naming note:** this task's brief describes the required variable as `NEXT_PUBLIC_API_URL`.
 `web/src/lib/config.ts` -- the file the brief itself points at as the source of truth -- reads
 `NEXT_PUBLIC_API_BASE` (browser) and `API_INTERNAL_URL` (server), not `NEXT_PUBLIC_API_URL`; no
 code anywhere in `web/` reads that name. The table above uses the names the running code
-actually reads; flagged in `docs/handoffs/task-11.4.md` and the Task 11.4 report rather than
-silently deviating from the brief.
+actually reads, rather than silently carrying a name nothing resolves.
 
 ```bash
 vercel deploy --prod   # from web/, once linked, or via the GitHub integration on push to main

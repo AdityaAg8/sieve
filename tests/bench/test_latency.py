@@ -3,8 +3,8 @@
 No live server: `run()` takes an `httpx.MockTransport` so concurrency and the percentile/report
 shape are exercised with no network and no Postgres. The one number this suite does not (and
 cannot) check is what a real deployment's p95 actually is -- that comes from running the script
-for real, quoted as a smoke number in docs/handoffs/task-11.2.md, never committed to
-`bench/results/` (PRD M6a).
+for real against a deployment. Such a smoke number is never committed to `bench/results/`
+(PRD M6a).
 """
 
 from __future__ import annotations

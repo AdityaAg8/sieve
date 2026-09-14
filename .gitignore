@@ -1,4 +1,4 @@
-# Python
+# ---------------------------------------------------------------- Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -11,36 +11,56 @@ venv/
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
+.hypothesis/
 .coverage
 .coverage.*
+coverage.xml
 htmlcov/
-.env
 
-# Node / web
+# ---------------------------------------------------------------- Secrets and local env
+.env
+.env.*
+!.env.example
+
+# ---------------------------------------------------------------- Node / web
+# `web/` carries its own .gitignore for build output, Playwright and Lighthouse artefacts.
 web/node_modules/
-web/.next/
 web/dist/
-web/coverage/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Sieve-specific
+# ---------------------------------------------------------------- Model and corpus artefacts
+# Trained weights, ONNX exports and raw corpus captures are large and are published to the
+# Hugging Face Hub instead; `bench/artefacts.json` pins them by digest.
+models/
+*.onnx
 bench/data/raw/
 fixtures/scanner/.tools-only.json
-*.onnx
-models/
 
-# Controller scratch (SDD workspace, not a project artefact)
+# ---------------------------------------------------------------- Local run output
+*.sarif
+*.log
+README.md.tmp
+.lighthouseci/
+
+# ---------------------------------------------------------------- Authoring scratch
+# Working notes, specs-in-progress and agent/process scaffolding: useful while building,
+# not part of the product.
 .superpowers/
+.claude/
+docs/superpowers/
+docs/handoffs/
+CLAUDE.md
+AGENTS.md
+lessons.md
+SIEVE_PRD.md
+Sieve-Project-Explainer.pdf
+web/AGENTS.md
+web/CLAUDE.md
 
-# OS / editor
+# ---------------------------------------------------------------- OS / editor
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
-
-# next dev writes these agent notes into web/; not project files
-web/AGENTS.md
-web/CLAUDE.md
-README.md.tmp
