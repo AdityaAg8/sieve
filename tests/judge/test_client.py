@@ -131,6 +131,29 @@ def test_credentials_are_redacted_before_the_block_is_rendered() -> None:
     assert "[REDACTED:aws_access_key]" in sent
 
 
+def test_a_record_id_with_a_newline_cannot_forge_a_second_log_line(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Fix round 2, M7: `record.id` is `f"{server_name}/{tool.name}"`, and `server_name` comes
+    straight from the submitted body with no character constraint -- unlike `tool.name`, which
+    `TOOL_NAME_RE` bounds.
+
+    `JsonFormatter` escapes newlines, but `configure_logging(replace=False)` leaves
+    pre-existing handlers in place and those may not. `%r` escapes the value before any handler
+    sees it, so the defence is in the record rather than in one formatter.
+    """
+    transport = Transport(httpx2.Response(200, json=_message(VALID_OUTPUT)))
+    forged = "srv\n" + json.dumps({"level": "INFO", "event": "forged"}) + "/add_note"
+    record = _record().model_copy(update={"id": forged})
+    with caplog.at_level(logging.INFO):
+        _judge(transport).judge(record, 0.5)
+
+    lines = [r.getMessage() for r in caplog.records if r.name == "sieve.judge.client"]
+    assert lines, "nothing was logged, so 'no forged line' would prove nothing"
+    assert all("\n" not in line for line in lines), lines
+    assert any("\\n" in line for line in lines), "the newline survives, escaped, not dropped"
+
+
 def test_server_instructions_are_redacted_before_the_block_is_rendered() -> None:
     """Review 11.1, finding F1: the judge redacted `record.tool` and nothing else.
 

@@ -8,6 +8,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from sieve.urls import UrlRejectedError, validated_host
+
 TOOL_NAME_RE = re.compile(r"^[A-Za-z0-9_.-]{1,128}$")
 
 ScannerName = Literal["cisco_yara", "cisco_llm", "snyk_agent_scan", "sarif_in", "static_json"]
@@ -133,6 +135,24 @@ class ScanCreate(BaseModel):
     scanner_report: dict[str, Any] | None = None
     remote_url: str | None = None
     scanner: ScannerName | None = None
+
+    @field_validator("remote_url")
+    @classmethod
+    def _url_is_fetchable(cls, v: str | None) -> str | None:
+        """Refuse at the boundary what the sandbox would refuse anyway (fix round 2, I3).
+
+        Only the syntactic half of `sieve/worker/ssrf`'s check runs here -- scheme, in-URL
+        credentials, host, port -- because those need no resolver, and running them at POST
+        time turns "202, queued, dead job in a few minutes" into a 422 with a reason. DNS
+        resolution and the blocked-range check stay inside the sandbox, where SC-1 puts them.
+        """
+        if v is None:
+            return None
+        try:
+            validated_host(v)
+        except UrlRejectedError as exc:
+            raise ValueError(str(exc)) from exc
+        return v
 
 
 class ScanSummary(BaseModel):

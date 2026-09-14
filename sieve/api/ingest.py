@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from sieve.redact import redact
 from sieve.tools_doc import records_from_mcp_config, records_from_payload, server_names
 from sieve.types import ScanCreate, ScannerFinding, ScannerName, ToolRecord
 
@@ -63,7 +64,18 @@ def ingest(req: ScanCreate) -> Ingested:
     if req.source_type == "remote_url":
         if not req.remote_url:
             raise IngestError("remote_url is required for source_type 'remote_url'")
-        return Ingested(source_ref=req.remote_url)
+        # `source_ref` is stored, returned by `GET /scans/{id}` and exported in SARIF, so it is
+        # a writer like any other and gets SC-5's rule -- this was the only one in the codebase
+        # that did not (fix round 2, I3). A URL can carry a credential in a query parameter
+        # (`?api_key=…` matches `generic_assignment`), and while `ScanCreate` already refuses
+        # `https://user:pass@host/` outright, refusing one shape is not redacting every shape.
+        #
+        # The sandbox later fetches what is stored, so a URL whose query carried a credential is
+        # dialled without it and the server answers however it answers. That is the intended
+        # trade: Sieve does not keep a credential in order to replay it, and a remote server that
+        # needs one is out of scope for a triage tool that promises not to store secrets.
+        redacted_url, _kinds = redact(req.remote_url)
+        return Ingested(source_ref=redacted_url)
 
     records: list[ToolRecord] = []
     source_ref: str | None = None

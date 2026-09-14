@@ -13,6 +13,7 @@ import sys
 from typing import Any
 
 from sieve.config import settings
+from sieve.errors import safe_detail
 
 # Reserved attributes of `logging.LogRecord`; everything else on a record came from `extra`.
 _RESERVED = frozenset(
@@ -60,7 +61,13 @@ class JsonFormatter(logging.Formatter):
                 continue
             payload[key] = value
         if record.exc_info:
-            payload["exc"] = self.formatException(record.exc_info)
+            # A traceback is a writer too (fix round 2, I4). `DropToolContent` below only
+            # rewrites the named content keys taken from `extra`; it never sees `exc`. And the
+            # one caller that matters -- `AnthropicJudge.judge`'s `LOGGER.exception` -- fires
+            # from inside the `try` that wraps `redact_tool`, i.e. the one place where the
+            # record has *not yet been redacted*, so a `ValidationError` raised while redacting
+            # printed the value it rejected straight into the aggregator at ERROR.
+            payload["exc"] = safe_detail(self.formatException(record.exc_info))
         return json.dumps(payload, default=str, ensure_ascii=False)
 
 

@@ -288,3 +288,51 @@ async def test_a_secret_inside_a_failure_message_is_redacted_before_it_is_stored
         "every log record at every level": _every_log_line(caplog),
     }.items():
         assert DESCRIPTION_SECRET not in haystack, f"SC-5: the key reached {where}"
+
+
+async def test_a_secret_in_a_traceback_is_redacted_before_the_log_record_is_formatted(
+    caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Fix round 2, I4: the one writer `DropToolContent` never covered.
+
+    The filter rewrites the named content keys taken from `extra`; `JsonFormatter` then adds an
+    `exc` key of its own from `record.exc_info`, which the filter has never seen. And the caller
+    that matters is `AnthropicJudge.judge`'s `LOGGER.exception`, which fires from inside the
+    `try` that wraps `redact_tool` -- i.e. from the one place in the codebase where the record
+    is knowingly *not yet redacted*. A `ValidationError` or a `re` error raised while redacting
+    printed the value it had rejected, and the whole traceback went out at ERROR.
+
+    So this asserts the formatted record, not `caplog.text`: the leak was in `JsonFormatter`,
+    and a test that reads the message alone cannot see it.
+    """
+    import sieve.judge.client as judge_client
+    from sieve.judge.client import AnthropicJudge
+    from sieve.logging import JsonFormatter
+
+    def explode(tool: object) -> tuple[object, list[str]]:
+        raise ValueError(f"cannot redact: {DESCRIPTION_SECRET}")
+
+    monkeypatch.setattr(judge_client, "redact_tool", explode)
+
+    record = ScanCreate(source_type="tools_json", tools_json=POISONED_TOOLS)
+    ingested = ingest(record)
+    judge = AnthropicJudge(client=None)
+    with caplog.at_level(logging.DEBUG):
+        answer = judge.judge(ingested.records[0], 0.5)
+
+    assert answer.kind == "api_error", "a crash while redacting is a JudgeFailure, not a raise"
+    raised = [r for r in caplog.records if r.exc_info is not None]
+    assert raised, "nothing was logged with an exception, so 'the key is absent' proves nothing"
+
+    formatter = JsonFormatter()
+    formatted = "\n".join(formatter.format(r) for r in raised)
+    assert "cannot redact" in formatted, "the traceback survived; the key did not"
+    assert REDACTED in formatted
+    assert DESCRIPTION_SECRET not in formatted, "SC-5: the key reached a formatted log line"
+    # What is deliberately *not* asserted: `record.exc_info` still holds the exception object
+    # itself, so the raw text is in memory on the record until something formats it. That is
+    # not reachable by `DropToolContent` either -- a filter cannot rewrite an exception's
+    # `args` without changing what a downstream `raise` would say -- and it is why the
+    # redaction belongs in the formatter, at the moment the traceback becomes a line. A
+    # deployment that attaches a handler with a plain `logging.Formatter` gets that handler's
+    # own rendering; `configure_logging` installs `JsonFormatter` on the one it owns.

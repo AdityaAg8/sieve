@@ -29,12 +29,10 @@ import asyncio
 import ipaddress
 import socket
 from typing import Any
-from urllib.parse import urlsplit
 
 from pydantic import BaseModel
 
-REQUIRED_SCHEME = "https"
-REQUIRED_PORT = 443
+from sieve.urls import REQUIRED_PORT, UrlRejectedError, validated_host
 
 #: How long the attacker's nameserver gets before the name is refused. Well under the 10 s
 #: whole-fetch deadline, because resolution is the first of several steps inside it.
@@ -143,22 +141,17 @@ async def _resolve(host: str, *, timeout_s: float) -> list[tuple[int, str]]:
 
 
 def _validated_host(url: str) -> str:
-    """Everything about the URL that can be decided without a resolver."""
-    parts = urlsplit(url)
-    if parts.scheme != REQUIRED_SCHEME:
-        raise SsrfBlockedError(f"only {REQUIRED_SCHEME}:// is allowed, got {parts.scheme!r}")
-    if parts.username or parts.password:
-        raise SsrfBlockedError("credentials in the URL are not allowed")
-    host = parts.hostname
-    if not host:
-        raise SsrfBlockedError("the URL carries no host")
+    """Everything about the URL that can be decided without a resolver.
+
+    The checks themselves live in `sieve/urls.py` so the API can run them at POST time and
+    answer 422 instead of queueing a scan that only fails inside the sandbox minutes later
+    (fix round 2, I3). They are re-raised as `SsrfBlockedError` here because, from this
+    module's callers' point of view, a refusal is a refusal whatever decided it.
+    """
     try:
-        port = parts.port
-    except ValueError as exc:
-        raise SsrfBlockedError("the URL carries an unusable port") from exc
-    if port not in (None, REQUIRED_PORT):
-        raise SsrfBlockedError(f"only port {REQUIRED_PORT} is allowed, got {port}")
-    return host
+        return validated_host(url)
+    except UrlRejectedError as exc:
+        raise SsrfBlockedError(str(exc)) from exc
 
 
 async def check_url(url: str, *, timeout_s: float = RESOLVE_TIMEOUT_S) -> ResolvedTarget:

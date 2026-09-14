@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import json
+import uuid
 from pathlib import Path
 from typing import Any
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from sieve.api.routes.scans import MAX_IDEMPOTENCY_KEY_BYTES
 from sieve.config import settings
+from sieve.db.models import Scan
 from sieve.worker import scan_job
 from sieve.worker.main import run_once
 from sieve.worker.queue import REMOTE_SCAN_KIND, SCAN_KIND
@@ -217,6 +220,60 @@ async def test_too_many_tools_is_413(api: AsyncClient) -> None:
 async def test_a_source_type_without_its_payload_is_422(api: AsyncClient) -> None:
     assert (await api.post("/api/v1/scans", json={"source_type": "tools_json"})).status_code == 422
     assert (await api.post("/api/v1/scans", json={"source_type": "remote_url"})).status_code == 422
+
+
+@pytest.mark.parametrize(
+    ("url", "because"),
+    [
+        ("http://example.invalid/mcp", "only https is allowed"),
+        ("https://user:pass@example.invalid/mcp", "credentials in the URL"),
+        ("https://example.invalid:8443/mcp", "only port 443"),
+        ("https:///mcp", "no host"),
+        ("not a url at all", "no scheme"),
+    ],
+)
+async def test_an_unfetchable_remote_url_is_422_at_the_boundary(
+    api: AsyncClient, sessions: async_sessionmaker[AsyncSession], url: str, because: str
+) -> None:
+    """Fix round 2, I3: these were accepted with a 202, queued, and only refused inside the
+    sandbox minutes later -- as a dead job rather than an answer the submitter can read.
+
+    The checks are pure syntax (`sieve/urls.py`), so they can run at POST time; DNS resolution
+    and the blocked-range check stay in the sandbox, where SC-1 puts them.
+    """
+    response = await api.post(
+        "/api/v1/scans", json={"source_type": "remote_url", "remote_url": url}
+    )
+    assert response.status_code == 422, f"{url} ({because}) was accepted"
+    assert await tick(sessions) is False, "nothing was queued"
+    assert await sandbox_tick(sessions) is False
+
+
+async def test_a_credential_in_a_remote_url_query_never_reaches_source_ref(
+    api: AsyncClient, session: AsyncSession
+) -> None:
+    """Fix round 2, I3: `source_ref` was the one writer that did not pass through `redact`.
+
+    In-URL credentials are refused outright by the validator above, but a key in a query
+    parameter is a syntactically fine URL -- and `source_ref` is stored, returned by
+    `GET /scans/{id}` and handed to SARIF, so it is a writer like every other (SC-5).
+    """
+    secret = "AKIA7SIEVEREMOTEURL1"  # noqa: S105 -- a shaped, non-live test string
+    created = await api.post(
+        "/api/v1/scans",
+        json={
+            "source_type": "remote_url",
+            "remote_url": f"https://example.invalid/mcp?api_key={secret}",
+        },
+    )
+    assert created.status_code == 202
+    stored = (
+        await session.execute(
+            select(Scan.source_ref).where(Scan.id == uuid.UUID(created.json()["id"]))
+        )
+    ).scalar_one()
+    assert secret not in (stored or ""), "SC-5: the key reached scans.source_ref"
+    assert "example.invalid" in (stored or ""), "the host survived; the key did not"
 
 
 async def test_an_unknown_scan_is_404_everywhere(api: AsyncClient) -> None:

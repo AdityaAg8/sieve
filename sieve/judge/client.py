@@ -149,7 +149,7 @@ class AnthropicJudge:
         """Returns JudgeFailure(kind="budget_exhausted") WITHOUT calling the API when
         `budget` is set and returns False."""
         if self._budget is not None and not self._budget():
-            LOGGER.info("judge skipped for %s: daily budget exhausted", record.id)
+            LOGGER.info("judge skipped for %r: daily budget exhausted", record.id)
             return JudgeFailure(
                 kind="budget_exhausted",
                 detail="daily judge budget exhausted; no API call was made",
@@ -178,9 +178,15 @@ class AnthropicJudge:
             )
             nonce = new_nonce()
             block = render_tool_block(safe, nonce=nonce)
+            # `%r`, not `%s`, for `record.id` (fix round 2, M7). From the API it is
+            # `f"{server_name}/{tool.name}"`, and `server_name` comes straight from the
+            # submitted body with no character constraint -- unlike `tool.name`, which
+            # `TOOL_NAME_RE` bounds. `JsonFormatter` escapes newlines, but
+            # `configure_logging(replace=False)` leaves pre-existing handlers in place and
+            # those may not; `repr` escapes them here, before any handler sees the string.
             # SC-5: the block is the raw (redacted) tool text. DEBUG only, never INFO.
-            LOGGER.info("judging %s with %s (redacted: %s)", record.id, self.model, kinds or "none")
-            LOGGER.debug("judge request block for %s:\n%s", record.id, block)
+            LOGGER.info("judging %r with %s (redacted: %s)", record.id, self.model, kinds or "none")
+            LOGGER.debug("judge request block for %r:\n%s", record.id, block)
             message = self._call(block, nonce=nonce, p_stage1=p_stage1)
         except anthropic.APITimeoutError as exc:
             return JudgeFailure(
@@ -191,7 +197,7 @@ class AnthropicJudge:
         except anthropic.APIError as exc:
             return JudgeFailure(kind="api_error", detail=f"{type(exc).__name__}: {exc}"[:500])
         except Exception as exc:
-            LOGGER.exception("judge failed before a verdict for %s", record.id)
+            LOGGER.exception("judge failed before a verdict for %r", record.id)
             return JudgeFailure(
                 kind="api_error",
                 detail=f"internal judge error: {type(exc).__name__}: {exc}"[:500],
