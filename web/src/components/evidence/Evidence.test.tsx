@@ -172,7 +172,7 @@ describe("<FindingDetail />", () => {
       />,
     );
     expect(
-      screen.getByText("Needs review — the daily judge budget was exhausted"),
+      screen.getByText("Needs review — the judge budget was exhausted"),
     ).toBeInTheDocument();
     expect(screen.queryByText("judge_budget_exhausted")).not.toBeInTheDocument();
   });

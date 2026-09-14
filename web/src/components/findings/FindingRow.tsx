@@ -20,6 +20,11 @@ type Props = {
  * One row of the triage list. Hover and selection move the row's border and its left marker —
  * never its fill — because `--ink-3` (dismissed) is only contrast-safe on `--bg-0` and
  * `--bg-1`. See web/DESIGN.md §3.
+ *
+ * `sm:min-h-28`, not `sm:h-28`: the row's own content measures 138–141 px once the sub-label
+ * list and the dismissal reason are present, so a hard 112 px box clipped its last line from
+ * 640 px up. The floor keeps most of the reserved-row CLS benefit; a row that needs more takes
+ * it rather than painting over the next one.
  */
 export function FindingRow({ finding, selected, tabStop, onOpen }: Props) {
   const { result } = finding;
@@ -42,7 +47,7 @@ export function FindingRow({ finding, selected, tabStop, onOpen }: Props) {
         aria-current={selected ? "true" : undefined}
         tabIndex={tabStop ? 0 : -1}
         onClick={() => onOpen(finding)}
-        className={`u-interactive bg-bg-1 relative w-full rounded-2 border px-4 py-3 text-left before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:content-[''] sm:h-28 ${marker} ${
+        className={`u-interactive bg-bg-1 relative w-full rounded-2 border px-4 py-3 text-left before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:content-[''] sm:min-h-28 ${marker} ${
           selected ? "border-line-2" : "border-line-1 hover:border-line-2"
         }`}
       >

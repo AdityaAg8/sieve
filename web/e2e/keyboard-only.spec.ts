@@ -63,7 +63,21 @@ test("the palette is operable with the keyboard alone", async ({ page }) => {
   await page.goto(`/scan/${EXPECTED.scanId}`);
   await expect(page.getByTestId("group-count-confirmed")).toBeVisible();
 
+  // Wait on state, not a timer. `CommandPalette` is a cmdk `Command.Dialog` mounted on a React
+  // state change, and until `Command.Input` is mounted and focused the keystrokes go to the page
+  // body — where the results screen binds 0/1/j/k/? as shortcuts. A slow first render swallowed a
+  // prefix of "set_location", which both changed cmdk's ranking and could fire a filter shortcut
+  // underneath.
+  //
+  // Two waits, and neither is `expect(dialog).toBeVisible()`: cmdk's own `div[cmdk-dialog]`
+  // wrapper carries no class of ours, and the styled `Command` root inside it is
+  // `fixed`-positioned, so the wrapper collapses to a zero-size box and Playwright calls it
+  // hidden while everything inside it is on screen. The combobox is the honest gate — it is
+  // both "the palette is mounted" and "the next keystroke lands here" — and the tool list is
+  // fed by the scan feed, which arrives separately from the palette opening.
   await page.keyboard.press("ControlOrMeta+k");
+  await expect(page.getByRole("combobox", { name: "Command palette" })).toBeFocused();
+  await expect(page.getByRole("option", { name: /weather\/set_location/ })).toBeVisible();
   await page.keyboard.type("set_location");
 
   // cmdk re-ranks as it filters; wait for the tool to be the highlighted option before Enter.

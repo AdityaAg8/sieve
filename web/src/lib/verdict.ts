@@ -53,10 +53,16 @@ export function dismissalReason(result: TriageResult): string | null {
 /**
  * What a `needs_review` verdict means when the stage explains it. A bare stage string
  * ("judge_budget_exhausted") is a database value, not a sentence for a person.
+ *
+ * `judge_budget_exhausted` covers **two** budgets, not one (fix round 2, M1): the daily spend
+ * ledger PRD §13.2 names, and the per-scan call cap (`SIEVE_JUDGE_MAX_CALLS_PER_SCAN`) that a
+ * scan with more band tools than the cap reaches on its own. The API sends one stage for both,
+ * so this copy says only what is certainly true of either — the judge did not see this tool, so
+ * a human should. Telling them apart needs a second stage in the contract, not a guess here.
  */
 export function stageNote(result: TriageResult): string | null {
   const notes: Partial<Record<Stage, string>> = {
-    judge_budget_exhausted: "Needs review — the daily judge budget was exhausted",
+    judge_budget_exhausted: "Needs review — the judge budget was exhausted",
     judge_failed: "Needs review — the judge did not return a usable answer",
   };
   return notes[result.stage] ?? null;
