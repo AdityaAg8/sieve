@@ -30,7 +30,7 @@ N_BOOT = 30
 DEFAULT_JUDGE = "claude-haiku-4-5"
 PERCENT = re.compile(r"\d+(?:\.\d+)?\s?%")
 #: A line outside the generated block may only carry a percentage when it says whose it is.
-PERCENT_IS_ALLOWED = ("target", "goal", "prd", "not measured", "budget", "pending")
+PERCENT_IS_ALLOWED = ("target", "goal")
 
 
 def _load_script() -> ModuleType:
@@ -291,9 +291,11 @@ def _block_lines(text: str) -> list[str]:
 
 def test_the_committed_readme_carries_the_placeholder_block() -> None:
     text = README.read_text(encoding="utf-8")
-    assert rn.MARK_START in text and rn.MARK_END in text
+    assert rn.MARK_START in text and rn.MARK_END in text, "the block is part of the committed file"
     block = _block(text)
-    assert "—" in block, "the placeholder block says the numbers are not measured yet"
+    assert block.strip(), "the block is never empty"
+    if "—" not in block:
+        pytest.skip("the numbers have landed: `make readme` has filled the block in")
     assert "make bench" in block and "make eval-final" in block
 
 
@@ -511,11 +513,52 @@ def test_the_committed_results_directory_cannot_produce_a_readme_today(
     readme: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """No training has happened, so `make readme` must refuse rather than write a placeholder."""
-    assert not (REPO / "bench" / "results" / "holdout.json").exists()
+    if (REPO / "bench" / "results" / "holdout.json").exists():
+        pytest.skip("the holdout has been opened; `make readme` no longer has nothing to read")
     before = readme.read_bytes()
     assert int(rn.main(["--readme", str(readme)])) != 0
     assert readme.read_bytes() == before
     assert "holdout.json" in capsys.readouterr().err
+
+
+def test_a_failed_write_leaves_the_readme_byte_identical(
+    results: Path, readme: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The README is replaced, never truncated in place: a crash mid-write loses nothing."""
+    before = readme.read_bytes()
+    real_write_text = Path.write_text
+
+    def explode(self: Path, *args: Any, **kwargs: Any) -> int:
+        if self.name.endswith(".tmp"):
+            raise OSError("disk full")
+        return int(real_write_text(self, *args, **kwargs))
+
+    monkeypatch.setattr(Path, "write_text", explode)
+    with pytest.raises(OSError, match="disk full"):
+        _run(results, readme)
+    monkeypatch.undo()
+
+    assert readme.read_bytes() == before, "a failed write must not leave a truncated README"
+
+
+def test_the_provenance_line_refuses_a_missing_key_instead_of_defaulting(
+    results: Path, readme: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`n_boot` is a fact too. A default would print "0 bootstrap resamples" as if measured."""
+    partial = tmp_path / "no-n-boot"
+    partial.mkdir()
+    for path in results.glob("*.json"):
+        (partial / path.name).write_bytes(path.read_bytes())
+    payload = json.loads((partial / "ablations.json").read_text(encoding="utf-8"))
+    del payload["n_boot"]
+    (partial / "ablations.json").write_text(
+        json.dumps(payload, indent=2), encoding="utf-8", newline="\n"
+    )
+    before = readme.read_bytes()
+
+    assert _run(partial, readme) != 0
+    assert readme.read_bytes() == before
+    assert "n_boot" in capsys.readouterr().err
 
 
 def test_the_generator_never_writes_into_bench_results(results: Path, readme: Path) -> None:

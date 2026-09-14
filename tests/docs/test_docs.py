@@ -73,6 +73,26 @@ def test_every_test_named_in_the_threat_model_exists() -> None:
             assert f"def {test_name}(" in body, f"{path} has no {test_name}"
 
 
+def test_the_stride_table_is_one_contiguous_block_of_numbered_rows() -> None:
+    """GFM ends a table at the first blank line: an orphaned row renders as literal text."""
+    lines = THREAT_MODEL.read_text(encoding="utf-8").split("\n")
+    header = next(i for i, line in enumerate(lines) if line.startswith("| # | Asset | Threat |"))
+    assert lines[header + 1].startswith("|---"), "the header separator follows the header"
+
+    body: list[str] = []
+    for line in lines[header + 2 :]:
+        if not line.startswith("|"):
+            break
+        body.append(line)
+    numbers = [int(line.split("|")[1].strip()) for line in body]
+    assert numbers == list(range(1, len(numbers) + 1)), f"rows are not 1..n in order: {numbers}"
+    assert len(numbers) == 27, f"the STRIDE-lite table has {len(numbers)} rows, expected 27"
+
+    # And nothing that looks like a row may sit outside the block it belongs to.
+    rows_in_file = [line for line in lines if re.match(r"^\| \d+ \| A", line)]
+    assert len(rows_in_file) == len(body), "a numbered row is stranded outside the table"
+
+
 def test_the_threat_model_has_every_section_prd_17_3_names() -> None:
     text = THREAT_MODEL.read_text(encoding="utf-8").lower()
     for heading in ("## assets", "## trust boundaries", "## stride", "## residual risks"):
@@ -191,9 +211,19 @@ def test_the_writeup_places_its_figures_in_bench_results_figures() -> None:
     assert len(set(figures)) == len(figures), "two figure slots share a filename"
 
 
-def test_the_writeup_is_marked_for_the_human_and_states_no_result() -> None:
+def test_the_writeup_quotes_no_sieve_result_and_attributes_the_audit_it_does_quote() -> None:
+    """Nothing has been trained, so no section may carry a number out of `bench/results/`.
+
+    The one quantity the skeleton does quote is the published audit's false-positive rate, and
+    it carries that figure's interval and n, exactly as the document's own rule at the top
+    demands. `95% CI` is the results idiom this project uses for its own measurements.
+    """
     text = WRITEUP.read_text(encoding="utf-8")
     assert "<!-- human: rewrite -->" in text
     assert "skeleton" in text.lower()
-    # No section may quote a measured figure: nothing has been trained.
     assert "95% CI" not in text
+    audit = [line for line in text.splitlines() if "78%" in line]
+    assert len(audit) == 1, f"the audit's rate is quoted {len(audit)} times"
+    assert "[59%, 90%]" in audit[0] and "n = 27" in audit[0], (
+        "the audit's rate is only ever quoted with its interval and n (PRD §1.1)"
+    )

@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -39,13 +40,12 @@ MARK_END = "<!-- numbers:end -->"
 
 #: The judge model the shipped pipeline uses (PRD §12.1). The headline row is the ablation row
 #: that runs the classifier *and* this judge, because that is the configuration M1 is defined
-#: at. Read from settings rather than repeated here, for the same reason thresholds are.
-try:  # pragma: no cover - exercised indirectly; the fallback only matters without the package
-    from sieve.config import settings
+#: at. Read from settings rather than repeated here, for the same reason thresholds are: a
+#: fallback string here would let the README quote a row that the deployment does not run, so
+#: an unimportable `sieve` is a crash rather than a guess.
+from sieve.config import settings  # noqa: E402 - the comment above belongs to this import
 
-    HEADLINE_JUDGE = settings.judge_model
-except Exception:  # pragma: no cover - `sieve` must be importable for `make readme`
-    HEADLINE_JUDGE = "claude-haiku-4-5"
+HEADLINE_JUDGE = settings.judge_model
 
 
 class Refused(Exception):  # noqa: N818 - it is a refusal to write, not an error condition
@@ -198,12 +198,26 @@ def _real_poisoned_line(holdout: dict[str, Any]) -> str:
     )
 
 
+def _required(payload: dict[str, Any], key: str, source: str) -> Any:
+    """A provenance key is a fact too. A default here would print a 0 nobody measured."""
+    value = payload.get(key)
+    if value is None:
+        raise Refused(
+            f"{source} carries no `{key}`; the provenance line states what produced the four "
+            "numbers above, so a missing key is a refusal rather than a default"
+        )
+    return value
+
+
 def _provenance_line(
     holdout: dict[str, Any], ablations: dict[str, Any], selection: Any, curves: Any
 ) -> str:
+    dataset = holdout.get("dataset_version") or _required(
+        ablations, "dataset_version", "ablations.json"
+    )
     parts = [
-        f"dataset `{holdout.get('dataset_version') or ablations.get('dataset_version')}`",
-        f"{int(ablations.get('n_boot', 0))} bootstrap resamples",
+        f"dataset `{dataset}`",
+        f"{int(_required(ablations, 'n_boot', 'ablations.json'))} bootstrap resamples",
     ]
     if isinstance(selection, dict) and selection.get("winner"):
         parts.append(f"encoder `{selection['winner']}` (`selection.json`)")
@@ -211,7 +225,7 @@ def _provenance_line(
         parts.append(
             f"{len(curves['recall_vs_threshold'])} threshold points in `curves.json`",
         )
-    parts.append(f'holdout opened once for "{holdout.get("reason", "")}"')
+    parts.append(f'holdout opened once for "{_required(holdout, "reason", "holdout.json")}"')
     return (
         "*Every figure above is written by `make readme` from `bench/results/` and none of it "
         "is typed by hand: " + "; ".join(parts) + ".*"
@@ -284,6 +298,19 @@ def replace_block(text: str, block: str) -> str:
     return head + MARK_START + block + MARK_END + tail
 
 
+def write_atomically(readme: Path, text: str) -> None:
+    """Write beside the README, then rename over it.
+
+    `write_text` truncates first, so a failure half way through leaves a README with part of a
+    number block and no way to tell. `os.replace` is atomic on Windows and POSIX alike, so the
+    file a reader sees is either the old one or the whole new one. A failed attempt leaves the
+    temporary file behind rather than removing evidence of it.
+    """
+    temporary = readme.with_suffix(".md.tmp")
+    temporary.write_text(text, encoding="utf-8", newline="\n")
+    os.replace(temporary, readme)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python docs/scripts/readme_numbers.py")
     parser.add_argument(
@@ -309,7 +336,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"make readme: {refusal}", file=sys.stderr)
         return 2
     if updated != text:
-        readme.write_text(updated, encoding="utf-8", newline="\n")
+        write_atomically(readme, updated)
     print(f"make readme: wrote the headline numbers into {readme}")
     return 0
 
@@ -327,6 +354,7 @@ __all__ = [
     "ratio",
     "render_block",
     "replace_block",
+    "write_atomically",
 ]
 
 if __name__ == "__main__":  # pragma: no cover
