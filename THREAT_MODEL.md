@@ -247,6 +247,25 @@ back into the cross-client read the namespacing existed to stop.
 `tests/api/test_sse.py::test_a_stream_that_is_never_started_still_gives_its_slot_back`,
 `tests/api/test_ratelimit.py::test_a_spoofed_left_most_forwarded_for_does_not_become_the_client`.
 
+### Closed by the C3 contracts change (commit `ef153ec`)
+
+Not Task 11.1's to close — `sieve/redact.py` is a shared file and PRD §19 routes it through a
+contracts PR — so it was handed on as one, and the contracts PR landed it.
+
+- **`sieve/redact.py` walked values, not keys** (open risk 3 below, now closed). A credential
+  used as a JSON-schema *property name* — `{"properties": {"AKIA…": {...}}}` — was rendered into
+  a `[PARAM]` line by `sieve/serialise.py` and survived into the database, the judge's block and
+  SARIF. A credential-shaped key is now replaced by `<REDACTED:key:N>` in `inputSchema`,
+  `outputSchema` and `annotations`, at any depth, with the remaining keys in their original
+  order. The placeholder is allocated against the object's whole key set, so a hostile schema
+  that plants a literal `<REDACTED:key:1>` beside a real credential cannot make the two collide
+  and cannot make the redacted key overwrite a sibling (SC-7: the schema is attacker-controlled).
+  `tests/test_redact.py::test_redact_tool_redacts_credential_shaped_key_in_input_schema_properties`,
+  `tests/test_redact.py::test_redact_tool_redacts_credential_shaped_key_in_nested_output_schema`,
+  `tests/test_redact.py::test_redact_tool_gives_two_credential_keys_in_one_object_distinct_placeholders`,
+  `tests/test_redact.py::test_redact_tool_placeholder_never_collides_with_a_literal_key_that_comes_first`,
+  `tests/test_redact.py::test_redact_tool_preserves_order_of_remaining_keys`.
+
 ### Open
 
 1. **A hostile resolver can still occupy an executor thread.** Nothing in CPython interrupts a
@@ -262,12 +281,9 @@ back into the cross-client read the namespacing existed to stop.
    time per scan. A judge that reports no usage falls back to the PRD §12.4 estimate. Accepted by
    ruling in Task 11.1 and re-verified there: changing it means changing the `Judge` protocol in
    `sieve/protocols.py`, which is a contracts PR, not a security fix.
-3. **`sieve/redact.py` walks values, not keys.** A credential used as a JSON-schema *property
-   name* — `{"properties": {"AKIA…": {...}}}` — is rendered by `sieve/serialise.py` into a
-   `[PARAM]` line and survives into the database, the judge's block and SARIF. Accepted as low:
-   a key is a field name, so this is a place credentials are pasted by accident rather than by
-   habit, and redacting a key would change the schema's shape for every consumer of it. That file
-   is not Task 11.1's to edit (PRD §19); it is handed on as a contracts change.
+3. **~~`sieve/redact.py` walks values, not keys.~~ Closed** by the C3 contracts change; the entry
+   is above, with its tests. The number is kept rather than reused so that 4–13 still mean what
+   this document's reviews and hand-offs say they mean.
 4. **A worker failure still tells the client *what* failed.** The message is redacted and bounded
    now, but it still names the exception type and, for a blocked remote scan, the address a host
    resolved to. Accepted: the only party who can read a scan's error is the party who created
@@ -293,7 +309,11 @@ back into the cross-client read the namespacing existed to stop.
    somebody else's, so it degrades availability and never becomes a cross-client read. The same
    collapse happens with `SIEVE_TRUST_PROXY=false` behind any proxy at all. A deployment that
    adds a second hop has to count hops here rather than trust a header.
-   `tests/api/test_ratelimit.py::test_forwarded_for_is_only_trusted_behind_a_proxy`.
+   `tests/api/test_ratelimit.py::test_three_forwarded_for_entries_still_resolve_to_the_right_most`
+   is the two-hop case itself: three entries, the right-most wins, and two different callers
+   behind the same inner proxy collapse to one pseudonym — the accepted cost — while neither
+   becomes the other. `tests/api/test_ratelimit.py::test_forwarded_for_is_only_trusted_behind_a_proxy`
+   covers the one-hop default.
 8. **The judge self-defence gate has never run against a real model.** Row 2 and the injection
    section say so. Until it is recorded, Sieve's injection resistance is a design claim, and this
    review changes nothing about that: it is **unmeasured**.
@@ -315,19 +335,32 @@ back into the cross-client read the namespacing existed to stop.
 12. **The `real_poisoned` slice and the holdout are tiny.** Every interval published from them is
     a cluster bootstrap over a small number of servers and is wide by construction. A number with
     a wide interval is not a claim.
-13. **The Action installs from PyPI, where Sieve is not published.**
+13. **A hard cancellation of the SSE response itself can still lose a slot.** The reservation is
+    released twice over — the generator's `finally` (`sieve/api/sse.py`) and a
+    `BackgroundTask(slot.release)` on the response (`sieve/api/routes/scans.py:160`) — which
+    between them cover a stream that ends, fails, is dropped, or is cancelled before its first
+    iteration. What neither covers is `EventSourceResponse.__call__` being cancelled *outside*
+    its own task group: the background task is run by the ASGI response after `__call__` returns,
+    and a `__call__` that never returns never reaches it. The slot then leaks for the life of the
+    process, and `MAX_CONCURRENT_STREAMS` leaks toward zero. Accepted for now: it needs a
+    server-level cancellation (a shutdown mid-stream, a `--timeout-graceful-shutdown` kill) rather
+    than anything a client can send, and the fix is a different shape — a request-scoped slot
+    lifetime, released by the ASGI middleware that owns the request rather than by the response —
+    which is out of scope for Task 11.3.
+14. **The Action installs from PyPI, where Sieve is not published.**
     `.github/workflows/self-scan.yml` fails at that step today (L7 hand-off). Nothing depends on
     it for security, but a green self-scan badge is not available as evidence.
 
 <!-- human: rewrite -->
 **Which of these are accepted and which are scheduled** is a judgement call the human owns. The
-agent's reading after Task 11.1 and its first review round is that **3** is the only open item
-that still leaks data and should go into the next contracts PR; **11** blocks a release of the
-model lane rather than of this one; **8** and **9** block publishing a claim about injection
-resistance and about artefact integrity respectively; **7** is the one to re-read the day the
-deployment topology changes, because its assumption is about the network and not about this code;
-and 1, 2, 4, 5, 6 and 10 are bounded by deployment facts that a different deployment would
-invalidate.
+agent's reading after Task 11.1, its first review round, and Task 11.3 is that **no open item
+still leaks data** — 3 was the last one and the C3 contracts change closed it; **11** blocks a
+release of the model lane rather than of this one; **8** and **9** block publishing a claim about
+injection resistance and about artefact integrity respectively; **7** is the one to re-read the
+day the deployment topology changes, because its assumption is about the network and not about
+this code; **13** is a bounded leak of a counter rather than of data, and is worth fixing when
+the SSE route is next opened; and 1, 2, 4, 5, 6 and 10 are bounded by deployment facts that a
+different deployment would invalidate.
 
 ## Out of scope
 
