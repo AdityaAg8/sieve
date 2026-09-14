@@ -31,6 +31,14 @@ from sieve.redact import redact
 #: Long enough for a real diagnosis, short enough that a 5 MB `ValidationError` is not a row.
 MAX_ERROR_CHARS = 500
 
+#: The bound for a *log* line rather than a row. A traceback is the one caller whose useful part
+#: is at the **end** -- the exception type and message follow every frame -- so `MAX_ERROR_CHARS`
+#: cuts exactly the diagnosis it was sized to preserve: measured, a seven-frame traceback reaches
+#: 500 characters somewhere in the middle of the frame list. A log line is not a database column
+#: and does not need a column's bound; it still needs *a* bound, because the string being
+#: truncated is attacker-influenced (SC-7) and nothing else limits it.
+MAX_TRACEBACK_CHARS = 8_000
+
 #: Appended when something was cut, so a truncated message is never mistaken for a whole one.
 ELLIPSIS = "…"
 
@@ -40,12 +48,23 @@ def safe_error(exc: BaseException) -> str:
     return safe_detail(f"{type(exc).__name__}: {exc}")
 
 
-def safe_detail(detail: str) -> str:
-    """The same treatment for a message that was assembled rather than raised."""
+def safe_detail(detail: str, *, limit: int = MAX_ERROR_CHARS) -> str:
+    """The same treatment for a message that was assembled rather than raised.
+
+    `limit` exists for one caller -- `sieve/logging.py`'s traceback -- and defaults to the row
+    bound every other caller has always had. Redaction is the part that is not negotiable and
+    is identical either way.
+    """
     redacted, _kinds = redact(detail)
-    if len(redacted) <= MAX_ERROR_CHARS:
+    if len(redacted) <= limit:
         return redacted
-    return redacted[: MAX_ERROR_CHARS - len(ELLIPSIS)] + ELLIPSIS
+    return redacted[: limit - len(ELLIPSIS)] + ELLIPSIS
 
 
-__all__ = ["ELLIPSIS", "MAX_ERROR_CHARS", "safe_detail", "safe_error"]
+__all__ = [
+    "ELLIPSIS",
+    "MAX_ERROR_CHARS",
+    "MAX_TRACEBACK_CHARS",
+    "safe_detail",
+    "safe_error",
+]

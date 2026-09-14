@@ -13,7 +13,7 @@ import sys
 from typing import Any
 
 from sieve.config import settings
-from sieve.errors import safe_detail
+from sieve.errors import MAX_TRACEBACK_CHARS, safe_detail
 
 # Reserved attributes of `logging.LogRecord`; everything else on a record came from `extra`.
 _RESERVED = frozenset(
@@ -67,7 +67,12 @@ class JsonFormatter(logging.Formatter):
             # from inside the `try` that wraps `redact_tool`, i.e. the one place where the
             # record has *not yet been redacted*, so a `ValidationError` raised while redacting
             # printed the value it rejected straight into the aggregator at ERROR.
-            payload["exc"] = safe_detail(self.formatException(record.exc_info))
+            # Bounded at `MAX_TRACEBACK_CHARS`, not at the row bound: a traceback's useful
+            # part is its *last* line, so the 500-character column limit would cut the
+            # exception type and message off the end of anything deeper than six frames.
+            payload["exc"] = safe_detail(
+                self.formatException(record.exc_info), limit=MAX_TRACEBACK_CHARS
+            )
         return json.dumps(payload, default=str, ensure_ascii=False)
 
 

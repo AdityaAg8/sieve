@@ -336,3 +336,37 @@ async def test_a_secret_in_a_traceback_is_redacted_before_the_log_record_is_form
     # redaction belongs in the formatter, at the moment the traceback becomes a line. A
     # deployment that attaches a handler with a plain `logging.Formatter` gets that handler's
     # own rendering; `configure_logging` installs `JsonFormatter` on the one it owns.
+
+
+def test_a_deep_traceback_keeps_its_last_line_while_still_being_bounded() -> None:
+    """The redaction bound must not eat the diagnosis (fix round 2, I4 self-review).
+
+    A traceback is the one string in this codebase whose useful part is at the **end**: every
+    frame comes first and the exception type and message come last. `safe_detail`'s default
+    bound is sized for a database column (500 characters), and a seven-frame traceback passes
+    that somewhere in the middle of the frame list -- so routing the traceback through the
+    default would have redacted it correctly and thrown away the reason.
+    """
+    import sys
+
+    from sieve.errors import MAX_TRACEBACK_CHARS
+    from sieve.logging import JsonFormatter
+
+    source = f"def f0():\n    raise ValueError('DIAGNOSIS {DESCRIPTION_SECRET}')\n"
+    for i in range(1, 8):
+        source += f"def f{i}():\n    f{i - 1}()\n"
+    namespace: dict[str, Any] = {}
+    exec(compile(source, "deep_frames.py", "exec"), namespace)  # noqa: S102 - frames, on purpose
+
+    logger = logging.getLogger("sieve.test.deep")
+    try:
+        namespace["f7"]()
+    except ValueError:
+        record = logger.makeRecord(logger.name, logging.ERROR, "f", 1, "boom", (), sys.exc_info())
+
+    exc = json.loads(JsonFormatter().format(record))["exc"]
+    assert len(exc) > 500, "the fixture must exceed the row bound, or it proves nothing"
+    assert len(exc) <= MAX_TRACEBACK_CHARS, "still bounded: the string is attacker-influenced"
+    assert "ValueError: DIAGNOSIS" in exc, "the last line is the diagnosis and must survive"
+    assert DESCRIPTION_SECRET not in exc, "SC-5 still holds at the larger bound"
+    assert REDACTED in exc
