@@ -47,7 +47,7 @@ export function ScanUnavailable(props: Props) {
 
       {/* The worker's error text came out of an analysed tool's neighbourhood and is untrusted
           data (PRD SC-7): it is a string child, never markup, never a URL. */}
-      <h1 className="t-h1 text-ink-0 max-w-[24ch] break-words">{heading}</h1>
+      <h1 className="t-h2 text-ink-0 max-w-[24ch] break-words">{heading}</h1>
 
       <p className="t-body text-ink-1 max-w-[62ch]">
         {expired

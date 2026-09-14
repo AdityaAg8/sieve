@@ -77,7 +77,7 @@ export function BenchmarkScreen() {
       <HoldoutLog rows={tables.test_opened ?? []} />
 
       <section aria-labelledby="artefacts" className="border-line-1 flex min-w-0 flex-col gap-4 border-t pt-10">
-        <h2 id="artefacts" className="t-h2 text-ink-0">
+        <h2 id="artefacts" className="t-h3 text-ink-0">
           Artefacts
         </h2>
         <ul className="t-ui flex flex-wrap gap-x-6 gap-y-2">
@@ -88,7 +88,7 @@ export function BenchmarkScreen() {
                   href={destination.href}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="u-interactive text-ink-1 hover:text-ink-0 border-line-2 border-b pb-0.5"
+                  className="u-interactive text-ink-1 hover:text-ink-0 border-line-2 inline-flex min-h-6 items-end border-b pb-0.5"
                 >
                   {destination.label}
                 </a>

@@ -7,6 +7,16 @@ import { fileURLToPath } from "node:url";
 // regex strip breaks on any path containing an escaped character.
 const ROOT = fileURLToPath(new URL("../src", import.meta.url));
 const ALLOW = new Set(["styles/tokens.css"]);
+
+// The one escape hatch, and it is checked rather than trusted: a line may carry
+// `lint-tokens-allow: mirrors --<token>` where a literal is unavoidable — a `<meta>` content
+// attribute cannot hold `var(--bg-0)` — and every hex on that line must then equal the token.
+const TOKENS_CSS = fileURLToPath(new URL("../src/styles/tokens.css", import.meta.url));
+const TOKEN_VALUES = new Map(
+  [...readFileSync(TOKENS_CSS, "utf8").matchAll(/--([a-z0-9-]+)\s*:\s*(#[0-9a-fA-F]{3,8})\s*;/g)]
+    .map(([, name, hex]) => [name, hex.toLowerCase()]),
+);
+const MIRROR = /lint-tokens-allow:\s*mirrors\s+--([a-z0-9-]+)/;
 // A font-family/fontFamily declaration is only a violation when its value isn't a token
 // reference — `var(--font-*)` is the only permitted value anywhere outside tokens.css.
 const PATTERNS = [
@@ -29,6 +39,22 @@ for (const f of files) {
   if (ALLOW.has(rel) || rel === "lib/api-types.ts") continue;
   const lines = readFileSync(f, "utf8").split("\n");
   lines.forEach((line, i) => {
+    const mirror = MIRROR.exec(line);
+    if (mirror) {
+      const token = mirror[1];
+      const expected = TOKEN_VALUES.get(token);
+      const literals = [...line.matchAll(/#[0-9a-fA-F]{3,8}\b/g)].map(([hex]) => hex.toLowerCase());
+      if (expected === undefined) {
+        console.error(`${rel}:${i + 1}: mirrors --${token}, which tokens.css does not define`);
+        failures++;
+      } else if (literals.some((hex) => hex !== expected)) {
+        console.error(
+          `${rel}:${i + 1}: claims to mirror --${token} (${expected}) but spells ${literals.join(", ")}`,
+        );
+        failures++;
+      }
+      return;
+    }
     for (const [re, why] of PATTERNS) {
       if (re.test(line) && !line.includes("lint-tokens-allow")) {
         console.error(`${rel}:${i + 1}: ${why}: ${line.trim()}`);

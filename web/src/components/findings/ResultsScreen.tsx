@@ -225,11 +225,15 @@ export function ResultsScreen({
           />
         ) : null}
 
-        {notice ? (
-          <p role="status" className="t-ui text-ink-1">
-            {notice}
-          </p>
-        ) : null}
+        {/*
+          Mounted from first paint, not created when the first message arrives: a live region
+          inserted together with its own text is the classic case a screen reader does not
+          announce. `empty:sr-only` is what makes that free — while there is nothing to say the
+          paragraph is out of flow, so it contributes no height and no flex gap to the header.
+        */}
+        <p role="status" className="t-ui text-ink-1 empty:sr-only">
+          {notice}
+        </p>
       </header>
 
       <div className="mt-10 grid gap-8 lg:min-h-0 lg:flex-1 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">

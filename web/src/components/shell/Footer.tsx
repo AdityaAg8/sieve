@@ -16,7 +16,7 @@ export function Footer() {
                   href={destination.href}
                   rel="noreferrer noopener"
                   target="_blank"
-                  className="u-interactive text-ink-1 hover:text-ink-0 border-line-2 border-b pb-0.5"
+                  className="u-interactive text-ink-1 hover:text-ink-0 border-line-2 inline-flex min-h-6 items-end border-b pb-0.5"
                 >
                   {destination.label}
                 </a>

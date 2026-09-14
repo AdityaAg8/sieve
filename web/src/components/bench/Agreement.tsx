@@ -36,7 +36,7 @@ export function Agreement({ agreement }: { agreement: AgreementData | undefined 
         />
       </dl>
 
-      <TableWrap>
+      <TableWrap label="Per-class agreement table">
         <thead>
           <tr>
             <Th>Class</Th>

@@ -192,8 +192,16 @@ export function Sieve({ data, autoplay = true, replayable = true, onComplete }: 
               A fixed tray height, not a minimum: the sieve then occupies exactly the same box
               before and after the data arrives, which is what keeps the landing page's
               cumulative layout shift at zero. A full tray scrolls inside itself.
+
+              And because it scrolls, it is a tab stop: the dismissed tray holds 21 of the golden
+              scan's 27 tiles in 7.5 rem at every width, so without one a keyboard cannot reach
+              most of what the sieve is showing. The enclosing `<section>` already carries the
+              tray's name, so the box takes a tab stop and no second label.
             */}
-            <div className="scroll-y border-line-1 flex h-[7.5rem] flex-wrap content-start items-start gap-1.5 border-t pt-2">
+            <div
+              tabIndex={0}
+              className="scroll-y border-line-1 flex h-[7.5rem] flex-wrap content-start items-start gap-1.5 border-t pt-2"
+            >
               {tray.items.length === 0 ? (
                 <span className="t-ui text-ink-3">None</span>
               ) : (

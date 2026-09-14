@@ -21,7 +21,7 @@ export function MinimalPairs({ rows }: { rows: MinimalPairRow[] }) {
           <code className="t-mono">make bench</code>.
         </EmptyNote>
       ) : (
-        <TableWrap>
+        <TableWrap label="Minimal pairs table">
           <thead>
             <tr>
               <Th>Tier</Th>

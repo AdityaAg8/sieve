@@ -50,7 +50,8 @@ export function BreakdownChart({
 
   return (
     <section aria-labelledby={id} className="border-line-1 flex min-w-0 flex-col gap-4 border-t pt-10">
-      <h2 id={id} className="t-h2 text-ink-0">
+      {/* One step below the page title, like every other section seam. See `primitives.tsx`. */}
+      <h2 id={id} className="t-h3 text-ink-0">
         {title}
       </h2>
       <p className="t-body text-ink-1 max-w-[68ch]">{lede}</p>
@@ -128,7 +129,7 @@ export function BreakdownChart({
             </ResponsiveContainer>
           </div>
 
-          <TableWrap>
+          <TableWrap label={`${title} table`}>
             <thead>
               <tr>
                 <Th>{bucketLabel}</Th>

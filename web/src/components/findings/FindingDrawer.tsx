@@ -179,7 +179,9 @@ export function FindingDetail({
           <Row term="Stage" value={STAGE_LABEL[result.stage]} />
           <Row term="Model" value={result.model_version} />
           <Row term="Judge" value={result.judge_model ?? (judgeEnabled === false ? "Disabled on this deployment" : "Not used")} />
-          <Row term="Latency" value={`${result.latency_ms} ms`} />
+          {/* A non-breaking space: the provenance grid's value column is narrow at 320 px, and
+              "240" on one line with "ms" on the next is not a measurement. */}
+          <Row term="Latency" value={`${result.latency_ms} ms`} />
         </dl>
       </section>
     </article>

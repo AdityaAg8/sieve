@@ -35,7 +35,7 @@ export function Nav() {
                 <Link
                   href={route.href}
                   aria-current={active ? "page" : undefined}
-                  className={`u-interactive border-b pb-0.5 ${
+                  className={`u-interactive inline-flex min-h-6 items-end border-b pb-0.5 ${
                     active
                       ? "text-ink-0 border-ink-0"
                       : "text-ink-2 hover:text-ink-0 border-transparent"
@@ -52,7 +52,7 @@ export function Nav() {
                 href={links.repo}
                 rel="noreferrer noopener"
                 target="_blank"
-                className="u-interactive text-ink-2 hover:text-ink-0 border-b border-transparent pb-0.5"
+                className="u-interactive text-ink-2 hover:text-ink-0 inline-flex min-h-6 items-end border-b border-transparent pb-0.5"
               >
                 GitHub
               </a>

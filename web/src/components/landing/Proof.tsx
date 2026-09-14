@@ -58,7 +58,7 @@ export function Proof() {
         </h2>
         <Link
           href="/benchmark"
-          className="t-ui u-interactive text-ink-1 hover:text-ink-0 border-line-2 border-b pb-0.5"
+          className="t-ui u-interactive text-ink-1 hover:text-ink-0 border-line-2 inline-flex min-h-6 items-end border-b pb-0.5"
         >
           Read the full benchmark
         </Link>

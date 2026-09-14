@@ -23,7 +23,7 @@ export function ConfusionMatrix({ matrix }: { matrix: Matrix | undefined }) {
           No matrix yet. It appears with the first <code className="t-mono">make bench</code>.
         </EmptyNote>
       ) : (
-        <TableWrap>
+        <TableWrap label="Confusion matrix table">
           <thead>
             <tr>
               <Th>True \ predicted</Th>

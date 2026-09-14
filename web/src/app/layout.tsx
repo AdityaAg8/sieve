@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 
 import { Footer } from "@/components/shell/Footer";
@@ -47,6 +47,19 @@ const jetbrainsMono = localFont({
 export const metadata: Metadata = {
   title: "Sieve",
   description: "Sieve — a triage layer for MCP tool-poisoning scanner findings.",
+};
+
+/**
+ * The browser's own chrome — the address bar on Android, the title bar of an installed window —
+ * is painted from this, and a charcoal page under a white address bar is the one part of the
+ * dark-only rule the stylesheet cannot reach.
+ *
+ * A meta tag takes a literal, not `var(--bg-0)`, so this is the single colour value spelled
+ * outside `tokens.css`. It is not an exception on trust: `scripts/lint-tokens.mjs` reads the
+ * token and fails the lint if this line stops matching it.
+ */
+export const viewport: Viewport = {
+  themeColor: "#131316", // lint-tokens-allow: mirrors --bg-0
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

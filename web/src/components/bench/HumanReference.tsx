@@ -23,7 +23,7 @@ export function HumanReference({ points }: { points: HumanPoint[] }) {
           <code className="t-mono">make bench</code>.
         </EmptyNote>
       ) : (
-        <TableWrap>
+        <TableWrap label="Human reference table">
           <thead>
             <tr>
               <Th>Reader</Th>

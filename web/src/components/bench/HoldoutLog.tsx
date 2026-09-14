@@ -27,7 +27,7 @@ export function HoldoutLog({ rows }: { rows: HoldoutLogRow[] }) {
           <code className="t-mono">SIEVE_FINAL=1</code>, which appends a line here.
         </p>
       ) : (
-        <TableWrap>
+        <TableWrap label="Holdout log table">
           <thead>
             <tr>
               <Th>Commit</Th>

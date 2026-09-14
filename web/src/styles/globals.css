@@ -16,6 +16,16 @@ body {
   font-family: var(--font-body);
 }
 
+/*
+ * Dark-only, declared to the browser rather than only to the stylesheet: scrollbars, the
+ * `<input type="file">` button, form control internals and the default canvas behind a
+ * `<dialog>` all come from the UA, and without this they are rendered light on a charcoal page.
+ * The matching `theme-color` meta lives in `src/app/layout.tsx`, mirrored from `--bg-0`.
+ */
+html {
+  color-scheme: dark;
+}
+
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
@@ -58,6 +68,15 @@ dialog {
 :where(h1, h2, h3) {
   overflow-wrap: anywhere;
   min-width: 0;
+}
+
+/*
+ * `pretty`, not `balance`, for the lower headings: it only forbids a one-word last line, so a
+ * heading whose contents change — the results page's group headings carry a live count — does
+ * not re-wrap above the line that changed.
+ */
+:where(h2, h3) {
+  text-wrap: pretty;
 }
 
 ::selection {

@@ -16,7 +16,7 @@ export function AblationTable({ rows }: { rows: AblationRow[] }) {
           No ablations yet. They appear with the first <code className="t-mono">make bench</code>.
         </EmptyNote>
       ) : (
-        <TableWrap>
+        <TableWrap label="Ablations table">
           <thead>
             <tr>
               <Th>#</Th>

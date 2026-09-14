@@ -71,7 +71,7 @@ export function HeadlineTable({ headline }: { headline: Headline }) {
         independence here is the server, and resampling rows would report an interval narrower
         than the evidence supports."
     >
-      <TableWrap>
+      <TableWrap label="Headline numbers table">
         <thead>
           <tr>
             <Th>Metric</Th>
