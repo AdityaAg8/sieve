@@ -317,8 +317,20 @@ contracts PR — so it was handed on as one, and the contracts PR landed it.
 8. **The judge self-defence gate has never run against a real model.** Row 2 and the injection
    section say so. Until it is recorded, Sieve's injection resistance is a design claim, and this
    review changes nothing about that: it is **unmeasured**.
-9. **No artefact digest.** The Hub revision pin is optional and unset; nothing verifies the bytes
-   of a downloaded model against a recorded SHA.
+9. **No artefact digest on the serving path.** `SIEVE_MODEL_REVISION` is optional and unset, and
+   nothing verifies the bytes a running deployment pulled from the Hub against a recorded SHA.
+   **Partly closed since Task 11.3, on the reproduction path only:** `bench/artefacts.json` pins
+   a `hub_repo` and a `revision` per artefact and records a sha256 per file, and
+   `bench/artefacts.py` refuses a half-filled entry (a repo with no revision downloads whatever
+   the Hub serves today), refuses a pinned revision that lists no file to hash, and fails the run
+   on any digest mismatch — so the weekly clean-clone reproduction verifies its artefacts before
+   it measures anything. `tests/bench/test_artefacts.py::test_a_repo_without_a_revision_is_refused`,
+   `::test_a_filled_entry_that_lists_no_file_is_refused`,
+   `::test_verify_reports_a_single_changed_byte`. The manifest ships **pending** (every
+   `revision` is `null`), which makes the reproduction skip rather than pass; a human fills it in
+   from the Hub push's own output. What is still open is the serving path: nothing checks the
+   artefact the API and the worker load at start-up, and the same manifest is the obvious place
+   to put it.
 10. **Seven high npm advisories live in `web/`'s devDependencies.** All seven resolve to
     `@lhci/cli` and the Puppeteer tree beneath it (`tmp` GHSA-52f5-9888-hmc6 and
     GHSA-ph9p-34f9-6g65, `extract-zip` GHSA-jmr9-qjv8-65gv and GHSA-7pqw-9j4j-h8q3), and npm's
@@ -335,7 +347,10 @@ contracts PR — so it was handed on as one, and the contracts PR landed it.
 12. **The `real_poisoned` slice and the holdout are tiny.** Every interval published from them is
     a cluster bootstrap over a small number of servers and is wide by construction. A number with
     a wide interval is not a claim.
-13. **A hard cancellation of the SSE response itself can still lose a slot.** The reservation is
+13. **The Action installs from PyPI, where Sieve is not published.**
+    `.github/workflows/self-scan.yml` fails at that step today (L7 hand-off). Nothing depends on
+    it for security, but a green self-scan badge is not available as evidence.
+14. **A hard cancellation of the SSE response itself can still lose a slot.** The reservation is
     released twice over — the generator's `finally` (`sieve/api/sse.py`) and a
     `BackgroundTask(slot.release)` on the response (`sieve/api/routes/scans.py:160`) — which
     between them cover a stream that ends, fails, is dropped, or is cancelled before its first
@@ -347,9 +362,6 @@ contracts PR — so it was handed on as one, and the contracts PR landed it.
     than anything a client can send, and the fix is a different shape — a request-scoped slot
     lifetime, released by the ASGI middleware that owns the request rather than by the response —
     which is out of scope for Task 11.3.
-14. **The Action installs from PyPI, where Sieve is not published.**
-    `.github/workflows/self-scan.yml` fails at that step today (L7 hand-off). Nothing depends on
-    it for security, but a green self-scan badge is not available as evidence.
 
 <!-- human: rewrite -->
 **Which of these are accepted and which are scheduled** is a judgement call the human owns. The
@@ -358,7 +370,7 @@ still leaks data** — 3 was the last one and the C3 contracts change closed it;
 release of the model lane rather than of this one; **8** and **9** block publishing a claim about
 injection resistance and about artefact integrity respectively; **7** is the one to re-read the
 day the deployment topology changes, because its assumption is about the network and not about
-this code; **13** is a bounded leak of a counter rather than of data, and is worth fixing when
+this code; **14** is a bounded leak of a counter rather than of data, and is worth fixing when
 the SSE route is next opened; and 1, 2, 4, 5, 6 and 10 are bounded by deployment facts that a
 different deployment would invalidate.
 
