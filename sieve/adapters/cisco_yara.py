@@ -6,7 +6,8 @@ JSON array of per-tool scan results. `raw_to_by_tool` reshapes that array into t
 `by_tool` document (`{tool_name: {"findings": [{"rule_id", "severity", "message"}]}}`) exactly the
 way the committed golden (`fixtures/scanner/cisco-yara-sample-27.json`) was produced from
 `fixtures/scanner/cisco-yara-sample-27.raw.json`, which is committed beside the reshaped
-golden so the transform stays auditable. `normalise` then maps that by_tool document to `ScannerFinding`s.
+golden so the transform stays auditable. `normalise` then maps that by_tool document to
+`ScannerFinding`s.
 
 The by_tool reshape, strict-schema parsing and version-pinning are shared with `cisco_llm` via
 `sieve.adapters._scanner_common` (review round 1, finding 4) — this module only supplies the
