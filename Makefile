@@ -73,14 +73,16 @@ train-all:
 	done
 
 bench:
+	# Task 11.2: first, so a server missing at LATENCY_BASE_URL (`make serve` in another
+	# terminal, or a real deployment) fails fast -- before the expensive steps below, not
+	# after. p50/p95/p99 for POST /api/v1/triage at 20 concurrent; PRD M6a: never edit
+	# bench/results/latency.json by hand, and the script itself refuses to write one there
+	# for the fixture/fake classifier.
+	uv run python -m bench.latency --base-url $(LATENCY_BASE_URL)
 	uv run python -m bench.ablations.run --matrix bench/ablations.yaml
 	uv run python -m bench.analysis.errors --dirs $(FOLD_DIRS) --corpus $(BENCH_CORPUS) --model-dir $(MODEL_DIR)
 	uv run python -m bench.analysis.judge_agreement
 	uv run python -m bench.demo
-	# Task 11.2: p50/p95/p99 for POST /api/v1/triage against whatever's already running at
-	# LATENCY_BASE_URL (`make serve` in another terminal, or a real deployment) -- 20
-	# concurrent, PRD M6a: never edit bench/results/latency.json by hand.
-	uv run python -m bench.latency --base-url $(LATENCY_BASE_URL)
 
 eval-final:
 	@test -n "$(REASON)" || (echo "make eval-final REASON=\"why the holdout is being opened\"" && exit 2)

@@ -10,7 +10,11 @@ hand-edited, and a number this script produces on a box with no trained ONNX int
 (`SIEVE_MODEL_ID=fixture`, the classifier `sample-27.json`'s scan runs on) is a smoke number,
 not a published one -- see docs/handoffs/task-11.2.md. `model_id` is read back from the
 deployment's own `GET /api/v1/models` rather than taken on faith from an argument, so the
-figure can never be mislabelled as measuring an artefact the server was not actually running.
+figure can never be mislabelled as measuring an artefact the server was not actually running --
+and when that read-back id is the fixture/fake classifier, `main()` refuses to write anywhere
+under `bench/results/` at all (a non-`bench/results/` `--results-dir` is always still accepted,
+for a smoke run). A preflight `GET /api/v1/models` also means a missing server fails fast, with
+a clear message, before any of `n` requests are attempted.
 """
 
 from __future__ import annotations
@@ -28,6 +32,7 @@ import httpx
 import numpy as np
 
 from sieve.model.version import git_sha
+from sieve.protocols import FakeClassifier
 
 DEFAULT_BASE_URL = "http://127.0.0.1:8000"
 DEFAULT_CONCURRENCY = 20
@@ -36,6 +41,17 @@ DEFAULT_CONCURRENCY = 20
 DEFAULT_N = 50
 TRIAGE_PATH = "/api/v1/triage"
 MODELS_PATH = "/api/v1/models"
+
+#: What `GET /models` reports when the fixture/fake classifier is answering -- never a
+#: published number (PRD M6a). Both the real app's shared classifier (`FakeClassifier.
+#: model_version`, "fake@0", when `SIEVE_MODEL_ID=fixture`) and the Phase 0 stub app's own
+#: literal ("fixture@0", `sieve/api/routes/models.py`) are covered, since `--base-url` could
+#: name either kind of deployment.
+FIXTURE_MODEL_IDS = frozenset({FakeClassifier.model_version, "fixture@0"})
+
+#: The one directory `make bench` (and PRD M6a) ever writes published numbers to; a fixture
+#: run may write anywhere else (a smoke run against a tmp dir), never here.
+BENCH_RESULTS_DIR = Path("bench/results")
 
 #: A small, realistic tool -- enough to exercise a real classifier forward pass, not a
 #: pathological input (an empty description, say) the pipeline would short-circuit on.
@@ -56,6 +72,16 @@ DEFAULT_TOOL: dict[str, Any] = {
     },
     "sibling_tool_names": [],
 }
+
+
+def _is_under(path: Path, ancestor: Path) -> bool:
+    """True when `path` is `ancestor` itself or somewhere inside it, resolved (`..`, symlinks)
+    rather than compared textually -- `--results-dir bench/results/../results` must count."""
+    try:
+        path.resolve().relative_to(ancestor.resolve())
+    except ValueError:
+        return False
+    return True
 
 
 async def _one(client: httpx.AsyncClient, sem: asyncio.Semaphore, payload: dict[str, Any]) -> float:
@@ -85,7 +111,16 @@ async def run(
     async with httpx.AsyncClient(
         base_url=base_url, limits=limits, timeout=30.0, transport=transport
     ) as client:
-        model_response = await client.get(MODELS_PATH)
+        # Preflight: the first request this script makes, before spending any of `n` on a
+        # server that may not exist. A refused connection surfaces as a clear instruction
+        # rather than an `httpx.ConnectError` traceback.
+        try:
+            model_response = await client.get(MODELS_PATH)
+        except httpx.ConnectError as exc:
+            raise SystemExit(
+                f"nothing listening at {base_url} -- start the API first "
+                f"(`python -m sieve.api`), or pass --base-url"
+            ) from exc
         model_response.raise_for_status()
         model_id = str(model_response.json()["model_version"])
 
@@ -129,7 +164,7 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Any]:
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL, help="a running Sieve API")
     parser.add_argument("--n", type=int, default=DEFAULT_N)
     parser.add_argument("--concurrency", type=int, default=DEFAULT_CONCURRENCY)
-    parser.add_argument("--results-dir", type=Path, default=Path("bench/results"))
+    parser.add_argument("--results-dir", type=Path, default=BENCH_RESULTS_DIR)
     parser.add_argument(
         "--tool",
         type=Path,
@@ -143,9 +178,21 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Any]:
         run(ns.base_url, n=ns.n, concurrency=ns.concurrency, payload=payload)
     )
     report = build_report(latencies, model_id=model_id, n=ns.n, concurrency=ns.concurrency)
-    path = write_report(report, ns.results_dir / "latency.json")
     print(json.dumps(report, indent=2, sort_keys=True))
-    print(f"wrote {path}")
+
+    path = ns.results_dir / "latency.json"
+    if model_id in FIXTURE_MODEL_IDS and _is_under(ns.results_dir, BENCH_RESULTS_DIR):
+        # PRD M6a: bench/results/ holds only generated, *published* artefacts. A run against
+        # the fixture/fake classifier (no trained ONNX int8 artefact, or a stub app) is a smoke
+        # number, never that -- see docs/handoffs/task-11.2.md. Quoted above, not written here.
+        raise SystemExit(
+            f"refusing to write {path}: model_id={model_id!r} is the fixture/fake classifier, "
+            f"not a published artefact (PRD M6a) -- pass --results-dir outside {BENCH_RESULTS_DIR} "
+            f"for a smoke run"
+        )
+
+    written = write_report(report, path)
+    print(f"wrote {written}")
     return report
 
 

@@ -22,8 +22,9 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from sqlalchemy import event, func, insert, select
+from sqlalchemy import Integer, Text, event, func, insert, select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from sieve.api import spend
 from sieve.config import settings
@@ -192,6 +193,10 @@ async def test_500_verdicts_land_in_ceil_500_over_batch_size_inserts(
     # No real Anthropic call: FakeJudge still charges the §12.4 estimate for any band tool the
     # fixture's word lists route to the judge, exercising the batch's charge-then-buffer path.
     monkeypatch.setattr(settings, "anthropic_api_key", None)
+    # Pinned large so the exact `ceil(500/25)` count is deterministic: the default 250ms is
+    # already far longer than 25 rows take to accumulate on this box, but pinning removes any
+    # dependence on machine speed rather than trusting that margin to always hold under load.
+    monkeypatch.setattr(settings, "verdict_flush_ms", 10 * 60 * 1000)
 
     scan_id = await _seed_scan(session)
     await enqueue(session, "scan", {"scan_id": str(scan_id)})
@@ -335,8 +340,12 @@ async def test_a_slow_scan_flushes_on_the_time_bound_before_the_batch_fills(
     assert scan is not None
     assert scan.status == "complete", scan.error
 
-    assert len(flush_sizes) >= 2, "the time bound should flush at least once before the final one"
-    assert flush_sizes[0] < scan_job.VERDICT_BATCH_SIZE, "the first flush must not wait for 25"
+    # Discriminates the time bound actually firing from a coincidence of small numbers: with
+    # only 3 tools total, *any* flush is trivially "< 25", so that alone would pass even if the
+    # time bound did nothing and everything landed in one final flush. The exact split -- tool 1
+    # and 2 flushed together once tool 2's arrival finds tool 1 past the 50ms bound, tool 3 only
+    # in the unconditional flush after `triage_many` returns -- is the actual proof.
+    assert flush_sizes == [2, 1]
 
     verdict_count = (
         await session.execute(
@@ -470,3 +479,59 @@ async def test_bulk_insert_still_applies_a_python_side_default_for_an_omitted_co
         await session.execute(select(VerdictRow).where(VerdictRow.tool_id == tool_id))
     ).scalar_one()
     assert landed.id is not None
+
+
+class _ProbeBase(DeclarativeBase):
+    """A registry of its own, never Alembic-migrated and never touching `sieve.db.models.Base`
+    -- this exists only so the table below can be created and dropped inside one test."""
+
+
+class _NullableDefaultProbe(_ProbeBase):
+    """A *nullable* column with a Python-side default -- the shape `verdicts` does not
+    currently have (only the NOT NULL `id` does, via `_uuid_pk()`). That distinction matters: a
+    bug that treated an omitted `id` as an explicit `None` would raise a loud `IntegrityError`
+    (NOT NULL), never silently succeed. A nullable column with a forgotten default would not --
+    it would just quietly store `NULL` instead of the default, which is the actual failure mode
+    `_verdict_values()` exists to prevent.
+    """
+
+    __tablename__ = "task_11_2_nullable_default_probe"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    token: Mapped[str | None] = mapped_column(Text, default=lambda: "generated")
+
+
+async def test_verdict_values_omits_a_never_set_nullable_column_so_its_default_still_applies(
+    engine: AsyncEngine, session: AsyncSession
+) -> None:
+    """`_verdict_values()` doesn't actually inspect `VerdictRow` -- it reads `vars(row)` for
+    whatever mapped object it is handed -- so this test-only model exercises the exact mechanism
+    without any change to the real schema.
+    """
+    async with engine.begin() as conn:
+        await conn.run_sync(_ProbeBase.metadata.create_all)
+    try:
+        never_set = _NullableDefaultProbe(id=1)
+        explicitly_none = _NullableDefaultProbe(id=2, token=None)
+
+        never_set_values = scan_job._verdict_values(never_set)  # type: ignore[arg-type]
+        explicit_none_values = scan_job._verdict_values(explicitly_none)  # type: ignore[arg-type]
+        assert "token" not in never_set_values, "a column nobody touched must be omitted"
+        assert explicit_none_values["token"] is None, "an explicit None is a real value, not unset"
+
+        await session.execute(
+            insert(_NullableDefaultProbe).execution_options(render_nulls=True),
+            [never_set_values, explicit_none_values],
+        )
+        await session.commit()
+
+        rows = {
+            row.id: row.token
+            for row in (await session.execute(select(_NullableDefaultProbe))).scalars()
+        }
+        assert rows[1] == "generated", "the Python-side default must fire for the omitted column"
+        assert rows[2] is None, "an explicit None must land as NULL, not the default"
+    finally:
+        await session.rollback()
+        async with engine.begin() as conn:
+            await conn.run_sync(_ProbeBase.metadata.drop_all)

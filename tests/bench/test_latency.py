@@ -144,3 +144,68 @@ def test_main_writes_bench_results_latency_json(
     assert written == report
     assert report["n"] == 6
     assert report["concurrency"] == 3
+
+
+def _stub_run(model_id: str) -> object:
+    async def fake_run(
+        base_url: str, *, n: int, concurrency: int, payload: dict[str, object]
+    ) -> tuple[list[float], str]:
+        return [1.0, 2.0, 3.0], model_id
+
+    return fake_run
+
+
+def test_main_refuses_to_write_under_bench_results_for_the_fixture_model(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """PRD M6a: `bench/results/` holds only generated, *published* artefacts.
+
+    `monkeypatch.chdir` isolates the default `--results-dir` (`bench/results`, a relative path)
+    under `tmp_path` -- so even if the guard this test exists to prove were broken, the failure
+    would land in a throwaway directory, never in the real repository's `bench/results/`.
+    """
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(latency, "run", _stub_run("fixture@0"))
+
+    with pytest.raises(SystemExit, match="refusing to write"):
+        latency.main([])
+
+    assert not (tmp_path / "bench" / "results" / "latency.json").exists()
+
+
+def test_main_still_writes_a_fixture_run_outside_bench_results(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The refusal is about the *destination*, not the model -- a smoke run naming its own
+    directory (outside `bench/results/`) is exactly what the fixture classifier is for."""
+    monkeypatch.setattr(latency, "run", _stub_run("fixture@0"))
+    out_dir = tmp_path / "smoke"
+
+    report = latency.main(["--results-dir", str(out_dir)])
+
+    assert json.loads((out_dir / "latency.json").read_text(encoding="utf-8")) == report
+    assert report["model_id"] == "fixture@0"
+
+
+def test_main_writes_a_real_model_id_to_the_default_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(latency, "run", _stub_run("deberta-v3-s0@abc1234"))
+
+    report = latency.main([])
+
+    path = tmp_path / "bench" / "results" / "latency.json"
+    assert json.loads(path.read_text(encoding="utf-8")) == report
+    assert report["model_id"] == "deberta-v3-s0@abc1234"
+
+
+async def test_run_gives_a_clear_message_when_nothing_is_listening() -> None:
+    def refuse(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("connection refused", request=request)
+
+    transport = httpx.MockTransport(refuse)
+    with pytest.raises(SystemExit, match="nothing listening"):
+        await latency.run(
+            "http://test", n=1, concurrency=1, payload=latency.DEFAULT_TOOL, transport=transport
+        )
