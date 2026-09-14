@@ -2128,7 +2128,9 @@ dependencies = [
 api = [
     { name = "alembic" },
     { name = "fastapi" },
+    { name = "httpcore2" },
     { name = "httpx" },
+    { name = "httpx2" },
     { name = "psycopg", extra = ["binary"] },
     { name = "python-multipart" },
     { name = "sqlalchemy", extra = ["asyncio"] },
@@ -2147,6 +2149,8 @@ judge = [
     { name = "anthropic" },
 ]
 mcp = [
+    { name = "httpcore2" },
+    { name = "httpx2" },
     { name = "mcp" },
 ]
 model = [
@@ -2183,8 +2187,12 @@ requires-dist = [
     { name = "anthropic", marker = "extra == 'judge'", specifier = ">=1.0" },
     { name = "datasets", marker = "extra == 'model'" },
     { name = "fastapi", marker = "extra == 'api'" },
+    { name = "httpcore2", marker = "extra == 'api'", specifier = ">=2.12" },
+    { name = "httpcore2", marker = "extra == 'mcp'", specifier = ">=2.12" },
     { name = "httpx", marker = "extra == 'api'" },
     { name = "httpx", marker = "extra == 'bench'" },
+    { name = "httpx2", marker = "extra == 'api'", specifier = ">=2.12" },
+    { name = "httpx2", marker = "extra == 'mcp'", specifier = ">=2.12" },
     { name = "huggingface-hub", marker = "extra == 'model'" },
     { name = "jsonschema", marker = "extra == 'bench'" },
     { name = "mcp", marker = "extra == 'mcp'" },

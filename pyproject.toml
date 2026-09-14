@@ -16,12 +16,22 @@ dependencies = [
 sieve = "sieve.cli.app:main"
 
 [project.optional-dependencies]
-api = ["fastapi", "uvicorn[standard]", "sqlalchemy[asyncio]>=2.0", "alembic", "psycopg[binary]<3.3.5", "sse-starlette", "python-multipart", "httpx"]
+# `psycopg[binary]<3.3.5`: same Windows Smart App Control wheel block as numpy above -- SAC
+# refuses the newest compiled wheels on the dev box, and the pin is one release behind for that
+# reason alone. `httpx2`/`httpcore2` are declared, not inherited: `sieve/worker/ssrf_client.py`
+# subclasses `httpcore2.AnyIOBackend` and `httpx2.AsyncHTTPTransport` directly, and until fix
+# round 2's I5 they resolved only because `mcp` and `anthropic` happen to pull them in -- a
+# transitive release that swapped its transport would have broken the sandbox worker at import
+# time, with a lockfile refresh as the only signal.
+api = ["fastapi", "uvicorn[standard]", "sqlalchemy[asyncio]>=2.0", "alembic", "psycopg[binary]<3.3.5", "sse-starlette", "python-multipart", "httpx", "httpx2>=2.12", "httpcore2>=2.12"]
 model = [
     "torch",
     "transformers",
     "accelerate",
     "datasets",
+    # <1.9.1 for the same Windows Smart App Control reason as numpy and psycopg: the newest
+    # scikit-learn wheels are blocked on the dev box. Not a compatibility constraint -- do not
+    # "helpfully" unpin it without reading lessons.md first.
     "scikit-learn<1.9.1",
     "onnxruntime",
     "optimum[onnxruntime]",
@@ -33,7 +43,8 @@ model = [
 judge = ["anthropic>=1.0"]
 cli = []  # typer/rich moved to base dependencies (the [project.scripts] entry point needs them
           # unconditionally); kept as an empty extra so `uv sync --extra cli` in CI still resolves.
-mcp = ["mcp"]
+# `sieve/mcp_server/server.py` imports `httpx2` directly (see the `api` extra's note on I5).
+mcp = ["mcp", "httpx2>=2.12", "httpcore2>=2.12"]
 bench = ["textual", "httpx", "tree-sitter", "tree-sitter-python", "tree-sitter-typescript", "jsonschema"]
 
 [dependency-groups]
