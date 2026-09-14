@@ -10,12 +10,23 @@ endif
 PROFILE ?= deberta
 SEED ?= 0
 FOLD ?= 0
-MODEL_OUT ?= models/$(PROFILE)-s$(SEED)/fold$(FOLD)
 
 # `bench` variables: MODEL_DIR is the calibrated (`--fold all`) artefact `bench.analysis.errors`
 # reads thresholds from; FOLD_DIRS are the five per-fold artefacts its `--dirs` pools OOF logits
 # from. BENCH_CORPUS matches the CLIs' own `--corpus` default.
 MODEL_DIR ?= models/$(PROFILE)-s$(SEED)
+
+# `--fold all` is not a sixth fold: it is the whole-dev artefact everything downstream reads
+# thresholds and weights from, so it belongs at MODEL_DIR itself -- the path `make bench` passes
+# as `--model-dir`, and the one `models/<profile>-s*` globs to. A literal `fold$(FOLD)` would
+# have put it in `models/<profile>-s<seed>/foldall`, where nothing looks for it.
+MODEL_OUT ?= $(if $(filter all,$(FOLD)),$(MODEL_DIR),$(MODEL_DIR)/fold$(FOLD))
+
+# `--fold all` also refuses to run without an explicit epoch count (`TrainConfig`: there is no
+# early-stopping slice to find one with, so it has to be the count CV selected). EPOCHS is empty
+# for every other fold, where the profile's own value plus early stopping is correct.
+EPOCHS ?=
+TRAIN_EPOCHS = $(if $(EPOCHS),--epochs $(EPOCHS))
 FOLD_DIRS ?= $(MODEL_DIR)/fold0 $(MODEL_DIR)/fold1 $(MODEL_DIR)/fold2 $(MODEL_DIR)/fold3 $(MODEL_DIR)/fold4
 BENCH_CORPUS ?= bench/data/labelled.jsonl
 
@@ -27,9 +38,13 @@ setup:
 	uv sync --all-extras --group dev
 	cd web && npm ci
 
+# `fixtures/` and `docs/scripts/` are checked too: both hold committed Python that generates
+# committed artefacts (the mini corpus, the README's numbers), so "it is not in `sieve/`" is not
+# a reason for it to drift. `mypy` keeps its configured scope -- `files = ["sieve"]` in
+# pyproject.toml -- because `--strict` over a one-off generator is a different decision.
 lint:
-	uv run ruff check sieve bench tests
-	uv run ruff format --check sieve bench tests
+	uv run ruff check sieve bench tests fixtures docs/scripts
+	uv run ruff format --check sieve bench tests fixtures docs/scripts
 	uv run mypy
 	cd web && npm run lint && npx tsc --noEmit && npm run lint:tokens && npm run lint:contrast
 	# The MSW guard needs something built to look at: `npm run build` runs it from `postbuild`,
@@ -65,7 +80,7 @@ baseline:
 	uv run python -m bench.baseline.run
 
 train:
-	uv run python -m sieve.model.train --config bench/train.yaml --profile $(PROFILE) --fold $(FOLD) --seed $(SEED) --out $(MODEL_OUT)
+	uv run python -m sieve.model.train --config bench/train.yaml --profile $(PROFILE) --fold $(FOLD) --seed $(SEED) --out $(MODEL_OUT) $(TRAIN_EPOCHS)
 
 train-all:
 	for f in 0 1 2 3 4; do \

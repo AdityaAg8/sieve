@@ -33,7 +33,9 @@ POISON_SUFFIXES = [
 
 
 def main() -> None:
-    rng = random.Random(SEED)
+    # A seeded generator is the point: this file exists to produce the *same* fixture corpus
+    # every time it runs, so a cryptographic source would be the bug rather than the fix.
+    rng = random.Random(SEED)  # noqa: S311
     src = json.loads((ROOT / "tools" / "sample-27.json").read_text(encoding="utf-8"))
     labels = json.loads((ROOT / "tools" / "sample-27.labels.json").read_text(encoding="utf-8"))
     by_server = {s: names for s, names in src["servers"].items()}
@@ -41,7 +43,9 @@ def main() -> None:
     now = datetime(2026, 9, 11, tzinfo=UTC)
     records: list[CorpusRecord] = []
 
-    def rec(idx: int, server: str, tool: dict, label: str, meta: dict, mutation_of: str | None) -> CorpusRecord:
+    def rec(
+        idx: int, server: str, tool: dict, label: str, meta: dict, mutation_of: str | None
+    ) -> CorpusRecord:
         return CorpusRecord(
             id=f"mini-{idx:03d}",
             source="synthetic_mutation" if mutation_of else "public_repo",
@@ -80,12 +84,20 @@ def main() -> None:
         tool = host.tool.model_dump()
         tool["name"] = f"{tool['name']}_v{k}"
         if k % 2 == 0:
-            tool["description"] = (tool["description"] or "") + rng.choice(IMPERATIVE_SUFFIXES).format(sib=sib)
+            tool["description"] = (tool["description"] or "") + rng.choice(
+                IMPERATIVE_SUFFIXES
+            ).format(sib=sib)
             meta = {"sub_labels": [], "difficulty": None, "payload_fields": []}
             label = "imperative_benign"
         else:
-            tool["description"] = (tool["description"] or "") + rng.choice(POISON_SUFFIXES).format(sib=sib)
-            meta = {"sub_labels": ["exfiltration"], "difficulty": "easy", "payload_fields": ["description"]}
+            tool["description"] = (tool["description"] or "") + rng.choice(POISON_SUFFIXES).format(
+                sib=sib
+            )
+            meta = {
+                "sub_labels": ["exfiltration"],
+                "difficulty": "easy",
+                "payload_fields": ["description"],
+            }
             label = "poisoned"
         records.append(rec(i, host.server_name, tool, label, meta, host.id))
         i += 1
