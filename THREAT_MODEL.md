@@ -271,7 +271,7 @@ contracts PR — so it was handed on as one, and the contracts PR landed it.
 
 ### Closed by the whole-branch review (fix round 2)
 
-Four seams no per-task reviewer could see, because each is a property of two files agreeing
+Five seams no per-task reviewer could see, because each is a property of two files agreeing
 rather than of one file being wrong. Numbered by the review's own labels, not by this section.
 
 - **C1 — the published GitHub Action was a script-injection sink.** `action/action.yml`
