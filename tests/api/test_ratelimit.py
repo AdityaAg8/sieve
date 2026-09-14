@@ -122,6 +122,35 @@ def test_a_spoofed_left_most_forwarded_for_does_not_become_the_client(
     assert ip_hash(client_ip(spoofed)) != ip_hash(victim)  # type: ignore[arg-type]
 
 
+def test_three_forwarded_for_entries_still_resolve_to_the_right_most(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """THREAT_MODEL.md's open risk 7, with the topology it is actually about.
+
+    Two appending proxies produce three entries, and only the last was written by a hop this
+    deployment can vouch for. Both halves of the accepted trade-off are asserted here, because
+    the direction of the failure is the whole reason it is accepted:
+
+    * the right-most entry wins, so the caller's own claim never becomes their identity -- which
+      is what keeps `Idempotency-Key`'s namespace out of reach of a guess;
+    * two different callers behind the same inner proxy collapse to *one* pseudonym, so the cost
+      is a shared quota. Fewer namespaces, never somebody else's.
+    """
+    monkeypatch.setattr(settings, "trust_proxy", True)
+    caller, other_caller = "203.0.113.7", "192.0.2.55"
+    outer, inner = "198.51.100.4", "10.0.0.1"
+
+    theirs = FakeRequest({"x-forwarded-for": f"{caller}, {outer}, {inner}"}, "10.0.0.9")
+    somebody_else = FakeRequest(
+        {"x-forwarded-for": f"{other_caller}, {outer}, {inner}"}, "10.0.0.9"
+    )
+
+    assert client_ip(theirs) == inner, "the right-most entry, not the caller's"  # type: ignore[arg-type]
+    assert ip_hash(client_ip(theirs)) != ip_hash(caller)  # type: ignore[arg-type]
+    assert ip_hash(client_ip(theirs)) != ip_hash(outer)  # type: ignore[arg-type]
+    assert client_ip(theirs) == client_ip(somebody_else), "the accepted collapse"  # type: ignore[arg-type]
+
+
 def test_a_forwarded_for_with_nothing_in_it_falls_back_to_the_peer(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

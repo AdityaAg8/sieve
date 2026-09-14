@@ -12,6 +12,7 @@ import asyncio
 import socket
 import subprocess
 import sys
+import threading
 import time
 from collections.abc import Iterator
 
@@ -82,7 +83,14 @@ def test_the_entry_point_passes_the_app_as_an_import_string() -> None:
 
 @pytest.fixture
 def served(migrated: str) -> Iterator[str]:
-    """`python -m sieve.api` on a free port, against the live database."""
+    """`python -m sieve.api` on a free port, against the live database.
+
+    The child's output is **drained** on a reader thread, not merely piped. uvicorn logs an
+    access line per request to a pipe nobody reads, and a pipe nobody reads has a bounded OS
+    buffer (~64 KB): fill it and the server blocks inside `write()` for as long as this fixture
+    lives, which presents as a server that answered and then stopped. The lines are kept so a
+    failure can say what the server said instead of nothing at all.
+    """
     import os
 
     port = free_port()
@@ -95,6 +103,16 @@ def served(migrated: str) -> Iterator[str]:
         encoding="utf-8",
         env=env,
     )
+    log: list[str] = []
+
+    def drain() -> None:
+        assert process.stdout is not None
+        for line in process.stdout:
+            log.append(line.rstrip("\n"))
+
+    reader = threading.Thread(target=drain, name=f"sieve-api-{port}-stdout", daemon=True)
+    reader.start()
+
     with process:  # closes the stdout pipe, so the fixture leaves no open handle behind
         try:
             yield f"http://127.0.0.1:{port}"
@@ -105,6 +123,10 @@ def served(migrated: str) -> Iterator[str]:
             except subprocess.TimeoutExpired:  # pragma: no cover
                 process.kill()
                 process.wait(timeout=15)
+            # The child is gone, so the pipe is at EOF and the reader returns. Joined rather
+            # than abandoned: a daemon thread still holding the handle is the leak this
+            # `with process:` exists to avoid.
+            reader.join(timeout=15)
 
 
 def wait_for(url: str, process_is_alive: object = None) -> httpx.Response:
