@@ -100,7 +100,19 @@ def _every_log_line(caplog: pytest.LogCaptureFixture) -> str:
     `caplog.text` renders only the formatted message, and Sieve's call sites put their structured
     fields in `extra` -- which is exactly where a careless one would put tool text. So the search
     covers `record.__dict__` too, the way `sieve.logging.JsonFormatter` does in production.
+
+    The two assertions before the search are the positive control (review round 1, finding 6).
+    "The key is not in the logs" is satisfied trivially by having no logs, and the ways to end
+    up with none are quiet: `propagate = False` on the `sieve` logger, a `configure_logging`
+    that steals the root's handlers under `replace=True`, a fixture that installs its own. If
+    that ever happens these tests must fail loudly rather than keep passing while measuring
+    nothing.
     """
+    assert caplog.records, "nothing was captured, so 'the key is absent' would prove nothing"
+    assert any(r.name == "sieve" or r.name.startswith("sieve.") for r in caplog.records), (
+        "no record from a `sieve.*` logger was captured; the pipeline's own lines are the ones "
+        "this test exists to search"
+    )
     parts: list[str] = [caplog.text]
     for record in caplog.records:
         parts.append(record.getMessage())
@@ -156,7 +168,22 @@ async def test_a_secret_in_a_tool_description_reaches_no_row_no_event_and_no_log
         "tools rows": json.dumps([t.description for t in tools] + [t.input_schema for t in tools]),
         "scan_events payloads": json.dumps([e.payload for e in events]),
         "scans.error": scan.error or "",
-        "verdict rows": json.dumps([v.reasoning or "" for v in verdicts]),
+        # Every free-text column on a verdict, not just `reasoning`: the judge quotes the tool
+        # back in `evidence_spans`, and `remediation` is prose about the same text (review
+        # round 1, finding 5 -- the docstring claimed "the stored rows" and the code checked one
+        # field of one of them).
+        "verdict rows": json.dumps(
+            [
+                {
+                    "reasoning": v.reasoning,
+                    "remediation": v.remediation,
+                    "evidence_spans": v.evidence_spans,
+                    "unlocated_quotes": v.unlocated_quotes,
+                }
+                for v in verdicts
+            ],
+            default=str,
+        ),
         "the SSE response": stream,
         "GET /findings": findings.text,
         "GET /sarif": sarif.text,
