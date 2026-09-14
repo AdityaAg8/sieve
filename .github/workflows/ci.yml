@@ -18,9 +18,23 @@ jobs:
     env:
       DATABASE_URL: postgresql+psycopg://sieve:sieve@localhost:5432/sieve
       PYTHONUTF8: "1"
+      # Cached between runs; see the `hub cache` step below.
+      HF_HOME: ${{ runner.temp }}/hf
     steps:
       - uses: actions/checkout@v4
+      # `enable-cache` caches uv's own download/build cache, keyed on the lockfile. Without it
+      # this job re-downloads the whole `model` extra on every push.
       - uses: astral-sh/setup-uv@v5
+        with: { enable-cache: true, cache-dependency-glob: "uv.lock" }
+      # The non-slow model tests tokenise with `prajjwal1/bert-tiny`, which is a network fetch on
+      # a cold runner. Keyed on `tests/model/hub_fixtures.txt`, which records the repo and the
+      # revision, so adding or moving a fixture invalidates this once and nothing else does.
+      - name: hub cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/hf
+          key: hf-${{ runner.os }}-${{ hashFiles('tests/model/hub_fixtures.txt') }}
+          restore-keys: hf-${{ runner.os }}-
       # `--extra model` is not optional here, and Task 11.3 found out the hard way: twelve test
       # modules -- all of `tests/model`, four in `tests/bench`, two in `tests/cli` -- import
       # `transformers`, `sklearn` or `datasets` at module scope, so without it this job fails at
@@ -50,6 +64,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
+        with: { enable-cache: true, cache-dependency-glob: "uv.lock" }
       - run: uv sync --extra api --extra judge --extra cli --extra mcp --extra bench --group dev
       # Blocking as of Task 11.1 (PRD §22). `pip-audit` reports PYSEC/GHSA ids and carries no
       # severity of its own, so there is no `--audit-level` to set: the gate is *any* advisory
@@ -67,9 +82,17 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PYTHONUTF8: "1"
+      HF_HOME: ${{ runner.temp }}/hf
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
+        with: { enable-cache: true, cache-dependency-glob: "uv.lock" }
+      - name: hub cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/hf
+          key: hf-${{ runner.os }}-${{ hashFiles('tests/model/hub_fixtures.txt') }}
+          restore-keys: hf-${{ runner.os }}-
       - run: uv sync --all-extras --group dev
       - run: uv run pytest -q -m slow
   web:
@@ -116,6 +139,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
+        with: { enable-cache: true, cache-dependency-glob: "uv.lock" }
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
       - run: uv sync --extra api --extra judge --extra cli --extra mcp --extra bench --group dev
@@ -152,6 +176,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
+        with: { enable-cache: true, cache-dependency-glob: "uv.lock" }
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
       - run: uv sync --extra api --extra judge --extra cli --extra mcp --extra bench --group dev
@@ -187,6 +212,13 @@ jobs:
           CHROME_PATH="$(node -e "console.log(require('@playwright/test').chromium.executablePath())")"
           export CHROME_PATH
           npx lhci autorun --config=lighthouserc.json
+      # The API log goes up too: `lhci` failing because the page rendered without a list looks
+      # nothing like "the API died three minutes ago", and only one of those files says so.
       - uses: actions/upload-artifact@v4
         if: always()
-        with: { name: lighthouse-reports, path: web/.lighthouseci, retention-days: 7 }
+        with:
+          name: lighthouse-reports
+          path: |
+            web/.lighthouseci
+            ${{ runner.temp }}/api.log
+          retention-days: 7

@@ -1,0 +1,16 @@
+# Hugging Face repos the model tests fetch, and the revision each is expected at.
+#
+# Two jobs read this file. CI keys its `HF_HOME` cache on it (`.github/workflows/ci.yml`), so
+# adding a model here invalidates the cache exactly once and a cold runner re-fetches only what
+# changed. A human reads it to know what a test run will pull over the network.
+#
+# Format: `<repo id> <revision>`, one per line; `#` comments and blank lines are ignored.
+#
+# The revision below was read from this machine's Hugging Face cache
+# (`models--prajjwal1--bert-tiny/refs/main`) on 2026-09-14. It is **recorded, not enforced**:
+# the fetch that pulls the weights happens inside `sieve/model/train.py`'s
+# `AutoModelForSequenceClassification.from_pretrained(config.base_model)`, which takes no
+# revision, and giving one only to the tokenizer calls in `tests/model` would be a pin that
+# looks complete and is not. Enforcing it belongs with the model lane's own artefact-pinning
+# work, alongside THREAT_MODEL.md's residual risk 9.
+prajjwal1/bert-tiny 6f75de8b60a9f8a2fdf7b69cbd86d9e64bcb3837
