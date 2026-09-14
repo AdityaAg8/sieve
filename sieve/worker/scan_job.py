@@ -256,10 +256,14 @@ async def run(session: AsyncSession, job: Job) -> None:
         # so an exception message is a writer like any other: redacted and bounded before it
         # becomes data (SC-5; security review 11.1, finding F5).
         detail = safe_error(exc)
-        # Whatever was half-written when this blew up is discarded first. A verdict row only
-        # becomes durable when its `_VerdictBatch` flush commits, together with the charge that
-        # paid for it (PRD §13.2) -- so the rollback either loses both or neither, never a
-        # judged verdict with no ledger row beside it.
+        # Clears whatever is still *uncommitted* -- including an aborted transaction, which a
+        # failed statement leaves behind and which would refuse the `failed` write below. It does
+        # not undo the verdicts `_triage` deliberately flushed on its way out; those are already
+        # durable, and keeping them is what shows a failed scan's real progress (PRD §14.4).
+        # That is safe because of what a flush is: each one commits its verdict rows together
+        # with the ledger charges that paid for them, in the same transaction (PRD §13.2), so
+        # what survives here is always fully paid for and what is discarded takes its charge with
+        # it -- never an uncharged verdict, and never a charge with no verdict.
         await session.rollback()
         scan.status = "failed"
         scan.error = detail

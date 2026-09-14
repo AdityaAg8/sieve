@@ -27,9 +27,11 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from sieve.api import spend
+from sieve.api.store import verdict_row
 from sieve.config import settings
 from sieve.db.models import Scan, ScanEvent, Tool, VerdictRow
 from sieve.protocols import FakeClassifier
+from sieve.types import TriageResult
 from sieve.worker import scan_job
 from sieve.worker.main import run_once
 from sieve.worker.queue import enqueue
@@ -535,3 +537,150 @@ async def test_verdict_values_omits_a_never_set_nullable_column_so_its_default_s
         await session.rollback()
         async with engine.begin() as conn:
             await conn.run_sync(_ProbeBase.metadata.drop_all)
+
+
+# ------------------------------------------------------- differing key sets in one batch
+
+
+def _result(
+    *,
+    stage: str,
+    reasoning: str | None,
+    remediation: str | None,
+    judge_model: str | None,
+) -> TriageResult:
+    """A minimal, valid `TriageResult`; only the four nullable judge columns vary."""
+    return TriageResult(
+        verdict="confirmed" if stage == "judge" else "dismissed",
+        stage=stage,  # type: ignore[arg-type]
+        predicted_class="poisoned" if stage == "judge" else "benign",
+        class_probabilities={"benign": 0.1, "imperative_benign": 0.1, "poisoned": 0.8}
+        if stage == "judge"
+        else {"benign": 0.8, "imperative_benign": 0.1, "poisoned": 0.1},
+        poisoned_probability=0.8 if stage == "judge" else 0.1,
+        confidence=0.8,
+        sub_labels=["exfiltration"] if stage == "judge" else [],
+        owasp=[],
+        evidence_spans=[],
+        unlocated_quotes=0,
+        reasoning=reasoning,
+        remediation=remediation,
+        scanner_findings=[],
+        model_version="fake@0",
+        judge_model=judge_model,
+        latency_ms=1,
+    )
+
+
+async def _three_tools(session: AsyncSession) -> tuple[uuid.UUID, list[uuid.UUID]]:
+    scan_id = await _new_scan(session, tool_count=3)
+    for ordinal in range(3):
+        _add_tool(session, scan_id, ordinal=ordinal, name=f"mixed_{ordinal}", description="d")
+    await session.commit()
+    tool_ids = list(
+        (
+            await session.execute(
+                select(Tool.id).where(Tool.scan_id == scan_id).order_by(Tool.ordinal)
+            )
+        ).scalars()
+    )
+    return scan_id, tool_ids
+
+
+async def test_one_batch_of_judged_and_unjudged_verdicts_is_one_insert_and_loses_nothing(
+    session: AsyncSession, insert_counts: dict[str, int]
+) -> None:
+    """The mixed batch `render_nulls=True` exists for, asserted on the real table.
+
+    `verdict_row()` assigns every column, so a judge verdict (`reasoning`, `remediation` and
+    `judge_model` set) and a classifier verdict (all three an explicit `None`) have the *same*
+    key set and belong in one statement. Without `render_nulls` the ORM would drop each row's
+    NULL columns, the key sets would differ per row, and a mixed batch would fragment back into
+    one INSERT per row -- the performance bug. The stronger half of this test is the read-back:
+    fragmenting is visible, but a `None` landing on the judged row would not be.
+    """
+    scan_id, tool_ids = await _three_tools(session)
+    results = [
+        _result(stage="classifier", reasoning=None, remediation=None, judge_model=None),
+        _result(
+            stage="judge",
+            reasoning="Directive language pulling every other call through this tool.",
+            remediation="Drop the ordering clause.",
+            judge_model="claude-haiku-4-5",
+        ),
+        _result(stage="classifier", reasoning=None, remediation=None, judge_model=None),
+    ]
+
+    insert_counts.clear()
+    batch = scan_job._VerdictBatch(session, scan_id, flush_interval_s=10 * 60)
+    for tool_id, result in zip(tool_ids, results, strict=True):
+        batch.add(verdict_row(tool_id, result), {"tool_id": str(tool_id)})
+    await batch.flush()
+
+    assert insert_counts.get("verdicts") == 1, "one key set is one statement, judged or not"
+
+    landed = {
+        row.tool_id: row
+        for row in (
+            await session.execute(select(VerdictRow).where(VerdictRow.tool_id.in_(tool_ids)))
+        ).scalars()
+    }
+    assert len(landed) == 3
+    judged = landed[tool_ids[1]]
+    assert judged.remediation == "Drop the ordering clause."
+    assert judged.reasoning is not None and judged.judge_model == "claude-haiku-4-5"
+    assert judged.sub_labels == ["exfiltration"]
+    for plain in (landed[tool_ids[0]], landed[tool_ids[2]]):
+        assert (plain.remediation, plain.reasoning, plain.judge_model) == (None, None, None)
+
+
+async def test_rows_whose_key_sets_differ_still_land_every_value(
+    session: AsyncSession, insert_counts: dict[str, int]
+) -> None:
+    """A row that never assigns `remediation` beside one that does.
+
+    `_verdict_values()` omits an attribute nobody assigned, so two such rows genuinely carry
+    different keys and SQLAlchemy *must* send two statements -- one VALUES clause cannot hold
+    two column lists. What must not happen is the quiet failure: a value dropped, a column
+    filled from the wrong row, or the omitted column overwriting the one that was set. Nothing
+    the worker builds looks like this today (`verdict_row()` sets every column), which is
+    exactly why it is worth pinning: the batch is the seam a future column would arrive at.
+    """
+    scan_id, tool_ids = await _three_tools(session)
+    with_remediation = verdict_row(
+        tool_ids[0],
+        _result(
+            stage="judge",
+            reasoning="why",
+            remediation="Remove the hidden instruction.",
+            judge_model="claude-haiku-4-5",
+        ),
+    )
+    without = verdict_row(
+        tool_ids[1],
+        _result(stage="classifier", reasoning=None, remediation=None, judge_model=None),
+    )
+    # The shape `_verdict_values()` is built to survive: an attribute that was never assigned at
+    # all, rather than assigned `None`.
+    del without.__dict__["remediation"]
+
+    values = [scan_job._verdict_values(with_remediation), scan_job._verdict_values(without)]
+    assert "remediation" not in values[1], "an unassigned attribute must not reach the insert"
+
+    insert_counts.clear()
+    await session.execute(insert(VerdictRow).execution_options(render_nulls=True), values)
+    await session.commit()
+
+    assert insert_counts.get("verdicts") == 2, "two key sets cannot share one VALUES clause"
+
+    landed = {
+        row.tool_id: row
+        for row in (
+            await session.execute(select(VerdictRow).where(VerdictRow.tool_id.in_(tool_ids)))
+        ).scalars()
+    }
+    assert len(landed) == 2, "both rows must land; a differing key set is not a lost row"
+    assert landed[tool_ids[0]].remediation == "Remove the hidden instruction."
+    assert landed[tool_ids[0]].judge_model == "claude-haiku-4-5"
+    assert landed[tool_ids[1]].remediation is None, "the column's own default, not the other row's"
+    assert landed[tool_ids[1]].reasoning is None and landed[tool_ids[1]].judge_model is None
