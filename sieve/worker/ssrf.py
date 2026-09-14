@@ -10,18 +10,35 @@ Two ideas do the work:
 
 IPv4-mapped (`::ffff:0:0/96`) and NAT64 (`64:ff9b::/96`) addresses are unwrapped and
 re-checked against the IPv4 list, because `::ffff:10.0.0.1` is a private address in a v6 hat.
+
+`check_url` is **async** (security review 11.1, finding F6). `socket.getaddrinfo` is a blocking
+C call, and the name being resolved is the attacker's: a resolver that answers slowly, or a
+nameserver the attacker controls and simply never answers from, used to stall the worker's
+whole event loop -- the heartbeat included -- for as long as it pleased. The 10 s fetch
+deadline bounded the request *after* the connection, not the lookup before it. Resolution now
+goes through `loop.getaddrinfo`, which runs it in the default executor, under its own
+`RESOLVE_TIMEOUT_S`. One caveat worth stating: the executor thread is not killed when the
+timeout fires -- nothing in CPython can interrupt a blocking `getaddrinfo` -- so a hostile
+resolver can still occupy a pool thread until the OS gives up. What it can no longer do is
+occupy the loop.
 """
 
 from __future__ import annotations
 
+import asyncio
 import ipaddress
 import socket
+from typing import Any
 from urllib.parse import urlsplit
 
 from pydantic import BaseModel
 
 REQUIRED_SCHEME = "https"
 REQUIRED_PORT = 443
+
+#: How long the attacker's nameserver gets before the name is refused. Well under the 10 s
+#: whole-fetch deadline, because resolution is the first of several steps inside it.
+RESOLVE_TIMEOUT_S = 5.0
 
 BLOCKED_V4 = tuple(
     ipaddress.ip_network(n)
@@ -102,21 +119,31 @@ def is_blocked(raw: str) -> bool:
     return inner is not None and is_blocked(str(inner))
 
 
-def _resolve(host: str) -> list[tuple[int, str]]:
-    try:
-        answers = socket.getaddrinfo(host, REQUIRED_PORT, type=socket.SOCK_STREAM)
-    except OSError as exc:
-        raise SsrfBlockedError(f"could not resolve {host!r}") from exc
+def _answers(raw: list[Any], host: str) -> list[tuple[int, str]]:
     out: list[tuple[int, str]] = [
-        (int(family), str(sockaddr[0])) for family, _t, _p, _c, sockaddr in answers
+        (int(family), str(sockaddr[0])) for family, _t, _p, _c, sockaddr in raw
     ]
     if not out:
         raise SsrfBlockedError(f"could not resolve {host!r}")
     return out
 
 
-def check_url(url: str) -> ResolvedTarget:
-    """Validate a remote MCP URL and pin it to one address, or raise `SsrfBlockedError`."""
+async def _resolve(host: str, *, timeout_s: float) -> list[tuple[int, str]]:
+    """Every A and AAAA answer, resolved off the event loop and under a deadline (F6)."""
+    loop = asyncio.get_running_loop()
+    try:
+        async with asyncio.timeout(timeout_s):
+            raw = await loop.getaddrinfo(host, REQUIRED_PORT, type=socket.SOCK_STREAM)
+    except TimeoutError as exc:
+        # A name nobody answers for is refused like any other name we cannot reason about.
+        raise SsrfBlockedError(f"resolving {host!r} took longer than {timeout_s}s") from exc
+    except OSError as exc:
+        raise SsrfBlockedError(f"could not resolve {host!r}") from exc
+    return _answers(list(raw), host)
+
+
+def _validated_host(url: str) -> str:
+    """Everything about the URL that can be decided without a resolver."""
     parts = urlsplit(url)
     if parts.scheme != REQUIRED_SCHEME:
         raise SsrfBlockedError(f"only {REQUIRED_SCHEME}:// is allowed, got {parts.scheme!r}")
@@ -131,8 +158,13 @@ def check_url(url: str) -> ResolvedTarget:
         raise SsrfBlockedError("the URL carries an unusable port") from exc
     if port not in (None, REQUIRED_PORT):
         raise SsrfBlockedError(f"only port {REQUIRED_PORT} is allowed, got {port}")
+    return host
 
-    answers = _resolve(host)
+
+async def check_url(url: str, *, timeout_s: float = RESOLVE_TIMEOUT_S) -> ResolvedTarget:
+    """Validate a remote MCP URL and pin it to one address, or raise `SsrfBlockedError`."""
+    host = _validated_host(url)
+    answers = await _resolve(host, timeout_s=timeout_s)
     for _family, address in answers:
         if is_blocked(address):
             # Say which address, never the whole answer set: one blocked answer is enough.

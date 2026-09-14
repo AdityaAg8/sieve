@@ -66,7 +66,9 @@ async def fetch_tools(
         # Two independent gates: a compromised or careless `.env` can flip the first one for
         # every service, but only the sandbox service sets the second.
         raise NotSandboxedError(NOT_SANDBOXED)
-    target: ResolvedTarget = check_url(url)
+    # Resolution is awaited, not blocking: an attacker-named host used to stall the whole
+    # worker loop inside `getaddrinfo` (security review 11.1, finding F6).
+    target: ResolvedTarget = await check_url(url)
     log.info("remote.fetch", extra={"host": target.host, "family": target.family})
 
     client = http_client or build_client(target, timeout_s=timeout_s, max_bytes=max_bytes)
