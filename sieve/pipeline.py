@@ -64,6 +64,15 @@ def _distribution(classifier: Classifier, text: str) -> dict[Label, float]:
     # Calibrated output should already sum to 1; normalising costs nothing and keeps a model
     # whose last digit drifts from tripping TriageResult's validator in production.
     total = float(raw.sum())
+    if total <= 0:
+        # An all-zero (or negative) row is a broken artefact, not a distribution. Refusing
+        # loudly is what this file does everywhere else; dividing would raise
+        # `ZeroDivisionError` inside a worker thread, which reads as a Sieve bug rather than
+        # as the artefact problem it is (fix round 2, M2).
+        raise ValueError(
+            f"classifier {classifier.model_version!r} returned a row summing to {total}; "
+            "a probability distribution cannot be normalised from that"
+        )
     return {lab: float(raw[i]) / total for i, lab in enumerate(LABELS)}
 
 
@@ -97,6 +106,13 @@ def triage(record: ToolRecord, findings: list[ScannerFinding], deps: PipelineDep
         # The public demo default (SIEVE_JUDGE_ENABLED=false): the band is handed to a human.
         verdict, stage = "needs_review", "classifier"
     elif not deps.budget():
+        # `judge_budget_exhausted` is two different exhaustions wearing one name (fix round 2,
+        # M1): PRD §13.2 defines it as the *daily ledger* being spent, but `triage_many`'s
+        # scoped callback also returns False once this scan has made `judge_max_calls_per_scan`
+        # calls. So a scan with 51 band tools is indistinguishable, here and in the API, from a
+        # deployment that ran out of money. Both are honest as routing -- the band was not
+        # judged, so it goes to a human -- and the split is a contracts change (a new `Stage`
+        # literal in sieve/types.py), which is why it is recorded rather than made.
         verdict, stage = "needs_review", "judge_budget_exhausted"
     else:
         answer = deps.judge.judge(clean, poisoned)
@@ -161,7 +177,13 @@ def triage_many(
     on_result: Callable[[str, TriageResult], None] | None = None,
     judge_budget: int | None = None,
 ) -> list[TriageResult]:
-    """Triage a batch, streaming each result to `on_result` in input order as it lands."""
+    """Triage a batch, streaming each result to `on_result` in input order as it lands.
+
+    `judge_budget` is the **per-scan** call cap. When it is reached the remaining band tools
+    come back with `stage = "judge_budget_exhausted"` -- the same stage the daily ledger's
+    exhaustion produces, because `Stage` has one literal for both (see `triage`, fix round 2's
+    M1). Splitting them is a contracts change.
+    """
     scoped = deps
     if deps.judge is not None and judge_budget is not None:
         counting = _CountingJudge(deps.judge)

@@ -76,7 +76,7 @@ def test_a_shuffled_source_leaves_the_probe_at_chance() -> None:
     sources = [r.source for r in records]
     rng.shuffle(sources)  # type: ignore[arg-type]
     shuffled = [r.model_copy(update={"source": s}) for r, s in zip(records, sources, strict=True)]
-    result = run(shuffled, seed=0)
+    result = run(shuffled)
     assert 0.3 < result.auroc < 0.7
     assert result.passed is True
 
@@ -103,9 +103,22 @@ def test_too_few_rows_of_either_source_raises() -> None:
         run(records)
 
 
-def test_the_probe_is_reproducible_for_a_seed() -> None:
+def test_the_probe_is_reproducible_without_a_seed() -> None:
+    """Fix round 2, M11: there is no `--seed` because there was never anything to seed.
+
+    `GroupKFold` does not shuffle, `TfidfVectorizer` is deterministic and lbfgs ignores
+    `random_state`, so two runs over one corpus agree exactly -- which is the property the
+    dropped flag claimed to provide and this asserts is true without it.
+    """
     records = _stratum(marker=True)
-    assert run(records, seed=3).auroc == pytest.approx(run(records, seed=3).auroc)
+    assert run(records).auroc == pytest.approx(run(records).auroc)
+
+
+def test_the_probe_takes_no_seed_argument() -> None:
+    """A flag that advertises control it does not have is worse than no flag."""
+    import inspect
+
+    assert "seed" not in inspect.signature(run).parameters
 
 
 # -- fix round 1: the dev/holdout boundary is measured, not assumed clean ----

@@ -49,6 +49,14 @@ REQUIRED: tuple[str, ...] = (
     "deberta-v3-base-desc-s2",
 )
 
+#: Files a filled-in entry must list, whatever else it lists. `verify()` only hashes what the
+#: manifest names, so anything left out of `files` is used unverified -- acceptable for the
+#: download path (`snapshot_download` at a pinned revision covers it) but not for a directory a
+#: human points `SIEVE_ARTEFACTS_DIR` at. `sieve_config.json` carries the thresholds every
+#: routing decision reads (PRD §11.4), so an entry that does not hash it has pinned the weights
+#: and left the verdicts free (fix round 2, M8).
+REQUIRED_FILES: frozenset[str] = frozenset({"sieve_config.json"})
+
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 #: Exit code for "a prerequisite is not available, so nothing was measured". Shared with
@@ -98,6 +106,18 @@ def _entry(name: str, raw: object) -> Artefact:
             raise ManifestError(f"{name}: {path} must be a relative path inside the artefact")
     if repo is not None and not files:
         raise ManifestError(f"{name}: a filled-in entry must list at least one file to verify")
+    if repo is not None:
+        # Matched on the file name rather than the exact relative path, because an artefact may
+        # legitimately nest (`fold0/sieve_config.json`); what matters is that the thresholds
+        # this entry will be read for are among the bytes it hashes.
+        listed = {Path(p).name for p in files}
+        missing_required = sorted(REQUIRED_FILES - listed)
+        if missing_required:
+            raise ManifestError(
+                f"{name}: a filled-in entry must list {missing_required} in `files` -- "
+                "the thresholds decide every verdict, so pinning the weights without them "
+                "makes the pinning decorative (PRD §11.4)"
+            )
     return Artefact(name=name, hub_repo=repo, revision=revision, files=dict(files))
 
 

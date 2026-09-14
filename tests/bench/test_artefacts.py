@@ -88,6 +88,35 @@ def test_a_filled_entry_that_lists_no_file_is_refused(tmp_path: Path) -> None:
         load_manifest(_write(tmp_path / "m.json", payload))
 
 
+def test_a_filled_entry_that_does_not_hash_the_thresholds_is_refused(tmp_path: Path) -> None:
+    """Fix round 2, M8: `verify()` hashes only what the entry lists, so a `sieve_config.json`
+    left out of `files` is used unverified -- and it carries the thresholds every routing
+    decision reads (PRD §11.4). Pinning the weights without it pins nothing that decides a
+    verdict."""
+    payload = json.loads(json.dumps(FILLED))
+    payload["artefacts"][REQUIRED[0]]["files"] = {"model.onnx": "0" * 64}
+    with pytest.raises(ManifestError, match="sieve_config.json"):
+        load_manifest(_write(tmp_path / "m.json", payload))
+
+
+def test_a_nested_thresholds_file_satisfies_the_requirement(tmp_path: Path) -> None:
+    """An artefact may legitimately nest (`fold0/sieve_config.json`); what matters is that the
+    thresholds are among the bytes the entry hashes, not where they sit."""
+    payload = json.loads(json.dumps(FILLED))
+    payload["artefacts"][REQUIRED[0]]["files"] = {"fold0/sieve_config.json": "0" * 64}
+    manifest = load_manifest(_write(tmp_path / "m.json", payload))
+    assert manifest[REQUIRED[0]].files == {"fold0/sieve_config.json": "0" * 64}
+
+
+def test_a_pending_entry_is_not_asked_for_the_thresholds_yet(tmp_path: Path) -> None:
+    """The manifest ships pending, and a pending entry lists nothing by construction. Requiring
+    a file of it would make the shipped manifest unloadable rather than skippable."""
+    payload = json.loads(json.dumps(FILLED))
+    payload["artefacts"][REQUIRED[0]] = {"hub_repo": None, "revision": None, "files": {}}
+    manifest = load_manifest(_write(tmp_path / "m.json", payload))
+    assert manifest[REQUIRED[0]].pending
+
+
 def test_a_digest_that_is_not_a_sha256_is_refused(tmp_path: Path) -> None:
     payload = json.loads(json.dumps(FILLED))
     payload["artefacts"][REQUIRED[0]]["files"] = {"sieve_config.json": "DEADBEEF"}

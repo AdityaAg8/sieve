@@ -45,8 +45,16 @@ class LeakageResult(BaseModel):
     passed: bool
 
 
-def run(records: list[CorpusRecord], *, seed: int = 0) -> LeakageResult:
-    """Predict real vs synthetic within `imperative_benign`. Returns pooled out-of-fold AUROC."""
+def run(records: list[CorpusRecord]) -> LeakageResult:
+    """Predict real vs synthetic within `imperative_benign`. Returns pooled out-of-fold AUROC.
+
+    There is no `seed`, and the CLI has no `--seed`, because there is nothing for one to do
+    (fix round 2, M11): `GroupKFold` does not shuffle, `TfidfVectorizer` is deterministic, and
+    `LogisticRegression`'s lbfgs solver ignores `random_state`. The parameter used to exist and
+    be discarded, which advertised control this probe does not have -- a flag that lies about
+    reproducibility is worse than no flag, because a reader who sees it assumes the run *needed*
+    pinning. This probe is deterministic given its input.
+    """
     stratum = [r for r in records if r.label == "imperative_benign"]
     y = np.array([1 if r.source == SYNTHETIC else 0 for r in stratum])
     if int(y.sum()) < MIN_PER_SOURCE or int((1 - y).sum()) < MIN_PER_SOURCE:
@@ -73,8 +81,8 @@ def run(records: list[CorpusRecord], *, seed: int = 0) -> LeakageResult:
         vectoriser = TfidfVectorizer(sublinear_tf=True, min_df=1, ngram_range=(1, 2))
         x_train = vectoriser.fit_transform([texts[i] for i in train])
         x_test = vectoriser.transform([texts[i] for i in test])
-        # lbfgs is deterministic, so `random_state` would be inert; the seed belongs to the
-        # caller's reproducibility contract and is recorded, not passed somewhere it is ignored.
+        # lbfgs is deterministic, so `random_state` would be inert -- see `run`'s docstring for
+        # why this probe takes no seed at all rather than one it would have to ignore.
         model = LogisticRegression(max_iter=1000)
         model.fit(x_train, y[train])
         oof[test] = model.predict_proba(x_test)[:, 1]
@@ -98,9 +106,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--corpus", type=Path, required=True)
     parser.add_argument("--out", type=Path, default=Path("bench/results/leakage_probe.json"))
-    parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args(argv)
-    result = run(_load(args.corpus), seed=args.seed)
+    result = run(_load(args.corpus))
     print(result.model_dump_json(indent=2))
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(result.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n")

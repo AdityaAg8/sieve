@@ -438,3 +438,43 @@ def test_dismissed_results_expose_the_class_that_explains_them() -> None:
     assert result.predicted_class == "imperative_benign"
     label: Label = result.predicted_class
     assert label in LABELS
+
+
+# -- fix round 2 ---------------------------------------------------------------------------
+
+
+def test_an_all_zero_row_is_refused_rather_than_divided_by() -> None:
+    """M2: `_distribution` normalised by `raw.sum()` with no guard.
+
+    An artefact that returns an all-zero row is broken, and the symptom was a bare
+    `ZeroDivisionError` raised inside `asyncio.to_thread` -- which reads as a Sieve bug rather
+    than as the artefact problem it is. This file refuses loudly everywhere else; so here.
+    """
+    with pytest.raises(ValueError, match="summing to 0"):
+        triage(record(), [], deps({"benign": 0.0, "imperative_benign": 0.0, "poisoned": 0.0}))
+
+
+def test_the_per_scan_cap_lands_on_the_same_stage_as_the_daily_ledger() -> None:
+    """M1: PRD §13.2 defines `judge_budget_exhausted` as *the daily ledger* being spent, but
+    `triage_many`'s scoped callback stamps it for the per-scan call cap too.
+
+    Pinned as a fact rather than treated as a bug: both are honest routing (the band was not
+    judged, so a human sees it), and splitting them means a new `Stage` literal in
+    `sieve/types.py` -- a contracts change. The pipeline docstring and
+    `web/src/lib/verdict.ts` both say so; this is what would fail if that stopped being true.
+    """
+    band = {"benign": 0.3, "imperative_benign": 0.2, "poisoned": 0.5}
+    judge = SpyJudge(judge_output("confirmed"))
+    results = triage_many(
+        [record(name="one"), record(name="two"), record(name="three")],
+        {},
+        deps(band, judge),  # the daily ledger is wide open: `budget` defaults to always-allowed
+        judge_budget=1,
+    )
+    assert judge.calls == 1, "the per-scan cap, not the ledger, is what stopped the second call"
+    assert [r.stage for r in results] == [
+        "judge",
+        "judge_budget_exhausted",
+        "judge_budget_exhausted",
+    ]
+    assert all(r.verdict == "needs_review" for r in results[1:])
