@@ -2,7 +2,13 @@ ifeq ($(OS),Windows_NT)
 SHELL := C:/Program Files/Git/usr/bin/bash.exe
 endif
 
-.PHONY: setup lint test e2e schemas up down serve baseline train train-all bench eval-final readme corpus-stats
+.PHONY: help setup lint test e2e schemas up down serve baseline train train-all bench eval-final readme corpus-stats
+
+.DEFAULT_GOAL := help
+
+help: ## list every target with its one-line purpose
+	@grep -hE '^[a-z][a-z0-9_-]*:.*## ' $(MAKEFILE_LIST) | sed -E 's/^([a-z0-9_-]+):[^#]*## (.*)$$/  \1	\2/' | sort
+	@echo && echo 'Human steps (GPU, keys, deploys): docs/RUNBOOK.md'
 
 # `train`/`train-all` variables: PROFILE names a `bench/train.yaml` profile; SEED and FOLD are
 # the CLI's own `--seed`/`--fold`. MODEL_OUT follows the "models/<profile>-s<seed>/fold<fold>"
@@ -34,7 +40,7 @@ BENCH_CORPUS ?= bench/data/labelled.jsonl
 # real deployment) answers on; the script's own defaults name everything else (Task 11.2).
 LATENCY_BASE_URL ?= http://127.0.0.1:8000
 
-setup:
+setup:  ## uv sync --all-extras --group dev, then cd web && npm ci
 	uv sync --all-extras --group dev
 	cd web && npm ci
 
@@ -42,7 +48,7 @@ setup:
 # committed artefacts (the mini corpus, the README's numbers), so "it is not in `sieve/`" is not
 # a reason for it to drift. `mypy` keeps its configured scope -- `files = ["sieve"]` in
 # pyproject.toml -- because `--strict` over a one-off generator is a different decision.
-lint:
+lint:  ## ruff, ruff format --check, mypy, then the web lint/tokens/contrast/tsc checks
 	uv run ruff check sieve bench tests fixtures docs/scripts
 	uv run ruff format --check sieve bench tests fixtures docs/scripts
 	uv run mypy
@@ -51,7 +57,7 @@ lint:
 	# and `lint:bundle` again so a failure names itself rather than hiding in the build output.
 	cd web && npm run build && npm run lint:bundle
 
-test:
+test:  ## pytest (Postgres suites need DATABASE_URL) + web vitest
 	uv run pytest -q -m "not slow and not docker and not holdout" --cov=sieve --cov-report=term-missing
 	cd web && npm test
 
@@ -59,35 +65,35 @@ test:
 # starts everything it needs, including the API stack -- `E2E_STACK=compose` brings it up with
 # `docker compose`, and the default `local` runs uvicorn and the worker from `uv` against an
 # already-running Postgres (`E2E_DATABASE_URL` names it). See web/scripts/e2e-stack.mjs.
-e2e:
+e2e:  ## Playwright against the mocked production build
 	cd web && npm run e2e
 
-schemas:
+schemas:  ## regenerate schemas/openapi.json and the web's typed client
 	uv run python -m sieve.api.export_schemas
 	cd web && npx openapi-typescript ../schemas/openapi.json -o src/lib/api-types.ts
 
-up:
+up:  ## docker compose up -d --build and seed the sample scan
 	docker compose up -d --build
 	uv run python -m sieve.db.seed
 
-down:
+down:  ## docker compose down
 	docker compose down -v
 
-serve:
+serve:  ## run the API locally (python -m sieve.api, --reload)
 	uv run python -m sieve.api --reload
 
-baseline:
+baseline:  ## TF-IDF + LR baseline (dev split only)
 	uv run python -m bench.baseline.run
 
-train:
+train:  ## one FP32 training run: PROFILE= SEED= FOLD=<0-4|all>
 	uv run python -m sieve.model.train --config bench/train.yaml --profile $(PROFILE) --fold $(FOLD) --seed $(SEED) --out $(MODEL_OUT) $(TRAIN_EPOCHS)
 
-train-all:
+train-all:  ## every fold and seed (GPU)
 	for f in 0 1 2 3 4; do \
 		uv run python -m sieve.model.train --config bench/train.yaml --profile $(PROFILE) --fold $$f --seed $(SEED) --out models/$(PROFILE)-s$(SEED)/fold$$f; \
 	done
 
-bench:
+bench:  ## regenerate bench/results/* offline (latency, ablations, errors, judge agreement)
 	# Task 11.2: first, so a server missing at LATENCY_BASE_URL (`make serve` in another
 	# terminal, or a real deployment) fails fast -- before the expensive steps below, not
 	# after. p50/p95/p99 for POST /api/v1/triage at 20 concurrent; PRD M6a: never edit
@@ -99,12 +105,12 @@ bench:
 	uv run python -m bench.analysis.judge_agreement
 	uv run python -m bench.demo
 
-eval-final:
+eval-final:  ## the one-shot sealed evaluation, SIEVE_FINAL=1, REASON= required
 	@test -n "$(REASON)" || (echo "make eval-final REASON=\"why the holdout is being opened\"" && exit 2)
 	SIEVE_FINAL=1 uv run python -m bench.eval_final --reason "$(REASON)"
 
-readme:
+readme:  ## rewrite README numbers from bench/results/ (refuses without holdout.json)
 	uv run python docs/scripts/readme_numbers.py
 
-corpus-stats:
+corpus-stats:  ## corpus statistics report
 	uv run python -m bench.stats

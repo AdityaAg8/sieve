@@ -190,6 +190,7 @@ targets and reported whatever they come out as:
 
 - Spec: [`docs/superpowers/specs/2026-09-11-sieve-prd-v2.md`](docs/superpowers/specs/2026-09-11-sieve-prd-v2.md)
 - Threat model: [THREAT_MODEL.md](THREAT_MODEL.md)
+- Human runbook (GPU training, cassette recording, deploys, everything not automated): [docs/RUNBOOK.md](docs/RUNBOOK.md)
 - Architecture decisions: [`docs/adr/`](docs/adr/README.md)
 - Write-up (a skeleton; unpublished): [`docs/writeup.md`](docs/writeup.md)
 - Datasheet: [`bench/datasheet.md`](bench/datasheet.md)
