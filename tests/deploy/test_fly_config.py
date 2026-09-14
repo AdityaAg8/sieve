@@ -26,12 +26,26 @@ DEPLOY_FILES = (FLY_TOML, FLY_SANDBOX_TOML, DEPLOY_DOC, VERCEL_JSON)
 #: discipline applied to credentials too: a committed file cannot leak what it never holds).
 SECRET_ENV_KEYS = {"ANTHROPIC_API_KEY", "DATABASE_URL", "SNYK_TOKEN", "SIEVE_IP_HASH_SALT"}
 
-#: The shape a live credential would take. A real Anthropic key, or a Postgres URL whose
-#: password is not the dev-only literal "sieve" docker-compose.yml also uses.
+#: The shape a live credential would take. A real Anthropic key, a Postgres URL whose password
+#: is not the dev-only literal "sieve" docker-compose.yml also uses, or a Snyk token (a UUID)
+#: actually assigned to `SNYK_TOKEN` rather than named in prose.
 SECRET_SHAPED = re.compile(
     r"sk-ant-[A-Za-z0-9_-]{10,}"
     r"|postgresql\+psycopg://[^:/@]+:(?!sieve\b)[^@/]{4,}@"
+    r"|SNYK_TOKEN\s*[=:]\s*[\"']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}"
+    r"-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
 )
+
+#: `SIEVE_IP_HASH_SALT` assigned to something other than a `<placeholder>` or the dev-only
+#: default `.env.example` ships (`change-me-per-deployment`) would be a real, deployment-specific
+#: secret value landing in a committed file.
+IP_HASH_SALT_ASSIGNMENT = re.compile(r"SIEVE_IP_HASH_SALT\s*[=:]\s*[\"']?([^\"'\s,]+)")
+_ALLOWED_IP_HASH_SALT_VALUES = {"change-me-per-deployment"}
+
+
+def _looks_like_a_placeholder(value: str) -> bool:
+    value = value.rstrip(">\"')")
+    return value.startswith("<") or value in _ALLOWED_IP_HASH_SALT_VALUES
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -111,6 +125,11 @@ def test_no_secret_value_appears_in_any_committed_deploy_file() -> None:
         text = path.read_text(encoding="utf-8")
         assert not SECRET_SHAPED.search(text), f"{path} looks like it embeds a real secret"
 
+        for value in IP_HASH_SALT_ASSIGNMENT.findall(text):
+            assert _looks_like_a_placeholder(value), (
+                f"{path} assigns SIEVE_IP_HASH_SALT a concrete-looking value: {value!r}"
+            )
+
     for path in (FLY_TOML, FLY_SANDBOX_TOML):
         env = _load(path).get("env", {})
         leaked = SECRET_ENV_KEYS & env.keys()
@@ -118,8 +137,20 @@ def test_no_secret_value_appears_in_any_committed_deploy_file() -> None:
 
 
 def test_deploy_doc_shows_rollback_and_secret_rotation_with_placeholders_only() -> None:
+    """`fly releases rollback` does not exist in current flyctl (Fly's own Rollback Guide:
+
+    rolling back means redeploying a previous release's image, via `fly releases --image` to
+    find it and `fly deploy --image` to redeploy it). The doc may still name the nonexistent
+    command in prose to warn readers off it, so this only guards against it appearing as a
+    runnable command line, and otherwise asserts the real commands are the ones documented.
+    """
     text = DEPLOY_DOC.read_text(encoding="utf-8")
-    assert "fly releases rollback" in text
+    lines = text.splitlines()
+    assert not any(line.strip().startswith("fly releases rollback") for line in lines), (
+        "fly releases rollback is not a real flyctl command; see Fly's Rollback Guide"
+    )
+    assert "fly releases --app" in text and "--image" in text
+    assert "fly deploy --image " in text
     assert "fly secrets set" in text
     for key in SECRET_ENV_KEYS:
         assert key in text, f"docs/deploy.md never mentions rotating {key}"

@@ -59,15 +59,22 @@ app's pipeline calls); it is listed here only so rotation instructions have one 
 
 ```bash
 # Fixture model (no real artefact yet, or you deliberately want the fixture classifier):
-fly deploy --config fly.toml
+fly deploy --config fly.toml --image-label <git-sha-or-version>
 
 # Real, pinned model artefact -- the build args flow into Dockerfile.api's `artefact` stage,
 # which downloads it with huggingface_hub.snapshot_download and bakes it into the image, so the
 # running container makes zero network calls to load the model at cold start:
 fly deploy --config fly.toml \
+  --image-label <git-sha-or-version> \
   --build-arg SIEVE_MODEL_ID=<you>/sieve-triage-deberta-v3-base \
   --build-arg SIEVE_MODEL_REVISION=<sha>
 ```
+
+`--image-label` tags the built image with something a person can recognise later (a git commit
+hash or a version string) instead of Fly's default `deployment-<id>` tag -- it is what makes
+"Rollback" below a matter of reading a label rather than hunting through opaque deployment ids
+(Fly's Rollback Guide: "Tip: Stop living in `deployment-01HXXXXX` hell: use human-readable
+tags").
 
 `fly.toml`'s `[deploy] release_command` runs `uv run python -m sieve.db.migrate` (the same
 `alembic upgrade head` wrapper the seed and the test suite use, per `docs/handoffs/L5.md`)
@@ -110,7 +117,7 @@ container-level controls compose expresses -- and that the SSRF guard
 either way.
 
 ```bash
-fly deploy --config fly.sandbox.toml
+fly deploy --config fly.sandbox.toml --image-label <git-sha-or-version>
 fly scale count sandbox=0 --app sieve-sandbox   # resting state: zero Machines running
 ```
 
@@ -130,21 +137,29 @@ fly scale count sandbox=0 --app sieve-sandbox   # back to the resting, zero-cost
 
 ## Rollback
 
-Every deploy creates a new release. Roll either app back independently:
+**There is no `fly releases rollback` command in current flyctl.** Fly's own Rollback Guide is
+explicit that rolling back means redeploying a previous release's *image*, not invoking a
+dedicated rollback verb. Roll either app back independently, in two steps:
 
 ```bash
-fly releases list --app sieve-api
-fly releases rollback <version> --app sieve-api
+# 1. See what you've shipped -- lists past releases with the exact image tag each one used.
+fly releases --app sieve-api --image
+fly releases --app sieve-sandbox --image
 
-fly releases list --app sieve-sandbox
-fly releases rollback <version> --app sieve-sandbox
+# 2. Redeploy the image from the release before things went sideways. If deploys were tagged
+#    with --image-label (see "Deploying the API + worker app" above), use that readable tag;
+#    otherwise use the auto-generated `deployment-<id>` tag `fly releases --image` printed.
+fly deploy --image registry.fly.io/sieve-api:<git-sha-or-version> --app sieve-api
+fly deploy --image registry.fly.io/sieve-sandbox:<git-sha-or-version> --app sieve-sandbox
 ```
 
-`fly releases rollback` re-deploys a previous release's image and config; it does **not** roll
-back the database. If a release's migration is not backward-compatible, restoring the previous
-release's behaviour also means restoring a matching Postgres snapshot -- Fly Postgres snapshots
-are automatic and daily by default (`fly postgres db list` / your cluster's backup settings);
-consult those before rolling back across a migration boundary, not after.
+Redeploying an old image restores that release's *code and image*; it does **not** roll back
+the database. If the release you are rolling back past ran a migration that is not
+backward-compatible, restoring that release's behaviour also means restoring a matching
+Postgres snapshot -- Fly Postgres snapshots are automatic and daily by default
+(`fly postgres db list` / your cluster's backup settings); consult those before rolling back
+across a migration boundary, not after. (Fly's own summary of this: "you're rolling back the
+*VM image*, not the database... Fly isn't going to time-travel your data.")
 
 ## Secret rotation
 
