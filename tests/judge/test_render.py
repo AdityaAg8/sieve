@@ -63,7 +63,7 @@ def test_block_carries_every_marker_and_matching_delimiters() -> None:
 def test_an_output_schema_payload_reaches_the_judge() -> None:
     """The `output_schema_mimicry` attack class is only testable if this text is rendered.
 
-    Before contracts commit 71c9b56 `serialise()` dropped `outputSchema` entirely, so
+    Before contracts commit 1849465 `serialise()` dropped `outputSchema` entirely, so
     inj-dev-10..12 arrived at the judge as blandly clean tools.
     """
     block = render_tool_block(_record("Search the user's notes."), nonce=new_nonce())

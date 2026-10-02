@@ -38,7 +38,7 @@ for no user who has asked for it (PRD §27), and a colour that is used both for 
 - The gate has overruled the PRD's own §14 prose three times, and that is recorded here rather
   than being quietly absorbed:
   1. Phase 0 corrected three token hex values (`ink-3`, `line-2`, `red-fill`) that failed the
-     PRD's own WCAG gate as written (commit `d1be436`).
+     PRD's own WCAG gate as written (commit `44f9987`).
   2. §14.4's dismissed tiles at 60% opacity render `--ink-3` at 2.54:1 on `--bg-0`, below AA, so
      the tiles keep the 0.92 scale and drop the fade (L6 hand-off).
   3. Rows cannot change fill on hover or selection (`--ink-3` on `--bg-2` is 4.20:1), so state

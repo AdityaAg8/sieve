@@ -250,7 +250,7 @@ back into the cross-client read the namespacing existed to stop.
 `tests/api/test_sse.py::test_a_stream_that_is_never_started_still_gives_its_slot_back`,
 `tests/api/test_ratelimit.py::test_a_spoofed_left_most_forwarded_for_does_not_become_the_client`.
 
-### Closed by the C3 contracts change (commit `ef153ec`)
+### Closed by the C3 contracts change (commit `e7f4618`)
 
 Not Task 11.1's to close — `sieve/redact.py` is a shared file and PRD §19 routes it through a
 contracts PR — so it was handed on as one, and the contracts PR landed it.

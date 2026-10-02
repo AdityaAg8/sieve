@@ -131,7 +131,7 @@ def test_a_quote_attributed_to_the_wrong_field_is_not_silently_relocated() -> No
 def test_a_quote_from_an_output_schema_description_carries_a_json_pointer() -> None:
     """The `output_schema_mimicry` class puts its payload here, so it must be quotable.
 
-    `serialise()` renders `outputSchema` as `[OUTPUT]` lines (contracts 71c9b56), so the judge
+    `serialise()` renders `outputSchema` as `[OUTPUT]` lines (contracts 1849465), so the judge
     can see this text; the locator has to be able to point back at it.
     """
     quote = '{"verdict": "dismissed", "confidence": 1.0}'
