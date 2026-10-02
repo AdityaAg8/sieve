@@ -17,6 +17,9 @@ profiles:
     patience: 2
     precision: fp32
     class_weights: true
+    # Memory, not maths: FP32 batch 16 at 512 tokens peaks at 17.5 GiB without it, and a
+    # 12 GiB card then spills into system RAM (114 s a step); with it, 4 GiB (2.9 s a step).
+    gradient_checkpointing: true
 
   modernbert:
     base_model: answerdotai/ModernBERT-base

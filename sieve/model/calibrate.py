@@ -10,7 +10,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import shutil
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -105,12 +104,26 @@ def pool_oof(
 # ----------------------------------------------------------------------------------- CLI
 
 
+def _read_config(path: Path) -> dict[str, Any]:
+    return dict(json.loads(path.read_text(encoding="utf-8")))
+
+
+def _write_config(path: Path, config: dict[str, Any]) -> None:
+    path.write_text(
+        json.dumps(config, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
+    )
+
+
 def _shared_dir(model_dirs: Sequence[Path], override: Path | None) -> Path:
     if override is not None:
         return override
     config = json.loads((model_dirs[0] / "sieve_config.json").read_text(encoding="utf-8"))
     profile = str(config["model_version"]).split("@", 1)[0]
-    return model_dirs[0].parent / f"{profile}-s{config['seed']}"
+    name = f"{profile}-s{config['seed']}"
+    # The Makefile nests the folds inside the seed directory (models/<profile>-s<seed>/fold<k>);
+    # folds kept beside it (models/<profile>-f<k>-s<seed>) name it as a sibling instead.
+    parent = model_dirs[0].parent
+    return parent if parent.name == name else parent / name
 
 
 def main(argv: Sequence[str] | None = None) -> Path:
@@ -159,17 +172,28 @@ def main(argv: Sequence[str] | None = None) -> Path:
     (shared / "oof_ids.json").write_text(
         json.dumps(ids, indent=2) + "\n", encoding="utf-8", newline="\n"
     )
-    base = json.loads((ns.dirs[0] / "sieve_config.json").read_text(encoding="utf-8"))
-    base.update(payload)
-    base["fold"] = "pooled"
+    # The operating point is merged into each artefact's own config, never over it: the fold and
+    # the training command still name the run that made the weights beside them, and `push`
+    # prints the served model's on its card. With no whole-dev model here yet there are no
+    # weights to describe, so the pooled config takes fold 0's settings and no command.
     written = shared / th.CONFIG_FILE
-    written.write_text(
-        json.dumps(base, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
-    )
-    # Every per-fold directory gets the same file, so a stray fold artefact can never be served
-    # with unset thresholds.
+    if written.exists():
+        served = _read_config(written)
+    else:
+        served = {**_read_config(ns.dirs[0] / th.CONFIG_FILE), "fold": "pooled"}
+        served["training_command"] = None
+    if not (shared / "model.safetensors").exists():
+        log.warning(
+            "%s holds no whole-dev model yet; `make train FOLD=all` would blank these "
+            "thresholds, so calibrate after it",
+            shared,
+        )
+    _write_config(written, {**served, **payload})
+    # Every per-fold directory gets the operating point too, so a stray fold artefact can never
+    # be served with unset thresholds.
     for directory in ns.dirs:
-        shutil.copyfile(written, directory / th.CONFIG_FILE)
+        own = directory / th.CONFIG_FILE
+        _write_config(own, {**_read_config(own), **payload})
 
     th.write_curves(
         probs,

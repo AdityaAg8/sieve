@@ -36,6 +36,20 @@ yarn-error.log*
 models/
 *.onnx
 bench/data/raw/
+# `make corpus` output: rebuilt from the pinned catalog and the committed plans, labels and
+# payloads. Every file below holds third-party tool text (MIT/Apache/BSD/ISC), which is
+# published only with a NOTICE (RUNBOOK §4). `corpus.jsonl` is also where the labelling tool
+# saves your labels, so back it up yourself until then.
+bench/data/real.jsonl
+bench/data/constructed.jsonl
+bench/data/corpus.jsonl
+bench/data/deduped.jsonl
+bench/data/labelled.jsonl
+bench/data/synthetic/human.jsonl
+bench/data/synthetic/model.jsonl
+bench/data/synthetic/prompts_used/
+bench/results/corpus_stats.json
+bench/results/dedup_dropped.json
 fixtures/scanner/.tools-only.json
 
 # ---------------------------------------------------------------- Local run output
@@ -51,6 +65,9 @@ README.md.tmp
 .claude/
 docs/superpowers/
 docs/handoffs/
+docs/research/
+docs/TRAINING_GUIDE.md
+sieve-shortcuts.ps1
 CLAUDE.md
 AGENTS.md
 lessons.md

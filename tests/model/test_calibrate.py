@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -141,6 +142,7 @@ def _fold_dir(directory: Path, records: list, fold: int, *, rng: np.random.Gener
                 "temperature": None,
                 "t_low": None,
                 "t_high": None,
+                "training_command": f"python -m sieve.model.train --fold {fold}",
             }
         ),
         encoding="utf-8",
@@ -196,6 +198,87 @@ def test_cli_fills_every_fold_config_and_writes_the_curves(
     curves = json.loads((results / "curves.json").read_text(encoding="utf-8"))
     assert len(curves["recall_vs_threshold"]) == 20
     assert len(curves["fpr_vs_recall"]) == 20
+
+
+def _calibrate_nested(
+    dev_records: list, tmp_path: Path, *extra: str
+) -> tuple[Path, list[Path], Path]:
+    """The Makefile's layout: `models/<profile>-s<seed>/fold<k>`, the served model at the top."""
+    from sieve.model.calibrate import main
+
+    corpus = tmp_path / "corpus.jsonl"
+    corpus.write_text(
+        "".join(r.model_dump_json() + "\n" for r in dev_records),
+        encoding="utf-8",
+        newline="\n",
+    )
+    rng = np.random.default_rng(11)
+    seed_dir = tmp_path / "models" / "tiny-s0"
+    dirs = [_fold_dir(seed_dir / f"fold{fold}", dev_records, fold, rng=rng) for fold in range(5)]
+    written = main(
+        [
+            "--dirs", *[str(d) for d in dirs],
+            "--corpus", str(corpus),
+            "--results-dir", str(tmp_path / "results"),
+            "--n-boot", "40",
+            "--curve-boot", "20",
+            "--curve-points", "10",
+            *extra,
+        ]
+    )  # fmt: skip
+    return seed_dir, dirs, written
+
+
+def test_cli_writes_into_the_seed_directory_its_folds_are_nested_in(
+    dev_records: list, tmp_path: Path
+) -> None:
+    seed_dir, _, written = _calibrate_nested(dev_records, tmp_path)
+    assert written == seed_dir / "sieve_config.json"
+    assert not (seed_dir / "tiny-s0").exists()
+
+
+def test_calibration_adds_the_operating_point_without_rewriting_who_made_each_artefact(
+    dev_records: list, tmp_path: Path
+) -> None:
+    """The served model keeps its own `--fold all` command: `push` prints it on the model card."""
+    seed_dir = tmp_path / "models" / "tiny-s0"
+    seed_dir.mkdir(parents=True)
+    whole_dev = {
+        "model_version": "tiny@abc1234",
+        "fold": "all",
+        "seed": 0,
+        "mode": "full",
+        "num_labels": 3,
+        "temperature": None,
+        "t_low": None,
+        "t_high": None,
+        "training_command": "python -m sieve.model.train --fold all --epochs 4",
+    }
+    (seed_dir / "sieve_config.json").write_text(
+        json.dumps(whole_dev), encoding="utf-8", newline="\n"
+    )
+    (seed_dir / "model.safetensors").write_bytes(b"")
+
+    _, dirs, written = _calibrate_nested(dev_records, tmp_path, "--out", str(seed_dir))
+
+    served = json.loads(written.read_text(encoding="utf-8"))
+    assert served["fold"] == "all"
+    assert served["training_command"] == whole_dev["training_command"]
+    assert served["t_low"] is not None
+    for fold, directory in enumerate(dirs):
+        own = json.loads((directory / "sieve_config.json").read_text(encoding="utf-8"))
+        assert own["fold"] == fold
+        assert own["training_command"] == f"python -m sieve.model.train --fold {fold}"
+        assert own["t_low"] == served["t_low"]
+
+
+def test_calibrating_before_the_whole_dev_model_exists_says_it_will_be_blanked(
+    dev_records: list, tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    # `make train FOLD=all` writes a fresh config with blank thresholds over whatever is there.
+    with caplog.at_level(logging.WARNING, logger="sieve.model.calibrate"):
+        _calibrate_nested(dev_records, tmp_path)
+    assert "no whole-dev model" in caplog.text
 
 
 def test_cli_also_writes_the_pooled_arrays_for_the_selection_step(

@@ -2,7 +2,7 @@ ifeq ($(OS),Windows_NT)
 SHELL := C:/Program Files/Git/usr/bin/bash.exe
 endif
 
-.PHONY: help setup lint test e2e schemas up down serve baseline train train-all bench eval-final readme corpus-stats
+.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats
 
 .DEFAULT_GOAL := help
 
@@ -89,9 +89,19 @@ train:  ## one FP32 training run: PROFILE= SEED= FOLD=<0-4|all>
 	uv run python -m sieve.model.train --config bench/train.yaml --profile $(PROFILE) --fold $(FOLD) --seed $(SEED) --out $(MODEL_OUT) $(TRAIN_EPOCHS)
 
 train-all:  ## every fold and seed (GPU)
+	# `|| exit 1`: a loop's status is its last command's, so without it a failed fold scrolls
+	# past, the next folds run, and `calibrate` pools whatever that fold left from before.
 	for f in 0 1 2 3 4; do \
-		uv run python -m sieve.model.train --config bench/train.yaml --profile $(PROFILE) --fold $$f --seed $(SEED) --out models/$(PROFILE)-s$(SEED)/fold$$f; \
+		uv run python -m sieve.model.train --config bench/train.yaml --profile $(PROFILE) --fold $$f --seed $(SEED) --out models/$(PROFILE)-s$(SEED)/fold$$f || exit 1; \
 	done
+
+best-epoch:  ## the EPOCHS= for FOLD=all: the median best_epoch of MODEL_DIR's five folds
+	uv run python -c "import json, statistics; e = [json.load(open(r'$(MODEL_DIR)/fold%d/metrics.json' % k, encoding='utf-8'))['best_epoch'] for k in range(5)]; print('best epochs', e, '-> EPOCHS =', int(statistics.median(e)))"
+
+# `calibrate` passes --out explicitly: the CLI's own default is a sibling of the fold
+# directories' parent, which under this layout nests (models/deberta-s0/deberta-s0).
+calibrate:  ## temperature, T_low and T_high from the five folds' pooled OOF logits, into MODEL_DIR
+	uv run python -m sieve.model.calibrate --dirs $(FOLD_DIRS) --corpus $(BENCH_CORPUS) --out $(MODEL_DIR)
 
 bench:  ## regenerate bench/results/* offline (latency, ablations, errors, judge agreement)
 	# Task 11.2: first, so a server missing at LATENCY_BASE_URL (`make serve` in another
@@ -111,6 +121,19 @@ eval-final:  ## the one-shot sealed evaluation, SIEVE_FINAL=1, REASON= required
 
 readme:  ## rewrite README numbers from bench/results/ (refuses without holdout.json)
 	uv run python docs/scripts/readme_numbers.py
+
+# `corpus`: real catalog rows -> mutations -> dedup -> grouped split -> stats. The merged
+# `constructed.jsonl` is rebuilt every run, but it only seeds `corpus.jsonl` (the file the
+# labelling TUI edits in place) when that does not exist yet: human labels are never clobbered.
+corpus:  ## build bench/data/labelled.jsonl (catalog import, mutations, dedup, split, stats)
+	uv run python -m bench.collect.catalog --out bench/data/real.jsonl
+	uv run python -m bench.generate.mutate --corpus bench/data/real.jsonl --plan bench/data/synthetic/human_plan.json --generator human --id-prefix sb-hum- --out bench/data/synthetic/human.jsonl
+	uv run python -m bench.generate.mutate --corpus bench/data/real.jsonl --plan bench/data/synthetic/plan.json --generator file --payloads bench/data/synthetic/payloads.jsonl --id-prefix sb-syn- --out bench/data/synthetic/model.jsonl
+	cat bench/data/real.jsonl bench/data/synthetic/human.jsonl bench/data/synthetic/model.jsonl > bench/data/constructed.jsonl
+	test -f bench/data/corpus.jsonl || cp bench/data/constructed.jsonl bench/data/corpus.jsonl
+	uv run python -m bench.split.dedup --corpus bench/data/corpus.jsonl --out bench/data/deduped.jsonl
+	uv run python -m bench.split.split --corpus bench/data/deduped.jsonl --out bench/data/labelled.jsonl
+	uv run python -m bench.stats --corpus bench/data/labelled.jsonl
 
 corpus-stats:  ## corpus statistics report
 	uv run python -m bench.stats

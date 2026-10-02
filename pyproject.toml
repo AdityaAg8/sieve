@@ -37,7 +37,11 @@ model = [
     "optimum[onnxruntime]",
     "huggingface_hub",
     "sentence-transformers",
-    "scipy",
+    # scipy <1.18 and pyarrow <25.0.1: the same Smart App Control block again. scipy 1.18.x's
+    # `scipy.spatial` DLLs and pyarrow 25.0.1's `_dataset` DLL are refused on the dev box, and
+    # `transformers.Trainer` imports both, so training cannot start. Measured 2026-09-21.
+    "scipy<1.18",
+    "pyarrow<25.0.1",
     "sentencepiece>=0.2.2",
 ]
 judge = ["anthropic>=1.0"]
@@ -59,6 +63,17 @@ dev = [
     "pip-audit",
     "types-pyyaml",
 ]
+
+# PyPI's Windows torch wheels are CPU-only, so the dev box's GPU was invisible to training.
+# Windows alone resolves torch from PyTorch's CUDA 12.6 index; Linux (CI, the Docker images)
+# keeps PyPI's torch unchanged. `explicit` keeps every other package off that index.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu126", marker = "sys_platform == 'win32'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
 
 [tool.ruff]
 line-length = 100

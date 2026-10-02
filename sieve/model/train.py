@@ -12,6 +12,7 @@ import json
 import logging
 import shutil
 import time
+import unicodedata
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Literal
@@ -55,6 +56,7 @@ class TrainConfig(BaseModel):
     mode: Mode = "full"
     num_labels: int = Field(default=3, ge=2, le=3)
     class_weights: bool
+    gradient_checkpointing: bool = False
     scanner_features: bool = False
     profile: str = "custom"
     allow_reduced_precision: bool = False
@@ -165,7 +167,15 @@ def default_corpus(config_path: Path) -> Path:
 
 
 def _normalise(text: str) -> str:
-    return "".join(text.split()).lower()
+    """Compare what the encoder sees: NFKC, invisible format characters and whitespace gone.
+
+    DeBERTa-v3's normaliser applies NFKC (a fullwidth comma becomes ",") and drops Unicode
+    format characters (category Cf: zero-width and bidi controls). Comparing with them still in
+    place reported every zero-width and bidi concealment row, and every real description with
+    fullwidth punctuation, as truncated when nothing was cut.
+    """
+    folded = unicodedata.normalize("NFKC", text)
+    return "".join(c for c in folded if not c.isspace() and unicodedata.category(c) != "Cf").lower()
 
 
 def _field_fragments(record: CorpusRecord, field: EvidenceField) -> list[str]:
@@ -194,13 +204,16 @@ def payload_survival_failures(
 ) -> list[tuple[str, EvidenceField]]:
     """`(record id, field)` for every payload field TRUNCATED away at `max_length`.
 
-    Compared after whitespace-stripping and lower-casing, because a wordpiece decode re-spaces
-    punctuation. A fragment the serialisation never carried in the first place (an
+    Compared after `_normalise`, because a wordpiece decode re-spaces punctuation and the
+    encoder's own normaliser folds and drops characters. The unknown token is removed from the
+    decode first: DeBERTa-v3 encodes a bidi control as `[UNK]`, and an invisible control char is
+    not payload text. A fragment the serialisation never carried in the first place (an
     `outputSchema` payload, or anything but the description under `description_only`) is
     skipped: that is a coverage question for §11.2, and folding it in here would make ablation
-    3 unrunnable. A fragment the tokenizer drops entirely — an unknown codepoint in a
-    concealment record — does show up, which is the behaviour we want.
+    3 unrunnable. A *visible* character the tokenizer cannot encode still shows up as a
+    failure, which is the behaviour we want: the encoder never saw it.
     """
+    unknown = getattr(tokenizer, "unk_token", None) or ""
     failures: list[tuple[str, EvidenceField]] = []
     for record in records:
         if not record.payload_fields:
@@ -208,11 +221,16 @@ def payload_survival_failures(
         text = serialise(record.to_tool_record(), mode=mode)
         full = _normalise(text)
         ids = tokenizer(text, truncation=True, max_length=max_length)["input_ids"]
-        kept = _normalise(tokenizer.decode(ids, skip_special_tokens=False))
+        decoded = tokenizer.decode(ids, skip_special_tokens=False)
+        kept = _normalise(decoded.replace(unknown, "") if unknown else decoded)
         for field in record.payload_fields:
+            raw = [f for f in _field_fragments(record, field) if f in text]
+            # A fragment made only of invisible characters normalises to "": the encoder sees
+            # none of it, so the row's label rests on evidence the model never gets.
+            invisible = any(f.strip() and not _normalise(f) for f in raw)
             fragments = [_normalise(f) for f in _field_fragments(record, field)]
             carried = [f for f in fragments if f and f in full]
-            if carried and any(f not in kept for f in carried):
+            if invisible or (carried and any(f not in kept for f in carried)):
                 failures.append((record.id, field))
     return failures
 
@@ -271,7 +289,10 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         mode=config.mode,
     )
     if failures:
-        raise ValueError(f"payload fields truncated at max_length={config.max_length}: {failures}")
+        raise ValueError(
+            f"payload fields truncated at max_length={config.max_length}, or holding characters "
+            f"its tokenizer cannot encode: {failures}"
+        )
 
     if config.fold == "all":
         splits = build_splits(records, fold=-1, mode=config.mode, seed=config.seed)
@@ -289,9 +310,12 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         train_ds, early_ds, oof_ds = splits["train"], splits["early_stop"], splits["oof"]
 
     mapping = config.label_map()
+    # Plain values only: `datasets` fingerprints `encode` by pickling what it closes over, and
+    # under `python -m` the config's class lives in `__main__`, which cannot be pickled.
+    max_length = config.max_length
 
     def encode(batch: dict[str, list[Any]]) -> dict[str, Any]:
-        encoded = tokenizer(batch["text"], truncation=True, max_length=config.max_length)
+        encoded = tokenizer(batch["text"], truncation=True, max_length=max_length)
         encoded["labels"] = [mapping[int(x)] for x in batch["label"]]
         return dict(encoded)
 
@@ -371,6 +395,12 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         data_seed=config.seed,
         fp16=False,
         bf16=(config.precision == "bf16"),
+        # Non-reentrant: DeBERTa-v2 feeds one relative-position tensor to every layer, and the
+        # reentrant implementation (transformers' default) backwards through it twice and dies.
+        gradient_checkpointing=config.gradient_checkpointing,
+        gradient_checkpointing_kwargs={"use_reentrant": False}
+        if config.gradient_checkpointing
+        else None,
         use_cpu=not torch.cuda.is_available(),
         report_to=[],
         disable_tqdm=True,
@@ -420,6 +450,8 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         "num_labels": config.num_labels,
         "warmup_ratio": config.warmup_ratio,
         "precision": config.precision,
+        # Read off the trained model, not the config: proof the flag reached the Trainer.
+        "gradient_checkpointing": bool(getattr(trainer.model, "is_gradient_checkpointing", False)),
         "epochs_requested": config.epochs,
         "early_stop_macro_f1_per_epoch": per_epoch,
         "best_epoch": (1 + int(np.argmax(per_epoch))) if per_epoch else None,
