@@ -16,7 +16,7 @@ export function HoldoutLog({ rows }: { rows: HoldoutLogRow[] }) {
       title="Holdout log"
       lede="The holdout was opened this many times."
     >
-      <p className="t-display t-num text-ink-0 text-[40px] leading-none">
+      <p className="stat-figure text-ink-0">
         <Num>{String(rows.length)}</Num>
       </p>
 

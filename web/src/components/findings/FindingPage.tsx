@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { ErrorNote } from "@/components/shell/ErrorNote";
+import { IconArrow } from "@/components/shell/Icons";
 import { useFindings, useModels } from "@/lib/queries";
 
 import { FindingDetail } from "./FindingDrawer";
@@ -17,37 +18,37 @@ export function FindingPage({ scanId, findingId }: { scanId: string; findingId: 
   const finding = findings.data?.items.find((item) => item.id === findingId) ?? null;
 
   return (
-    <div className="mx-auto max-w-[64rem] px-4 py-10 sm:px-8">
-      <Link
-        href={`/scan/${scanId}`}
-        className="t-ui u-interactive text-ink-2 hover:text-ink-0 border-line-2 inline-block border-b pb-0.5"
-      >
-        Back to the scan
-      </Link>
+    <section className="band-hero pattern-gutters">
+      <div className="wrap flex flex-col gap-6">
+        <Link href={`/scan/${scanId}`} className="link-arrow">
+          <IconArrow size={16} className="rotate-180" />
+          Back to the scan
+        </Link>
 
-      <div className="mt-6">
-        {findings.isError ? (
-          <ErrorNote
-            title="This finding could not be read."
-            detail="The scan's findings did not load. This does not mean the tool is clean."
-            onRetry={() => void findings.refetch()}
-          />
-        ) : findings.isPending ? (
-          <p className="surface t-body text-ink-2 p-6" aria-live="polite">
-            Reading the scan…
-          </p>
-        ) : finding ? (
-          <div className="surface">
-            <FindingDetail finding={finding} judgeEnabled={models.data?.judge_enabled ?? null} />
-          </div>
-        ) : (
-          <p className="surface t-body text-ink-1 p-6">
-            This scan has no finding called{" "}
-            <span className="t-mono text-ink-0">{findingId}</span>. It may have expired — scans are
-            deleted after 7 days.
-          </p>
-        )}
+        <div>
+          {findings.isError ? (
+            <ErrorNote
+              title="This finding could not be read."
+              detail="The scan's findings did not load. This does not mean the tool is clean."
+              onRetry={() => void findings.refetch()}
+            />
+          ) : findings.isPending ? (
+            <p className="surface t-body text-ink-2 p-6" aria-live="polite">
+              Reading the scan…
+            </p>
+          ) : finding ? (
+            <div className="surface">
+              <FindingDetail finding={finding} judgeEnabled={models.data?.judge_enabled ?? null} />
+            </div>
+          ) : (
+            <p className="surface t-body text-ink-1 p-6">
+              This scan has no finding called{" "}
+              <span className="t-mono text-ink-0">{findingId}</span>. It may have expired — scans are
+              deleted after 7 days.
+            </p>
+          )}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

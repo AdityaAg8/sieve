@@ -43,9 +43,17 @@ type Props = {
   autoplay?: boolean;
   replayable?: boolean;
   onComplete?: () => void;
+  /** What the slab's label row calls this pass, e.g. "Sample scan · 27 tools". */
+  caption?: string;
 };
 
-export function Sieve({ data, autoplay = true, replayable = true, onComplete }: Props) {
+export function Sieve({
+  data,
+  autoplay = true,
+  replayable = true,
+  onComplete,
+  caption = "The sieve",
+}: Props) {
   const reduceMotion = useReducedMotion() ?? false;
   const timeline = useMemo(() => sieveTimeline(data.length), [data.length]);
 
@@ -161,9 +169,31 @@ export function Sieve({ data, autoplay = true, replayable = true, onComplete }: 
           `${byTray[1].items.length} need review, ${byTray[2].items.length} were dismissed.`}
       </p>
 
+      {/* The slab's label row: what this is on the left, the two live counts on the right. */}
+      <div className="panel-head" aria-hidden="true">
+        <p className="t-eyebrow">{caption}</p>
+        <p className="t-ui text-ink-2 whitespace-nowrap">
+          Flagged{" "}
+          <span data-testid="sieve-count-flagged" className="t-num text-ink-0 text-[15px] font-semibold">
+            {settled ? flagged : flaggedShown}
+          </span>
+          <span aria-hidden="true" className="text-ink-3 px-2">
+            →
+          </span>
+          confirmed{" "}
+          <span
+            data-testid="sieve-count-confirmed"
+            data-red="confirmed"
+            className="t-num text-red-0 text-[15px] font-semibold"
+          >
+            {settled ? confirmed : confirmedShown}
+          </span>
+        </p>
+      </div>
+
       {/* The drop: empty space the tiles travel through, then the line itself. */}
       <div className="relative" aria-hidden="true">
-        <div className="h-14 sm:h-20" />
+        <div className="h-10 sm:h-14" />
         <div
           ref={lineRef}
           data-testid="sieve-line"
@@ -200,7 +230,7 @@ export function Sieve({ data, autoplay = true, replayable = true, onComplete }: 
             */}
             <div
               tabIndex={0}
-              className="scroll-y border-line-1 flex h-[7.5rem] flex-wrap content-start items-start gap-1.5 border-t pt-2"
+              className="scroll-y border-line-1 flex h-[6.5rem] flex-wrap content-start items-start gap-1.5 border-t pt-2"
             >
               {tray.items.length === 0 ? (
                 <span className="t-ui text-ink-3">None</span>
@@ -228,22 +258,12 @@ export function Sieve({ data, autoplay = true, replayable = true, onComplete }: 
         ))}
       </div>
 
-      <figcaption className="border-line-1 flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-        <p className="t-ui text-ink-2">
-          Flagged{" "}
-          <span data-testid="sieve-count-flagged" className="t-num text-ink-0">
-            {settled ? flagged : flaggedShown}
-          </span>
-          <span aria-hidden="true" className="text-ink-3 px-2">
-            →
-          </span>
-          confirmed{" "}
-          <span data-testid="sieve-count-confirmed" data-red="confirmed" className="t-num text-red-0">
-            {settled ? confirmed : confirmedShown}
-          </span>
+      <figcaption className="border-line-1 flex flex-wrap items-center justify-between gap-3 border-t pt-3">
+        <p className="t-ui text-ink-2 font-normal">
+          Every tile is a real tool from the sample; nothing here is typed in.
         </p>
         {replayable ? (
-          <button type="button" onClick={replay} className="btn btn-quiet t-ui">
+          <button type="button" onClick={replay} className="btn btn-quiet btn-sm t-ui">
             Replay the pass
           </button>
         ) : null}
@@ -287,7 +307,7 @@ function Tile({
     ? {
         confirmed: "bg-red-fill text-ink-0 border-red-fill",
         needs_review: "border-ink-0 text-ink-0",
-        dismissed: "border-line-1 text-ink-3",
+        dismissed: "border-line-2/60 text-ink-3",
       }[item.verdict]
     : "border-line-2 text-ink-1";
 

@@ -1,9 +1,11 @@
-/* Sieve · web front end · lane L6
- * macrostructure: instrument bench (hero + tick-railed sections) · genre: technical/editorial
- * tone: forensic, austere · anchor hue: semantic red (--red-0 / --red-fill), never decorative
- * nav: wordmark + three destinations · footer: one retention sentence + three artefact links
- * tokens: web/src/styles/tokens.css (Phase 0 contract; this file adds no colour of its own)
- * Hallmark · pre-emit critique: P5 H5 E4 S5 R4 V4 — see web/DESIGN.md
+/* Sieve · web front end
+ * macrostructure: marquee hero + banded splits (studied DNA: the user's own AQ Markets site,
+ *   re-dressed in Sieve's locked tokens) · genre: technical/atmospheric
+ * tone: forensic, institutional · anchor hue: semantic red (--red-0 / --red-fill), never decorative;
+ *   ivory hairlines carry the "jewellery" role red cannot
+ * nav: N5 floating glass capsule · footer: brand column + link columns + legal strip
+ * tokens: web/src/styles/tokens.css (this file adds no colour of its own)
+ * Hallmark · pre-emit critique: P5 H5 E4 S5 R4 V5 — see web/DESIGN.md
  */
 @import "tailwindcss";
 @import "./tokens.css";
@@ -46,9 +48,9 @@ dialog {
   overscroll-behavior: contain;
 }
 
-/* Headings are link targets on the benchmark page; keep them clear of the viewport edge. */
+/* Headings are link targets on the benchmark page; keep them clear of the fixed nav. */
 :where(h2, h3)[id] {
-  scroll-margin-top: 2rem;
+  scroll-margin-top: calc(var(--nav-offset) + 1rem);
 }
 
 /*
@@ -84,6 +86,13 @@ dialog {
   color: var(--ink-0);
 }
 
+/* The smallest surfaces carry the system too. */
+@supports (scrollbar-color: red blue) {
+  html {
+    scrollbar-color: var(--line-2) var(--bg-0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -102,8 +111,8 @@ dialog {
     font-family: var(--font-display);
     font-size: 40px;
     line-height: 1.05;
-    font-weight: 600;
-    letter-spacing: -0.02em;
+    font-weight: 800;
+    letter-spacing: -0.025em;
   }
 
   @media (width >= 48rem) {
@@ -122,8 +131,8 @@ dialog {
     font-family: var(--font-display);
     font-size: 28px;
     line-height: 1.15;
-    font-weight: 600;
-    letter-spacing: -0.01em;
+    font-weight: 700;
+    letter-spacing: -0.015em;
   }
 
   @media (width >= 48rem) {
@@ -133,10 +142,11 @@ dialog {
   }
 
   .t-h3 {
-    font-family: var(--font-body);
+    font-family: var(--font-display);
     font-size: 20px;
     line-height: 1.3;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: -0.01em;
   }
 
   .t-body {
@@ -144,6 +154,20 @@ dialog {
     font-size: 16px;
     line-height: 1.55;
     font-weight: 400;
+  }
+
+  /* The lead under a page title: body, one step larger, in the secondary ink. */
+  .t-lead {
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.6;
+    font-weight: 400;
+  }
+
+  @media (width >= 48rem) {
+    .t-lead {
+      font-size: 18px;
+    }
   }
 
   .t-ui {
@@ -163,6 +187,44 @@ dialog {
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--ink-2);
+  }
+
+  /*
+   * The eyebrow rail: a 22 × 2 px ivory tick opens the line and, with `.with-mark`, the sieve
+   * glyph closes it. It sits above every section heading, so the brand recurs quietly down the
+   * page at 11 px. Smaller type, looser tracking — the inverse of the display face.
+   */
+  .eyebrow-rail {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    line-height: 1.4;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .eyebrow-rail::before {
+    content: "";
+    display: inline-block;
+    width: 22px;
+    height: 2px;
+    background: var(--ink-2);
+    border-radius: 1px;
+  }
+
+  .eyebrow-rail.with-mark::after {
+    content: "";
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-left: 2px;
+    background: var(--ink-2);
+    mask: url("/mark.svg") no-repeat center / contain;
+    -webkit-mask: url("/mark.svg") no-repeat center / contain;
   }
 
   .t-mono {
@@ -190,6 +252,356 @@ dialog {
       opacity var(--dur-1) var(--ease-out);
   }
 
+  /* ---------- layout: one column, banded ---------- */
+
+  /* The content column every band, the capsule and the footer share. */
+  .wrap {
+    width: 100%;
+    max-width: var(--wrap);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  /* A band is a full-bleed room. The page alternates `.band` and `.band-alt` down its length. */
+  .band {
+    position: relative;
+    padding-block: clamp(56px, 6vw, 96px);
+  }
+
+  /* The next tier up, seamed top and bottom with a hairline so the step reads as strata. */
+  .band-alt {
+    background: var(--bg-1);
+    border-top: 1px solid var(--line-0);
+    border-bottom: 1px solid var(--line-0);
+  }
+
+  /* A band that opens a page: title, lead, no grid. Tighter than a section. */
+  .band-hero {
+    position: relative;
+    padding-block: clamp(40px, 5vw, 72px) clamp(40px, 5vw, 64px);
+    overflow: clip;
+  }
+
+  /*
+   * The sieve glyph tessellated in the gutters, as a faint engraving. Painted only where the
+   * content column is not: the clear zone is computed from the wrap token, so it tracks the
+   * copy at every width and vanishes entirely on a viewport the column fills.
+   */
+  .pattern-gutters::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: var(--ink-0);
+    opacity: 0.045;
+    mask-image: url("/mark.svg"), linear-gradient(90deg, black 0, transparent var(--edge), transparent calc(100% - var(--edge)), black 100%);
+    mask-repeat: repeat, no-repeat;
+    mask-size: 72px 72px, 100% 100%;
+    mask-composite: intersect;
+    -webkit-mask-image: url("/mark.svg"), linear-gradient(90deg, black 0, transparent var(--edge), transparent calc(100% - var(--edge)), black 100%);
+    -webkit-mask-repeat: repeat, no-repeat;
+    -webkit-mask-size: 72px 72px, 100% 100%;
+    -webkit-mask-composite: source-in;
+    --edge: max(0px, (100vw - var(--wrap)) / 2);
+  }
+
+  /* One soft ivory bloom, behind the hero's right column. Not red: red means something here. */
+  .bloom::after {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    pointer-events: none;
+    inset: 0;
+    background: radial-gradient(48% 60% at 78% 42%, var(--bloom), transparent 70%);
+  }
+
+  .band > .wrap,
+  .band-hero > .wrap {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Two halves that converge. `.reverse` swaps the media to the left. */
+  .split {
+    display: grid;
+    gap: clamp(32px, 4vw, 56px);
+    align-items: center;
+  }
+
+  @media (width >= 60rem) {
+    .split {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .split.reverse > :first-child {
+      order: 2;
+    }
+  }
+
+  /* ---------- the nav capsule ---------- */
+
+  .capsule {
+    position: fixed;
+    top: var(--nav-top);
+    left: 0;
+    right: 0;
+    z-index: 40;
+    width: calc(100% - 24px);
+    max-width: var(--wrap);
+    margin-inline: auto;
+    border-radius: var(--r-4);
+    border: 1px solid var(--line-0);
+    background: var(--glass);
+    box-shadow: var(--shadow-soft);
+    transition:
+      background-color var(--dur-2) var(--ease-out),
+      box-shadow var(--dur-2) var(--ease-out);
+  }
+
+  /*
+   * The frost. Standard property only: when the prefixed twin was declared beside it, the CSS
+   * minifier kept `-webkit-backdrop-filter` and dropped this one, and Chromium ignores the prefix
+   * — the capsule shipped tinted but never blurred. A browser without support simply ignores the
+   * declaration, so no `@supports` guard is needed. Apple's recipe: a heavy blur, saturation
+   * lifted so colour survives it, a tint light enough that the blur is what you see.
+   */
+  .capsule {
+    backdrop-filter: blur(var(--blur)) saturate(180%);
+  }
+
+  /* The specular edge: a 1 px gradient hairline inset from each end, the tell of a glass lip. */
+  .capsule::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 20px;
+    right: 20px;
+    height: 1px;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, var(--sheen), transparent);
+  }
+
+  .capsule[data-scrolled="true"] {
+    background: var(--glass-2);
+    box-shadow: var(--shadow-lift);
+  }
+
+  .capsule-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: var(--nav-h);
+    padding-inline: 20px;
+  }
+
+  /* On a phone the capsule un-rounds into a flush bar and the page keeps a little less room. */
+  @media (width < 40rem) {
+    .capsule {
+      top: 0;
+      width: 100%;
+      border-radius: 0;
+      border-width: 0 0 1px 0;
+    }
+
+    .capsule-row {
+      padding-inline: 16px;
+    }
+
+    :root {
+      --nav-top: 0px;
+    }
+  }
+
+  /* A destination in the capsule. The underline draws open from the left; the current page keeps it. */
+  .nav-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding-inline: 10px;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    color: var(--ink-1);
+    border-radius: var(--r-2);
+    transition: color var(--dur-1) var(--ease-out);
+  }
+
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 6px;
+    height: 1px;
+    background: var(--ink-0);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--dur-2) var(--ease-out);
+  }
+
+  .nav-link:hover,
+  .nav-link[aria-current="page"] {
+    color: var(--ink-0);
+  }
+
+  .nav-link:hover::after,
+  .nav-link[aria-current="page"]::after {
+    transform: scaleX(1);
+  }
+
+  /* The panel that drops from under the capsule on a narrow screen. */
+  .nav-sheet {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px;
+    border-radius: var(--r-3);
+    border: 1px solid var(--line-0);
+    background: var(--glass-2);
+    box-shadow: var(--shadow-lift);
+  }
+
+  .nav-sheet {
+    backdrop-filter: blur(var(--blur)) saturate(180%);
+  }
+
+  @media (width < 40rem) {
+    .nav-sheet {
+      left: 12px;
+      right: 12px;
+    }
+  }
+
+  /* ---------- surfaces ---------- */
+
+  /* A grouping surface. Its hairline is decorative, so `--line-0` is correct here. */
+  .surface {
+    background: var(--bg-1);
+    border: 1px solid var(--line-0);
+    border-radius: var(--r-2);
+  }
+
+  /*
+   * The glass slab: the page's one expensive-looking object. A raised tier, a soft ivory
+   * hairline, a deep shadow and the same specular lip the capsule carries. The hero's sieve
+   * lives in one; so does a form or a data table when it is the subject of its page.
+   */
+  .panel {
+    position: relative;
+    background: var(--bg-1);
+    border: 1px solid var(--line-0);
+    border-radius: var(--r-4);
+    box-shadow: var(--shadow-slab);
+  }
+
+  .panel::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 20px;
+    right: 20px;
+    height: 1px;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, var(--sheen), transparent);
+  }
+
+  /* The label row a panel opens with: an eyebrow on the left, a figure or control on the right. */
+  .panel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line-0);
+  }
+
+  /*
+   * A card: one thing in a grid of like things. It lifts on hover — transform and shadow only,
+   * so nothing around it reflows — and its rim brightens.
+   */
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 24px;
+    background: var(--bg-1);
+    border: 1px solid var(--line-0);
+    border-radius: var(--r-3);
+    transition:
+      transform var(--dur-3) var(--ease-out),
+      border-color var(--dur-3) var(--ease-out),
+      background-color var(--dur-3) var(--ease-out),
+      box-shadow var(--dur-3) var(--ease-out);
+  }
+
+  .card-lift:hover,
+  .card-lift:focus-within {
+    transform: translateY(-4px);
+    border-color: var(--line-glow);
+    background: var(--bg-2);
+    box-shadow: var(--shadow-lift);
+  }
+
+  /* A card in a `.band-alt` sits one tier higher than its band. */
+  .band-alt .card {
+    background: var(--bg-2);
+  }
+
+  .band-alt .card-lift:hover,
+  .band-alt .card-lift:focus-within {
+    background: var(--bg-3);
+  }
+
+  /* The glyph well at the top of a card. */
+  .card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--r-2);
+    border: 1px solid var(--line-0);
+    background: var(--bg-0);
+    color: var(--ink-0);
+    transition: transform var(--dur-3) var(--ease-spring);
+  }
+
+  .card-lift:hover .card-icon {
+    transform: rotate(-4deg) scale(1.05);
+  }
+
+  /* A recessed input: engraved below its surface, not floating on it. */
+  .well {
+    background: var(--well);
+    border: 1px solid var(--line-0);
+    border-radius: var(--r-2);
+    box-shadow: var(--shadow-well);
+    caret-color: var(--ink-0);
+    transition:
+      border-color var(--dur-1) var(--ease-out),
+      background-color var(--dur-1) var(--ease-out);
+  }
+
+  .well:hover {
+    border-color: var(--line-glow);
+  }
+
+  .well:focus-visible {
+    border-color: var(--line-2);
+    outline-offset: 0;
+  }
+
+  /* ---------- structural furniture ---------- */
+
   /* The measuring rail: a hairline with a tick at every real section seam. */
   .rail {
     border-left: 1px solid var(--line-1);
@@ -206,6 +618,241 @@ dialog {
     background: var(--line-2);
   }
 
+  /*
+   * A hanging-tick checklist: dividers instead of boxes, and the tick is absolutely positioned
+   * rather than a flex item so a two-line sentence still wraps as one sentence.
+   */
+  .checklist {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .checklist > li {
+    position: relative;
+    padding: 12px 0 12px 36px;
+    border-bottom: 1px solid var(--line-1);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.5;
+    font-weight: 500;
+    color: var(--ink-0);
+  }
+
+  .checklist > li:last-child {
+    border-bottom: none;
+  }
+
+  .checklist .tick {
+    position: absolute;
+    left: 0;
+    top: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--ink-0);
+    color: var(--bg-0);
+    transition: transform var(--dur-3) var(--ease-spring);
+  }
+
+  .checklist > li:hover .tick {
+    transform: scale(1.12) rotate(-6deg);
+  }
+
+  /* Secondary clause inside a checklist item. */
+  .checklist .sub {
+    display: block;
+    margin-top: 2px;
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--ink-2);
+  }
+
+  /* A chrome-less trust chip: a glyph and a label, no border, no fill. */
+  .chip-trust {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ink-1);
+  }
+
+  .chip-trust svg {
+    color: var(--ink-0);
+    flex: none;
+  }
+
+  /*
+   * The step rail. The one place numbering is justified: three real stages of one pipeline.
+   * Each step reaches toward the next with a short dashed rule that disappears on the last item
+   * and on a single-column screen.
+   */
+  .steps {
+    display: grid;
+    gap: 32px;
+  }
+
+  @media (width >= 48rem) {
+    .steps {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0;
+    }
+
+    .steps > .step {
+      padding-inline: 28px;
+    }
+
+    .steps > .step:first-child {
+      padding-inline-start: 0;
+    }
+
+    .steps > .step:last-child {
+      padding-inline-end: 0;
+    }
+
+    .steps > .step::after {
+      content: "";
+      position: absolute;
+      top: 26px;
+      right: -2px;
+      width: 24px;
+      border-top: 2px dashed var(--line-2);
+    }
+
+    .steps > .step:last-child::after {
+      display: none;
+    }
+  }
+
+  .step {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .step-num {
+    font-family: var(--font-display);
+    font-size: 44px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink-0);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* The stat strip: cells divided by hairlines only, no boxes. */
+  .stat-strip {
+    display: grid;
+    gap: 24px 0;
+  }
+
+  @media (width >= 40rem) {
+    .stat-strip {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (width >= 64rem) {
+    .stat-strip {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  .stat-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-inline: 24px;
+    border-left: 1px solid var(--line-2);
+  }
+
+  .stat-figure {
+    font-family: var(--font-display);
+    font-size: 44px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* A link that says where it goes and points there. The arrow slides by animating the gap. */
+  .link-arrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 24px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-0);
+    transition:
+      color var(--dur-1) var(--ease-out),
+      gap var(--dur-2) var(--ease-out);
+  }
+
+  .link-arrow:hover {
+    gap: 10px;
+  }
+
+  .link-arrow svg {
+    flex: none;
+  }
+
+  /* A footer destination: body ink, raised to white on hover, a 24 px target. */
+  .footer-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--ink-1);
+    transition: color var(--dur-1) var(--ease-out);
+  }
+
+  .footer-link:hover {
+    color: var(--ink-0);
+  }
+
+  /* The closing banner: a raised panel with the pattern washed very faintly across it. */
+  .cta-banner {
+    position: relative;
+    overflow: clip;
+    display: grid;
+    gap: 24px;
+    padding: clamp(28px, 4vw, 48px);
+    background: var(--bg-2);
+    border: 1px solid var(--line-0);
+    border-radius: var(--r-4);
+    box-shadow: var(--shadow-slab);
+  }
+
+  .cta-banner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: var(--ink-0);
+    opacity: 0.035;
+    mask: url("/mark.svg") repeat center / 56px 56px;
+    -webkit-mask: url("/mark.svg") repeat center / 56px 56px;
+  }
+
+  .cta-banner > * {
+    position: relative;
+  }
+
+  @media (width >= 56rem) {
+    .cta-banner {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+    }
+  }
+
+  /* ---------- controls ---------- */
+
   .btn {
     display: inline-flex;
     align-items: center;
@@ -213,11 +860,11 @@ dialog {
     gap: 8px;
     min-height: 44px;
     padding-inline: 20px;
-    border-radius: var(--r-1);
+    border-radius: var(--r-2);
     border: 1px solid transparent;
-    font-family: var(--font-body);
+    font-family: var(--font-display);
     font-size: 15px;
-    font-weight: 500;
+    font-weight: 700;
     line-height: 1;
     /* A control's label never wraps to a second line — a two-line button reads as a bug. */
     white-space: nowrap;
@@ -225,12 +872,29 @@ dialog {
     transition:
       color var(--dur-1) var(--ease-out),
       border-color var(--dur-1) var(--ease-out),
-      background-color var(--dur-1) var(--ease-out);
+      background-color var(--dur-1) var(--ease-out),
+      transform var(--dur-2) var(--ease-out),
+      box-shadow var(--dur-2) var(--ease-out);
+  }
+
+  .btn:not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+
+  .btn:not(:disabled):active {
+    transform: translateY(0);
   }
 
   .btn:disabled {
     cursor: not-allowed;
     opacity: 0.45;
+  }
+
+  /* A smaller button for the capsule and for inline rows. */
+  .btn-sm {
+    min-height: 36px;
+    padding-inline: 14px;
+    font-size: 14px;
   }
 
   /* The one filled red surface on the page. `--ink-0` is the only text allowed on it. */
@@ -239,7 +903,11 @@ dialog {
     color: var(--ink-0);
   }
 
-  .btn-primary:not(:disabled):hover,
+  .btn-primary:not(:disabled):hover {
+    background: var(--red-fill);
+    box-shadow: var(--shadow-soft);
+  }
+
   .btn-primary:not(:disabled):active {
     background: var(--red-1);
   }
@@ -253,6 +921,13 @@ dialog {
   .btn-secondary:not(:disabled):hover,
   .btn-secondary:not(:disabled):active {
     border-color: var(--ink-0);
+    background: var(--bg-1);
+  }
+
+  /* A secondary button that sits on a raised surface takes a quieter rim. */
+  .panel .btn-secondary,
+  .card .btn-secondary {
+    border-color: var(--line-glow);
   }
 
   .btn-quiet {
@@ -265,13 +940,7 @@ dialog {
   .btn-quiet:not(:disabled):hover,
   .btn-quiet:not(:disabled):active {
     color: var(--ink-0);
-  }
-
-  /* A grouping surface. Its hairline is decorative, so `--line-1` is correct here. */
-  .surface {
     background: var(--bg-1);
-    border: 1px solid var(--line-1);
-    border-radius: var(--r-2);
   }
 
   /*
@@ -323,5 +992,137 @@ dialog {
     background: var(--red-wash);
     border-bottom: 1px solid var(--red-0);
     color: var(--ink-0);
+  }
+
+  /* ---------- motion ---------- */
+
+  /*
+   * The hero cascade: each block of the left column enters top to bottom on hand-set delays, and
+   * the slab arrives a beat later from the right. Opacity and transform only.
+   */
+  .hero-anim > * {
+    opacity: 0;
+    animation: hero-in 0.7s var(--ease-out) forwards;
+  }
+
+  .hero-anim > :nth-child(1) {
+    animation-delay: 0.05s;
+  }
+
+  .hero-anim > :nth-child(2) {
+    animation-delay: 0.12s;
+  }
+
+  .hero-anim > :nth-child(3) {
+    animation-delay: 0.22s;
+  }
+
+  .hero-anim > :nth-child(4) {
+    animation-delay: 0.32s;
+  }
+
+  .hero-anim > :nth-child(5) {
+    animation-delay: 0.42s;
+  }
+
+  .hero-visual-anim {
+    opacity: 0;
+    animation: hero-visual-in 0.9s var(--ease-out) 0.3s forwards;
+  }
+
+  @keyframes hero-in {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes hero-visual-in {
+    from {
+      opacity: 0;
+      transform: translateY(24px) scale(0.985);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /*
+   * Scroll reveals. `Reveal` writes `--reveal-delay` per child and flips `.is-visible` when the
+   * element enters the viewport; the CSS does the rest. Four directions, one easing.
+   */
+  .reveal {
+    opacity: 0;
+    transform: translateY(22px);
+    transition:
+      opacity 0.7s var(--ease-out),
+      transform 0.7s var(--ease-out);
+    transition-delay: var(--reveal-delay, 0s);
+  }
+
+  .reveal.rv-left {
+    transform: translateX(-26px);
+  }
+
+  .reveal.rv-right {
+    transform: translateX(26px);
+  }
+
+  .reveal.rv-scale {
+    transform: translateY(22px) scale(0.97);
+  }
+
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Reduced motion renders the settled page, not a fast version of the animated one. */
+  @media (prefers-reduced-motion: reduce) {
+    .hero-anim > *,
+    .hero-visual-anim {
+      opacity: 1;
+      animation: none;
+    }
+
+    .reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+
+    .card-lift:hover,
+    .card-lift:focus-within,
+    .btn:not(:disabled):hover {
+      transform: none;
+    }
+  }
+
+  /*
+   * Print renders the settled page: an IntersectionObserver never fires for a print layout, and
+   * a block that waits for one would print as blank space. The fixed capsule un-pins too, so it
+   * does not repeat on every sheet.
+   */
+  @media print {
+    .reveal,
+    .hero-anim > *,
+    .hero-visual-anim {
+      opacity: 1 !important;
+      transform: none !important;
+      animation: none !important;
+      transition: none !important;
+    }
+
+    .capsule {
+      position: static;
+      box-shadow: none;
+    }
   }
 }

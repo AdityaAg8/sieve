@@ -53,7 +53,7 @@ export function UploadConfig() {
         accept=".json,application/json"
         aria-describedby={hintId}
         onChange={(event) => void onFile(event.target.files?.[0])}
-        className="t-ui text-ink-1 border-line-2 file:btn file:btn-secondary file:mr-3 w-full rounded-1 border border-dashed p-3"
+        className="well t-ui text-ink-1 file:btn file:btn-secondary file:btn-sm file:mr-3 w-full p-3 border-dashed"
       />
 
       <p
@@ -68,7 +68,7 @@ export function UploadConfig() {
             : "Choose the mcp.json your client reads. It is parsed in your browser and never uploaded anywhere else."}
       </p>
 
-      <div>
+      <div className="flex flex-wrap items-center gap-3">
         <button type="submit" className="btn btn-primary" disabled={!ready || pending}>
           {pending
             ? "Starting the scan…"
@@ -76,6 +76,7 @@ export function UploadConfig() {
               ? `Triage ${result.serverCount} ${result.serverCount === 1 ? "server" : "servers"}`
               : "Triage servers"}
         </button>
+        <span className="t-ui text-ink-2">Parsed in your browser first. Nothing is executed.</span>
       </div>
 
       {message ? (

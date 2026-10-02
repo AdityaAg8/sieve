@@ -1,7 +1,9 @@
+import { Reveal } from "@/components/shell/Reveal";
+
 /**
  * The one place numbering is justified: these are three real stages of one pipeline, and the
  * order carries information the reader needs (a tool only reaches the judge if the classifier
- * put it in the band).
+ * put it in the band). Each step reaches toward the next with a dashed rule.
  */
 const STAGES = [
   {
@@ -23,23 +25,34 @@ const STAGES = [
 
 export function HowItWorks() {
   return (
-    <section
-      aria-labelledby="how-it-works"
-      className="border-line-1 mx-auto max-w-[84rem] border-t px-4 py-16 sm:px-8"
-    >
-      <h2 id="how-it-works" className="t-h2 text-ink-0">
-        How it works
-      </h2>
+    <section aria-labelledby="how-it-works" className="band">
+      <div className="wrap flex flex-col gap-12">
+        <Reveal className="flex max-w-[640px] flex-col gap-3">
+          <p className="eyebrow-rail with-mark">Pipeline · three stages</p>
+          <h2 id="how-it-works" className="t-h2 text-ink-0">
+            How it works
+          </h2>
+          <p className="t-body text-ink-2 max-w-[56ch]">
+            A tool passes three gates in order. Most are decided at the second and never cost a
+            model call.
+          </p>
+        </Reveal>
 
-      <ol className="mt-10 grid gap-10 md:grid-cols-3 md:gap-8">
-        {STAGES.map((stage) => (
-          <li key={stage.n} className="rail flex flex-col gap-3 pl-5">
-            <p className="t-ui t-num text-ink-2">{stage.n}</p>
-            <h3 className="t-h3 text-ink-0">{stage.title}</h3>
-            <p className="t-body text-ink-1 max-w-[46ch]">{stage.body}</p>
-          </li>
-        ))}
-      </ol>
+        <Reveal as="ol" stagger={110} className="steps">
+          {STAGES.map((stage) => (
+            <li key={stage.n} className="step reveal">
+              <p className="step-num" aria-hidden="true">
+                {stage.n}
+              </p>
+              <h3 className="t-h3 text-ink-0">
+                <span className="sr-only">Stage {stage.n}: </span>
+                {stage.title}
+              </h3>
+              <p className="t-body text-ink-1 max-w-[46ch]">{stage.body}</p>
+            </li>
+          ))}
+        </Reveal>
+      </div>
     </section>
   );
 }

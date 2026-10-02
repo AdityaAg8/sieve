@@ -39,7 +39,7 @@ export function CommandPalette({
       open={open}
       onOpenChange={onOpenChange}
       label="Command palette"
-      className="bg-bg-1 border-line-2 fixed top-[12vh] left-1/2 z-50 w-[min(38rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-3 border"
+      className="bg-bg-1 border-line-0 shadow-[var(--shadow-lift)] fixed top-[12vh] left-1/2 z-50 w-[min(38rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-4 border"
       overlayClassName="bg-bg-0/80 fixed inset-0 z-40"
     >
       <Command.Input

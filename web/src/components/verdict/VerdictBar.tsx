@@ -56,7 +56,7 @@ export function VerdictBar({ scannerFlagged, counts, expected, streaming }: Prop
           `${counts.confirmed} confirmed, ${counts.needs_review} need review, ` +
           `${counts.dismissed} dismissed.`
         }
-        className="bg-bg-1 border-line-1 relative h-3 w-full overflow-hidden rounded-1 border"
+        className="bg-bg-2 border-line-0 relative h-2.5 w-full overflow-hidden rounded-1 border"
       >
         {segments.map((segment) => (
           <span

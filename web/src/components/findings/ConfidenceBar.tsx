@@ -15,7 +15,7 @@ export function ConfidenceBar({ value, tone = "ink" }: { value: number; tone?: "
         aria-valuemax={1}
         aria-valuenow={Number(clamped.toFixed(2))}
         aria-valuetext={formatProbability(clamped)}
-        className="bg-bg-2 border-line-1 h-1.5 flex-1 overflow-hidden rounded-1 border"
+        className="bg-bg-0 border-line-0 h-1.5 flex-1 overflow-hidden rounded-1 border"
       >
         <div
           data-red={tone === "red" ? "confirmed" : undefined}

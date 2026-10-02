@@ -34,17 +34,19 @@ export function BenchSection({
   children: React.ReactNode;
 }) {
   return (
-    <section aria-labelledby={id} className="border-line-1 flex min-w-0 flex-col gap-4 border-t pt-10">
+    <section aria-labelledby={id} className="border-line-0 flex min-w-0 flex-col gap-6 border-t pt-10">
       {/*
         `t-h3`, not `t-h2`: the page's own `h1` is `t-h2`, and eleven section headings set in the
         same face at the same size as the title left the page with no single thing at the top of
         its hierarchy. This is the shape `/scan` and `/docs` already use — title in the display
         face, section seams a step below it in the body face.
       */}
-      <h2 id={id} className="t-h3 text-ink-0">
-        {title}
-      </h2>
-      {lede ? <p className="t-body text-ink-1 max-w-[68ch]">{lede}</p> : null}
+      <div className="flex flex-col gap-3">
+        <h2 id={id} className="t-h3 text-ink-0">
+          {title}
+        </h2>
+        {lede ? <p className="t-body text-ink-2 max-w-[68ch]">{lede}</p> : null}
+      </div>
       {children}
     </section>
   );
@@ -85,14 +87,16 @@ export function TableWrap({ label, children }: { label: string; children: React.
   }, []);
 
   return (
-    <div
-      ref={ref}
-      className="scroll-x border-line-1 rounded-2 border"
-      tabIndex={scrolls ? 0 : -1}
-      role="group"
-      aria-label={label}
-    >
-      <table className="w-full border-collapse text-left">{children}</table>
+    <div className="bg-bg-1 border-line-0 rounded-3 overflow-hidden border">
+      <div
+        ref={ref}
+        className="scroll-x"
+        tabIndex={scrolls ? 0 : -1}
+        role="group"
+        aria-label={label}
+      >
+        <table className="w-full border-collapse text-left">{children}</table>
+      </div>
     </div>
   );
 }
@@ -101,7 +105,7 @@ export function Th({ children, scope = "col" }: { children: React.ReactNode; sco
   return (
     <th
       scope={scope}
-      className="t-eyebrow border-line-1 bg-bg-1 border-b px-3 py-2 whitespace-nowrap"
+      className="t-eyebrow bg-bg-2 border-line-0 border-b px-4 py-3 whitespace-nowrap"
     >
       {children}
     </th>
@@ -109,9 +113,9 @@ export function Th({ children, scope = "col" }: { children: React.ReactNode; sco
 }
 
 export function Td({ children }: { children: React.ReactNode }) {
-  return <td className="t-ui border-line-1 text-ink-1 border-b px-3 py-2 align-top">{children}</td>;
+  return <td className="t-ui border-line-1 text-ink-1 border-b px-4 py-3 align-top">{children}</td>;
 }
 
 export function EmptyNote({ children }: { children: React.ReactNode }) {
-  return <p className="t-ui text-ink-2 border-line-1 border-l-2 pl-3">{children}</p>;
+  return <p className="t-ui text-ink-2 border-line-2 border-l-2 pl-3">{children}</p>;
 }

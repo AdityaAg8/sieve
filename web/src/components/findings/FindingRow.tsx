@@ -47,8 +47,8 @@ export function FindingRow({ finding, selected, tabStop, onOpen }: Props) {
         aria-current={selected ? "true" : undefined}
         tabIndex={tabStop ? 0 : -1}
         onClick={() => onOpen(finding)}
-        className={`u-interactive bg-bg-1 relative w-full rounded-2 border px-4 py-3 text-left before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:content-[''] sm:min-h-28 ${marker} ${
-          selected ? "border-line-2" : "border-line-1 hover:border-line-2"
+        className={`u-interactive bg-bg-1 relative w-full rounded-3 border px-5 py-4 text-left before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:content-[''] sm:min-h-28 ${marker} ${
+          selected ? "border-line-2" : "border-line-0 hover:border-line-glow"
         }`}
       >
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
@@ -67,7 +67,7 @@ export function FindingRow({ finding, selected, tabStop, onOpen }: Props) {
             {result.sub_labels.map((label) => (
               <li
                 key={label}
-                className="t-ui text-ink-2 border-line-1 rounded-1 border px-1.5 py-0.5"
+                className="t-ui text-ink-2 border-line-0 bg-bg-0 rounded-1 border px-1.5 py-0.5"
               >
                 {subLabelTitle(label)}
               </li>

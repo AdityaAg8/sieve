@@ -42,32 +42,34 @@ export function ScanUnavailable(props: Props) {
     : `Scan failed: ${props.error ?? "no reason was recorded."}`;
 
   return (
-    <div className="mx-auto flex max-w-[84rem] flex-col gap-6 px-4 py-24 sm:px-8">
-      <p className="t-eyebrow">Scan</p>
+    <section className="band-hero pattern-gutters">
+      <div className="wrap flex flex-col gap-6">
+        <p className="eyebrow-rail with-mark">Scan</p>
 
-      {/* The worker's error text came out of an analysed tool's neighbourhood and is untrusted
-          data (PRD SC-7): it is a string child, never markup, never a URL. */}
-      <h1 className="t-h2 text-ink-0 max-w-[24ch] break-words">{heading}</h1>
+        {/* The worker's error text came out of an analysed tool's neighbourhood and is untrusted
+            data (PRD SC-7): it is a string child, never markup, never a URL. */}
+        <h1 className="t-h2 text-ink-0 max-w-[24ch] break-words">{heading}</h1>
 
-      <p className="t-body text-ink-1 max-w-[62ch]">
-        {expired
-          ? "Sieve keeps a scan only until it expires, then deletes it along with its tools and its verdicts. Nothing here is missing by accident, and nothing was found to be wrong."
-          : "The worker stopped before it finished triaging this scan, so there are no verdicts to show. Nothing here says the tools are clean — it says Sieve could not tell you."}
-      </p>
+        <p className="t-body text-ink-1 max-w-[62ch]">
+          {expired
+            ? "Sieve keeps a scan only until it expires, then deletes it along with its tools and its verdicts. Nothing here is missing by accident, and nothing was found to be wrong."
+            : "The worker stopped before it finished triaging this scan, so there are no verdicts to show. Nothing here says the tools are clean — it says Sieve could not tell you."}
+        </p>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Link href="/scan" className="btn btn-primary">
-          Start a new scan
-        </Link>
-        {!expired && props.onRetry ? (
-          <button type="button" className="btn btn-secondary" onClick={props.onRetry}>
-            Check this scan again
-          </button>
-        ) : null}
-        <Link href="/" className="btn btn-quiet">
-          Back to the start
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link href="/scan" className="btn btn-primary">
+            Start a new scan
+          </Link>
+          {!expired && props.onRetry ? (
+            <button type="button" className="btn btn-secondary" onClick={props.onRetry}>
+              Check this scan again
+            </button>
+          ) : null}
+          <Link href="/" className="btn btn-quiet">
+            Back to the start
+          </Link>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

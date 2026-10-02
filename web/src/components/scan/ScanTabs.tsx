@@ -46,7 +46,7 @@ export function ScanTabs() {
         role="tablist"
         aria-label="How to give Sieve your tools"
         onKeyDown={onKeyDown}
-        className="border-line-1 flex flex-wrap gap-x-1 border-b"
+        className="flex flex-wrap gap-2"
       >
         {tabs.map((tab) => {
           const selected = tab.id === active;
@@ -64,8 +64,10 @@ export function ScanTabs() {
               aria-controls={`${baseId}-panel-${tab.id}`}
               tabIndex={selected ? 0 : -1}
               onClick={() => setActive(tab.id)}
-              className={`btn btn-quiet u-interactive rounded-none border-b-2 ${
-                selected ? "text-ink-0 border-ink-0" : "text-ink-2 hover:text-ink-0 border-transparent"
+              className={`btn btn-quiet btn-sm u-interactive rounded-2 border ${
+                selected
+                  ? "bg-bg-2 text-ink-0 border-line-0"
+                  : "text-ink-2 hover:text-ink-0 border-transparent"
               }`}
             >
               {tab.label}

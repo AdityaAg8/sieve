@@ -41,7 +41,7 @@ export function PasteJson({ initialText = "" }: { initialText?: string }) {
         aria-describedby={hintId}
         aria-invalid={touched && !ready}
         placeholder='{ "tools": [ … ] }'
-        className="quote border-line-2 focus-visible:border-focus w-full resize-y p-3"
+        className="well t-mono text-ink-1 w-full resize-y p-4 min-h-[18rem]"
       />
 
       <p
@@ -64,6 +64,7 @@ export function PasteJson({ initialText = "" }: { initialText?: string }) {
               ? `Triage ${result.toolCount} ${result.toolCount === 1 ? "tool" : "tools"}`
               : "Triage tools"}
         </button>
+        <span className="t-ui text-ink-2">Parsed in your browser first. Nothing is executed.</span>
       </div>
 
       {message ? (

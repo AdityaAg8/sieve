@@ -164,7 +164,7 @@ export function ResultsScreen({
      * shift structural rather than lucky: the list's box is a fixed size from first paint, so a
      * stream that fills it over two seconds never moves anything outside it.
      */
-    <div className="mx-auto max-w-[84rem] px-4 py-10 sm:px-8 lg:flex lg:h-dvh lg:flex-col">
+    <div className="wrap py-8 lg:flex lg:h-[calc(100dvh-var(--nav-offset))] lg:flex-col">
       {/*
         Mounted from first paint and never unmounted, so an assistive technology has something to
         observe the change against. `useStreamAnnouncement` throttles it — 29 verdicts in under a
@@ -180,17 +180,17 @@ export function ResultsScreen({
         {announcement}
       </p>
 
-      <header className="flex flex-col gap-5">
+      <header className="panel flex flex-col gap-5 p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex flex-col gap-2">
-            <p className="t-eyebrow">Scan</p>
+            <p className="eyebrow-rail">Scan</p>
             <h1 className="t-mono text-ink-1 break-all">{scanId}</h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" className="btn btn-secondary" onClick={() => setPaletteOpen(true)}>
-              Search <span className="t-mono text-ink-2">⌘K</span>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setPaletteOpen(true)}>
+              Search <span className="t-ui text-ink-2">⌘K</span>
             </button>
-            <button type="button" className="btn btn-secondary" onClick={() => void exportSarif()}>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => void exportSarif()}>
               Export SARIF
             </button>
             {/* A scan's URL is the whole of sharing it; this is the shortcut for saying so. It
@@ -210,7 +210,7 @@ export function ResultsScreen({
             moment after first paint, and a line appearing here would move the whole list. */}
         <div className="min-h-5">
           {judgeOff ? (
-            <p className="t-ui text-ink-2 border-line-1 border-l-2 pl-3">{JUDGE_OFF_NOTICE}</p>
+            <p className="t-ui text-ink-2 border-line-2 border-l-2 pl-3">{JUDGE_OFF_NOTICE}</p>
           ) : null}
         </div>
 
@@ -238,7 +238,8 @@ export function ResultsScreen({
 
       <div className="mt-10 grid gap-8 lg:min-h-0 lg:flex-1 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">
         <aside aria-label="Filters and shortcuts" className="flex flex-col gap-6 lg:self-start">
-          <nav aria-label="Filter by verdict">
+          <nav aria-label="Filter by verdict" className="flex flex-col gap-3">
+            <p className="eyebrow-rail">Filter</p>
             <ul className="flex flex-wrap gap-2 lg:flex-col">
               <FilterButton active={filter === null} onClick={() => setFilter(null)}>
                 All <span className="t-num text-ink-2">{findings.length}</span>
@@ -255,14 +256,19 @@ export function ResultsScreen({
             </ul>
           </nav>
 
-          <dl className="hidden flex-col gap-1 lg:flex">
-            {KEY_MAP.slice(0, 6).map((entry) => (
-              <div key={entry.keys} className="flex items-baseline justify-between gap-3">
-                <dt className="t-mono text-ink-2">{entry.keys}</dt>
-                <dd className="t-ui text-ink-3 text-right">{entry.action}</dd>
-              </div>
-            ))}
-          </dl>
+          <div className="hidden flex-col gap-3 lg:flex">
+            <p className="eyebrow-rail">Keys</p>
+            <dl className="flex flex-col gap-1">
+              {KEY_MAP.slice(0, 6).map((entry) => (
+                <div key={entry.keys} className="flex items-baseline justify-between gap-3">
+                  <dt className="t-mono text-ink-1 border-line-0 bg-bg-1 rounded-1 border px-1.5">
+                    {entry.keys}
+                  </dt>
+                  <dd className="t-ui text-ink-3 text-right">{entry.action}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
         </aside>
 
         <div className="scroll-y-lg lg:min-h-0 lg:pr-3">
@@ -320,8 +326,8 @@ function FilterButton({
         type="button"
         aria-pressed={active}
         onClick={onClick}
-        className={`btn btn-secondary t-ui u-interactive w-full justify-between gap-3 ${
-          active ? "border-ink-0 text-ink-0" : ""
+        className={`btn btn-secondary t-ui u-interactive w-full justify-between gap-3 bg-bg-1 ${
+          active ? "border-ink-0 text-ink-0" : "border-line-0 hover:border-line-glow"
         }`}
       >
         {children}

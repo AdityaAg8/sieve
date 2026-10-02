@@ -21,8 +21,10 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
       />
     ),
     code: (props) => <code className="t-mono text-ink-0" {...props} />,
-    pre: (props) => <pre className="quote mt-4 overflow-x-auto p-3" {...props} />,
-    hr: () => <hr className="border-line-1 mt-10" />,
+    pre: (props) => (
+      <pre className="well t-mono text-ink-1 rounded-2 mt-4 overflow-x-auto p-4" {...props} />
+    ),
+    hr: () => <hr className="border-line-0 mt-10" />,
     blockquote: (props) => (
       <blockquote className="t-body text-ink-2 border-line-2 mt-4 border-l-2 pl-4" {...props} />
     ),

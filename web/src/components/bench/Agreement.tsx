@@ -22,7 +22,7 @@ export function Agreement({ agreement }: { agreement: AgreementData | undefined 
       lede="How much two people agreed about the labels, and — separately — how often a blind
         annotator landed on the class the generator intended."
     >
-      <dl className="grid gap-6 sm:grid-cols-3">
+      <dl className="stat-strip">
         <Stat
           term="κ, real subset"
           value={formatRatio(agreement?.real_subset)}
@@ -73,12 +73,12 @@ function Stat({ term, value, note }: { term: string; value: string; note: string
   return (
     // A `<dl>`'s `div` may only wrap `dt` and `dd`, and the term comes first in the DOM;
     // `flex-col-reverse` puts the figure on top without reordering the markup.
-    <div className="rail flex flex-col-reverse gap-1 pl-5">
+    <div className="stat-cell flex-col-reverse">
       <dt className="t-ui text-ink-1">
         <span data-testid="agreement-term">{term}</span>
         <span className="t-ui text-ink-2 mt-1 block font-normal">{note}</span>
       </dt>
-      <dd className="t-h2 t-num text-ink-0">
+      <dd className="stat-figure">
         <Num>{value}</Num>
       </dd>
     </div>

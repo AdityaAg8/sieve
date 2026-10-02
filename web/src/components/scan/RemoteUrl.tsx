@@ -43,7 +43,7 @@ export function RemoteUrl() {
         aria-describedby={hintId}
         aria-invalid={touched && !result.ok}
         placeholder="https://example.com/mcp"
-        className="t-mono border-line-2 bg-bg-2 text-ink-1 focus-visible:border-focus min-h-11 w-full rounded-1 border px-3"
+        className="well t-mono text-ink-1 min-h-11 w-full px-3"
       />
 
       <p
@@ -56,10 +56,11 @@ export function RemoteUrl() {
           : "Sieve calls tools/list in a sandboxed worker on its own network, follows no redirects, and reads at most 1 MB."}
       </p>
 
-      <div>
+      <div className="flex flex-wrap items-center gap-3">
         <button type="submit" className="btn btn-primary" disabled={!result.ok || pending}>
           {pending ? "Starting the scan…" : "Triage this server"}
         </button>
+        <span className="t-ui text-ink-2">Parsed in your browser first. Nothing is executed.</span>
       </div>
 
       {message ? (

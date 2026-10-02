@@ -42,7 +42,7 @@ export function FindingDrawer({ finding, judgeEnabled, onClose }: Props) {
       onClick={(event) => {
         if (event.target === ref.current) onClose();
       }}
-      className="bg-bg-1 border-line-2 text-ink-1 ml-auto h-full max-h-full w-[min(46rem,100vw)] max-w-full border-l p-0 backdrop:bg-bg-0/80"
+      className="bg-bg-1 border-line-0 text-ink-1 shadow-[var(--shadow-lift)] ml-auto h-full max-h-full w-[min(46rem,100vw)] max-w-full border-l p-0 backdrop:bg-bg-0/80"
     >
       {finding ? <FindingDetail finding={finding} judgeEnabled={judgeEnabled} onClose={onClose} /> : null}
     </dialog>
@@ -67,7 +67,7 @@ export function FindingDetail({
     <article className="flex h-full flex-col gap-6 overflow-y-auto p-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-2">
-          <p className="t-eyebrow">{finding.server_name ?? "Tool"}</p>
+          <p className="eyebrow-rail">{finding.server_name ?? "Tool"}</p>
           <h2 className="t-mono text-ink-0 break-all">{finding.id}</h2>
         </div>
         <div className="flex items-center gap-3">
@@ -81,7 +81,7 @@ export function FindingDetail({
       </header>
 
       <section aria-label="Definition" className="flex flex-col gap-4">
-        <h3 className="t-eyebrow">Definition</h3>
+        <h3 className="eyebrow-rail">Definition</h3>
         {blocks.length === 0 ? (
           <p className="quote p-3">No description.</p>
         ) : (
@@ -101,7 +101,7 @@ export function FindingDetail({
 
       <section aria-label="Verdicts" className="grid gap-6 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
-          <h3 className="t-eyebrow">Scanner said</h3>
+          <h3 className="eyebrow-rail">Scanner said</h3>
           {scanner ? (
             <p className="t-ui text-ink-1">
               <span className="t-mono">{scanner.scanner}</span>
@@ -120,7 +120,7 @@ export function FindingDetail({
         </div>
 
         <div className="flex flex-col gap-2">
-          <h3 className="t-eyebrow">Sieve said</h3>
+          <h3 className="eyebrow-rail">Sieve said</h3>
           {result.verdict === "dismissed" ? (
             <DismissalReason result={result} />
           ) : (
@@ -135,21 +135,21 @@ export function FindingDetail({
 
       {result.reasoning ? (
         <section aria-label="Reasoning" className="flex flex-col gap-2">
-          <h3 className="t-eyebrow">Reasoning</h3>
+          <h3 className="eyebrow-rail">Reasoning</h3>
           <p className="t-body text-ink-1">{result.reasoning}</p>
         </section>
       ) : null}
 
       {result.remediation ? (
         <section aria-label="Remediation" className="flex flex-col gap-2">
-          <h3 className="t-eyebrow">Remediation</h3>
+          <h3 className="eyebrow-rail">Remediation</h3>
           <p className="t-body text-ink-1">{result.remediation}</p>
         </section>
       ) : null}
 
       {result.sub_labels.length > 0 || result.owasp.length > 0 ? (
         <section aria-label="Classification" className="flex flex-col gap-3">
-          <h3 className="t-eyebrow">Classification</h3>
+          <h3 className="eyebrow-rail">Classification</h3>
           <ul className="flex flex-wrap gap-2">
             {result.sub_labels.map((label) => (
               <li key={label} className="t-ui text-ink-1 border-line-2 rounded-1 border px-2 py-1">
@@ -175,7 +175,7 @@ export function FindingDetail({
       <Feedback findingId={finding.id} />
 
       <section aria-label="Provenance" className="border-line-1 mt-auto border-t pt-4">
-        <dl className="t-ui grid gap-x-6 gap-y-1 sm:grid-cols-2">
+        <dl className="t-ui bg-bg-0 border-line-0 grid gap-x-6 gap-y-1 rounded-2 border p-4 sm:grid-cols-2">
           <Row term="Stage" value={STAGE_LABEL[result.stage]} />
           <Row term="Model" value={result.model_version} />
           <Row term="Judge" value={result.judge_model ?? (judgeEnabled === false ? "Disabled on this deployment" : "Not used")} />

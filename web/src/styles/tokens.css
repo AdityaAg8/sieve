@@ -1,42 +1,69 @@
 :root {
   /* surfaces: charcoal, layered */
-  --bg-0: #131316;   /* page */
-  --bg-1: #1A1A1E;   /* surface */
-  --bg-2: #212126;   /* raised, hover */
-  --bg-3: #292930;   /* active, selected */
-  --line-1: #2B2B31; /* hairline */
-  --line-2: #616169; /* strong — 3.02:1 on --bg-0, deviates from PRD §14.2 #3B3B43 (1.67:1, fails the 3:1 UI-border floor) */
+  --bg-0: #0C0C0D;   /* page — neutral near-black, no blue cast (v2.3) */
+  --bg-1: #141415;   /* surface */
+  --bg-2: #1B1B1D;   /* raised, hover */
+  --bg-3: #232326;   /* active, selected */
+  --line-1: #262629; /* hairline */
+  --line-2: #606066; /* strong — ≥3:1 on --bg-0 as a UI border */
 
   /* ink */
   --ink-0: #F7F7F5;  /* headings, primary */
-  --ink-1: #D4D4D2;  /* body */
-  --ink-2: #8E8E95;  /* muted, labels */
-  --ink-3: #82828A;  /* faint, dismissed — 4.55:1 on --bg-1 (the binding pair); deviates from PRD §14.2 #7A7A82 (4.36:1, fails AA) */
+  --ink-1: #D8D8D4;  /* body */
+  --ink-2: #92929A;  /* muted, labels */
+  --ink-3: #85858D;  /* faint, dismissed — AA on --bg-1, the binding pair */
 
   /* signal: red is semantic */
-  --red-0: #FF5147;                    /* text, borders, the sieve line — 5.6:1 on --bg-0 */
-  --red-fill: #D22C22;                 /* filled chips and buttons, with --ink-0 text on top — 4.75:1; deviates from PRD §14.2 #E8382F (3.89:1, fails AA) */
-  --red-1: #B8281F;                    /* pressed fill */
-  --red-wash: rgb(232 56 47 / 0.14);   /* evidence highlight background */
-  --red-glow: rgb(255 81 71 / 0.35);   /* permitted ONLY on the sieve line */
+  --red-0: #FF3B3B;                    /* text, borders, the sieve line — poppy, ≥4.5:1 on --bg-0/1/2 */
+  --red-fill: #DE1F2B;                 /* filled chips and buttons, with --ink-0 text on top — ≥4.5:1 */
+  --red-1: #B91A24;                    /* pressed fill */
+  --red-wash: rgb(255 59 59 / 0.14);   /* evidence highlight background */
+  --red-glow: rgb(255 59 59 / 0.35);   /* permitted ONLY on the sieve line */
 
   /* focus */
   --focus: #FFFFFF;
 
+  /* `src/app/icon.svg` (the favicon) repeats --bg-0, --ink-0, --red-0 and --red-fill by value,
+     because a standalone SVG cannot read a custom property. Change one, change the other. */
+
+  /* glass and depth (2026-09-16 redesign; PRD §14.2 amendment). Ivory-tinted hairlines are the
+     "jewellery" role — red stays semantic, so every decorative edge on the page is ink, not red. */
+  --line-0: rgb(247 247 245 / 0.08);     /* hairline on a raised surface: cards, the capsule, seams */
+  --line-glow: rgb(247 247 245 / 0.18);  /* the same hairline, hovered */
+  --sheen: rgb(247 247 245 / 0.12);      /* the 1 px specular edge on glass */
+  --glass: rgb(22 22 23 / 0.72);         /* the nav capsule at rest — light enough that the frost, not the tint, does the work */
+  --glass-2: rgb(22 22 23 / 0.82);       /* the capsule once the page has scrolled */
+  --well: rgb(6 6 7 / 0.6);              /* a recessed input, engraved below its surface */
+  --bloom: rgb(247 247 245 / 0.05);      /* one soft ivory bloom behind the hero slab */
+  --shadow-soft: 0 8px 30px rgb(0 0 0 / 0.35);
+  --shadow-lift: 0 16px 48px rgb(0 0 0 / 0.5);
+  --shadow-slab: 0 30px 70px -24px rgb(0 0 0 / 0.65), inset 0 1px 0 rgb(247 247 245 / 0.06);
+  --shadow-well: inset 0 1.5px 4px rgb(0 0 0 / 0.35);
+  --blur: 40px;                          /* Apple-grade frost: nothing behind the capsule stays legible */
+
   /* type */
-  --font-display: "Clash Display", "Geist", system-ui, sans-serif;
-  --font-body: "Geist", system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", "IBM Plex Sans", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   /* motion */
   --dur-1: 120ms; --dur-2: 220ms; --dur-3: 420ms; --dur-4: 900ms;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --stagger: 28ms;
 
   /* radii, space */
-  --r-1: 4px; --r-2: 8px; --r-3: 12px;
+  --r-1: 4px; --r-2: 8px; --r-3: 14px; --r-4: 20px;
   --space-unit: 4px;
+
+  /* the fixed nav capsule: its inset from the top, its height, and the room the page leaves */
+  --nav-top: 14px;
+  --nav-h: 64px;
+  --nav-offset: calc(var(--nav-top) + var(--nav-h) + 16px);
+  /* one content column for every band */
+  --wrap: 84rem;
+  --gutter: clamp(16px, 2.6vw, 40px);
 }
 
 @theme inline {
@@ -62,4 +89,7 @@
   --radius-1: var(--r-1);
   --radius-2: var(--r-2);
   --radius-3: var(--r-3);
+  --radius-4: var(--r-4);
+  --color-line-0: var(--line-0);
+  --color-line-glow: var(--line-glow);
 }

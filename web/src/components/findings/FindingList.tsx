@@ -100,12 +100,12 @@ export function FindingList({
             className="t-eyebrow border-line-1 flex items-baseline justify-between gap-3 border-b pb-2"
           >
             <span>{VERDICT_LABEL[group.verdict]}</span>
-            <span className="t-num" data-testid={`group-count-${group.verdict}`}>
+            <span className="t-num text-ink-0" data-testid={`group-count-${group.verdict}`}>
               {group.items.length}
             </span>
           </h2>
 
-          <ul className="mt-3 flex flex-col gap-2">
+          <ul className="mt-3 flex flex-col gap-3">
             {group.items.map((finding) => (
               <FindingRow
                 key={finding.id}
@@ -129,7 +129,7 @@ export function FindingList({
 function PendingRow() {
   return (
     <li aria-hidden="true">
-      <div className="bg-bg-1 border-line-1 flex flex-col gap-3 rounded-2 border px-4 py-3 sm:h-28">
+      <div className="bg-bg-1 border-line-0 flex flex-col gap-3 rounded-3 border px-5 py-4 sm:h-28">
         <div className="flex items-center justify-between gap-4">
           <span className="bg-bg-2 h-4 w-48 rounded-1" />
           <span className="bg-bg-2 h-6 w-28 rounded-1" />

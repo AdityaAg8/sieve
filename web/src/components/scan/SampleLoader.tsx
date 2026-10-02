@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { IconSieve } from "@/components/shell/Icons";
 import { demoScanId } from "@/lib/config";
 import { useScan } from "@/lib/queries";
 
@@ -16,7 +17,10 @@ export function SampleLoader() {
   const toolCount = scan.data?.tool_count ?? null;
 
   return (
-    <aside className="surface flex flex-col gap-3 p-5">
+    <aside className="card">
+      <span className="card-icon" aria-hidden="true">
+        <IconSieve size={18} />
+      </span>
       <h2 className="t-h3 text-ink-0">No tools to hand?</h2>
       <p className="t-body text-ink-1 max-w-[52ch]">
         The sample is{" "}

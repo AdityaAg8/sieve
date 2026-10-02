@@ -20,7 +20,10 @@ export function ErrorNote({
   className?: string;
 }) {
   return (
-    <div role="alert" className={`surface flex flex-col items-start gap-3 p-6 ${className}`}>
+    <div
+      role="alert"
+      className={`bg-bg-1 border-line-0 rounded-3 flex flex-col items-start gap-3 border p-6 ${className}`}
+    >
       <p className="t-body text-ink-0">{title}</p>
       {detail ? <p className="t-ui text-ink-2 max-w-[62ch]">{detail}</p> : null}
       {onRetry ? (

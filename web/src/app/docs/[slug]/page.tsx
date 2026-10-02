@@ -35,18 +35,21 @@ export default async function DocPage(props: PageProps<"/docs/[slug]">) {
   const { default: Content } = await PAGES[slug as keyof typeof PAGES]();
 
   return (
-    <div className="mx-auto grid max-w-[84rem] gap-10 px-4 py-14 sm:px-8 lg:grid-cols-[14rem_minmax(0,1fr)]">
-      <nav aria-label="Docs" className="lg:sticky lg:top-6 lg:self-start">
-        <ul className="flex flex-wrap gap-x-4 gap-y-2 lg:flex-col">
+    <div className="wrap grid gap-10 py-10 pb-20 lg:grid-cols-[14rem_minmax(0,1fr)]">
+      <nav
+        aria-label="Docs"
+        className="panel lg:top-[calc(var(--nav-offset)+1rem)] p-4 lg:sticky lg:self-start"
+      >
+        <ul className="flex flex-col gap-1">
           {DOCS.map((doc) => (
             <li key={doc.slug}>
               <Link
                 href={`/docs/${doc.slug}`}
                 aria-current={doc.slug === slug ? "page" : undefined}
-                className={`t-ui u-interactive border-b pb-0.5 ${
+                className={`t-ui u-interactive rounded-2 block px-3 py-2 ${
                   doc.slug === slug
-                    ? "text-ink-0 border-ink-0"
-                    : "text-ink-2 hover:text-ink-0 border-transparent"
+                    ? "text-ink-0 bg-bg-2 border-line-0 border"
+                    : "text-ink-2 hover:text-ink-0 hover:bg-bg-2"
                 }`}
               >
                 {doc.title}

@@ -28,7 +28,7 @@ export function CopyLink({ onResult }: { onResult: (message: string) => void }) 
   }
 
   return (
-    <button type="button" className="btn btn-secondary" onClick={() => void copy()}>
+    <button type="button" className="btn btn-secondary btn-sm" onClick={() => void copy()}>
       Copy link
     </button>
   );
