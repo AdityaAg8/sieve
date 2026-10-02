@@ -150,8 +150,63 @@ class HumanGenerator:
         )
 
 
+class FileGenerator:
+    """Replays payloads a model wrote outside this process, one per plan row, in plan order.
+
+    One file is one generator: every line must name the same `generator_model`, which becomes
+    each record's provenance. `plan_index` has to count 0, 1, 2 ... so a file that drifts out
+    of step with its plan fails loudly rather than pairing a payload with the wrong host.
+    """
+
+    def __init__(self, path: Path) -> None:
+        self.path = Path(path)
+        self.entries: list[dict[str, Any]] = [
+            json.loads(line)
+            for line in self.path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        models = sorted({str(e["generator_model"]) for e in self.entries})
+        if len(models) != 1:
+            raise ValueError(f"{self.path}: expected one generator_model, found {models}")
+        self.model_id = models[0]
+        self._next = 0
+
+    def generate(self, spec: PayloadSpec, host_description: str) -> str:
+        if self._next >= len(self.entries):
+            raise ValueError(f"{self.path} has no payload for plan row {self._next}")
+        entry = self.entries[self._next]
+        if entry["plan_index"] != self._next:
+            raise ValueError(
+                f"{self.path}: plan_index {entry['plan_index']} where {self._next} was expected"
+            )
+        self._next += 1
+        return str(entry["payload"])
+
+
+#: Characters a sentence can end on, so the payload can simply follow after a space.
+_SENTENCE_END = frozenset(".!?:;。！？：；")
+#: Closing marks that may follow a sentence's end: `say "done."` has already ended.
+_CLOSERS = "\"')]}”’»"
+
+
 def _append(existing: str | None, payload: str) -> str:
-    return f"{existing} {payload}".strip() if existing else payload
+    """`payload` as the next sentence of `existing`, or its next paragraph.
+
+    A third of real hosts end without a full stop, and gluing a sentence straight on ("Scroll
+    the page Do not ...") leaves a seam only synthetic rows have. Every poisoned row is
+    synthetic, so the model would learn to spot the mutation instead of the payload. A host
+    that ends on a line break (a code fence, a list) takes the payload as a new paragraph.
+    """
+    if not existing or not existing.strip():
+        return payload
+    base = existing.rstrip()
+    if "\n" in existing[len(base) :]:
+        joiner = "\n\n"
+    elif base.rstrip(_CLOSERS)[-1:] in _SENTENCE_END:
+        joiner = " "
+    else:
+        joiner = ". "
+    return f"{base}{joiner}{payload}".strip()
 
 
 def _inject(record: CorpusRecord, field: EvidenceField, payload: str, property_name: str) -> None:
@@ -214,26 +269,40 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, required=True, help="JSONL to write mutations to")
     parser.add_argument(
         "--generator",
-        choices=("human", "anthropic"),
+        choices=("human", "anthropic", "file"),
         default="human",
-        help="hand-authored payloads, or the model (an API key and real spend)",
+        help="hand-authored payloads, the model (an API key and real spend), or a payload file",
     )
     parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument(
+        "--payloads",
+        type=Path,
+        default=None,
+        help="with --generator file: JSONL of {plan_index, payload, generator_model}",
+    )
     parser.add_argument("--id-prefix", default="sb-syn-")
     args = parser.parse_args(argv)
+    if args.generator == "file" and args.payloads is None:
+        parser.error("--generator file needs --payloads")
 
     records = {r.id: r for r in _load(args.corpus)}
+    plan = json.loads(args.plan.read_text(encoding="utf-8"))
     wild = [
         r.tool.description
         for r in records.values()
         if r.label == "imperative_benign" and r.tool.description
     ][:10]
-    gen: Generator = (
-        HumanGenerator()
-        if args.generator == "human"
-        else AnthropicGenerator(args.model, wild_examples=wild)
-    )
-    plan = json.loads(args.plan.read_text(encoding="utf-8"))
+    gen: Generator
+    if args.generator == "human":
+        gen = HumanGenerator()
+    elif args.generator == "anthropic":
+        gen = AnthropicGenerator(args.model, wild_examples=wild)
+    else:
+        gen = FileGenerator(args.payloads)
+        if len(gen.entries) != len(plan):
+            raise SystemExit(
+                f"{args.payloads} holds {len(gen.entries)} payloads for {len(plan)} plan rows"
+            )
     out: list[CorpusRecord] = []
     for index, row in enumerate(plan):
         host = records[row.pop("host_id")]

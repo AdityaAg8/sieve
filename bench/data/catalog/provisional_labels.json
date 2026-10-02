@@ -1,0 +1,4432 @@
+{
+ "_provenance": {
+  "what": "provisional labels for the sampled catalog rows, one Claude Sonnet 5 pass per row under the PRD §9.1 taxonomy and decision rule",
+  "labelled": "2026-09-21",
+  "status": "PROVISIONAL: an LLM annotator (PRD §9.6 item 7). Trains v0 only; the blind human pass replaces every label before any number is published",
+  "rationales": "at most 15 words, quoting at most 6 words of the tool text"
+ },
+ "labels": {
+  "cat-0049f133bc58": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "States when to call; suggests calling before n8n_get_workflow.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-009cfaf9276b": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-00ae2da09daf": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-00f1f8455dce": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-023bf3106d47": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-026e8be9e68d": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Aggressive when-to-call rules and tool-routing decision tree, in-scope.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-0272997118e5": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates analyzing and fixing findings; strict truncation warning rules.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-039e1e035172": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-0466017b8675": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-04ed40986336": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates monochromatic shades, correct progression order.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-04fe801f2454": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-052d07993a15": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-05de46263058": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates editing files afterward to integrate the snippet.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-0629c8005adb": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-063c7930459f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-065167b1dd2b": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-0797cf375a71": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-07f284047d46": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-080f8c32404a": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-081abce151ef": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-08322bc89029": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "IMPORTANT/ALWAYS mandates filtering responses with jq for cost.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-083ca9923e67": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-08d83e023d96": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-091421a386a1": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-096b08f48fe0": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-09ecec0bff8f": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Defines trigger keywords; warns upload fully overwrites remote skill",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-0a1baba82c32": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-0a64aa8220b4": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-0b0a18599ffc": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-0b9265a10acb": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-0b92b4e21b5b": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Explicit USE/DON'T USE guidance versus other tools",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-0c258eb0ab25": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires a prior aegis_scan call as prerequisite.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-0c612427cba4": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-0d30287308d5": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires visual_reason/client; avoids extra read_page call.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-0d606fd337ec": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Tells model to self-report identity for analytics, not ask user.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-0e1376dad980": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prefers audit_page for full audits; sets param precedence.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-0e6e997dc771": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-0ed4e91f7ce7": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-0fa91529df69": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Forbids auto-chaining further CircleCI calls without user instruction",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-0fb9a6f877ed": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1070f326ff3e": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates calling before any regulatory-approval claim.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-10a18d635733": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-10b4411710a0": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "IMPORTANT marks always filtering with jq for cost.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-10c6a3245007": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-10fb47ca7437": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prefers cheaper text-based tools; use screenshots sparingly.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1119a1e71b98": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-121b078f6dcf": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates calling codeloop_verify after changes, init if missing.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-121ff71202c8": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-123837a9679a": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-12ad779aabfc": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs calling before create_agent only when key missing.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-138ef3d9e289": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-13eeafaab6e6": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs using swap_get_positions for SWAP/FUTURES-only queries instead",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-146cba2b200c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-14de4c665ccc": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1522cbd2bb06": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates use whenever unsure about CAP APIs.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-15281ad22ff2": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1532d6712a6c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-158183fd66e0": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Must call get_diagram before this or edits get lost.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-15ffa58c228f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-161497ecd9d7": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs using get_field_definitions tool to find fields",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1650644bf98e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-184718366bd2": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-18994fb4ef53": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-18e9d7d6528b": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1932cb8d69c3": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs calling this when a browser-missing error occurs.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-19467737ef0e": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Guides choosing this over native Task tool",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-19663cb03d07": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-196ed7afc574": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-198dd3fd9b53": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Warns deletion is permanent; explains required force parameter.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-19b5289d6a5b": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Warns not to remove external IDs when editing.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1ad7ec3ef401": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1b483172acac": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1b59191fa809": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prohibits admin commands; prefers list_tables/get_table_schema sibling tools.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1b85fb729463": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1babdfc13348": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1c4c61245f62": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1d2968900b80": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates verbatim reporting of scan results to user.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1d500db6b699": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1d571ed468f3": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Warns the delete action is irreversible",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1deb2fbe7f2b": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "simulateVotes flagged test-only; must not drive real decisions.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1e32af1a80e2": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1eaa6b8c1994": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs calling bootstrap_scan first, passing results here.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1eae732ce4eb": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1ecd2b9837de": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "States when to use vs. avoid during simulator dev.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1f28d04d885a": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Recommends sibling tools perplexity_ask/perplexity_reason for other cases.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1fb878ef266a": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prefers type_text tool for Korean/Unicode text.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1fbabaa4da1f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1fc5d4f8527f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-1fe7af16a65e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-20dc4c80c7e1": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-21713d35a5bf": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-21c15d01c44c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-222d344bc4c6": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2265b55c7453": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "IMPORTANT: mandates always using absolute paths.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-229bfc13765a": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prefers sibling tools for current/historical weather and service status.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2319de22938c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-231e3c32cc9d": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Warns the deletion is irreversible.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-244c2df5766a": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Use first only if app path unknown.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-24529e0f5ae1": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-24722857374e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2738b25b3cce": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2748f8364ff1": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-27c11209527f": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs calling this before get_page or find_chunks.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-27de6f22eb5d": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Recommends a short time range to avoid perf issues.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-284b9a5db5eb": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Warns that all current tabs will be closed.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-28813f330cf5": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-28dda7caf16a": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-29259f23e7c4": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates YYYY-MM-DD format; directs to getTodayDate tool.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-29363859425d": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs using sibling tool for historical dates",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2951e2e1dbf2": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2a09d42bbd66": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2ac8c15b04ed": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Lists common mistakes and required parameter usage rules",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2affc61893d9": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Recommends dock for auto-positioning, pin for pin-only.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2b39044ae0a4": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2b77058a1231": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2b7787417a4b": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires prior literature_search; forbids inferring unconfirmed regulatory claims.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2b902ee3369a": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2bd8a1ddf23c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2c24df65312a": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2c27ac7d5a55": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Tip recommends preferring a sibling tool instead",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2d360088b084": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Rules mandate token sourcing and continuation sequence.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2e97ab189260": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2edb3382e3e2": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires attach_script, not modify_node_property, or connection is rejected.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2f0733b318b6": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2f0eee7a14eb": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2f2b97d1e9b9": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Recommends 'advanced' depth for protected or complex pages.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2f3f609c2282": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2f5861819b93": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-2feea8105677": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-301c9024712a": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-305a7df135db": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "IMPORTANT: always use jq to filter and cut cost.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-30b3a87e2458": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3113b0ac61f0": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-31cf3da096de": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs using get_debugger_status tool to list device IDs.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3219e23eb2af": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3247f230b884": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-336cf7f4c77c": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires exactly one of two ID params, not both.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3370e80b6170": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-33deff0a3cd6": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-33fafb5668a3": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-343672289fea": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-344c364dcc79": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "IMPORTANT: always use jq param to cut token costs.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-34c4adffade2": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "IMPORTANT/ALWAYS emphasis steering doc lookups, within tool's purpose.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-35353851835c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-35de348b616e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-361a01d83ef8": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Suggests generate_pdf instead for richer layouts.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-364538334b69": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Explains when to prefer this over sibling wasm_agent_create.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-365694756e48": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-365f6a7acaf1": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates calling once before UI5 work; must follow.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-366853c6db9c": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires explicit opt-in for email; forbids inferring rating.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-366af16a75ef": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-36950f913da9": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs calling clinicaltrials_search_studies before this tool.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-36b763e80904": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-36bb96bb9ff4": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates failing loudly and never storing secrets or credentials",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-372ee48889bd": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-378c638e5ca6": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-37b54c21794b": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires calling learn_shopify_api first to get ID",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-37b7be428b80": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-37cb977a17d7": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-38585b7e589e": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Specifies exact user trigger phrases and mobile/voice condition.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-38a945a11778": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-38bf64f6144f": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates explicit bbox when Mapbox token is unset.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-39166a71deb6": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Forbids guessing language code; omit if unspecified.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-392e4777527e": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires output_dir to already exist and be writable",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-39572c96ade8": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3962bc6573dd": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-396892c232b3": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "States call only after all tasks finish.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-398127fbb34b": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3a087c390384": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates calling get_skill then get_parse_prompt first.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3a488dba18ac": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3a65b1867e8e": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Detailed decision rules for choosing search parameters",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3a7556b61ac1": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3af9740e4e3b": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prefers dkg_query instead for ad-hoc SPARQL queries.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3b7db875267e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3c24b54d83cb": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3d4238f2233f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3d5bf407cb67": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3d833487484b": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3db4a9862ecf": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Compares against Read and sibling memory_import_claude for tool choice.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3de242d1c5b4": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates asking user first; forbids use after file write.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3e2c0b7abb66": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3e2fb115718a": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prescribes tool-chaining workflow to sibling search and LSP tools.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3e460ff8358c": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs using evaluate_output or log_trace instead for scoring/creating.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3e5b0319ecd2": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3e6774ef3e13": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs running once per repo; discloses outbound telemetry calls.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3e8d80aff27a": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires calling publish_agent first when agent is draft.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-3edb01d205f7": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-403e2b2fd0a2": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs to cache_get or smart_recall for other lookups.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-40592683c01f": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Suggests calling after jira_list_projects for the key.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-406e13571712": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4099f034d790": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates running before returning Svelte code to user.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-40ad47de7200": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "States to use only when user explicitly asks v1.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-417787d4f063": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-417aa42b2821": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-41a002c50022": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-42083543bc7e": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Call only when user explicitly picks dismiss from menu.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-426f282fc4fc": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Says to always re-run linter after changes",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-427aac4504fe": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-432d714be8ff": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-43535c9d4c98": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-43a99735266d": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-43c16ee25b61": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-469749823c42": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Redirects to audit_page or score_citation_worthiness for other cases.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-46a600ec95b1": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-46d7421aa683": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-472085191dc7": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Suggests sibling tools to discover component IDs explicitly.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-474574daa508": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4754e9cf7bc9": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-477690a0813e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-481c44925aa4": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-484b2e954262": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates passing confirm='CONFIRMED' to execute the transaction.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-486f2db11d93": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-48b7c77f7ab9": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prefers bulk_rename for batches; requires saving dirty packages first.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-48bd539cc6ea": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-48e0b7cb55bd": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Never modify schema or record data — read-only prohibition.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-48edb7496eea": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4924827affc0": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-49483deb3ad3": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-49972de3af5b": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-49a548ab00be": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Extensive mandates and anti-patterns; egress fixes require asking user.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4a2d0006e1c0": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4a37b121575c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4a767cbbce76": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4a915c89ec76": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4aa939aff444": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4ae0809fd38f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4b14b66b5e37": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4b29b931a7e3": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4b63f3c64206": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs call order versus sibling tools; lists don't-use cases.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4be988798bc7": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Use sibling tool instead for single-file analysis.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4c2b1661d66c": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates user confirmation before irreversible key removal.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4cfdd2552357": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4d0fbb332ee2": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Use before deploy, then declare via secrets.require",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4e860fed5ee0": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4ea5637d44a9": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4ed00415689d": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4f114de1438a": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs using acg_power_lines instead for map geometry.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4f134f8110bb": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4f1dcc6be0da": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4f29866df023": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Describes required multi-step migration call sequence",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4f5d15ba463c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-4f93b6cdc139": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs always using jq/TOON output to cut token costs",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-501166005167": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5051689df4fb": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs to sibling tools for full artifact or export.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-509f700801cb": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "States when to call: errors or proactively.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-510969522a9b": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5113edc3b9a6": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-52c676118c8d": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-530a3d4bd718": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Warns results are approximate, not submission-ready evidence.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-53f389b1ed56": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-542a37fdf09a": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-54776c522cd5": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5498a8f02253": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-54c571d5e708": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-55191cc9caa1": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-563f5e2ec74d": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Points to sibling help tool for full action docs",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-56601e4ea2bc": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-56e3eb101909": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-573d65db4455": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-57690fae186d": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs to the list_jobs tool to find job ID.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-57774f00ae0a": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-58235bd31d7a": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Extensive use/don't-use rules and required-when-template conditions, in-scope.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-58b899bb75a6": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-58c2778ef965": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-59017ec8f9b8": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-596968c34740": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5a28eedfbf9d": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5a4195ee2d1e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5a7e4b10ce21": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires input sourced from a prior literature.search call",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5ad930e468af": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5b842353220a": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5b87bc68e2d0": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5c2a163be7df": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requests checking tool before recommending Siemens iX icons.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5c426de327e1": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5cc9159936bc": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5cf1df1a3322": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Urges using jq param to cut token costs.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5d14ba5117da": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5d15e531c4fb": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5d1c9eff5ebd": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Param required per eval_type; detailed when-not-to-use rules.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5d283076e2f8": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates always validating generated GraphQL; forbids self-picked IDs.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5dd0a8db68e8": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "MUST be called after remediation; refuses false completion",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5e1d07e96614": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5e2da29375c5": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5e7f30305909": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5f65197f067c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-5f9524bc6c06": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-607d203d19e5": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6094215d4442": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-60c472656b07": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-610a8ecca2da": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-611fe83c4528": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Location must be country name, not city.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6189b2be1726": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-63b2afdd85d4": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires either reference_dataset_id or reference_dataset_name param.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-63d1b3832fc6": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "States to prefer this bundle by default over primitives.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-647f1c1e679c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6483ba174e5b": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "MANDATORY/MUST language insists on searching docs before answering.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-64caa636be03": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6505c7bdf098": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-658d3f567ea9": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires human confirmation before the sibling tokrepo_push runs.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-66a074464d3f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-67b9753b4a21": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Marked CRITICAL and IMPORTANT for search syntax and field limits.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-67c0c1aa81eb": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates explicit user confirmation before irreversible removal.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-67c863c821a2": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-67e007ed93cd": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs resolving cid via pubchem_search_compounds tool first",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6828409acbaf": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6880d2a96eaa": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6884b06eba6d": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandatory first step, must use for Otter repos",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-68b820cd1f8f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6910b76d13bf": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6915794ef048": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6928c9a68da8": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6a7c249e2f6c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6a922e650b58": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Server instructions route to specific sibling tools",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6b577af3b3ea": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6b72b47a1d87": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Asks AI to self-report model/provider for analytics, skip user",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6b77e8d83bd7": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6bb4ebc14e24": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "States when to prefer this over native diff tools",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6be1e6e752a8": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Use this only after getting an overview first — ordering.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6be43b03273e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6cce0fefd0f9": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6d0f1fb4495c": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates labeling output as 'Functions runtime version'.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6d58454c4327": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Instructs providing direct listing links to the user.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6d76455dec53": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates reading llms-index resource first; forbids guessing paths.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6d8efc650f79": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6ef69d45b594": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6f0698735417": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-6ffed8edc972": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-702f3b9b92c9": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-70a6bdfdfb93": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-71331931d3f1": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-71531b1bf2cb": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Clarifies when to use this versus native Write.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-715a8ee061d4": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-717150f6d06d": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires showing proposal, confirming before applying via update_paragraph",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-719c7d5b91bd": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7252710bf6f5": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7266c166ee83": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7274b78d0822": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Must use this tool; limit info shown to user",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-72819bfc669e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7288d0723d66": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-72c61e80df41": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Important flag notes endpoint has no pagination support.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7353b8d96ea2": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-74109b860a9d": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates calling before Query Documentation; caps at 3 calls.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-75376cd7208e": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Recommends validate_llms_txt tool instead for checking existing files.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7544316a82c9": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs presenting scaffold to user, then retrying.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-75648e7c1f38": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-75d77f169ead": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Instructs showing onboarding message to the user",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-76643b290eef": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates calling first and returning the _flowmate field.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-76878442aab7": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-769c184310bb": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates discovering all executions before bulk updates.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-76a7f3ab7fb8": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-770f48b27408": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7768ef7bf47a": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7770b98e8b2a": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Must call branch_select first; forbids fabricating IDs",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-77b9615575f6": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "States agent must use this tool when unsure of APIs.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-79a58f2dae6c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7a38111fc6da": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7ae2463e2428": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates using this tool for all MUI questions.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7ae343aee6c5": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7b9817d27587": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7be623e2ed40": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs using other named tools for other cases",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7c196af43d17": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7c262ee5fc59": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7c38c629f3d1": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "One call per source; no batching multiple sources.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7c4f3eb7fa7d": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7d40ebb6d07b": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates asking user first; never invent answers.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7d4c90a04e70": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7d7e467bec64": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates calling codeloop_verify/init_project in sequence.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7d98bfb906d1": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7e742ace2b2c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7f560a8cc381": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7fcee7436584": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7fd6d1f0b94e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-7feb16713caa": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-802a54284e60": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-802e4f8d1b13": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8064a978c2d2": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "PREREQUISITE: page must be loaded first via browser_fetch_webpage.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-80786bff5e25": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-80ad7a9015e5": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-80b18e70cabd": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Suggests calling after growth_get_job shows completed.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-80cf7c636660": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-810bb46d962e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-812d9200a9a9": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8154191539ec": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs calling at session_end as a fallback capture",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-815b3f137084": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8187f87d5c9f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8254e9693e0e": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Enforces strict path safety under allowed_roots only.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-825522878caf": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Chains to LSP tools in fixed order; in-scope workflow guidance.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-826679c25dd4": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8271c471e592": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-82791b50b121": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-82bb0a0ca3db": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-82c0a92dd001": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs using get_law_text instead for simple statute lookups.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8337c6b28370": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Only call after explicit user confirmation; otherwise do not call.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-83ff29e979b4": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-842815f20a96": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-84399b1f5110": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-84562e281ef0": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-848487b0f74c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-84a44b736f7a": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-84c634175cb3": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-850e88e6393f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-853c9ed39660": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Suggests validating scene before creating it with dsp_create_scene.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-85bb6fcadd84": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Server instructions direct asking user for missing info",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-85e2ffe31b23": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Hints direct fetching IDs via other tools first.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-86b3b7f01e4c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-86fe32b3ea55": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-87650ced3ca5": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs to get_docs instead; IMPORTANT compatibility note.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-887d354e6321": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates absolute file paths in OS-correct format.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-888fe6ab66c6": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8978461f5abc": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "CRITICAL/MUST/ALWAYS mandates on search quoting and field selection",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-898a5f8ac306": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-89dd14b7a364": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8ac728fa5135": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8b10f6d4e92e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8b3ada2d9a9f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8bf004bf4375": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Recommends dry_run first as a safety preview before changes.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8c7d69edbc2f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8cb74d7a2538": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Extensive mandatory formatting rules for valid draw.io XML",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8ceff1ec4f56": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prefers action=run; avoid screenshotting the terminal.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8d158adb701e": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates exact archive filename pattern before uploading.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8d5355ebdade": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8d670a004f03": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8d8613feeda4": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates passing workspacePath; directs calling continue_workflow next.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8db6d600e1e7": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Redirects to get_forecast or check_service_status for other needs.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8e735c16bee7": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8e808c265291": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates always surfacing citation.sourceUrl in results",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8eac8a2857e8": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8f2f5a3e9954": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Date filter must be UTC ISO 8601 — formatting mandate.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8f9984a2f9d4": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Specifies triggers, disambiguates from siblings, gates status to live.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-8ff9b6015c17": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Says verify names via list_components first, don't guess",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-90386d2844dd": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Always call this first before create_component_theme, per instructions.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-90a0a894cc4d": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Suggests validating before render_diagram; faster syntax check first.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-90b11e072c3c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-90b325d4b503": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-910dab8a7737": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-91848be4c202": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Claims to be 'the ONLY way' to write code.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-91e727c2b3a4": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9203dafdf734": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Restricts use to explicit autopilot requests; prefers manual tools.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9251f35fca65": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Spec input must contain required section headers",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-92f0ee7e6228": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Never call with incomplete params; never guess URLs — prohibitions.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-931452f4fe7a": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandatory first step; MUST use listed functionalityId; forbids guessing.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-936abf6a956b": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9454b1a1795c": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Forbids further tool calls without explicit user instruction.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9490c4ffcb5a": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-94ba82820ba3": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-95058207a9d7": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9523fc0243f2": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prefers sibling tools (click_element, browser_click) for specific cases.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9547b133eb71": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Server guidance: ask when info missing, use precise filters",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-95da26e483a1": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-95f2e6210011": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-963adbc9bfc4": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-965c8be2a53f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-967754ab21e1": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9712532b17a0": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates outputDir/originalUserMessage; requires discoverable save location.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9713c5fd237d": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9778c3a26f3e": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Redirects to get_euro_exchange and get_eu_inflation for other data.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-97ea4a667262": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-97f55c0f860e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-98964e40ef0c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-993379ae25eb": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9a1ea91b2e63": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9a2500e94b74": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs minimizing deps, preferring native modules.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9b74dc3d0ba4": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9cf2246a7521": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires explicit confirmation value before clearing directory.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9cfb37f3be2e": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prefer small page size first; gate full export on explicit need.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9d03e418e972": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9d47622141fa": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9d51bce69abb": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Pre-condition requires audio status ready before download.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9d660bb4017c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9dadadc670b5": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9dc81d5e2dfc": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Always substitute tracked affiliate link for raw product URL.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9e25826e31f1": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9e5763b9aab3": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9eb7664cced2": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Recommends perplexity_ask instead for AI-synthesized cited answers.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9fa29d209e5f": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates calling verify/init tools, report not optional",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9fc628376172": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs starting here then activate_tools next",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-9ff23023f065": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a01b840db446": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a1305c5af09e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a17694cda0fb": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a1b2031060e5": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prohibits component param when platform is generic.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a1d0b15a0354": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a28b88086474": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a2c314a007ba": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a310c15a025d": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prefers composite audit; restricts robots bypass to own site.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a32b7286653f": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates verbatim shell execution and reporting results in Danish",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a3627412a1b5": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Multiple 'don't use for X' prohibitions; destructive-op warning.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a3996051bf0e": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Marked IMPORTANT: enforces label formatting rules for rendering",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a45347bfe9f4": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a4974f8eaab3": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a5324ca1abff": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a665235bdb33": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a74dac1750f8": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a7a8b43abdcd": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a81489e3f65f": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandatory first-call ordering; passes user prompt for doc routing.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a8475c2a3bc4": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a84ccdec3a3e": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Warning that auto_apply=true will modify files.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a85437b5029f": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prefers this at session start; else cheaper screenshot variants.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a88220cee26e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a8dc7a7594f1": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a8ff4051739c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a9938d3c718f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a998be0d956d": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-a99a0b1e1198": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "IMPORTANT marks jq param as required for cost optimization.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-aa93f6c202a7": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ab14d925270b": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ab212d0ebe27": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Call this after completing any non-trivial task",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-aba64f686a14": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-abcbe0b2b777": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ac1d6a58502a": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ac315a50a7d1": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires force=true to delete; warns of URL/ACL limits",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-acb613eb5166": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ad0c814e3446": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ad223284a5f4": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Tells agent not to surface diagnostics unless asked",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ad95f9cf34de": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Excludes cost/invoice use; directs run_query or list_invoices instead.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ade93f3b2c7e": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Suggests calling search_dams first if name unsure.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ae06838a308f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ae9f8401c8e1": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs calling this before building pages for context.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-aeaf258fd180": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-af8a9003c6c3": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Recommends summary/saveTo for large contracts to avoid bloat.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-b073ef067c32": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-b0d319e4956e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-b1d86877abb6": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-b1faa70ebf22": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Best called after deep_storage_purge operation completes",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-b24a0970661a": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Suggests calling as preflight check before generate_pdf",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-b2ea525157ac": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs to list_mpp32_services first to find a slug.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-b3253fae410d": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Extensive usage rules and safety caveats for input",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-b43336451d93": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-b518e82e4309": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-b6a65b1482f8": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-b752826bfc0a": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Change comment limits only if user requests.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-b87baace4cfe": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "States this should be the first step for API work.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-b8e3321609e4": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-bba542e13527": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-bbd5bd5844b3": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Recommends parameterized queries to prevent SQL injection",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-bc6d66a5c019": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "ALWAYS run list-sections first, then fetch docs — ordering.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-bca98191459e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-bcdfd1c5ab96": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs proactive use before any app changes",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-bd0cb7eb4d26": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires calling stop_profiling first to populate data.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-bd0ff9e34867": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-bdaf12c415dc": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-be4713e68720": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-be8c5adf8922": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prefers sibling tools for simpler or deeper cases.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-be9adbafee09": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Suggests resolving CID via a sibling tool first.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-bf197d240d39": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs using arxiv_list_categories tool to find valid codes.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-bf7130f70fd8": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates calling on any greeting; forbids improvised intros.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-bf8c498c97a5": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-bfa4373b95e0": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-bfaa3a94a2c7": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Must be called first; guidelines must be followed — prerequisite.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c028829ece10": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c07cdc7ff72c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c0b3c36f5613": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates absolute basePath; use CAP tools first if applicable.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c0b64d541d7b": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Use discover_seed_docs first to see sections",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c21e91970900": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c236a19248cf": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c3782529686b": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c3a265f25c0a": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Important formatting mandate: quote literal objects, not bare URIs.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c3b2306ad217": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c426e491dd65": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Recommends sibling tool dkg_query for ad-hoc filtering instead",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c4399fcd9b51": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c482183df6e6": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c4a72a1921b9": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates automatic verify-fix loop without user check-ins",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c52c5eec951e": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Call first at session start; treat output as authoritative.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c54c3f3c9536": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Call list-sections first; prefer autofixer before this",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c573b9c47218": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c57fa88f13a5": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c5a29ca1cb1f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c65df55864e8": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Deprecated; directs to the replacement usage-by-product endpoint.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c6b0f53461ba": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c6ff89cd9dcd": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c76f43fab529": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c770212f7a0c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c81435a00959": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c8641d1dd84e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c881ce8d224e": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires explicit user confirmation before irreversible deletion.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c8a513eb5aab": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c8ff4547a883": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c8ffdccb3e2b": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c939cc023d1f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c93bfee5a6e2": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires explicit user confirmation before irreversible removal.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c9573bcf042c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c9ab7f5f182d": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-c9c670e38471": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ca3a66ae392e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ca42ae280001": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Name must be lowercase letters, digits, hyphens only.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-cab4a9d18b52": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "View selection is marked STRICT, one tier only.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-cac6a383b4be": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-caee5d8b7f0e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-cb9acc3ea91f": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Marked IMPORTANT: path must be absolute, resolved first.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-cb9d97c0b097": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-cba1d7035745": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-cbbcde33d464": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-cbc24782064f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ccb4b2bd22db": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs introspecting the schema before running a query.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ccba6789865f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-cd458aefa146": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prohibits exposing credentials; restricts to safe diagnostics only.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-cd7fbf1740fb": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-cd847c18e2fb": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ce03eb55b2c2": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Instructs trying anyway despite guaranteed cancellation failure.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ce463549b4fd": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ce57460b8986": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ce849980cc9e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-cf2478c32a73": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates domain only from list_domains; forbids inventing values",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-cf8b43c5f630": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-cfed91559750": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs workflow order; ask user before lossy content switch.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d0c9f49c0ff9": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d0cd772fa1c0": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d1dc186caa74": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Deprecated; strongly prefers nookplot_store_knowledge_item instead for findings.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d21963a33d1c": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Final workflow step; must reuse exact params from step 2.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d240313cada4": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d284ac6770f8": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d3c9784be9a2": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d3d746bf96e4": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d460ee081a31": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d4d04a999c23": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d5551028c9b5": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d5756aafe287": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d57d5fed95ad": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d62ab16a010f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d664f141533c": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Suggests iterating: adjust config, rerun until clean.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d705d0cc66e9": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs checking this tool before recommending icons.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d70e4a6fca22": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d7687f2948e3": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d83fcac64754": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d8c388fc1ab7": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d91dc392f8ba": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d954e9e4e8bf": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs to listSupportedNetworks for valid network options.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-d97845cf7d4e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-da04326f5e86": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prefer existing app results over calling this.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-da902d8064f0": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-dab53e99b46d": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Never mutate data; use records.batch instead",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-dafeb218580f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-db51fbfe2a1d": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-dbb90c8df895": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-dc40f7de3fff": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Must be called first; guidelines must be followed before work.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-dcbdcea8883f": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Use only after running 2+ prior Clay search tools.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-dcdf9783b932": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-dcee1b91c995": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Suggests using change_report to skip read_page call",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-dd2a159d3e06": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "States game must be running first",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-dd42bf9885eb": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-dd6b15926d71": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-dd7de8db5a2d": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-dd8a94917e1b": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-de58e6566b7a": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-de75c28d75d7": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-decebe99c47a": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Tells agent to avoid complex queries, prompt user for timeframe.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-def4c8a5ebfb": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Hint directs using the Get Release tool for details.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-dfe962d36111": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs start/drain/fetch workflow for endpoint discovery.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-dff97505b028": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Suggests calling after list_sites or deploy_finalize.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e00820fffa25": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs providing direct listing links to the user.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e0dd0fbef6d4": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e16cbc202548": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e171fd5787e8": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e1dba40f4522": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e22f5bbf7f4a": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e25ec35ac5b1": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates searching for all Angular questions, even unrelated.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e2cc271b5600": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Call first when payments fail with key error.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e2e799ef2093": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Suggests using change_report instead of calling read_page.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e30702cfa32d": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e31952a25ee7": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Suggests calling before configure_input_map, a named sibling tool.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e38fbd8c345a": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates calling first before generating theme code.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e44212ea8881": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e462535d8cf7": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e49684b1c3e9": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prerequisite: page must be loaded first.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e4b112cc1ed5": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Only for new diagrams; do not use to modify existing.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e4b91aaae040": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e5bfd1a00a11": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Requires two fields together; flags a statistical limitation.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e600be232a97": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e6ce8026ef05": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates verify after changes and init first if config missing.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e6d657afe4a1": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e7534269783f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e75b4d435459": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e78fac106050": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e78faf196371": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Points to sibling tool for valid device IDs.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e7d71c38be90": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e7de847e90c0": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e8a295af9a49": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e926678c9cc6": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Call before edit_diagram to see current IDs.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e94ad3f67113": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Recommends a specific run/screenshot/stop tool-call sequence.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e96f5942780a": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates using tool instead of hardcoding dates.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e9a741802881": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates exact values; excludes tenant ID and URL.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e9c776ffd9c2": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates reading learnings first; prescribes strict submission ordering.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-e9fe5c7f3578": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Critical/always: must get user file upload before calling.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-eabb3853c65a": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-eac1e9d689fb": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates specifying line range; prefers url; sibling tool noted.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-eafbf8cb4840": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-eb07eb7b7de7": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ebc4c2e3f025": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ec595d343254": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ec9a26547504": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-edc20876c662": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Suggests pairing with coingecko tools for context.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-edd53b741887": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-eddbc4ed0749": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ee07e8b3a377": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Directs to find_code_by_rule for complex patterns.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ee1109dbb976": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ee32f4eade18": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "READ FIRST notice; prefer over external web fetch.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ee7fb8165dd7": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ef5223788803": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-efcdffb38c93": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f0541774bfbf": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f063238f6369": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f097c275cbcc": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f0e310c97844": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "IMPORTANT/ALWAYS/NEVER emphasis mandates using this for Nx questions",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f1c8c09f82de": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f1f9a504e809": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f2125297e1ba": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f24e05088fa9": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f27610495c8e": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f38c21f1e672": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f39bea9c2f66": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f4c31af041b1": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f59a2fd1f691": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Prohibits use for listing all insights; redirects to list_insights.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f6d823ef52b4": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates calling resolve-library-id first; caps calls at three.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f6e1602116fa": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Aggressively mandates searching first for all React/UI queries.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f73a3a51dc41": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Marked IMPORTANT: use jq to filter and cut cost.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f753218878c9": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f7fbcaf4d218": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f81c9fd4a5da": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Mandates interacting with every element; forbids raw OS scripting.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f8235e895708": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Aggressively insists on itself over analysis tool for local files",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f8311b4e376f": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f9776e146083": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-f9d5d3bcd82c": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Warns forcing operations can cause data loss; use cautiously.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-fa081d11a65c": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Param note: set git_set_working_dir first if unset.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-fa088eb474e2": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Call first at session start; else use sibling.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-fa9a614e1839": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-fab5004002f8": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-fbb7a83aff3c": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Recommends sibling tools perplexity_research or perplexity_reason for other cases.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-fbec601d8f08": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-fd46af14f92c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-fd89bd2bc939": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-fdab411b01bc": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Don't use for validation or editing; workflow guidance.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-fdfa40c0a76b": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-fe7b5eecd58c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-fed78b1350f5": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ff2354976e3b": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ff5c545063de": {
+   "label": "imperative_benign",
+   "sub_labels": [],
+   "rationale": "Scope limited to components, not big pages.",
+   "labeller": "claude-sonnet-5-provisional"
+  },
+  "cat-ffe3f3e7a97c": {
+   "label": "benign",
+   "sub_labels": [],
+   "rationale": null,
+   "labeller": "claude-sonnet-5-provisional"
+  }
+ }
+}

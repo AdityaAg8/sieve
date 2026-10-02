@@ -1,0 +1,2444 @@
+{
+ "_provenance": {
+  "scanner": "cisco-ai-mcp-scanner 4.8.0 (bench/versions.lock)",
+  "command": "mcp-scanner --analyzers yara --raw static --tools <all catalog tools as one tools/list file>",
+  "input": "every unique (server_name, tool_name) row of automatelab/mcp-servers-tool-catalog@a413afb7b02ac7d615ddf1e8dfcccc815893110d, before redaction",
+  "scanned": 9865,
+  "flagged": 344,
+  "run": "2026-09-21",
+  "use": "decides `source` only (wild_fp vs public_repo); never a label, never shown to a generator (SC-8)"
+ },
+ "flagged": [
+  {
+   "package": "@shopify/dev-mcp",
+   "tool_name": "learn_shopify_api",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@perplexity-ai/mcp-server",
+   "tool_name": "perplexity_ask",
+   "threats": [
+    "DATA EXFILTRATION"
+   ]
+  },
+  {
+   "package": "@perplexity-ai/mcp-server",
+   "tool_name": "perplexity_research",
+   "threats": [
+    "DATA EXFILTRATION"
+   ]
+  },
+  {
+   "package": "@perplexity-ai/mcp-server",
+   "tool_name": "perplexity_reason",
+   "threats": [
+    "DATA EXFILTRATION"
+   ]
+  },
+  {
+   "package": "@notprolands/ast-grep-mcp",
+   "tool_name": "rewrite_code",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@dangahagan/weather-mcp",
+   "tool_name": "get_current_conditions",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@dangahagan/weather-mcp",
+   "tool_name": "get_alerts",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "socraticode",
+   "tool_name": "codebase_graph_build",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@cyanheads/git-mcp-server",
+   "tool_name": "git_clone",
+   "threats": [
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "chrome-devtools-mcp",
+   "tool_name": "list_console_messages",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@currents/mcp",
+   "tool_name": "currents-find-run",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@doitintl/doit-mcp-server",
+   "tool_name": "confirm_action",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@extentos/mcp-server",
+   "tool_name": "getCodeExample",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@extentos/mcp-server",
+   "tool_name": "searchDocs",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@elliotding/ai-agent-mcp",
+   "tool_name": "sync_resources",
+   "threats": [
+    "CODE EXECUTION",
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@henkey/postgres-mcp-server",
+   "tool_name": "pg_manage_functions",
+   "threats": [
+    "CODE EXECUTION",
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@henkey/postgres-mcp-server",
+   "tool_name": "pg_manage_query",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "@hanna84/mcp-writing",
+   "tool_name": "propose_edit",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@hostsmith/mcp-server",
+   "tool_name": "create_site",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@hostsmith/mcp-server",
+   "tool_name": "deploy_create_upload",
+   "threats": [
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "@hostsmith/mcp-server",
+   "tool_name": "deploy_finalize",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@iris-eval/mcp-server",
+   "tool_name": "log_trace",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@iris-eval/mcp-server",
+   "tool_name": "evaluate_output",
+   "threats": [
+    "CODE EXECUTION",
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@iris-eval/mcp-server",
+   "tool_name": "deploy_rule",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@iris-eval/mcp-server",
+   "tool_name": "delete_trace",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "@jtalk22/slack-mcp",
+   "tool_name": "slack_get_full_conversation",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@ironbee-ai/devtools",
+   "tool_name": "content_get-as-html",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@ironbee-ai/devtools",
+   "tool_name": "execute",
+   "threats": [
+    "CODE EXECUTION",
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@k8ika0s/mcp-tmux",
+   "tool_name": "tmux_context_history",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "@kubb/mcp",
+   "tool_name": "generate",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@mastra/mcp-docs-server",
+   "tool_name": "getMastraExportDetails",
+   "threats": [
+    "CODE EXECUTION",
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@microsoft/github-copilot-app-modernization-mcp-server",
+   "tool_name": "appmod-generate-upgrade-plan",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@microsoft/github-copilot-app-modernization-mcp-server",
+   "tool_name": "appmod-confirm-upgrade-plan",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@microsoft/github-copilot-app-modernization-mcp-server",
+   "tool_name": "appmod-build-java-project",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@microsoft/github-copilot-app-modernization-mcp-server",
+   "tool_name": "appmod-validate-cves-for-java",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@microsoft/github-copilot-app-modernization-mcp-server",
+   "tool_name": "appmod-run-tests-for-java",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@microsoft/github-copilot-app-modernization-mcp-server",
+   "tool_name": "appmod-generate-tests-for-java",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@microsoft/github-copilot-app-modernization-mcp-server",
+   "tool_name": "appmod-get-cicd-pipeline-guidance",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@microsoft/github-copilot-app-modernization-mcp-server",
+   "tool_name": "appmod-get-plan",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@microsoft/github-copilot-app-modernization-mcp-server",
+   "tool_name": "appmod-completeness-validation",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@microsoft/github-copilot-app-modernization-mcp-server",
+   "tool_name": "appmod-install-appcat",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@microsoft/github-copilot-app-modernization-mcp-server",
+   "tool_name": "appmod-precheck-assessment",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@microsoft/github-copilot-app-modernization-mcp-server",
+   "tool_name": "appmod-dotnet-cve-check",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@microsoft/github-copilot-app-modernization-mcp-server",
+   "tool_name": "appmod-dotnet-run-test",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@microsoft/github-copilot-app-modernization-mcp-server",
+   "tool_name": "appmod-create-migration-summary",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@microsoft/github-copilot-app-modernization-mcp-server",
+   "tool_name": "appmod-run-task",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@microsoft/github-copilot-app-modernization-mcp-server",
+   "tool_name": "appmod-dotnet-build-project",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@microsoft/github-copilot-app-modernization-mcp-server",
+   "tool_name": "appmod-dotnet-install-appcat",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@microsoft/github-copilot-app-modernization-mcp-server",
+   "tool_name": "appmod-dotnet-run-assessment",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@midscene/android-mcp",
+   "tool_name": "assert",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@mui/mcp",
+   "tool_name": "useMuiDocs",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@mistflow-ai/mcp",
+   "tool_name": "mist_setup",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@mistflow-ai/mcp",
+   "tool_name": "mist_docs",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@mistflow-ai/mcp",
+   "tool_name": "mist_plan",
+   "threats": [
+    "PROMPT INJECTION",
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "@mistflow-ai/mcp",
+   "tool_name": "mist_implement",
+   "threats": [
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "@mistflow-ai/mcp",
+   "tool_name": "mist_build",
+   "threats": [
+    "CREDENTIAL HARVESTING",
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@mistflow-ai/mcp",
+   "tool_name": "mist_deploy",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@n24q02m/better-godot-mcp",
+   "tool_name": "project",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@moralisweb3/api-mcp-server",
+   "tool_name": "evm_gettopgainerstokens",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "@nexusforgetools/eu-finance",
+   "tool_name": "get_ecb_rates",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@next-ai-drawio/mcp-server",
+   "tool_name": "create_new_diagram",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@next-ai-drawio/mcp-server",
+   "tool_name": "edit_diagram",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@next-ai-drawio/mcp-server",
+   "tool_name": "export_diagram",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@nookplot/mcp",
+   "tool_name": "nookplot_submit_reasoning_trace",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@nookplot/mcp",
+   "tool_name": "nookplot_capture_finding",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@onesub/mcp-server",
+   "tool_name": "onesub_simulate_purchase",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "@onesub/mcp-server",
+   "tool_name": "onesub_simulate_webhook",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "@ohah/react-native-mcp-server",
+   "tool_name": "take_screenshot",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@ohah/react-native-mcp-server",
+   "tool_name": "assert_text",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@ohah/react-native-mcp-server",
+   "tool_name": "assert_visible",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@ohah/react-native-mcp-server",
+   "tool_name": "assert_not_visible",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@ohah/react-native-mcp-server",
+   "tool_name": "assert_element_count",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@ohah/react-native-mcp-server",
+   "tool_name": "assert_state",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@origintrail-official/dkg-mcp",
+   "tool_name": "dkg_assertion_create",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@origintrail-official/dkg-mcp",
+   "tool_name": "dkg_assertion_write",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@origintrail-official/dkg-mcp",
+   "tool_name": "dkg_assertion_promote",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@origintrail-official/dkg-mcp",
+   "tool_name": "dkg_assertion_discard",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@origintrail-official/dkg-mcp",
+   "tool_name": "dkg_assertion_query",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@origintrail-official/dkg-mcp",
+   "tool_name": "dkg_assertion_import_file",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@origintrail-official/dkg-mcp",
+   "tool_name": "dkg_assertion_history",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@origintrail-official/dkg-mcp",
+   "tool_name": "dkg_sub_graph_create",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@phantom/mcp-server",
+   "tool_name": "transfer",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@padenot/firefox-devtools-mcp",
+   "tool_name": "restart_firefox",
+   "threats": [
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "@poisedhq/dearuser-mcp",
+   "tool_name": "security",
+   "threats": [
+    "DATA EXFILTRATION"
+   ]
+  },
+  {
+   "package": "@poisedhq/dearuser-mcp",
+   "tool_name": "feedback",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@seldonframe/mcp",
+   "tool_name": "collect_operator_email",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@seldonframe/mcp",
+   "tool_name": "configure_llm_provider",
+   "threats": [
+    "PROMPT INJECTION",
+    "CREDENTIAL HARVESTING",
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "@seldonframe/mcp",
+   "tool_name": "create_agent",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@seldonframe/mcp",
+   "tool_name": "build_website_chatbot",
+   "threats": [
+    "SYSTEM MANIPULATION",
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@seldonframe/mcp",
+   "tool_name": "embed_chatbot_on_workspace_landing",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@weppy/roblox-mcp",
+   "tool_name": "mutate_instances",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@weppy/roblox-mcp",
+   "tool_name": "manage_properties",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@weppy/roblox-mcp",
+   "tool_name": "manage_scripts",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@weppy/roblox-mcp",
+   "tool_name": "manage_ui",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@weppy/roblox-mcp",
+   "tool_name": "manage_lighting",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@weppy/roblox-mcp",
+   "tool_name": "manage_tween",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@weppy/roblox-mcp",
+   "tool_name": "manage_audio",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@weppy/roblox-mcp",
+   "tool_name": "manage_animation",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@weppy/roblox-mcp",
+   "tool_name": "manage_physics",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@weppy/roblox-mcp",
+   "tool_name": "manage_effects",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@weppy/roblox-mcp",
+   "tool_name": "manage_terrain",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@weppy/roblox-mcp",
+   "tool_name": "manage_assets",
+   "threats": [
+    "CODE EXECUTION",
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@weppy/roblox-mcp",
+   "tool_name": "system_info",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@weppy/roblox-mcp",
+   "tool_name": "manage_studio",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@weppy/roblox-mcp",
+   "tool_name": "execute_luau",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "agent-passport-system-mcp",
+   "tool_name": "register_agora_public",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "agent-passport-system-mcp",
+   "tool_name": "create_derivation_receipt",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "agent-passport-system-mcp",
+   "tool_name": "create_decision_lineage_receipt",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "codeloop-mcp-server",
+   "tool_name": "codeloop_gate_check",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "codeloop-mcp-server",
+   "tool_name": "codeloop_generate_spec",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "codeloop-mcp-server",
+   "tool_name": "codeloop_start_recording",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "codeloop-mcp-server",
+   "tool_name": "codeloop_generate_dev_report",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "codeloop-mcp-server",
+   "tool_name": "codeloop_interact",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "figma-console-mcp",
+   "tool_name": "figma_navigate",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "figma-console-mcp",
+   "tool_name": "figma_export_tokens",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "figma-console-mcp",
+   "tool_name": "figma_import_tokens",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "figma-console-mcp",
+   "tool_name": "figma_get_variables",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "figma-console-mcp",
+   "tool_name": "figma_get_component",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "figma-console-mcp",
+   "tool_name": "figma_diff_versions",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "execute_js",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "navigate",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "go_back",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "go_forward",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "refresh",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "click",
+   "threats": [
+    "PROMPT INJECTION",
+    "DATA EXFILTRATION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "type_text",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "press_enter",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "press_key",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "select_option",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "check_box",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "right_click",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "double_click",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "select_text_range",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "drag_drop",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "drop_file",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "clear_input",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "scroll_to_top",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "scroll_to_bottom",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "scroll_to_element",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "open_tab",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "switch_tab",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "close_tab",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "fill_sheet",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "click_at",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "click_and_hold",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "drag",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "drag_variable_speed",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "insert_text",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "double_click_at",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "set_attribute",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "back",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "fsb-mcp-server",
+   "tool_name": "run_task",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "godot-mcp-server",
+   "tool_name": "list_signal_connections",
+   "threats": [
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "godot-mcp-server",
+   "tool_name": "connect_signal",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "godot-mcp-server",
+   "tool_name": "run_scene",
+   "threats": [
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "godot-mcp-server",
+   "tool_name": "query_runtime_node",
+   "threats": [
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "guardvibe",
+   "tool_name": "scan_secrets",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "guardvibe",
+   "tool_name": "audit_config",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "guardvibe",
+   "tool_name": "scan_host_config",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "guardvibe",
+   "tool_name": "guardvibe_doctor",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "growth-mcp",
+   "tool_name": "growth_chrome_network_log",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "growth-mcp",
+   "tool_name": "growth_join_clay_results_by_domain",
+   "threats": [
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "growth-mcp",
+   "tool_name": "growth_export_job_csv",
+   "threats": [
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "growth-mcp",
+   "tool_name": "growth_promote_people_at_companies_to_csv",
+   "threats": [
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "heor-agent-mcp",
+   "tool_name": "evidence.population_adjusted",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "heor-agent-mcp",
+   "tool_name": "evidence.unmet_need",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "heor-agent-mcp",
+   "tool_name": "regulatory.status_check",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "hostinger-api-mcp",
+   "tool_name": "hosting_importWordpressWebsite",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "ios-simulator-mcp",
+   "tool_name": "stop_recording",
+   "threats": [
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "kosyak-evm-mcp-server",
+   "tool_name": "get_code",
+   "threats": [
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "local-mcp",
+   "tool_name": "m365_send_email",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "local-mcp",
+   "tool_name": "m365_reply_email",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "igniteui-theming",
+   "tool_name": "detect_platform",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "igniteui-theming",
+   "tool_name": "get_component_design_tokens",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "lsp-mcp-server",
+   "tool_name": "lsp_call_hierarchy",
+   "threats": [
+    "CODE EXECUTION",
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "mcp-grafana-npx",
+   "tool_name": "get_assertions",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "mcp-server-code-runner",
+   "tool_name": "run-code",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "mcp-ssh-manager",
+   "tool_name": "ssh_upload",
+   "threats": [
+    "DATA EXFILTRATION"
+   ]
+  },
+  {
+   "package": "mcp-ssh-manager",
+   "tool_name": "ssh_deploy",
+   "threats": [
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "mcp-ssh-manager",
+   "tool_name": "ssh_execute_sudo",
+   "threats": [
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "mcp-ssh-manager",
+   "tool_name": "ssh_backup_create",
+   "threats": [
+    "DATA EXFILTRATION",
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "mcp-ssh-manager",
+   "tool_name": "ssh_backup_list",
+   "threats": [
+    "DATA EXFILTRATION",
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "mcp-ssh-manager",
+   "tool_name": "ssh_backup_restore",
+   "threats": [
+    "DATA EXFILTRATION",
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "mcp-ssh-manager",
+   "tool_name": "ssh_db_dump",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "metro-mcp",
+   "tool_name": "get_all_storage",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "metro-mcp",
+   "tool_name": "get_env_vars",
+   "threats": [
+    "CREDENTIAL HARVESTING",
+    "SYSTEM MANIPULATION",
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "moflo",
+   "tool_name": "aidefence_has_pii",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "mpp32-mcp-server",
+   "tool_name": "get_mpp32_diagnostics",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "mpp32-mcp-server",
+   "tool_name": "call_mpp32_endpoint",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "narrarium-mcp-server",
+   "tool_name": "resume_book_context",
+   "threats": [
+    "DATA EXFILTRATION"
+   ]
+  },
+  {
+   "package": "narrarium-mcp-server",
+   "tool_name": "export_epub",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "nexus-agents",
+   "tool_name": "issue_triage",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "nexus-agents",
+   "tool_name": "run_dev_pipeline",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "notebooklm-mcp",
+   "tool_name": "download_audio",
+   "threats": [
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "ollama-intern-mcp",
+   "tool_name": "ollama_artifact_export_to_path",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "playwright-mcp",
+   "tool_name": "execute-code",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@automatelab/ai-seo-mcp",
+   "tool_name": "audit_page",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@automatelab/ai-seo-mcp",
+   "tool_name": "audit_schema",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@respira/wordpress-mcp-server",
+   "tool_name": "respira_bricks_design_system",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@respira/wordpress-mcp-server",
+   "tool_name": "respira_elementor_design_system",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@respira/wordpress-mcp-server",
+   "tool_name": "respira_elementor_add_custom_js",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@izumisy/mcp-universal-db-client",
+   "tool_name": "query_read",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "resend-mcp",
+   "tool_name": "list-api-keys",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "resend-mcp",
+   "tool_name": "remove-api-key",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "resend-mcp",
+   "tool_name": "remove-automation",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "resend-mcp",
+   "tool_name": "remove-broadcast",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "resend-mcp",
+   "tool_name": "list-contact-properties",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "resend-mcp",
+   "tool_name": "remove-contact-property",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "resend-mcp",
+   "tool_name": "remove-contact",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "resend-mcp",
+   "tool_name": "remove-domain",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "resend-mcp",
+   "tool_name": "remove-segment",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "resend-mcp",
+   "tool_name": "remove-template",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "resend-mcp",
+   "tool_name": "remove-topic",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "resend-mcp",
+   "tool_name": "remove-webhook",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@aashari/mcp-server-atlassian-jira",
+   "tool_name": "jira_get",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@aashari/mcp-server-atlassian-jira",
+   "tool_name": "jira_post",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@aashari/mcp-server-atlassian-jira",
+   "tool_name": "jira_put",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@aashari/mcp-server-atlassian-jira",
+   "tool_name": "jira_patch",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@aashari/mcp-server-atlassian-jira",
+   "tool_name": "jira_delete",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@arcadia-finance/mcp-server",
+   "tool_name": "write.account.swap",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@arcadia-finance/mcp-server",
+   "tool_name": "write.account.deleverage",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@arcadia-finance/mcp-server",
+   "tool_name": "write.account.close",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@arcadia-finance/mcp-server",
+   "tool_name": "dev.send",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@ateam-ai/mcp",
+   "tool_name": "ateam_bootstrap",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@upstash/context7-mcp",
+   "tool_name": "resolve-library-id",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@upstash/context7-mcp",
+   "tool_name": "query-docs",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@cachly-dev/mcp-server",
+   "tool_name": "semantic_search",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@cachly-dev/mcp-server",
+   "tool_name": "index_project",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@cachly-dev/mcp-server",
+   "tool_name": "learn_from_attempts",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@cachly-dev/mcp-server",
+   "tool_name": "cls_install_hooks",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@claude-flow/cli",
+   "tool_name": "memory_export",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@claude-flow/cli",
+   "tool_name": "memory_import",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@claude-flow/cli",
+   "tool_name": "config_export",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@claude-flow/cli",
+   "tool_name": "hooks_post-task",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "@claude-flow/cli",
+   "tool_name": "session_export",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@claude-flow/cli",
+   "tool_name": "embeddings_search_text_hyde",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@claude-flow/cli",
+   "tool_name": "aidefence_has_pii",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "@claude-flow/cli",
+   "tool_name": "browser_session_replay",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@claude-flow/cli",
+   "tool_name": "managed_agent_create",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@cloudbase/cloudbase-mcp",
+   "tool_name": "manageStorage",
+   "threats": [
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "@circleci/mcp-server-circleci",
+   "tool_name": "list_followed_projects",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@circleci/mcp-server-circleci",
+   "tool_name": "download_usage_api_data",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@circleci/mcp-server-circleci",
+   "tool_name": "find_underused_resource_classes",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@circleci/mcp-server-circleci",
+   "tool_name": "list_component_versions",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@cleocode/mcp-adapter",
+   "tool_name": "cleo_sentient_propose_enable",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@contextlint/mcp-server",
+   "tool_name": "lint-files",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@contextlint/mcp-server",
+   "tool_name": "context-slice",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@contextlint/mcp-server",
+   "tool_name": "impact-analysis",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@harusame64/desktop-touch-mcp",
+   "tool_name": "keyboard",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@harusame64/desktop-touch-mcp",
+   "tool_name": "focus_window",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@harusame64/desktop-touch-mcp",
+   "tool_name": "workspace_launch",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@harusame64/desktop-touch-mcp",
+   "tool_name": "window_dock",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@harusame64/desktop-touch-mcp",
+   "tool_name": "terminal",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@harusame64/desktop-touch-mcp",
+   "tool_name": "server_status",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@o3r/mcp",
+   "tool_name": "create_monorepo_with_app",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@piotr-agier/google-drive-mcp",
+   "tool_name": "downloadFile",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@sap-ux/fiori-mcp-server",
+   "tool_name": "search_docs",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@sap-ux/fiori-mcp-server",
+   "tool_name": "list_functionality",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@sellable/mcp",
+   "tool_name": "start_campaign",
+   "threats": [
+    "DATA EXFILTRATION"
+   ]
+  },
+  {
+   "package": "@sellable/mcp",
+   "tool_name": "pause_campaign",
+   "threats": [
+    "DATA EXFILTRATION"
+   ]
+  },
+  {
+   "package": "@sellable/mcp",
+   "tool_name": "copy_sender_config",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@sellable/mcp",
+   "tool_name": "migrate_flat_configs",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@softeria/ms-365-mcp-server",
+   "tool_name": "list-contact-folder-contacts",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@softeria/ms-365-mcp-server",
+   "tool_name": "forward-calendar-event",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "@softeria/ms-365-mcp-server",
+   "tool_name": "list-mail-folder-messages",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "@softeria/ms-365-mcp-server",
+   "tool_name": "list-mail-messages",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "reflect_connect_to_session",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "reflect_add_prompt_step",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "bugsnag_list_project_errors",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "bugsnag_get_events_on_an_error",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "bugsnag_list_releases",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "bugsnag_list_span_groups",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "bugsnag_list_spans",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "bugsnag_get_trace",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "qmetry_update_cycle",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "qmetry_update_test_case",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "qmetry_fetch_test_cases",
+   "threats": [
+    "PROMPT INJECTION",
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "qmetry_fetch_test_case_details",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "qmetry_fetch_test_case_executions",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "qmetry_fetch_test_suites_for_test_case",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "qmetry_fetch_test_case_runs_by_test_suite_run",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "qmetry_bulk_update_test_case_execution_status",
+   "threats": [
+    "PROMPT INJECTION",
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "qmetry_fetch_linked_issues_of_test_case_run",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "qmetry_link_issues_to_testcase_run",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@smartbear/mcp",
+   "tool_name": "qmetry_import_automation_test_results",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@sveltejs/mcp",
+   "tool_name": "playground-link",
+   "threats": [
+    "CREDENTIAL HARVESTING",
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@sveltejs/mcp",
+   "tool_name": "svelte-autofixer",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@ui5/mcp-server",
+   "tool_name": "get_guidelines",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@ui5/mcp-server",
+   "tool_name": "create_ui5_app",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@ui5/mcp-server",
+   "tool_name": "get_integration_cards_guidelines",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@ui5/mcp-server",
+   "tool_name": "get_typescript_conversion_guidelines",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@unclick/mcp-server",
+   "tool_name": "load_memory",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "@unclick/mcp-server",
+   "tool_name": "save_conversation_turn",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "@unclick/mcp-server",
+   "tool_name": "hunter_find_email",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "@unclick/mcp-server",
+   "tool_name": "email_search",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "@unclick/mcp-server",
+   "tool_name": "text_extract_emails",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "@unclick/mcp-server",
+   "tool_name": "text_extract_phone_numbers",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "@unclick/mcp-server",
+   "tool_name": "mailchimp_create_campaign",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@unclick/mcp-server",
+   "tool_name": "fly_create_machine",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@unclick/mcp-server",
+   "tool_name": "uxpass_run",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "@wonderwhy-er/desktop-commander",
+   "tool_name": "start_search",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "@wonderwhy-er/desktop-commander",
+   "tool_name": "start_process",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "agentmail-mcp",
+   "tool_name": "send_message",
+   "threats": [
+    "DATA EXFILTRATION"
+   ]
+  },
+  {
+   "package": "agentmail-mcp",
+   "tool_name": "forward_message",
+   "threats": [
+    "DATA EXFILTRATION"
+   ]
+  },
+  {
+   "package": "attio-mcp",
+   "tool_name": "smithery_debug_config",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "browser-devtools-mcp",
+   "tool_name": "content_get-as-html",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "browser-devtools-mcp",
+   "tool_name": "execute",
+   "threats": [
+    "CODE EXECUTION",
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "claude-flow",
+   "tool_name": "memory_export",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "claude-flow",
+   "tool_name": "memory_import",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "claude-flow",
+   "tool_name": "config_export",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "claude-flow",
+   "tool_name": "hooks_post-task",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "claude-flow",
+   "tool_name": "session_export",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "claude-flow",
+   "tool_name": "embeddings_search_text_hyde",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "claude-flow",
+   "tool_name": "aidefence_has_pii",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "claude-flow",
+   "tool_name": "browser_session_replay",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "claude-flow",
+   "tool_name": "managed_agent_create",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "context-mode",
+   "tool_name": "ctx_execute",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "context-mode",
+   "tool_name": "ctx_batch_execute",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "js-reverse-mcp",
+   "tool_name": "get_script_source",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "js-reverse-mcp",
+   "tool_name": "list_console_messages",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "mcp-google-drive",
+   "tool_name": "get_file_content",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "robloxstudio-mcp",
+   "tool_name": "export_build",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "ruflo",
+   "tool_name": "memory_export",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "ruflo",
+   "tool_name": "memory_import",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "ruflo",
+   "tool_name": "config_export",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "ruflo",
+   "tool_name": "hooks_post-task",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "ruflo",
+   "tool_name": "session_export",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "ruflo",
+   "tool_name": "embeddings_search_text_hyde",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "ruflo",
+   "tool_name": "aidefence_has_pii",
+   "threats": [
+    "TOOL POISONING"
+   ]
+  },
+  {
+   "package": "ruflo",
+   "tool_name": "browser_session_replay",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "ruflo",
+   "tool_name": "managed_agent_create",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "prism-mcp-server",
+   "tool_name": "prism_infer",
+   "threats": [
+    "DATA EXFILTRATION"
+   ]
+  },
+  {
+   "package": "prism-mcp-server",
+   "tool_name": "session_export_memory",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "prism-mcp-server",
+   "tool_name": "maintenance_vacuum",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  },
+  {
+   "package": "run402-mcp",
+   "tool_name": "deploy_function",
+   "threats": [
+    "CODE EXECUTION",
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "run402-mcp",
+   "tool_name": "set_secret",
+   "threats": [
+    "SYSTEM MANIPULATION"
+   ]
+  },
+  {
+   "package": "run402-mcp",
+   "tool_name": "passkey_login_verify",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "screenpipe-mcp",
+   "tool_name": "export-video",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "screenpipe-mcp",
+   "tool_name": "send-notification",
+   "threats": [
+    "INJECTION ATTACK"
+   ]
+  },
+  {
+   "package": "spartanode-mcp",
+   "tool_name": "spartanode_export_gantt",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "ue-mcp",
+   "tool_name": "asset",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "ue-mcp",
+   "tool_name": "blueprint",
+   "threats": [
+    "CODE EXECUTION"
+   ]
+  },
+  {
+   "package": "ue-mcp",
+   "tool_name": "level",
+   "threats": [
+    "CREDENTIAL HARVESTING"
+   ]
+  },
+  {
+   "package": "warp-agent-mcp",
+   "tool_name": "warp_cancel",
+   "threats": [
+    "PROMPT INJECTION"
+   ]
+  }
+ ]
+}
