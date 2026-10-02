@@ -25,7 +25,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import subprocess  # noqa: S404 (subprocess is the adapter's whole job; every call is targeted)
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -90,12 +89,10 @@ class CiscoLlmAdapter:
             with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
                 json.dump({"tools": tools}, fh)
             env = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
-            result = subprocess.run(  # noqa: S603 (fixed argv below; no shell, no untrusted input)
-                [self.binary, "--analyzers", "llm", "--raw", "static", "--tools", str(tools_path)],
-                capture_output=True,
-                text=True,
+            result = common.run_scanner(
+                self.binary,
+                ["--analyzers", "llm", "--raw", "static", "--tools", str(tools_path)],
                 env=env,
-                check=True,
             )
         finally:
             tools_path.unlink(missing_ok=True)

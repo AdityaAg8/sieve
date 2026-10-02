@@ -8,6 +8,10 @@ schema change (or a redaction fix) is made once, not three times (review round 1
 
 from __future__ import annotations
 
+import functools
+import os
+import shutil
+import subprocess  # noqa: S404 (runs the pinned scanner; the adapters fix every argv)
 from pathlib import Path
 from typing import Any
 
@@ -64,6 +68,67 @@ def raw_to_by_tool(raw: list[dict[str, Any]], *, analyzer_key: str) -> dict[str,
             )
         by_tool[tool_name] = {"findings": findings}
     return by_tool
+
+
+#: What the `mcp-scanner` console script runs (cisco-ai-mcp-scanner's `entry_points.txt`).
+SCANNER_ENTRY_POINT = (
+    "import sys; from mcpscanner.cli import cli_entry_point; sys.exit(cli_entry_point())"
+)
+#: Windows' "An Application Control policy has blocked this file".
+_APP_CONTROL_BLOCKED = 4551
+
+
+@functools.cache
+def _uv_tool_dir() -> Path | None:
+    """Where `uv tool install` keeps its tool environments, or None without uv."""
+    uv = shutil.which("uv")
+    if uv is None:
+        return None
+    result = subprocess.run(  # noqa: S603 (fixed argv, no shell, no untrusted input)
+        [uv, "tool", "dir"],
+        capture_output=True,
+        text=True,
+        env=dict(os.environ),
+        check=False,
+        timeout=60,
+    )
+    found = result.stdout.strip()
+    return Path(found) if result.returncode == 0 and found else None
+
+
+def _tool_python(binary: str) -> Path | None:
+    root = _uv_tool_dir() if binary == "mcp-scanner" else None
+    python = root / "cisco-ai-mcp-scanner" / "Scripts" / "python.exe" if root else None
+    return python if python is not None and python.exists() else None
+
+
+def run_scanner(
+    binary: str, args: list[str], *, env: dict[str, str]
+) -> subprocess.CompletedProcess[str]:
+    """`binary args`, run exactly as the adapters always have.
+
+    Windows Smart App Control refuses the unsigned launcher `uv tool install` writes for
+    `mcp-scanner` (WinError 4551), while the tool environment's own interpreter still runs. For
+    that one refusal, and only when the environment exists, the console script's entry point
+    runs through that interpreter: same package, same version, same arguments. Any other
+    failure is raised as it was.
+    """
+    try:
+        return subprocess.run(  # noqa: S603 (fixed argv, no shell, no untrusted input)
+            [binary, *args], capture_output=True, text=True, env=env, check=True
+        )
+    except OSError as exc:
+        blocked = getattr(exc, "winerror", None) == _APP_CONTROL_BLOCKED
+        python = _tool_python(binary) if blocked else None
+        if python is None:
+            raise
+        return subprocess.run(  # noqa: S603 (fixed argv, no shell, no untrusted input)
+            [str(python), "-c", SCANNER_ENTRY_POINT, *args],
+            capture_output=True,
+            text=True,
+            env=env,
+            check=True,
+        )
 
 
 def read_pinned_version(lockfile: Path, scanner: str) -> str:

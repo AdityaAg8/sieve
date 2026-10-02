@@ -11,14 +11,13 @@ golden so the transform stays auditable. `normalise` then maps that by_tool docu
 
 The by_tool reshape, strict-schema parsing and version-pinning are shared with `cisco_llm` via
 `sieve.adapters._scanner_common` (review round 1, finding 4) — this module only supplies the
-`yara_analyzer` key and the real subprocess invocation.
+`yara_analyzer` key and the scanner's arguments; `_scanner_common.run_scanner` runs it.
 """
 
 from __future__ import annotations
 
 import json
 import os
-import subprocess  # noqa: S404 (subprocess is the adapter's whole job; every call is targeted)
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -56,12 +55,10 @@ class CiscoYaraAdapter:
             with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
                 json.dump({"tools": tools}, fh)
             env = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
-            result = subprocess.run(  # noqa: S603 (fixed argv below; no shell, no untrusted input)
-                [self.binary, "--analyzers", "yara", "--raw", "static", "--tools", str(path)],
-                capture_output=True,
-                text=True,
+            result = common.run_scanner(
+                self.binary,
+                ["--analyzers", "yara", "--raw", "static", "--tools", str(path)],
                 env=env,
-                check=True,
             )
         finally:
             path.unlink(missing_ok=True)

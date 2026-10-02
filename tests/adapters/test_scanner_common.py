@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
 
+from sieve.adapters import _scanner_common as common
 from sieve.adapters._scanner_common import (
     parse_by_tool,
     raw_to_by_tool,
@@ -124,3 +126,72 @@ def test_redacted_records_leaves_absent_instructions_absent() -> None:
     """`None` stays `None`; redaction must not invent an empty string on the record."""
     [out] = redacted_records([_record(None)])
     assert out.server_instructions is None
+
+
+class _BlockedError(OSError):
+    """What Windows raises when Smart App Control refuses to start an executable."""
+
+    winerror = 4551
+
+
+def _tool_env(root: Path) -> Path:
+    python = root / "cisco-ai-mcp-scanner" / "Scripts" / "python.exe"
+    python.parent.mkdir(parents=True)
+    python.write_text("", encoding="utf-8")
+    return python
+
+
+def test_a_launcher_windows_refuses_runs_through_its_own_tool_interpreter(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    python = _tool_env(tmp_path)
+    monkeypatch.setattr(common, "_uv_tool_dir", lambda: tmp_path)
+    calls: list[list[str]] = []
+
+    def fake_run(
+        args: list[str], *, capture_output: bool, text: bool, env: dict[str, str], check: bool
+    ) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        if args[0] == "mcp-scanner":
+            raise _BlockedError("An Application Control policy has blocked this file")
+        return subprocess.CompletedProcess(args, 0, stdout="[]", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    result = common.run_scanner("mcp-scanner", ["--raw", "static"], env={})
+
+    assert calls == [
+        ["mcp-scanner", "--raw", "static"],
+        [str(python), "-c", common.SCANNER_ENTRY_POINT, "--raw", "static"],
+    ]
+    assert result.stdout == "[]"
+
+
+def test_a_refused_launcher_with_no_tool_environment_still_raises(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(common, "_uv_tool_dir", lambda: tmp_path)
+
+    def fake_run(
+        args: list[str], *, capture_output: bool, text: bool, env: dict[str, str], check: bool
+    ) -> subprocess.CompletedProcess[str]:
+        raise _BlockedError("An Application Control policy has blocked this file")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    with pytest.raises(_BlockedError):
+        common.run_scanner("mcp-scanner", ["--raw"], env={})
+
+
+def test_any_other_launch_failure_is_raised_as_it_was(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _tool_env(tmp_path)
+    monkeypatch.setattr(common, "_uv_tool_dir", lambda: tmp_path)
+
+    def fake_run(
+        args: list[str], *, capture_output: bool, text: bool, env: dict[str, str], check: bool
+    ) -> subprocess.CompletedProcess[str]:
+        raise FileNotFoundError(args[0])
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    with pytest.raises(FileNotFoundError):
+        common.run_scanner("mcp-scanner", ["--raw"], env={})
