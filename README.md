@@ -299,6 +299,8 @@ lists what is *not* yet proven.
 
 Pre-release. The system is built, tested and documented end to end; nothing is published to PyPI,
 the Hugging Face Hub or a dataset host yet, and **no number in this repository has been measured
-on a trained model**. Dataset, model and write-up URLs are read from `NEXT_PUBLIC_DATASET_URL`,
+on a trained model**. Training v1 is planned in [`SIEVE_TRAINING_PLAN.md`](SIEVE_TRAINING_PLAN.md)
+(an audited corpus rebuild, an ensemble-labelled and human-audited label set, and a pre-registered
+sealed evaluation). Dataset, model and write-up URLs are read from `NEXT_PUBLIC_DATASET_URL`,
 `NEXT_PUBLIC_MODEL_URL`, `NEXT_PUBLIC_WRITEUP_URL` and `NEXT_PUBLIC_REPO_URL`, and the web app
 renders "not published yet" while they are unset.
