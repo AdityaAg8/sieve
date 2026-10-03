@@ -2,7 +2,7 @@ ifeq ($(OS),Windows_NT)
 SHELL := C:/Program Files/Git/usr/bin/bash.exe
 endif
 
-.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id model-dir sweep
+.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id model-dir sweep gpu-bench
 
 .DEFAULT_GOAL := help
 
@@ -107,6 +107,12 @@ best-epoch:  ## the EPOCHS= for FOLD=all: the median best_epoch of MODEL_DIR's f
 # directories' parent, which under this layout nests (models/<family>-s0/<family>-s0).
 model-dir:  ## print MODEL_DIR for PROFILE= SEED= (models/<family>-s<seed>)
 	@echo $(MODEL_DIR)
+
+# `gpu-bench` (training plan C3, §13 step 7): every speed variant timed on real batches, the
+# pre-registered profile choice printed, residual non-determinism measured. Refuses on the CPU
+# path and on a busy card (FORCE=1 overrides the latter only).
+gpu-bench:  ## time every profile variant, print the §6.4 choice, measure non-determinism (GPU)
+	uv run python -m bench.gpu_bench $(if $(FORCE),--force) $(if $(GPU_IDLE_MIB),--idle-mib $(GPU_IDLE_MIB))
 
 # `sweep` (training plan C2): the whole per-seed recipe, resumable, refusing a busy GPU before
 # every training step. FORCE=1 skips that refusal; GPU_IDLE_MIB moves its threshold.

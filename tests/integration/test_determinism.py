@@ -103,8 +103,14 @@ def _train(corpus: Path, out: Path, *, seed: str = "0") -> Path:
     return out
 
 
-#: Measurements of the machine (training plan B4), not outputs of the training.
-CLOCK_KEYS = ("train_seconds", "seconds_per_step", "tokens_per_second", "peak_cuda_mem_bytes")
+#: Measurements of the machine (training plan B4, C3), not outputs of the training.
+CLOCK_KEYS = (
+    "train_seconds",
+    "seconds_per_step",
+    "tokens_per_second",
+    "peak_cuda_mem_bytes",
+    "step_seconds",  # C3
+)
 
 
 def _metrics_without_the_clock(directory: Path) -> dict:

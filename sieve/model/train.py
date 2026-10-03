@@ -88,6 +88,8 @@ class TrainConfig(BaseModel):
     epochs_explicit: bool = False
     # `--fold all` only (B9): stop after this many epochs; `epochs` stays the schedule horizon.
     stop_after_epochs: int | None = None
+    # `make gpu-bench` only (C3): train exactly this many optimizer steps, no evaluation.
+    max_steps: int | None = Field(default=None, ge=1)
 
     def __init__(self, **data: Any) -> None:
         # Guards live here, not in a `model_validator`: pydantic wraps every validator error in
@@ -165,6 +167,8 @@ class TrainConfig(BaseModel):
             parts.append(f"--findings {self.findings.as_posix() if self.findings else ''}")
         if self.allow_reduced_precision:
             parts.append("--allow-reduced-precision")
+        if self.max_steps is not None:
+            parts.append(f"--max-steps {self.max_steps}")
         parts.append(f"--corpus {corpus.as_posix()}")
         parts.append(f"--out {out_dir.as_posix()}")
         return " ".join(parts)
@@ -183,6 +187,7 @@ def load_profile(
     epochs: int | None = None,
     allow_reduced_precision: bool = False,
     allow_dirty: bool = False,
+    max_steps: int | None = None,
 ) -> TrainConfig:
     """One profile of `config_path`, with the CLI's run-specific settings.
 
@@ -226,6 +231,7 @@ def load_profile(
         allow_dirty=allow_dirty,
         epochs_explicit=epochs is not None,
         stop_after_epochs=stop_after,
+        max_steps=max_steps,
     )
 
 
@@ -401,6 +407,8 @@ def training_arguments(
         "disable_tqdm": True,
         "logging_strategy": "epoch",
     }
+    if config.max_steps is not None:
+        settings["max_steps"] = config.max_steps
     settings.update(overrides)
     return TrainingArguments(**settings)
 
@@ -426,7 +434,7 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
     )
 
     from sieve.eval.metrics import macro_f1
-    from sieve.model.callbacks import LearningRateAtEpochEnd, StopAfterEpochs
+    from sieve.model.callbacks import LearningRateAtEpochEnd, StepTimer, StopAfterEpochs
     from sieve.model.weighted_trainer import WeightedTrainer
 
     require_clean_tree(config.profile, allow_dirty=config.allow_dirty)
@@ -529,9 +537,20 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         else None
     )
 
-    has_early = "early_stop" in tokenised
+    # A `--max-steps` benchmark (C3) times training steps only: no evaluation, no checkpoints.
+    has_early = "early_stop" in tokenised and config.max_steps is None
     lr_record = LearningRateAtEpochEnd()
+    step_timer = StepTimer()
     stopper = StopAfterEpochs(config.stop_after_epochs or config.epochs)
+    # Early stopping on a CV fold, the CV-selected stop on `--fold all`, and nothing at all in a
+    # `--max-steps` benchmark, which runs exactly its step budget.
+    epoch_control: list[Any] = (
+        []
+        if config.max_steps is not None
+        else [EarlyStoppingCallback(early_stopping_patience=config.patience)]
+        if has_early
+        else [stopper]
+    )
     checkpoints = out_dir / "_checkpoints"
     args = training_arguments(config, checkpoints, has_early=has_early)
     trainer = WeightedTrainer(
@@ -544,12 +563,7 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         processing_class=tokenizer,
         data_collator=collator(tokenizer),
         compute_metrics=compute_metrics,
-        callbacks=[
-            lr_record,
-            EarlyStoppingCallback(early_stopping_patience=config.patience)
-            if has_early
-            else stopper,
-        ],
+        callbacks=[lr_record, step_timer, *epoch_control],
     )
     cuda = torch.cuda.is_available()
     if cuda:
@@ -623,6 +637,9 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         "stop_after_epochs": config.stop_after_epochs,
         "stopped_at_step": None if has_early else stopper.stopped_at_step,
         "lr_at_epoch_end": lr_record.values,
+        # `make gpu-bench` (C3): wall seconds of every optimizer step, and the step budget.
+        "step_seconds": step_timer.values,
+        "max_steps": config.max_steps,
     }
     _write_json(out_dir / "metrics.json", metrics)
     _write_json(
@@ -679,6 +696,9 @@ def main(argv: Sequence[str] | None = None) -> Path:
     parser.add_argument(
         "--allow-dirty", action="store_true", help="train from uncommitted code (tests only)"
     )
+    parser.add_argument(
+        "--max-steps", type=int, default=None, help="make gpu-bench only: timed steps, no eval"
+    )
     parser.add_argument("--corpus", type=Path, default=None)
     parser.add_argument("--out", type=Path, required=True)
     ns = parser.parse_args(argv)
@@ -696,6 +716,7 @@ def main(argv: Sequence[str] | None = None) -> Path:
         epochs=ns.epochs,
         allow_reduced_precision=ns.allow_reduced_precision,
         allow_dirty=ns.allow_dirty,
+        max_steps=ns.max_steps,
     )
     corpus = ns.corpus if ns.corpus is not None else default_corpus(ns.config)
     return run(config, corpus, ns.out)
