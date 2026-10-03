@@ -1,0 +1,16 @@
+{
+  "about": "Rule NAMES only (no rule text) of the pinned baseline scanner, so tests can assert that no generation prompt ever names one (PRD SC-8, training plan E2). Refresh with the installed tool; tests/bench/test_generate_local.py checks they still match when it is installed.",
+  "scanner": "cisco-ai-mcp-scanner 4.8.0",
+  "rules": [
+    "code_execution",
+    "coercive_injection",
+    "command_injection",
+    "credential_harvesting",
+    "data_exfiltration",
+    "prompt_injection",
+    "script_injection",
+    "sql_injection",
+    "system_manipulation",
+    "tool_poisoning"
+  ]
+}
