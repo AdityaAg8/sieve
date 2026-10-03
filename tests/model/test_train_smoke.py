@@ -151,6 +151,7 @@ def test_fold_all_is_accepted_with_an_explicit_epoch_count() -> None:
         fold="all",
         class_weights=True,
         epochs_explicit=True,
+        stop_after_epochs=2,
     )
     assert config.fold == "all"
 
@@ -428,3 +429,42 @@ def test_corpus_loading_never_yields_a_non_dev_row(tmp_path: Path) -> None:
     path = _write_corpus(tmp_path / "c.jsonl", [*records, sealed])
     assert any(r.split == "holdout" for r in load_corpus(path))
     assert "x" not in build_splits(load_corpus(path), fold=0)["oof"]["id"]
+
+
+def test_fold_all_keeps_the_profile_horizon_and_stops_at_the_cv_epoch() -> None:
+    config = load_profile(Path("bench/train.yaml"), "deberta", fold="all", seed=0, epochs=4)
+    assert config.epochs == 8  # the scheduler horizon stays the profile's
+    assert config.stop_after_epochs == 4
+    assert "--epochs 4" in config.training_command(Path("c.jsonl"), Path("out"))
+
+
+def test_a_cv_fold_has_no_stop_point() -> None:
+    config = load_profile(Path("bench/train.yaml"), "deberta", fold=0, seed=0, epochs=5)
+    assert (config.epochs, config.stop_after_epochs) == (5, None)
+
+
+def test_stopping_after_more_epochs_than_the_horizon_is_refused() -> None:
+    with pytest.raises(ValueError, match="horizon"):
+        load_profile(Path("bench/train.yaml"), "tiny", fold="all", seed=0, epochs=9)
+
+
+@pytest.mark.slow
+def test_fold_all_lr_at_the_stop_equals_the_cv_lr_at_that_epoch(
+    dev_records: list[CorpusRecord], tmp_path: Path
+) -> None:
+    """B9: same schedule position as the CV models at their best epoch (warmup 0 isolates it:
+    with warmup each run rounds ceil(ratio * total_steps) on its own step count)."""
+    profile = yaml.safe_load(Path("bench/train.yaml").read_text(encoding="utf-8"))["profiles"]
+    config = tmp_path / "train.yaml"
+    lin = {**profile["tiny"], "warmup_ratio": 0.0, "epochs": 4, "patience": 10}
+    config.write_text(yaml.safe_dump({"profiles": {"lin": lin}}), encoding="utf-8", newline="\n")
+    corpus = _write_corpus(tmp_path / "corpus.jsonl", dev_records)
+    common = ["--config", str(config), "--profile", "lin", "--corpus", str(corpus), "--allow-dirty"]
+    main([*common, "--fold", "0", "--out", str(tmp_path / "cv")])
+    main([*common, "--fold", "all", "--epochs", "2", "--out", str(tmp_path / "all")])
+    cv = json.loads((tmp_path / "cv" / "metrics.json").read_text(encoding="utf-8"))
+    full = json.loads((tmp_path / "all" / "metrics.json").read_text(encoding="utf-8"))
+    assert len(full["lr_at_epoch_end"]) == 2
+    assert full["lr_at_epoch_end"][-1] == pytest.approx(cv["lr_at_epoch_end"][1], abs=1e-9)
+    assert full["lr_at_epoch_end"][-1] == pytest.approx(lin["lr"] * 0.5, abs=1e-9)
+    assert full["stopped_at_step"] > 0 and full["scheduler_horizon_epochs"] == 4

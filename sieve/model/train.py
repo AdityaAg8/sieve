@@ -81,6 +81,8 @@ class TrainConfig(BaseModel):
     allow_reduced_precision: bool = False
     allow_dirty: bool = False
     epochs_explicit: bool = False
+    # `--fold all` only (B9): stop after this many epochs; `epochs` stays the schedule horizon.
+    stop_after_epochs: int | None = None
 
     def __init__(self, **data: Any) -> None:
         # Guards live here, not in a `model_validator`: pydantic wraps every validator error in
@@ -107,10 +109,15 @@ class TrainConfig(BaseModel):
             )
         if self.findings is not None and not self.scanner_features:
             raise ValueError("--findings is only read with --scanner-features (ablation row 9)")
-        if self.fold == "all" and not self.epochs_explicit:
+        if self.fold == "all" and self.stop_after_epochs is None:
             raise ValueError(
                 "--fold all has no held-out fold to early-stop against, so it needs the "
                 "CV-selected epoch count passed explicitly with --epochs"
+            )
+        if self.stop_after_epochs is not None and self.stop_after_epochs > self.epochs:
+            raise ValueError(
+                f"cannot stop after {self.stop_after_epochs} epochs of a {self.epochs}-epoch "
+                "schedule horizon"
             )
 
     def label_map(self) -> dict[int, int]:
@@ -139,7 +146,7 @@ class TrainConfig(BaseModel):
             f"--seed {self.seed}",
         ]
         if self.epochs_explicit:
-            parts.append(f"--epochs {self.epochs}")
+            parts.append(f"--epochs {self.stop_after_epochs or self.epochs}")
         if self.num_labels != 3:
             parts.append(f"--num-labels {self.num_labels}")
         if self.mode != "full":
@@ -173,7 +180,10 @@ def load_profile(
     if profile not in profiles:
         raise KeyError(f"no profile {profile!r} in {config_path}; have {sorted(profiles)}")
     fields = dict(profiles[profile])
-    if epochs is not None:
+    # `--epochs` on a CV fold overrides the horizon; on `--fold all` it is the CV-selected stop
+    # point and the horizon stays the profile's (B9), so the LR there matches the CV models'.
+    stop_after = epochs if fold == "all" else None
+    if epochs is not None and fold != "all":
         fields["epochs"] = epochs
     return TrainConfig(
         **fields,
@@ -187,6 +197,7 @@ def load_profile(
         allow_reduced_precision=allow_reduced_precision,
         allow_dirty=allow_dirty,
         epochs_explicit=epochs is not None,
+        stop_after_epochs=stop_after,
     )
 
 
@@ -386,6 +397,7 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
     )
 
     from sieve.eval.metrics import macro_f1
+    from sieve.model.callbacks import LearningRateAtEpochEnd, StopAfterEpochs
     from sieve.model.weighted_trainer import WeightedTrainer
 
     require_clean_tree(config.profile, allow_dirty=config.allow_dirty)
@@ -427,7 +439,7 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         train_ds = splits["train"]
         early_ds = splits["early_stop"]
         # `--fold all` trains on every dev server: fold -1 holds nothing out, so fold the
-        # early-stopping slice back in and run the CV-selected epoch count with no callback.
+        # early-stopping slice back in and stop at the CV-selected epoch (StopAfterEpochs).
         from datasets import concatenate_datasets  # type: ignore[import-untyped]
 
         train_ds = concatenate_datasets([train_ds, early_ds])
@@ -489,6 +501,8 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
     )
 
     has_early = "early_stop" in tokenised
+    lr_record = LearningRateAtEpochEnd()
+    stopper = StopAfterEpochs(config.stop_after_epochs or config.epochs)
     checkpoints = out_dir / "_checkpoints"
     args = training_arguments(config, checkpoints, has_early=has_early)
     trainer = WeightedTrainer(
@@ -501,9 +515,12 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         processing_class=tokenizer,
         data_collator=collator(tokenizer),
         compute_metrics=compute_metrics,
-        callbacks=[EarlyStoppingCallback(early_stopping_patience=config.patience)]
-        if has_early
-        else None,
+        callbacks=[
+            lr_record,
+            EarlyStoppingCallback(early_stopping_patience=config.patience)
+            if has_early
+            else stopper,
+        ],
     )
     cuda = torch.cuda.is_available()
     if cuda:
@@ -571,6 +588,11 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         "seconds_per_step": train_seconds / max(trainer.state.global_step, 1),
         "tokens_per_second": float(real_tokens / train_seconds) if train_seconds else 0.0,
         "peak_cuda_mem_bytes": int(torch.cuda.max_memory_allocated()) if cuda else None,
+        # The `--fold all` recipe (B9): same schedule horizon as CV, stopped at the CV epoch.
+        "scheduler_horizon_epochs": config.epochs,
+        "stop_after_epochs": config.stop_after_epochs,
+        "stopped_at_step": None if has_early else stopper.stopped_at_step,
+        "lr_at_epoch_end": lr_record.values,
     }
     _write_json(out_dir / "metrics.json", metrics)
     _write_json(
