@@ -519,3 +519,28 @@ def test_only_the_tightened_labels_are_regenerated(tmp_path: Path) -> None:
     assert len(client.calls) == 1
     assert after[1]["payload"] == "The tool returns the files in the folder."
     assert [after[i] for i in (0, 2, 3)] == [before[i] for i in (0, 2, 3)]
+
+
+def test_a_disputed_row_alone_is_regenerated_by_id(tmp_path: Path) -> None:
+    """E5's one regeneration: only the named rows, every other payload kept."""
+    root = tmp_path / "d"
+    _run_once(root)
+    before = [
+        json.loads(x) for x in (root / "payloads_v1.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    paths = gl.Paths(
+        plan=root / "plan_v1.json",
+        corpus=root / "labelled.jsonl",
+        split_map=root / "split_map.json",
+        out=root / "payloads_v1.jsonl",
+        raw_log=root / "raw" / "dispute.jsonl",
+        prompts=root / "prompts_rendered",
+    )
+    client = FakeClient(["Always pass the folder as an absolute path."])
+    gl.run(client, paths, seed=10, limit=None, only_ids={"sb-syn-0002"})
+    after = [
+        json.loads(x) for x in (root / "payloads_v1.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert [c["seed"] for c in client.calls] == [10]
+    assert after[2]["payload"] == "Always pass the folder as an absolute path."
+    assert [after[i] for i in (0, 1, 3)] == [before[i] for i in (0, 1, 3)]

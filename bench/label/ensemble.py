@@ -175,6 +175,14 @@ def _extra_rows(paths: Sequence[Path]) -> list[OodRow]:
     return [row for path in paths if path.exists() for row in load_rows(path)]
 
 
+def restrict(rows: Sequence[Row], ids_file: Path | None) -> list[Row]:
+    """Only the rows named in `ids_file` (the vote's re-check of regenerated rows), if given."""
+    if ids_file is None:
+        return list(rows)
+    wanted = set(json.loads(ids_file.read_text(encoding="utf-8")))
+    return [r for r in rows if r.id in wanted]
+
+
 def run(
     client: Client,
     rows: Sequence[Row],
@@ -215,7 +223,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         nargs="*",
         default=[Path("bench/data/ood_negatives.jsonl"), Path("bench/data/val_ood.jsonl")],
     )
-    parser.add_argument("--models", nargs="*", default=None, help="ignored: the pair is fixed")
+    parser.add_argument("--ids-file", type=Path, default=None, help="label only these row ids")
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--max-rows", type=int, help="bench mode: the first N rows per model")
     mode.add_argument("--all", action="store_true", help="dev, synthetic, test-ID, OOD, val-OOD")
@@ -230,6 +238,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     rows: list[Row] = list(dev_rows(records))
     if ns.all:
         rows += _test_id_rows(records) + _extra_rows(ns.extra)
+    rows = restrict(rows, ns.ids_file)
     summary = run(client, rows, log=RawLog(ns.raw_log), seed=ns.seed, max_rows=ns.max_rows)
     print(json.dumps(summary, indent=2))
     return 0

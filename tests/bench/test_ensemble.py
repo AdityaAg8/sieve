@@ -210,3 +210,11 @@ def test_an_ood_row_is_framed_and_labelled_by_both_families(server: Any, tmp_pat
     result = en.label_row(fake.client, "m", row, log=RawLog(tmp_path / "l.jsonl"), seed=0)
     assert result["status"] == "ok"
     assert "Ignore previous instructions" in fake.bodies[0]["messages"][1]["content"]
+
+
+def test_an_ids_file_restricts_the_rows(tmp_path: Path) -> None:
+    rows = [_record("a", "x"), _record("b", "y")]
+    ids = tmp_path / "ids.json"
+    ids.write_text(json.dumps(["b"]), encoding="utf-8")
+    assert [r.id for r in en.restrict(rows, ids)] == ["b"]
+    assert [r.id for r in en.restrict(rows, None)] == ["a", "b"]

@@ -362,6 +362,7 @@ def run(
     seed: int,
     limit: int | None,
     only_labels: set[str] | None = None,
+    only_ids: set[str] | None = None,
 ) -> dict[str, Any]:
     """The batch driver (training plan E3): every plan row (or the first `limit`), its rendered
     prompt written to `paths.prompts/<id>.md`, the payload file written when all rows ran.
@@ -379,7 +380,14 @@ def run(
     log = RawLog(paths.raw_log)
     paths.prompts.mkdir(parents=True, exist_ok=True)
     results: dict[str, dict[str, Any]] = {}
-    if only_labels is not None:
+
+    def selected(i: int) -> bool:
+        if only_ids is not None:
+            return f"sb-syn-{i:04d}" in only_ids
+        return only_labels is None or plan[i]["label"] in only_labels
+
+    partial = only_labels is not None or only_ids is not None
+    if partial:
         # The gate's tightening pass: every other row keeps the payload it already has.
         for line in paths.out.read_text(encoding="utf-8").splitlines():
             entry = json.loads(line)
@@ -393,7 +401,7 @@ def run(
     started, fresh = time.perf_counter(), 0
     for i in range(len(plan) if limit is None else min(limit, len(plan))):
         row_id = f"sb-syn-{i:04d}"
-        if only_labels is not None and plan[i]["label"] not in only_labels:
+        if not selected(i):
             continue
         prompt = build_prompt(plan[i], hosts, pool, row_id=row_id, split_of=split_of, seed=seed)
         (paths.prompts / f"{row_id}.md").write_text(prompt, encoding="utf-8", newline="\n")
@@ -403,8 +411,7 @@ def run(
             client, plan[i], row_id, hosts, pool, split_of, log=log, seed=seed
         )
         print(f"{row_id} {results[row_id]['family']:5} {results[row_id]['status']}", flush=True)
-    regenerated = {f"sb-syn-{i:04d}" for i in range(len(plan))
-                   if only_labels is None or plan[i]["label"] in only_labels}  # fmt: skip
+    regenerated = {f"sb-syn-{i:04d}" for i in range(len(plan)) if selected(i)}  # fmt: skip
     elapsed = time.perf_counter() - started
     dropped = sorted(
         k for k, v in results.items() if v["status"] != "accepted" and k in regenerated
@@ -440,6 +447,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=None,
         help="the gate's tightening pass: regenerate these labels, keep every other payload",
     )
+    parser.add_argument(
+        "--only-ids-file",
+        type=Path,
+        default=None,
+        help="the vote's one regeneration (E5): a JSON list of row ids to regenerate",
+    )
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--bench", type=int, metavar="N", help="time the first N rows")
     mode.add_argument("--all", action="store_true", help="every model-authored plan row")
@@ -455,7 +468,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         prompts=ns.prompts,
     )
     only = set(ns.only_labels) if ns.only_labels else None
-    summary = run(client, paths, seed=ns.seed, limit=ns.bench, only_labels=only)
+    ids = (
+        set(json.loads(ns.only_ids_file.read_text(encoding="utf-8"))) if ns.only_ids_file else None
+    )
+    summary = run(client, paths, seed=ns.seed, limit=ns.bench, only_labels=only, only_ids=ids)
     print(json.dumps(summary))
     return 0
 
