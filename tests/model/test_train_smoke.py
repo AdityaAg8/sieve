@@ -259,7 +259,7 @@ def test_a_refused_run_names_both_ways_evidence_is_lost(
         newline="\n",
     )
     corpus = _write_corpus(tmp_path / "corpus.jsonl", dev_records)
-    argv = ["--config", str(config), "--profile", "cut", "--fold", "0"]
+    argv = ["--config", str(config), "--profile", "cut", "--fold", "0", "--allow-dirty"]
     with pytest.raises(ValueError, match="truncated at max_length=8, or .* cannot encode"):
         main([*argv, "--corpus", str(corpus), "--out", str(tmp_path / "out")])
 

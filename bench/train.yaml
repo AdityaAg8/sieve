@@ -9,6 +9,7 @@ corpus: bench/data/labelled.jsonl
 profiles:
   deberta:
     base_model: microsoft/deberta-v3-base
+    revision: 8ccc9b6f36199bec6961081d44eb72fb3f7353f3  # refs/main in the HF cache, 2026-10-03 (A5)
     max_length: 512
     lr: 2.0e-5
     warmup_ratio: 0.06
@@ -23,6 +24,7 @@ profiles:
 
   modernbert:
     base_model: answerdotai/ModernBERT-base
+    revision: 8949b909ec900327062f0ebf497f51aef5e6f0c8  # the cached revision (A5)
     max_length: 512
     lr: 3.0e-5
     warmup_ratio: 0.06
@@ -35,6 +37,7 @@ profiles:
   # Ablation row 5's long-context configuration; primary if the §11.2 truncation rule fires.
   modernbert-1024:
     base_model: answerdotai/ModernBERT-base
+    revision: 8949b909ec900327062f0ebf497f51aef5e6f0c8  # the cached revision (A5)
     max_length: 1024
     lr: 3.0e-5
     warmup_ratio: 0.06

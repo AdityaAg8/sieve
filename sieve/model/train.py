@@ -8,8 +8,11 @@ servers, and the holdout is reachable only from `bench/eval_final.py` (PRD §11.
 from __future__ import annotations
 
 import argparse
+import hashlib
+import importlib.metadata
 import json
 import logging
+import platform
 import shutil
 import time
 import unicodedata
@@ -23,7 +26,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
 from sieve.model.data import ID2LABEL, LABEL2ID, add_markers, build_splits, load_corpus
-from sieve.model.version import git_sha
+from sieve.model.version import dirty_paths, git_sha, require_clean_tree
 from sieve.serialise import param_lines, serialise
 from sieve.types import LABELS, CorpusRecord, EvidenceField, Label
 
@@ -44,6 +47,11 @@ class TrainConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     base_model: str
+    # Hub commit of `base_model` (training plan A5): a moving `main` would change the weights
+    # under an unchanged config. None only for the CI smoke profile.
+    revision: str | None = None
+    # Speed/memory variant of a profile family (B10); `metrics.json` records it.
+    variant: str | None = None
     max_length: int
     lr: float
     warmup_ratio: float = 0.06
@@ -60,6 +68,7 @@ class TrainConfig(BaseModel):
     scanner_features: bool = False
     profile: str = "custom"
     allow_reduced_precision: bool = False
+    allow_dirty: bool = False
     epochs_explicit: bool = False
 
     def __init__(self, **data: Any) -> None:
@@ -137,6 +146,7 @@ def load_profile(
     scanner_features: bool = False,
     epochs: int | None = None,
     allow_reduced_precision: bool = False,
+    allow_dirty: bool = False,
 ) -> TrainConfig:
     raw = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
     profiles = raw.get("profiles") or {}
@@ -154,6 +164,7 @@ def load_profile(
         scanner_features=scanner_features,
         profile=profile,
         allow_reduced_precision=allow_reduced_precision,
+        allow_dirty=allow_dirty,
         epochs_explicit=epochs is not None,
     )
 
@@ -238,6 +249,25 @@ def payload_survival_failures(
 # ------------------------------------------------------------------------------ training
 
 
+def file_sha256(path: Path) -> str:
+    """SHA-256 of the file's bytes: pins the exact corpus an artefact was trained on."""
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+TRAINING_LIBRARIES = ("torch", "transformers", "accelerate", "datasets", "numpy", "tokenizers")
+
+
+def library_versions() -> dict[str, str]:
+    """Installed versions of everything that can change a training run's numbers."""
+    versions = {"python": platform.python_version()}
+    for name in TRAINING_LIBRARIES:
+        try:
+            versions[name] = importlib.metadata.version(name)
+        except importlib.metadata.PackageNotFoundError:
+            versions[name] = "absent"
+    return versions
+
+
 def _class_weights(labels: Sequence[int], num_labels: int) -> list[float]:
     counts = np.bincount(np.asarray(labels, dtype=np.int64), minlength=num_labels).astype(float)
     counts[counts == 0] = 1.0
@@ -272,14 +302,19 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
 
     from sieve.eval.metrics import macro_f1
 
+    require_clean_tree(config.profile, allow_dirty=config.allow_dirty)
     started = time.monotonic()
     set_seed(config.seed)
+    # cuDNN's autotuner picks kernels by timing, so two runs can pick different ones. Residual
+    # non-determinism (DeBERTa's backward pass) is measured by `make gpu-bench`, not hidden.
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
     records = load_corpus(corpus_path)
     dropped = sum(1 for r in records if r.split != "dev")
     log.info("dropped %d row(s) whose split is not 'dev'", dropped)
 
-    tokenizer: Any = AutoTokenizer.from_pretrained(config.base_model)  # type: ignore[no-untyped-call]
+    tokenizer: Any = AutoTokenizer.from_pretrained(config.base_model, revision=config.revision)  # type: ignore[no-untyped-call]
     vocab_size = add_markers(tokenizer)
 
     failures = payload_survival_failures(
@@ -328,6 +363,7 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
 
     model = AutoModelForSequenceClassification.from_pretrained(
         config.base_model,
+        revision=config.revision,
         num_labels=config.num_labels,
         id2label=config.id2label(),
         label2id={v: k for k, v in config.id2label().items()},
@@ -460,6 +496,15 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         "early_stop_rows": len(tokenised["early_stop"]) if has_early else 0,
         "oof_rows": len(tokenised["oof"]) if oof_ds is not None else 0,
         "wall_clock_seconds": round(time.monotonic() - started, 3),
+        # Provenance (training plan A5): what exactly produced these numbers.
+        "corpus_sha256": file_sha256(corpus_path),
+        "git_sha": git_sha(short=False),
+        "git_dirty": bool(dirty_paths()),
+        "library_versions": library_versions(),
+        "base_model_revision": config.revision,
+        "best_global_step": trainer.state.best_global_step,
+        "profile_variant": config.variant or config.profile,
+        "cudnn_deterministic": bool(torch.backends.cudnn.deterministic),
     }
     _write_json(out_dir / "metrics.json", metrics)
     _write_json(
@@ -508,6 +553,9 @@ def main(argv: Sequence[str] | None = None) -> Path:
     parser.add_argument("--mode", default="full", choices=("full", "description_only"))
     parser.add_argument("--scanner-features", action="store_true")
     parser.add_argument("--allow-reduced-precision", action="store_true")
+    parser.add_argument(
+        "--allow-dirty", action="store_true", help="train from uncommitted code (tests only)"
+    )
     parser.add_argument("--corpus", type=Path, default=None)
     parser.add_argument("--out", type=Path, required=True)
     ns = parser.parse_args(argv)
@@ -523,6 +571,7 @@ def main(argv: Sequence[str] | None = None) -> Path:
         scanner_features=ns.scanner_features,
         epochs=ns.epochs,
         allow_reduced_precision=ns.allow_reduced_precision,
+        allow_dirty=ns.allow_dirty,
     )
     corpus = ns.corpus if ns.corpus is not None else default_corpus(ns.config)
     return run(config, corpus, ns.out)
