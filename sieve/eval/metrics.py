@@ -115,6 +115,69 @@ def average_precision(
     return ap / n_pos
 
 
+def auroc(y_true: Sequence[str], y_score: Sequence[float], positive: str = "poisoned") -> float:
+    """`positive` vs rest ROC AUC: the Mann-Whitney U with average ranks, so a tie counts half
+    and row order never matters (training plan D4). NaN when either class is absent."""
+    truth = np.asarray([t == positive for t in y_true], dtype=bool)
+    n_pos, n_neg = int(truth.sum()), int((~truth).sum())
+    if not n_pos or not n_neg:
+        return float("nan")
+    scores: Arr = np.asarray(y_score, dtype=float)
+    _, inverse, counts = np.unique(scores, return_inverse=True, return_counts=True)
+    upper = np.cumsum(counts)
+    average_rank = (upper - (counts - 1) / 2.0)[inverse]
+    u = average_rank[truth].sum() - n_pos * (n_pos + 1) / 2.0
+    return float(u / (n_pos * n_neg))
+
+
+def auprc(y_true: Sequence[str], y_score: Sequence[float], positive: str = "poisoned") -> float:
+    """`positive` vs rest average precision, Σ (R_k - R_k-1) P_k over distinct thresholds
+    descending (sklearn's definition: tied rows enter together). NaN without positives."""
+    truth = np.asarray([t == positive for t in y_true], dtype=bool)
+    n_pos = int(truth.sum())
+    if not n_pos:
+        return float("nan")
+    scores: Arr = np.asarray(y_score, dtype=float)
+    order = np.argsort(-scores, kind="stable")
+    sorted_scores = scores[order]
+    tp = np.cumsum(truth[order])
+    last = np.r_[sorted_scores[1:] != sorted_scores[:-1], True]  # each tie block's end
+    tp_at = tp[last].astype(float)
+    predicted = (np.flatnonzero(last) + 1).astype(float)
+    recall = tp_at / n_pos
+    precision = tp_at / predicted
+    return float(np.sum(np.diff(np.r_[0.0, recall]) * precision))
+
+
+def cluster_keys(servers: Sequence[str], templates: Sequence[str] | None = None) -> list[str]:
+    """The bootstrap's cluster per row: the server, or template × server (MCPTox, §6.6)."""
+    if templates is None:
+        return list(servers)
+    if len(templates) != len(servers):
+        raise ValueError(f"templates length {len(templates)} != servers length {len(servers)}")
+    return [f"{t}×{s}" for t, s in zip(templates, servers, strict=True)]
+
+
+def ranking_ci(
+    y_true: Sequence[str],
+    y_score: Sequence[float],
+    clusters: Sequence[str],
+    *,
+    metric: str = "auroc",
+    n_boot: int = 1000,
+    seed: int = 0,
+    alpha: float = 0.05,
+    positive: str = "poisoned",
+) -> BootstrapResult:
+    """AUROC or AUPRC with a cluster-bootstrap CI; replicates missing a class are undefined."""
+    fn = {"auroc": auroc, "auprc": auprc}[metric]
+
+    def stat(yt: StrArr, ys: Arr) -> float:
+        return fn(list(yt), list(ys), positive)
+
+    return cluster_bootstrap(stat, y_true, y_score, clusters, n_boot=n_boot, seed=seed, alpha=alpha)
+
+
 def expected_calibration_error(
     probs: Arr, y_true_idx: npt.NDArray[np.int_], n_bins: int = 15
 ) -> float:
