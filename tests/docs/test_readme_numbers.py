@@ -357,8 +357,14 @@ def test_the_generated_block_carries_the_four_headline_numbers(results: Path, re
     assert rn.pct(holdout["fpr_pipeline_real"]["hi"]) in lines[0]
 
     reduction = row["fp_reduction_vs_baseline"]
-    assert rn.pct(reduction["relative"]) in lines[1]
+    if reduction["point"] is not None:
+        assert rn.pct(reduction["point"]) in lines[1]
+    assert rn.points(reduction["absolute"]) in lines[1]
     assert rn.p_value(reduction["mcnemar_p"]) in lines[1]
+    assert rn.p_value(reduction["mcnemar_p_clustered"]) in lines[1]
+    # D7: M2 never appears without the pipeline recall it was bought at.
+    assert rn.ratio(reduction["sieve_recall"]) in lines[1]
+    assert rn.ratio(reduction["baseline_recall"]) in lines[1]
 
     assert rn.ratio(holdout["recall"]) in lines[2]
     assert rn.ratio(holdout["recall_lcb"]) in lines[2]
@@ -379,18 +385,17 @@ def test_the_synthetic_inclusive_reduction_is_never_in_the_first_five_lines(
     row = rn.headline_row(json.loads((results / "ablations.json").read_text(encoding="utf-8")))
     real = row["fp_reduction_vs_baseline"]
     synthetic_inclusive = row["fp_reduction_all_sources"]
-    # The two differ in the absolute reduction and in the paired test, which is the point: the
-    # synthetic rows are easier, so including them flatters the number and weakens the evidence.
-    assert rn.points(real["point"]) != rn.points(synthetic_inclusive["point"])
-    assert rn.p_value(real["mcnemar_p"]) != rn.p_value(synthetic_inclusive["mcnemar_p"])
+    # The two differ in the absolute reduction, which is the point: the synthetic rows are
+    # easier, so including them flatters the number. (D7 runs McNemar on non-poisoned rows only,
+    # so the two p-values can coincide and are not what tells the figures apart.)
+    assert rn.points(real["absolute"]) != rn.points(synthetic_inclusive["absolute"])
 
     lines = _block_lines(readme.read_text(encoding="utf-8"))
     first_five = "\n".join(lines[:5])
-    assert rn.points(synthetic_inclusive["point"]) not in first_five
-    assert rn.p_value(synthetic_inclusive["mcnemar_p"]) not in first_five
+    assert rn.points(synthetic_inclusive["absolute"]) not in first_five
     # M2 asks for it second and labelled, so it appears below and says what it is.
     rest = "\n".join(lines[5:])
-    assert rn.points(synthetic_inclusive["point"]) in rest
+    assert rn.points(synthetic_inclusive["absolute"]) in rest
     assert rn.p_value(synthetic_inclusive["mcnemar_p"]) in rest
     assert "synthetic" in rest.lower()
 

@@ -924,3 +924,20 @@ def test_an_unseeded_row_has_no_spread(inputs: Inputs) -> None:
     assert result["macro_f1_std"] is None
     assert result["fpr_pipeline"]["std"] is None
     assert len(result["per_seed"]) == 1
+
+
+def test_the_fp_reduction_is_m2_with_its_recall_comparison(inputs: Inputs) -> None:
+    """D7: relative reduction with a cluster CI, negatives-only McNemar (exact and clustered),
+    and the pipeline recall of both systems in the same block."""
+    result = _evaluate(_spec(row=2, classifier="tfidf"), inputs)
+    for key in ("fp_reduction_vs_baseline", "fp_reduction_all_sources"):
+        block = result[key]
+        assert set(block) >= {
+            "point", "lo", "hi", "absolute", "absolute_lo", "absolute_hi", "baseline_fpr",
+            "sieve_fpr", "mcnemar_p", "mcnemar_p_clustered", "baseline_recall", "sieve_recall",
+            "recall_not_lower", "n_undefined",
+        }  # fmt: skip
+        assert isinstance(block["recall_not_lower"], bool)
+        if block["baseline_fpr"]:
+            relative = (block["baseline_fpr"] - block["sieve_fpr"]) / block["baseline_fpr"]
+            assert block["point"] == pytest.approx(relative)

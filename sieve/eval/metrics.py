@@ -291,6 +291,124 @@ def mcnemar_exact(b: int, c: int) -> float:
     return min(1.0, 2.0 * tail)
 
 
+def clustered_mcnemar_p(
+    baseline_flagged: Sequence[bool], sieve_flagged: Sequence[bool], groups: Sequence[str]
+) -> float:
+    """Cluster-adjusted McNemar (Durkalski et al., 2003) on paired flags, two-sided.
+
+    X2 = (sum_k d_k)^2 / sum_k d_k^2 with d_k = b_k - c_k, the discordance balance of cluster k
+    (b: the baseline flagged and Sieve did not; c: the reverse), referred to chi-square with
+    1 df. With one row per cluster it is the uncorrected McNemar statistic; a server whose
+    rows all move together counts once, not once per row.
+    """
+    balance: dict[str, int] = {}
+    for base, ours, group in zip(baseline_flagged, sieve_flagged, groups, strict=True):
+        balance[group] = balance.get(group, 0) + int(bool(base)) - int(bool(ours))
+    d = np.asarray(list(balance.values()), dtype=float)
+    denominator = float(np.sum(d**2))
+    if denominator == 0.0:
+        return 1.0
+    statistic = float(np.sum(d)) ** 2 / denominator
+    return math.erfc(math.sqrt(statistic / 2.0))
+
+
+@dataclass(frozen=True)
+class FpReduction:
+    """M2 (training plan D7): Sieve's pipeline FPR against the baseline's, on the same rows.
+
+    `relative` = (FPR_baseline - FPR_sieve) / FPR_baseline, NaN when the baseline has no false
+    positive. Intervals are cluster-bootstrap quantiles over the replicates where the statistic
+    is defined; `n_undefined` counts the others. Both McNemar tests use negatives only, the
+    rows an FPR is about. The reduction is only meaningful at equal-or-higher recall, so the
+    pipeline recall of both systems travels with it and `recall_not_lower` says which case
+    this is.
+    """
+
+    relative: float
+    relative_lo: float
+    relative_hi: float
+    absolute: float
+    absolute_lo: float
+    absolute_hi: float
+    baseline_fpr: float
+    sieve_fpr: float
+    n_undefined: int
+    mcnemar_p: float
+    mcnemar_p_clustered: float
+    baseline_recall: float
+    sieve_recall: float
+    recall_not_lower: bool
+
+
+def fp_reduction(
+    y_true: Sequence[str],
+    sieve_flagged: Sequence[bool],
+    baseline_flagged: Sequence[bool],
+    groups: Sequence[str],
+    n_boot: int = 1000,
+    seed: int = 0,
+    alpha: float = 0.05,
+    positive: str = "poisoned",
+) -> FpReduction:
+    """M2 with a cluster-bootstrap CI, negatives-only McNemar, and the recall comparison."""
+    is_pos = np.asarray(y_true) == positive
+    ours = np.asarray(sieve_flagged, dtype=bool)
+    base = np.asarray(baseline_flagged, dtype=bool)
+    keys, members = _group_index(groups)
+    # Per-cluster counts, so a bootstrap replicate is a weighted sum rather than a re-scan.
+    neg = np.array([np.sum(~is_pos[members[k]]) for k in keys], dtype=float)
+    fp_base = np.array([np.sum(base[members[k]] & ~is_pos[members[k]]) for k in keys], dtype=float)
+    fp_ours = np.array([np.sum(ours[members[k]] & ~is_pos[members[k]]) for k in keys], dtype=float)
+
+    def stats(weights: Arr) -> tuple[float, float]:
+        negatives = float(weights @ neg)
+        if negatives == 0.0:
+            return float("nan"), float("nan")
+        fpr_base = float(weights @ fp_base) / negatives
+        fpr_ours = float(weights @ fp_ours) / negatives
+        absolute = fpr_base - fpr_ours
+        return (absolute / fpr_base if fpr_base else float("nan")), absolute
+
+    relative, absolute = stats(np.ones(len(keys)))
+    rng = np.random.default_rng(seed)
+    draws = np.empty((n_boot, 2), dtype=float)
+    for b in range(n_boot):
+        picked = rng.integers(0, len(keys), len(keys))
+        draws[b] = stats(np.bincount(picked, minlength=len(keys)).astype(float))
+
+    def interval(column: Arr) -> tuple[float, float]:
+        if np.isnan(column).all():
+            return float("nan"), float("nan")
+        lo, hi = np.nanquantile(column, [alpha / 2, 1 - alpha / 2])
+        return float(lo), float(hi)
+
+    rel_lo, rel_hi = interval(draws[:, 0])
+    abs_lo, abs_hi = interval(draws[:, 1])
+    negatives = ~is_pos
+    b_count = int(np.sum(base & ~ours & negatives))
+    c_count = int(np.sum(ours & ~base & negatives))
+    neg_groups = [g for g, n in zip(groups, negatives, strict=True) if n]
+    base_recall = float(base[is_pos].mean()) if is_pos.any() else float("nan")
+    our_recall = float(ours[is_pos].mean()) if is_pos.any() else float("nan")
+    total_neg = int(negatives.sum())
+    return FpReduction(
+        relative=relative,
+        relative_lo=rel_lo,
+        relative_hi=rel_hi,
+        absolute=absolute,
+        absolute_lo=abs_lo,
+        absolute_hi=abs_hi,
+        baseline_fpr=float(np.sum(base & negatives)) / total_neg if total_neg else float("nan"),
+        sieve_fpr=float(np.sum(ours & negatives)) / total_neg if total_neg else float("nan"),
+        n_undefined=int(np.isnan(draws[:, 0]).sum()),
+        mcnemar_p=mcnemar_exact(b_count, c_count),
+        mcnemar_p_clustered=clustered_mcnemar_p(base[negatives], ours[negatives], neg_groups),
+        baseline_recall=base_recall,
+        sieve_recall=our_recall,
+        recall_not_lower=bool(our_recall >= base_recall),
+    )
+
+
 def bootstrap_ci(
     stat: Stat,
     y_true: Sequence[str],

@@ -145,25 +145,47 @@ def _fpr_line(holdout: dict[str, Any]) -> str:
     )
 
 
+def _relative(reduction: dict[str, Any]) -> str:
+    """M2's relative reduction and its CI, or why it is undefined (training plan D7)."""
+    if reduction.get("point") is None:
+        return (
+            "a false-positive reduction whose relative size is undefined (the baseline flagged "
+            "no non-poisoned row)"
+        )
+    return (
+        f"{pct(reduction['point'])} fewer false positives (95% cluster-bootstrap CI "
+        f"{pct(reduction['lo'])} to {pct(reduction['hi'])})"
+    )
+
+
+def _recall_comparison(reduction: dict[str, Any]) -> str:
+    """D7: M2 is published only beside the pipeline recall it was bought at."""
+    verdict = "not lower" if reduction.get("recall_not_lower") else "LOWER, so M2 is not met"
+    return (
+        f"at pipeline recall {ratio(reduction.get('sieve_recall'))} vs the baseline's "
+        f"{ratio(reduction.get('baseline_recall'))} ({verdict})"
+    )
+
+
+def _tests(reduction: dict[str, Any]) -> str:
+    return (
+        f"McNemar on non-poisoned rows: exact {p_value(reduction['mcnemar_p'])}, "
+        f"server-clustered {p_value(reduction.get('mcnemar_p_clustered'))}"
+    )
+
+
 def _reduction_line(row: dict[str, Any], baseline: Any) -> str:
     reduction = row.get("fp_reduction_vs_baseline") or {}
-    if reduction.get("point") is None:
+    if reduction.get("absolute") is None:
         raise Refused(
             "the headline ablation row carries no `fp_reduction_vs_baseline`: the real subset "
             "was empty, so M2 is unmeasured"
         )
-    relative = (
-        f"{pct(reduction['relative'])} fewer false positives"
-        if reduction.get("relative") is not None
-        else "a false-positive reduction whose relative size is undefined "
-        "(the baseline flagged no non-poisoned row)"
-    )
     return (
-        f"**M2 · False positives vs {baseline_name(baseline)}, real subset:** {relative} "
-        f"({points(reduction['point'])} of absolute `FPR` difference, 95% paired "
-        f"cluster-bootstrap CI {points(reduction['lo'])} to {points(reduction['hi'])}; "
-        f"McNemar exact {p_value(reduction['mcnemar_p'])}), from ablations "
-        f"row {row['row']}, {row['name']}."
+        f"**M2 · False positives vs {baseline_name(baseline)}, real subset:** "
+        f"{_relative(reduction)}, {_recall_comparison(reduction)}; "
+        f"{points(reduction['absolute'])} of absolute `FPR` difference; {_tests(reduction)}. "
+        f"From ablations row {row['row']}, {row['name']}."
     )
 
 
@@ -235,22 +257,16 @@ def _provenance_line(
 def _synthetic_line(row: dict[str, Any]) -> str:
     """M2's second figure, reported below the headline five lines and labelled as such."""
     reduction = row.get("fp_reduction_all_sources") or {}
-    if reduction.get("point") is None:
+    if reduction.get("absolute") is None:
         return (
             "*Reported second, per M2: the synthetic-inclusive false-positive reduction is not "
             "computable for this run.*"
         )
-    relative = (
-        pct(reduction["relative"]) + " fewer"
-        if reduction.get("relative") is not None
-        else points(reduction["point"]) + " of absolute difference"
-    )
     return (
         f"*Reported second and labelled, per M2: including the synthetic rows the same row "
-        f"shows {relative} false positives ({points(reduction['point'])} absolute, 95% CI "
-        f"{points(reduction['lo'])} to {points(reduction['hi'])}, "
-        f"McNemar exact {p_value(reduction['mcnemar_p'])}). The real-subset figure on line 2 is "
-        "the headline; this one is easier and says less.*"
+        f"shows {_relative(reduction)}, {_recall_comparison(reduction)}; "
+        f"{points(reduction['absolute'])} absolute; {_tests(reduction)}. The real-subset figure "
+        "on line 2 is the headline; this one is easier and says less.*"
     )
 
 

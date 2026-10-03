@@ -16,6 +16,7 @@ import argparse
 import hashlib
 import json
 import logging
+import math
 import os
 import socket
 from collections.abc import Callable, Iterator, Mapping, Sequence
@@ -31,9 +32,8 @@ from pydantic import BaseModel, ConfigDict
 
 from sieve.eval.metrics import (
     cluster_bootstrap_ci,
+    fp_reduction,
     macro_f1_present,
-    mcnemar_exact,
-    paired_bootstrap_diff,
     precision_recall_fpr,
 )
 from sieve.model import hygiene
@@ -491,37 +491,58 @@ def _fp_reduction(
     baseline_flagged: Sequence[float],
     groups: Sequence[str],
     n_boot: int,
-) -> dict[str, float | None]:
+) -> dict[str, Any]:
+    """M2 (training plan D7): `point`/`lo`/`hi` are the RELATIVE reduction in pipeline FPR and
+    its cluster-bootstrap CI; the absolute difference, both McNemar tests (negatives only) and
+    both systems' pipeline recall sit beside it, so the reduction is never read without the
+    recall it was bought at."""
     if not truth:
-        return {"point": None, "lo": None, "hi": None, "mcnemar_p": None, "relative": None}
-    point, lo, hi = paired_bootstrap_diff(
+        return {key: None for key in _FP_REDUCTION_KEYS}
+    r = fp_reduction(
         truth,
-        baseline_flagged,
-        BINARY_DECISION,
-        sieve_confirmed,
-        BINARY_DECISION,
+        [c >= BINARY_DECISION for c in sieve_confirmed],
+        [b >= BINARY_DECISION for b in baseline_flagged],
         groups,
         n_boot=n_boot,
     )
-    _, _, baseline_fpr = precision_recall_fpr(truth, baseline_flagged, BINARY_DECISION)
-    correct_sieve = [
-        (c >= BINARY_DECISION) == (t == "poisoned")
-        for c, t in zip(sieve_confirmed, truth, strict=True)
-    ]
-    correct_baseline = [
-        (b >= BINARY_DECISION) == (t == "poisoned")
-        for b, t in zip(baseline_flagged, truth, strict=True)
-    ]
-    b = sum(1 for s, base in zip(correct_sieve, correct_baseline, strict=True) if s and not base)
-    c = sum(1 for s, base in zip(correct_sieve, correct_baseline, strict=True) if base and not s)
+
+    def finite(x: float) -> float | None:
+        return None if math.isnan(x) else float(x)
+
     return {
-        "point": point,
-        "lo": lo,
-        "hi": hi,
-        "mcnemar_p": mcnemar_exact(b, c),
-        # Absolute FPR difference above; M2 is stated as a relative reduction, so both are here.
-        "relative": (point / baseline_fpr) if baseline_fpr else None,
+        "point": finite(r.relative),
+        "lo": finite(r.relative_lo),
+        "hi": finite(r.relative_hi),
+        "absolute": finite(r.absolute),
+        "absolute_lo": finite(r.absolute_lo),
+        "absolute_hi": finite(r.absolute_hi),
+        "baseline_fpr": finite(r.baseline_fpr),
+        "sieve_fpr": finite(r.sieve_fpr),
+        "n_undefined": r.n_undefined,
+        "mcnemar_p": r.mcnemar_p,
+        "mcnemar_p_clustered": r.mcnemar_p_clustered,
+        "baseline_recall": finite(r.baseline_recall),
+        "sieve_recall": finite(r.sieve_recall),
+        "recall_not_lower": r.recall_not_lower,
     }
+
+
+_FP_REDUCTION_KEYS: tuple[str, ...] = (
+    "point",
+    "lo",
+    "hi",
+    "absolute",
+    "absolute_lo",
+    "absolute_hi",
+    "baseline_fpr",
+    "sieve_fpr",
+    "n_undefined",
+    "mcnemar_p",
+    "mcnemar_p_clustered",
+    "baseline_recall",
+    "sieve_recall",
+    "recall_not_lower",
+)
 
 
 def minimal_pair_accuracy(
@@ -736,12 +757,15 @@ def _aggregate(values: Sequence[Any]) -> Any:
       seeds' cluster-bootstrap intervals averaged: the typical interval of one model, while
       `std` is the spread between models;
     * any other dict: aggregated key by key (breakdowns);
-    * None everywhere: None. A McNemar p-value takes the largest (most conservative) seed.
+    * None everywhere: None. A McNemar p-value takes the largest (most conservative) seed, and
+      a flag such as `recall_not_lower` holds only if it holds for every seed.
     """
     present = [v for v in values if v is not None]
     if not present:
         return None
     first = present[0]
+    if isinstance(first, bool):
+        return all(present)
     if isinstance(first, dict):
         keys = list(first)
         out = {k: _aggregate_key(k, [v.get(k) for v in present]) for k in keys}
@@ -755,7 +779,7 @@ def _aggregate(values: Sequence[Any]) -> Any:
 
 def _aggregate_key(key: str, values: Sequence[Any]) -> Any:
     numbers = [v for v in values if v is not None]
-    if key == "mcnemar_p" and numbers:
+    if key.startswith("mcnemar_p") and numbers:
         return float(max(numbers))
     return _aggregate(values)
 
