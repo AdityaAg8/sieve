@@ -392,3 +392,29 @@ def test_the_printed_tables_survive_a_report_with_tokenizers(
     assert "payload lost at 512 tokens" in printed
     assert "cross-boundary near-duplicate pairs: 2" in printed
     assert "tokenizer modernbert unavailable" in printed
+
+
+def test_a_poisoned_row_dropped_with_its_host_is_listed_not_failed(
+    tmp_path: Path, mini_records: list[CorpusRecord]
+) -> None:
+    """C8: a dev host that duplicates a sealed row goes, and its mutations go with it.
+
+    That is a deliberate leakage drop, listed in the report; the gate still fails on a poisoned
+    row dropped as a near-duplicate (the v2.0 bug it exists for).
+    """
+    mutation = next(r for r in mini_records if r.mutation_of and r.label == "poisoned")
+    host_id = mutation.mutation_of
+    gone = {mutation.id, host_id}
+    survivors = [r for r in mini_records if r.id not in gone and r.mutation_of != host_id]
+    rows = [
+        {"id": host_id, "label": "benign", "source": "public_repo", "mutation_of": None,
+         "reason": "sealed_twin"},
+        {"id": mutation.id, "label": "poisoned", "source": mutation.source,
+         "mutation_of": host_id, "reason": "host_dropped"},
+    ]  # fmt: skip
+    dedup_report = tmp_path / "dedup.json"
+    dedup_report.write_text(json.dumps({"mixed": rows}), encoding="utf-8", newline="\n")
+    code, report = _run(tmp_path, survivors, "--dedup-report", str(dedup_report))
+    assert report["gates"]["poisoned_dropped"] == []
+    assert report["gates"]["dropped_for_leakage"] == sorted(gone)
+    assert code == 0

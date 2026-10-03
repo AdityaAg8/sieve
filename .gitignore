@@ -45,6 +45,7 @@ bench/data/constructed.jsonl
 bench/data/corpus.jsonl
 bench/data/deduped.jsonl
 bench/data/labelled.jsonl
+bench/data/near_twins.json
 bench/data/synthetic/human.jsonl
 bench/data/synthetic/model.jsonl
 bench/data/synthetic/prompts_used/

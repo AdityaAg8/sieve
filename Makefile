@@ -163,8 +163,8 @@ corpus:  ## build bench/data/labelled.jsonl (catalog import, mutations, dedup, s
 	uv run python -m bench.generate.mutate --corpus bench/data/real.jsonl --plan bench/data/synthetic/plan.json --generator file --payloads bench/data/synthetic/payloads.jsonl --id-prefix sb-syn- --out bench/data/synthetic/model.jsonl
 	cat bench/data/real.jsonl bench/data/synthetic/human.jsonl bench/data/synthetic/model.jsonl > bench/data/constructed.jsonl
 	uv run python -m bench.collect.merge_corpus --constructed bench/data/constructed.jsonl --corpus bench/data/corpus.jsonl
-	uv run python -m bench.split.dedup --corpus bench/data/corpus.jsonl --out bench/data/deduped.jsonl
-	uv run python -m bench.split.split --corpus bench/data/deduped.jsonl --out bench/data/labelled.jsonl --split-map bench/data/split_map.json
+	uv run python -m bench.split.dedup --corpus bench/data/corpus.jsonl --out bench/data/deduped.jsonl --twins bench/data/near_twins.json --split-map bench/data/split_map.json
+	uv run python -m bench.split.split --corpus bench/data/deduped.jsonl --out bench/data/labelled.jsonl --split-map bench/data/split_map.json --near-twins bench/data/near_twins.json
 	uv run python -m bench.stats --corpus bench/data/labelled.jsonl
 
 corpus-stats:  ## corpus statistics report

@@ -174,6 +174,78 @@ def assign(
     return out
 
 
+Twin = tuple[str, str, float]
+
+
+def group_and_separate(
+    records: list[CorpusRecord], twins: list[Twin]
+) -> tuple[list[CorpusRecord], dict[str, object]]:
+    """Keep every near-twin pair (from `bench.split.dedup`) in one fold and out of the holdout.
+
+    Training plan C8, finding F34. On an assigned corpus:
+
+    * a dev row twinned with a holdout or eval_only row is dropped, with its mutations; the
+      sealed row is never touched, so the holdout ids stay exactly what A4 froze;
+    * dev servers joined by a twin pair become one component, and the whole component moves to
+      the fold of its alphabetically first server. Dev folds may be re-balanced only for this.
+    """
+    by_id = {r.id: r for r in records}
+    pairs = [(a, b) for a, b, _ in twins if a in by_id and b in by_id]
+
+    children: dict[str, list[str]] = collections.defaultdict(list)
+    for r in records:
+        if r.mutation_of:
+            children[r.mutation_of].append(r.id)
+    doomed: set[str] = set()
+    for a, b in pairs:
+        sides = {by_id[a].split, by_id[b].split}
+        if "dev" in sides and sides != {"dev"}:
+            doomed.add(a if by_id[a].split == "dev" else b)
+    frontier = list(doomed)
+    while frontier:
+        for child in children.get(frontier.pop(), []):
+            if child not in doomed:
+                doomed.add(child)
+                frontier.append(child)
+
+    server_of = {r.id: _resolve_host(r, by_id).server_name for r in records}
+    parent: dict[str, str] = {}
+
+    def find(x: str) -> str:
+        parent.setdefault(x, x)
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    for a, b in pairs:
+        if a in doomed or b in doomed or by_id[a].split != "dev" or by_id[b].split != "dev":
+            continue
+        ra, rb = find(server_of[a]), find(server_of[b])
+        if ra != rb:
+            parent[max(ra, rb)] = min(ra, rb)
+
+    fold_of_server = {server_of[r.id]: r.fold for r in records if r.split == "dev"}
+    target = {s: fold_of_server[find(s)] for s in list(parent)}
+    regrouped = {
+        s: [fold_of_server[s], target[s]] for s in sorted(target) if target[s] != fold_of_server[s]
+    }
+    out = []
+    for r in records:
+        if r.id in doomed:
+            continue
+        server = server_of[r.id]
+        if r.split == "dev" and server in regrouped:
+            r = r.model_copy(update={"fold": target[server]})
+        out.append(r)
+    report: dict[str, object] = {
+        "dropped_dev_copies": sorted(doomed),
+        "regrouped_servers": regrouped,
+        "twin_pairs": len(pairs),
+    }
+    return out, report
+
+
 def _load(path: Path) -> list[CorpusRecord]:
     return [
         CorpusRecord.model_validate_json(line)
@@ -198,6 +270,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--write-split-map", type=Path, default=None, help="write the resulting assignment's map"
     )
+    parser.add_argument(
+        "--near-twins",
+        type=Path,
+        default=None,
+        help="bench.split.dedup's twin pairs: one fold per twin component, none across splits",
+    )
+    parser.add_argument("--report", type=Path, default=Path("bench/results/split_grouping.json"))
     args = parser.parse_args(argv)
     mapping = load_split_map(args.split_map) if args.split_map else None
     assigned = assign(
@@ -207,6 +286,11 @@ def main(argv: list[str] | None = None) -> int:
         folds=args.folds,
         split_map=mapping,
     )
+    if args.near_twins:
+        pairs = json.loads(args.near_twins.read_text(encoding="utf-8"))["pairs"]
+        assigned, report = group_and_separate(assigned, [(a, b, c) for a, b, c in pairs])
+        args.report.parent.mkdir(parents=True, exist_ok=True)
+        args.report.write_text(json.dumps(report, indent=1) + "\n", encoding="utf-8", newline="\n")
     if args.write_split_map:
         write_split_map(split_map_from(assigned), args.write_split_map)
     args.out.parent.mkdir(parents=True, exist_ok=True)

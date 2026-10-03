@@ -247,7 +247,16 @@ def build_report(
     dropped = [row for rows in dropped_per_stratum.values() for row in rows]
     referenced = {r.mutation_of for r in records if r.mutation_of}
 
-    poisoned_dropped = sorted(str(row["id"]) for row in dropped if row.get("label") == "poisoned")
+    # PRD §9.7 as amended by training plan C8 (I1 ADR): the gate fails on a poisoned row dropped
+    # as a near-duplicate, the v2.0 bug. A dev row duplicating a sealed row, and the mutations
+    # of such a host, are dropped on purpose to keep the holdout clean; they are listed instead.
+    leakage = {"sealed_twin", "host_dropped"}
+    poisoned_dropped = sorted(
+        str(row["id"])
+        for row in dropped
+        if row.get("label") == "poisoned" and row.get("reason", "near_duplicate") not in leakage
+    )
+    dropped_for_leakage = sorted(str(row["id"]) for row in dropped if row.get("reason") in leakage)
     dropped_hosts_referenced = sorted({str(row["id"]) for row in dropped} & referenced)
 
     exact = [r for r in records if r.schema_fidelity == "exact"]
@@ -275,6 +284,7 @@ def build_report(
         "tokenizers_unavailable": unavailable,
         "gates": {
             "poisoned_dropped": poisoned_dropped,
+            "dropped_for_leakage": dropped_for_leakage,
             "dropped_hosts_referenced": dropped_hosts_referenced,
         },
     }

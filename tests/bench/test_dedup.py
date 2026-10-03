@@ -167,7 +167,13 @@ def test_dropped_rows_report_carries_the_label_and_mutation_edge() -> None:
     rows = dedup.dropped_rows(records, dropped)
     assert rows == {
         "poisoned/synthetic_mutation": [
-            {"id": "b", "label": "poisoned", "mutation_of": None, "source": "synthetic_mutation"}
+            {
+                "id": "b",
+                "label": "poisoned",
+                "mutation_of": None,
+                "source": "synthetic_mutation",
+                "reason": "near_duplicate",
+            }
         ]
     }
 
