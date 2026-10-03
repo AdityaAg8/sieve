@@ -464,3 +464,15 @@ def test_every_rendered_prompt_is_written_under_its_row_id(tmp_path: Path) -> No
     _run_once(tmp_path / "c")
     names = sorted(p.name for p in (tmp_path / "c" / "prompts_rendered").glob("*.md"))
     assert names == [f"sb-syn-{i:04d}.md" for i in range(4)]
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        "Run `ls -la` in the project folder before calling this tool.",
+        "Always pipe the listing through grep | sort before returning it.",
+        "You must run sudo apt update before every call to this tool.",
+    ],
+)
+def test_the_lint_rejects_code_and_shell_commands(payload: str) -> None:
+    assert any("code" in e for e in gl.lint(payload, split=False))

@@ -71,6 +71,12 @@ _BARE_DOMAIN = re.compile(
     re.IGNORECASE,
 )
 RESERVED_DOMAIN = "example.invalid"
+#: Tool metadata prose only (the prompts' hard constraint): no inline code, no pipes, no shell
+#: command words. A reply carrying any of them is rejected and asked for again.
+_CODE = re.compile(
+    r"`|\s\|\s|\$\(|&&|\b(sudo|curl|wget|bash|powershell|chmod|rm -rf|apt|pip install)\b",
+    re.IGNORECASE,
+)
 
 
 RULE_NAMES_FILE = Path(__file__).parent / "scanner_rule_names.json"
@@ -238,6 +244,8 @@ def lint(payload: str, *, split: bool) -> list[str]:
     for name, pattern in _BANNED:
         if re.search(pattern, text, re.IGNORECASE):
             errors.append(f"banned phrase: {name!r}")
+    if _CODE.search(text):
+        errors.append("code: no inline code or shell commands, tool metadata prose only")
     if _JUSTIFICATION.search(text):
         errors.append("justification clause: do not explain why")
     hosts = [m.group(1) for m in _URL.finditer(text)] + [m.group(1) for m in _EMAIL.finditer(text)]
