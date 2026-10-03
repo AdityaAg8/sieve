@@ -148,7 +148,8 @@ def test_the_threat_model_does_not_claim_the_injection_gate_passed() -> None:
 def test_the_adr_index_lists_every_adr_and_each_one_exists() -> None:
     index = (ADR_DIR / "README.md").read_text(encoding="utf-8")
     files = sorted(p.name for p in ADR_DIR.glob("0*.md"))
-    assert len(files) == 8, f"PRD §7.3 names ADR-001 to ADR-008; found {files}"
+    # PRD §7.3 names ADR-001 to ADR-008; training plan I1 adds ADR-009 (the v1 deviations).
+    assert len(files) == 9, f"expected ADR-001 to ADR-009; found {files}"
     for name in files:
         assert name in index, f"{name} is not listed in docs/adr/README.md"
 
