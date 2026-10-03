@@ -28,6 +28,7 @@ import json
 import re
 import time
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -325,6 +326,57 @@ def write_payloads(out: Path, results: Mapping[str, Mapping[str, Any]], *, n: in
     )
 
 
+@dataclass(frozen=True)
+class Paths:
+    plan: Path
+    corpus: Path
+    split_map: Path
+    out: Path
+    raw_log: Path
+    prompts: Path
+
+
+def run(client: Client, paths: Paths, *, seed: int, limit: int | None) -> dict[str, Any]:
+    """The batch driver (training plan E3): every plan row (or the first `limit`), its rendered
+    prompt written to `paths.prompts/<id>.md`, the payload file written when all rows ran.
+    Deterministic for a deterministic client: a re-run is byte-identical."""
+    plan = json.loads(paths.plan.read_text(encoding="utf-8"))
+    records = [
+        CorpusRecord.model_validate_json(line)
+        for line in paths.corpus.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    hosts = {r.id: r for r in records}
+    servers = json.loads(paths.split_map.read_text(encoding="utf-8"))["servers"]
+    split_of = {name: str(entry["split"]) for name, entry in servers.items()}
+    pool = register_pool(records, split_of)
+    log = RawLog(paths.raw_log)
+    paths.prompts.mkdir(parents=True, exist_ok=True)
+    results: dict[str, dict[str, Any]] = {}
+    started, fresh = time.perf_counter(), 0
+    for i in range(len(plan) if limit is None else min(limit, len(plan))):
+        row_id = f"sb-syn-{i:04d}"
+        prompt = build_prompt(plan[i], hosts, pool, row_id=row_id, split_of=split_of, seed=seed)
+        (paths.prompts / f"{row_id}.md").write_text(prompt, encoding="utf-8", newline="\n")
+        model = MODELS[family_of(hosts[plan[i]["host_id"]].server_name)]
+        fresh += log.get(model, row_id) is None
+        results[row_id] = generate_row(
+            client, plan[i], row_id, hosts, pool, split_of, log=log, seed=seed
+        )
+        print(f"{row_id} {results[row_id]['family']:5} {results[row_id]['status']}", flush=True)
+    elapsed = time.perf_counter() - started
+    dropped = sorted(k for k, v in results.items() if v["status"] != "accepted")
+    summary: dict[str, Any] = {"rows": len(results), "dropped": dropped}
+    if fresh:
+        per_row = elapsed / fresh
+        summary["new_rows"] = fresh
+        summary["seconds_per_row"] = round(per_row, 2)
+        summary["projected_hours_all"] = round(per_row * len(plan) / 3600, 2)
+    if limit is None:
+        write_payloads(paths.out, results, n=len(plan))
+    return summary
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m bench.generate.generate_local")
     parser.add_argument("--url", default="http://127.0.0.1:11434")
@@ -335,6 +387,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--raw-log", type=Path, default=Path("bench/data/synthetic/raw/generate_v1.jsonl")
     )
+    parser.add_argument(
+        "--prompts", type=Path, default=Path("bench/data/synthetic/prompts_rendered")
+    )
     parser.add_argument("--seed", type=int, default=0)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--bench", type=int, metavar="N", help="time the first N rows")
@@ -342,43 +397,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     ns = parser.parse_args(argv)
     client = OllamaClient(base_url=ns.url)  # refuses a non-loopback URL before reading anything
 
-    plan = json.loads(ns.plan.read_text(encoding="utf-8"))
-    records = [
-        CorpusRecord.model_validate_json(line)
-        for line in ns.corpus.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
-    hosts = {r.id: r for r in records}
-    servers = json.loads(ns.split_map.read_text(encoding="utf-8"))["servers"]
-    split_of = {name: str(entry["split"]) for name, entry in servers.items()}
-    pool = register_pool(records, split_of)
-    log = RawLog(ns.raw_log)
-    todo = range(ns.bench if ns.bench else len(plan))
-    results: dict[str, dict[str, Any]] = {}
-    started, fresh = time.perf_counter(), 0
-    for i in todo:
-        row_id = f"sb-syn-{i:04d}"
-        model = MODELS[family_of(hosts[plan[i]["host_id"]].server_name)]
-        fresh += log.get(model, row_id) is None
-        results[row_id] = generate_row(client, plan[i], row_id, hosts, pool, split_of, log=log,
-                                       seed=ns.seed)  # fmt: skip
-        status = results[row_id]["status"]
-        print(f"{row_id} {results[row_id]['family']:5} {status}", flush=True)
-    elapsed = time.perf_counter() - started
-    dropped = sorted(k for k, v in results.items() if v["status"] != "accepted")
-    summary: dict[str, Any] = {
-        "rows": len(results),
-        "dropped": len(dropped),
-        "seconds": round(elapsed, 1),
-    }
-    if fresh:
-        per_row = elapsed / fresh
-        summary["rows_per_second"] = round(1 / per_row, 4)
-        summary["projected_hours_all"] = round(per_row * len(plan) / 3600, 2)
+    paths = Paths(
+        plan=ns.plan,
+        corpus=ns.corpus,
+        split_map=ns.split_map,
+        out=ns.out,
+        raw_log=ns.raw_log,
+        prompts=ns.prompts,
+    )
+    summary = run(client, paths, seed=ns.seed, limit=ns.bench)
     print(json.dumps(summary))
-    if ns.all:
-        write_payloads(ns.out, results, n=len(plan))
-        print(f"wrote {ns.out} ({len(plan) - len(dropped)} accepted, {len(dropped)} dropped)")
     return 0
 
 

@@ -227,7 +227,8 @@ def test_file_generator_refuses_a_payload_out_of_step_with_the_plan(tmp_path: Pa
         FileGenerator(path).generate(SPEC, "")
 
 
-def test_file_generator_refuses_a_file_that_mixes_generator_models(tmp_path: Path) -> None:
+def test_file_generator_names_each_payloads_own_model(tmp_path: Path) -> None:
+    """v1 holds two families in one file (training plan E3); provenance is per line."""
     path = _payload_file(
         tmp_path,
         [
@@ -235,8 +236,9 @@ def test_file_generator_refuses_a_file_that_mixes_generator_models(tmp_path: Pat
             {"plan_index": 1, "payload": "b", "generator_model": "m2"},
         ],
     )
-    with pytest.raises(ValueError, match="generator_model"):
-        FileGenerator(path)
+    gen = FileGenerator(path)
+    assert gen.generate(SPEC, "") == "a" and gen.model_id == "m1"
+    assert gen.generate(SPEC, "") == "b" and gen.model_id == "m2"
 
 
 def _plan_and_corpus(tmp_path: Path, host: CorpusRecord, rows: int) -> tuple[Path, Path]:

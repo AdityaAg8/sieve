@@ -424,3 +424,43 @@ def test_a_host_whose_own_text_names_a_rule_is_shown_verbatim() -> None:
         _plan_row(host, "poisoned"), by_id, pool, row_id="y", split_of=split_of, seed=0
     )
     assert "Scans prompts for prompt injection attempts." in prompt
+
+
+# --------------------------------------------------------------- provenance (training plan E3)
+
+
+def _run_once(root: Path) -> list[bytes]:
+    records, split_of = _world()
+    root.mkdir(parents=True)
+    corpus = root / "labelled.jsonl"
+    corpus.write_text(
+        "".join(r.model_dump_json() + "\n" for r in records), encoding="utf-8", newline="\n"
+    )
+    split_map = root / "split_map.json"
+    split_map.write_text(
+        json.dumps({"servers": {s: {"split": v, "fold": None} for s, v in split_of.items()}}),
+        encoding="utf-8", newline="\n",
+    )  # fmt: skip
+    by_id = {r.id: r for r in records}
+    plan = root / "plan_v1.json"
+    rows = [_plan_row(by_id[f"real-{i:04d}"], "imperative_benign") for i in range(4)]
+    plan.write_text(json.dumps(rows), encoding="utf-8", newline="\n")
+    client = FakeClient(["Always pass an absolute path to it.", "Too short."])
+    paths = gl.Paths(
+        plan=plan, corpus=corpus, split_map=split_map, out=root / "payloads_v1.jsonl",
+        raw_log=root / "raw" / "generate_v1.jsonl", prompts=root / "prompts_rendered",
+    )  # fmt: skip
+    gl.run(client, paths, seed=0, limit=None)
+    files = [paths.out, paths.raw_log, *sorted(paths.prompts.glob("*.md"))]
+    assert len(files) == 2 + 4
+    return [f.read_bytes() for f in files]
+
+
+def test_rerunning_the_driver_with_the_fake_client_is_byte_identical(tmp_path: Path) -> None:
+    assert _run_once(tmp_path / "a") == _run_once(tmp_path / "b")
+
+
+def test_every_rendered_prompt_is_written_under_its_row_id(tmp_path: Path) -> None:
+    _run_once(tmp_path / "c")
+    names = sorted(p.name for p in (tmp_path / "c" / "prompts_rendered").glob("*.md"))
+    assert names == [f"sb-syn-{i:04d}.md" for i in range(4)]

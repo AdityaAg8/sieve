@@ -40,6 +40,9 @@ PROMPT_DIR = Path(__file__).parent / "prompts"
 HUMAN_PAYLOADS = Path("bench/generate/human_payloads.jsonl")
 DEFAULT_MODEL = "claude-sonnet-5"
 MAX_PAYLOAD_TOKENS = 300
+#: Training plan E3: a synthetic row's `labelled_at` is fixed, so rebuilding the corpus from the
+#: same plan and payloads is byte-identical. The generator's label is an intent, not a dated act.
+FIXED_LABELLED_AT = datetime(2026, 10, 3, tzinfo=UTC)
 
 
 class NoHumanPayload(Exception):  # noqa: N818 (name fixed by the lane's published interface)
@@ -159,9 +162,11 @@ class HumanGenerator:
 class FileGenerator:
     """Replays payloads a model wrote outside this process, one per plan row, in plan order.
 
-    One file is one generator: every line must name the same `generator_model`, which becomes
-    each record's provenance. `plan_index` has to count 0, 1, 2 ... so a file that drifts out
-    of step with its plan fails loudly rather than pairing a payload with the wrong host.
+    Each line names its own `generator_model`, which becomes that record's provenance:
+    `model_id` is the model of the payload handed out last (v1 has two families in one file,
+    training plan E2/E3). `plan_index` has to count 0, 1, 2 ... so a file that drifts out of
+    step with its plan fails loudly rather than pairing a payload with the wrong host. A line
+    with `payload: null` is a row the generator dropped; `main` skips it and keeps the index.
     """
 
     def __init__(self, path: Path) -> None:
@@ -171,13 +176,12 @@ class FileGenerator:
             for line in self.path.read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
-        models = sorted({str(e["generator_model"]) for e in self.entries})
-        if len(models) != 1:
-            raise ValueError(f"{self.path}: expected one generator_model, found {models}")
-        self.model_id = models[0]
+        if not self.entries:
+            raise ValueError(f"{self.path} holds no payloads")
+        self.model_id = str(self.entries[0]["generator_model"])
         self._next = 0
 
-    def generate(self, spec: PayloadSpec, host_description: str) -> str:
+    def _entry(self) -> dict[str, Any]:
         if self._next >= len(self.entries):
             raise ValueError(f"{self.path} has no payload for plan row {self._next}")
         entry = self.entries[self._next]
@@ -185,7 +189,21 @@ class FileGenerator:
             raise ValueError(
                 f"{self.path}: plan_index {entry['plan_index']} where {self._next} was expected"
             )
+        return entry
+
+    def next_is_dropped(self) -> bool:
+        return self._entry()["payload"] is None
+
+    def skip(self) -> None:
+        self._entry()
         self._next += 1
+
+    def generate(self, spec: PayloadSpec, host_description: str) -> str:
+        entry = self._entry()
+        if entry["payload"] is None:
+            raise ValueError(f"{self.path}: plan row {self._next} was dropped by the generator")
+        self._next += 1
+        self.model_id = str(entry["generator_model"])
         return str(entry["payload"])
 
 
@@ -329,7 +347,14 @@ def _pieces(raw: str, spec: PayloadSpec) -> list[str]:
     return [text] * len(spec.target_fields)
 
 
-def mutate(host: CorpusRecord, spec: PayloadSpec, gen: Generator, *, new_id: str) -> CorpusRecord:
+def mutate(
+    host: CorpusRecord,
+    spec: PayloadSpec,
+    gen: Generator,
+    *,
+    new_id: str,
+    labelled_at: datetime = FIXED_LABELLED_AT,
+) -> CorpusRecord:
     """Insert a generated payload into a copy of `host` and return the synthetic record."""
     record = copy.deepcopy(host)
     raw = gen.generate(spec, host.tool.description or "")
@@ -348,7 +373,7 @@ def mutate(host: CorpusRecord, spec: PayloadSpec, gen: Generator, *, new_id: str
     record.sub_labels = list(spec.sub_labels)
     record.difficulty = spec.difficulty
     record.labeller = "generator"
-    record.labelled_at = datetime.now(tz=UTC)
+    record.labelled_at = labelled_at
     record.label_rationale = None
     record.second_label = None
     record.adjudicated = False
@@ -410,7 +435,12 @@ def main(argv: list[str] | None = None) -> int:
                 f"{args.payloads} holds {len(gen.entries)} payloads for {len(plan)} plan rows"
             )
     out: list[CorpusRecord] = []
+    dropped = 0
     for index, row in enumerate(plan):
+        if isinstance(gen, FileGenerator) and gen.next_is_dropped():
+            gen.skip()  # the generator dropped this row; its id stays unused, never renumbered
+            dropped += 1
+            continue
         host = records[row.pop("host_id")]
         spec = PayloadSpec(**row, host_name=host.tool.name)
         out.append(mutate(host, spec, gen, new_id=f"{args.id_prefix}{index:04d}"))
@@ -418,7 +448,7 @@ def main(argv: list[str] | None = None) -> int:
     args.out.write_text(
         "".join(r.model_dump_json() + "\n" for r in out), encoding="utf-8", newline="\n"
     )
-    print(f"wrote {len(out)} mutations to {args.out}")
+    print(f"wrote {len(out)} mutations to {args.out} ({dropped} dropped by the generator)")
     return 0
 
 

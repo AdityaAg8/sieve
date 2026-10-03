@@ -155,3 +155,85 @@ def test_without_a_planned_position_the_payload_is_appended_as_before() -> None:
     )  # fmt: skip
     record = mutate(_host(), spec, _Fixed("Returns JSON."), new_id="sb-syn-0003")
     assert record.tool.description == HOST + " Returns JSON."
+
+
+# --------------------------------------------------------------- provenance (training plan E3)
+
+
+def _write(path, lines):  # type: ignore[no-untyped-def]
+    import json
+
+    path.write_text("".join(json.dumps(x) + "\n" for x in lines), encoding="utf-8", newline="\n")
+    return path
+
+
+def _v1_files(tmp_path):  # type: ignore[no-untyped-def]
+    import json
+
+    host = _host()
+    corpus = tmp_path / "real.jsonl"
+    corpus.write_text(host.model_dump_json() + "\n", encoding="utf-8", newline="\n")
+    row = {
+        "host_id": host.id, "label": "imperative_benign", "sub_labels": [], "difficulty": None,
+        "target_fields": ["description"], "property_name": None, "concealment": "none",
+        "insert_at": {"description": 1}, "position": {"description": "middle"},
+        "split_payload": False,
+    }  # fmt: skip
+    plan = tmp_path / "plan_v1.json"
+    plan.write_text(json.dumps([row, row, row]), encoding="utf-8", newline="\n")
+    payloads = _write(
+        tmp_path / "payloads_v1.jsonl",
+        [
+            {
+                "plan_index": 0,
+                "payload": "Always pass a query.",
+                "generator_model": "qwen-x",
+                "dropped": None,
+            },
+            {"plan_index": 1, "payload": None, "generator_model": "gemma-y", "dropped": "length"},
+            {
+                "plan_index": 2,
+                "payload": "Never page past 50.",
+                "generator_model": "gemma-y",
+                "dropped": None,
+            },
+        ],
+    )
+    return corpus, plan, payloads
+
+
+def _run_main(tmp_path, out):  # type: ignore[no-untyped-def]
+    from bench.generate.mutate import main
+
+    corpus, plan, payloads = _v1_files(tmp_path)
+    main(
+        [
+            "--corpus", str(corpus), "--plan", str(plan), "--out", str(out),
+            "--generator", "file", "--payloads", str(payloads), "--id-prefix", "sb-syn-",
+        ]
+    )  # fmt: skip
+    return [
+        CorpusRecord.model_validate_json(x) for x in out.read_text(encoding="utf-8").splitlines()
+    ]
+
+
+def test_a_payload_file_can_hold_two_families_and_each_row_names_its_own(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    records = _run_main(tmp_path, tmp_path / "model.jsonl")
+    assert [r.generator_model for r in records] == ["qwen-x", "gemma-y"]
+
+
+def test_a_dropped_row_is_skipped_and_every_other_id_keeps_its_index(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    records = _run_main(tmp_path, tmp_path / "model.jsonl")
+    assert [r.id for r in records] == ["sb-syn-0000", "sb-syn-0002"]
+
+
+def test_labelled_at_is_fixed_so_a_rebuild_is_byte_identical(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    from bench.generate.mutate import FIXED_LABELLED_AT
+
+    first, second = tmp_path / "a" / "m.jsonl", tmp_path / "b" / "m.jsonl"
+    first.parent.mkdir()
+    second.parent.mkdir()
+    records = _run_main(tmp_path / "a", first)
+    _run_main(tmp_path / "b", second)
+    assert first.read_bytes() == second.read_bytes()
+    assert {r.labelled_at for r in records} == {FIXED_LABELLED_AT}
