@@ -190,6 +190,10 @@ def test_cli_fills_every_fold_config_and_writes_the_curves(
         assert shared[field] is not None, field
     assert shared["fold"] == "pooled"
     assert len(shared["t_low_spread"]) == 5
+    # D3: the selection says whether it fell back, and how many replicates were undefined.
+    assert isinstance(shared["t_low_fallback"], bool)
+    assert 0.0 <= shared["t_low_lower_bound"] <= 1.0
+    assert isinstance(shared["t_low_n_undefined"], int)
 
     # Every per-fold directory is loadable, so a stray fold artefact cannot serve unset thresholds.
     for directory in dirs:

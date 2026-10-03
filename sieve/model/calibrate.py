@@ -192,6 +192,9 @@ def main(argv: Sequence[str] | None = None) -> Path:
     )
     spread = th.t_low_spread(probs, labels, groups, target=ns.recall_target, n_boot=ns.n_boot)
     payload = th.threshold_payload(chosen, t_low_spread=spread, ece_before=before, ece_after=after)
+    payload.update(
+        th.t_low_report(probs, labels, groups, target=ns.recall_target, n_boot=ns.n_boot)
+    )
 
     shared = _shared_dir(ns.dirs, ns.out)
     shared.mkdir(parents=True, exist_ok=True)

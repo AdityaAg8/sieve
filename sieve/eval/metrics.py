@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 
 import numpy as np
 import numpy.typing as npt
@@ -202,6 +203,52 @@ def _resample_indices(
     return np.concatenate([members[keys[p]] for p in picked])
 
 
+@dataclass(frozen=True)
+class BootstrapResult:
+    """A cluster-bootstrap interval. `lo`/`hi` are the alpha/2 and 1 - alpha/2 quantiles of the
+    DEFINED replicates; `n_undefined` counts the replicates whose statistic was NaN (e.g. a
+    recall drawn from a resample holding no positive), which are excluded, not scored as 0."""
+
+    point: float
+    lo: float
+    hi: float
+    n_undefined: int
+    n_boot: int
+
+
+def cluster_bootstrap(
+    stat: Stat,
+    y_true: Sequence[str],
+    y_score: Sequence[float],
+    groups: Sequence[str],
+    n_boot: int = 1000,
+    seed: int = 0,
+    alpha: float = 0.05,
+) -> BootstrapResult:
+    """Bootstrap that resamples GROUPS (servers) with replacement, keeping each group whole.
+
+    Rows within one server are correlated (shared author, shared register), so a row-level
+    bootstrap understates the interval. Every published CI uses this (PRD §4.3). A statistic
+    returns NaN where it is undefined on a replicate; those replicates are counted and
+    excluded (training plan D3).
+    """
+    rng = np.random.default_rng(seed)
+    yt: StrArr = np.asarray(y_true)
+    ys: Arr = np.asarray(y_score, dtype=float)
+    keys, members = _group_index(groups)
+    point = stat(yt, ys)
+    vals = np.empty(n_boot, dtype=float)
+    for b in range(n_boot):
+        idx = _resample_indices(rng, keys, members)
+        vals[b] = stat(yt[idx], ys[idx])
+    undefined = int(np.isnan(vals).sum())
+    if undefined == n_boot:
+        lo = hi = float("nan")
+    else:
+        lo, hi = (float(x) for x in np.nanquantile(vals, [alpha / 2, 1 - alpha / 2]))
+    return BootstrapResult(float(point), lo, hi, undefined, n_boot)
+
+
 def cluster_bootstrap_ci(
     stat: Stat,
     y_true: Sequence[str],
@@ -211,22 +258,9 @@ def cluster_bootstrap_ci(
     seed: int = 0,
     alpha: float = 0.05,
 ) -> tuple[float, float, float]:
-    """Bootstrap that resamples GROUPS (servers) with replacement, keeping each group whole.
-
-    Rows within one server are correlated (shared author, shared register), so a row-level
-    bootstrap understates the interval. Every published CI uses this (PRD §4.3).
-    """
-    rng = np.random.default_rng(seed)
-    yt: StrArr = np.asarray(y_true)
-    ys: Arr = np.asarray(y_score, dtype=float)
-    keys, members = _group_index(groups)
-    point = stat(yt, ys)
-    vals: list[float] = []
-    for _ in range(n_boot):
-        idx = _resample_indices(rng, keys, members)
-        vals.append(stat(yt[idx], ys[idx]))
-    lo, hi = np.quantile(vals, [alpha / 2, 1 - alpha / 2])
-    return float(point), float(lo), float(hi)
+    """(point, lo, hi) of `cluster_bootstrap`, for callers that need only the interval."""
+    r = cluster_bootstrap(stat, y_true, y_score, groups, n_boot=n_boot, seed=seed, alpha=alpha)
+    return r.point, r.lo, r.hi
 
 
 def t_low_for_recall_lcb(
@@ -238,15 +272,53 @@ def t_low_for_recall_lcb(
     seed: int = 0,
     positive: str = "poisoned",
 ) -> float:
-    """Highest threshold whose cluster-bootstrap 95% LOWER BOUND of recall is >= target.
+    """Highest threshold whose cluster-bootstrap lower bound of recall is >= target.
 
-    Candidates are the distinct positive scores, descending: no threshold between two
-    positive scores changes recall, so nothing else can be optimal. Returns the first
-    candidate whose lower bound clears `target`; falls back to the lowest candidate.
+    The float of `t_low_selection`; see there for the bound, the undefined replicates and the
+    fallback.
     """
-    cands, lower = _recall_lower_bounds(y_true, y_score, groups, n_boot, seed, positive)
+    return t_low_selection(
+        y_true, y_score, groups, target=target, n_boot=n_boot, seed=seed, positive=positive
+    ).t_low
+
+
+@dataclass(frozen=True)
+class TLowSelection:
+    t_low: float
+    #: The bootstrap lower bound of recall at `t_low`: the 2.5% quantile of the defined
+    #: replicates, i.e. the lower end of a two-sided 95% interval (`quantile`).
+    lower_bound: float
+    #: True when no candidate cleared the target and `t_low` is the lowest positive score.
+    fallback: bool
+    #: Replicates that drew no positive at all: recall is undefined there and they are excluded.
+    n_undefined: int
+    quantile: float = 0.025
+
+
+def t_low_selection(
+    y_true: Sequence[str],
+    y_score: Sequence[float],
+    groups: Sequence[str],
+    target: float = 0.98,
+    n_boot: int = 1000,
+    seed: int = 0,
+    positive: str = "poisoned",
+) -> TLowSelection:
+    """The highest threshold whose bootstrap lower bound of recall clears `target`.
+
+    Candidates are the distinct positive scores, descending: no threshold between two positive
+    scores changes recall, so nothing else can be optimal. When none clears, the lowest
+    candidate is returned with `fallback=True` rather than silently (training plan D3).
+    """
+    cands, lower, undefined = _recall_lower_bounds(y_true, y_score, groups, n_boot, seed, positive)
     clears = np.flatnonzero(lower >= target)
-    return float(cands[clears[0]] if len(clears) else cands[-1])
+    index = int(clears[0]) if len(clears) else len(cands) - 1
+    return TLowSelection(
+        t_low=float(cands[index]),
+        lower_bound=float(lower[index]),
+        fallback=not len(clears),
+        n_undefined=undefined,
+    )
 
 
 def _recall_lower_bounds(
@@ -257,8 +329,8 @@ def _recall_lower_bounds(
     seed: int,
     positive: str,
     alpha: float = 0.05,
-) -> tuple[Arr, Arr]:
-    """(candidate thresholds descending, the 2.5% bootstrap quantile of recall at each).
+) -> tuple[Arr, Arr, int]:
+    """(candidates descending, the 2.5% quantile of recall at each, undefined replicates).
 
     Training plan D1: the server resample is drawn once per replicate, exactly as
     `cluster_bootstrap_ci` draws it (one fresh generator per call, so every candidate saw the
@@ -287,8 +359,11 @@ def _recall_lower_bounds(
         picked = rng.integers(0, len(keys), len(keys))
         cum = np.cumsum(np.bincount(picked, minlength=len(keys))[pos_groups])
         total = cum[-1]
-        recall[b] = cum[upto - 1] / total if total else 0.0
-    return cands, np.quantile(recall, alpha / 2, axis=0)
+        recall[b] = cum[upto - 1] / total if total else np.nan
+    undefined = int(np.isnan(recall[:, 0]).sum())
+    if undefined == n_boot:
+        return cands, np.full(len(cands), np.nan), undefined
+    return cands, np.nanquantile(recall, alpha / 2, axis=0), undefined
 
 
 def paired_bootstrap_diff(
@@ -376,10 +451,19 @@ def cluster_bootstrap_curve(
         idx = _resample_indices(rng, keys, members)
         for k, arr in enumerate(_sweep(is_pos[idx], ys[idx], ts)):
             boots[k, b] = arr
+        # D3: recall is undefined on a replicate without positives, FPR without negatives.
+        if not is_pos[idx].any():
+            boots[1, b] = np.nan
+        if is_pos[idx].all():
+            boots[2, b] = np.nan
 
     names = ("precision", "recall", "fpr")
     out: dict[str, Arr] = {}
     for k, name in enumerate(names):
-        lo, hi = np.quantile(boots[k], [alpha / 2, 1 - alpha / 2], axis=0)
+        column = boots[k]
+        if np.isnan(column).all():
+            lo = hi = np.full(len(ts), np.nan)
+        else:
+            lo, hi = np.nanquantile(column, [alpha / 2, 1 - alpha / 2], axis=0)
         out[name] = np.stack([point[k], lo, hi])
     return out

@@ -22,12 +22,18 @@ def _reference(
     n_boot: int,
     seed: int,
 ) -> float:
-    """The pre-D1 implementation, frozen here as the oracle: one bootstrap per candidate."""
+    """One bootstrap per candidate, the pre-D1 loop, frozen as the oracle (with D3's rule:
+    a replicate holding no positive has no recall and is excluded, not scored 0)."""
     cands = sorted({float(s) for t, s in zip(y_true, y_score, strict=True) if t == "poisoned"},
                    reverse=True)  # fmt: skip
 
     def recall_at(threshold: float):  # type: ignore[no-untyped-def]
-        return lambda yt, ys: precision_recall_fpr(list(yt), list(ys), threshold)[1]
+        def stat(yt, ys):  # type: ignore[no-untyped-def]
+            if not (np.asarray(yt) == "poisoned").any():
+                return float("nan")
+            return precision_recall_fpr(list(yt), list(ys), threshold)[1]
+
+        return stat
 
     for t in cands:
         _, lo, _ = cluster_bootstrap_ci(recall_at(t), y_true, y_score, groups, n_boot=n_boot,

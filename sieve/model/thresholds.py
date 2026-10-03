@@ -20,6 +20,7 @@ from sieve.eval.metrics import (
     precision_recall_fpr,
     t_high_for_precision,
     t_low_for_recall_lcb,
+    t_low_selection,
 )
 from sieve.protocols import Thresholds
 from sieve.types import LABELS
@@ -117,6 +118,32 @@ def select(
         val_precision_at_t_high=float(precision),
         routing_rate=routing_rate,
     )
+
+
+def t_low_report(
+    probs: npt.NDArray[np.float64],
+    labels: Sequence[int] | npt.NDArray[np.int_],
+    groups: Sequence[str],
+    *,
+    target: float = 0.98,
+    n_boot: int = 1000,
+    seed: int = 0,
+) -> dict[str, Any]:
+    """How `select`'s `t_low` was reached (training plan D3), for `sieve_config.json`."""
+    sel = t_low_selection(
+        label_strings(labels, np.shape(probs)[1]),
+        poisoned_scores(probs),
+        groups,
+        target=target,
+        n_boot=n_boot,
+        seed=seed,
+    )
+    return {
+        "t_low_fallback": sel.fallback,
+        "t_low_lower_bound": sel.lower_bound,
+        "t_low_lower_bound_quantile": sel.quantile,
+        "t_low_n_undefined": sel.n_undefined,
+    }
 
 
 def t_low_spread(
