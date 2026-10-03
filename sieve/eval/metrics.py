@@ -234,24 +234,51 @@ def t_low_for_recall_lcb(
     positive scores changes recall, so nothing else can be optimal. Returns the first
     candidate whose lower bound clears `target`; falls back to the lowest candidate.
     """
-    pos = {float(s) for t, s in zip(y_true, y_score, strict=True) if t == positive}
-    cands = sorted(pos, reverse=True)
-    if not cands:
+    cands, lower = _recall_lower_bounds(y_true, y_score, groups, n_boot, seed, positive)
+    clears = np.flatnonzero(lower >= target)
+    return float(cands[clears[0]] if len(clears) else cands[-1])
+
+
+def _recall_lower_bounds(
+    y_true: Sequence[str],
+    y_score: Sequence[float],
+    groups: Sequence[str],
+    n_boot: int,
+    seed: int,
+    positive: str,
+    alpha: float = 0.05,
+) -> tuple[Arr, Arr]:
+    """(candidate thresholds descending, the 2.5% bootstrap quantile of recall at each).
+
+    Training plan D1: the server resample is drawn once per replicate, exactly as
+    `cluster_bootstrap_ci` draws it (one fresh generator per call, so every candidate saw the
+    same resamples), and recall at every candidate comes from one cumulative sum of the
+    positives' multiplicities. Same numbers as one bootstrap per candidate, ~O(n_boot * n).
+    """
+    yt: StrArr = np.asarray(y_true)
+    ys: Arr = np.asarray(y_score, dtype=float)
+    pos = np.flatnonzero(yt == positive)
+    if not len(pos):
         raise ValueError("no positive examples")
+    keys, members = _group_index(groups)
+    group_of = np.empty(len(yt), dtype=np.int64)
+    for k, key in enumerate(keys):
+        group_of[members[key]] = k
+    order = pos[np.argsort(-ys[pos], kind="stable")]
+    descending = ys[order]
+    cands: Arr = np.unique(descending)[::-1]
+    # Positives at or above each candidate: a prefix of the descending list.
+    upto = len(descending) - np.searchsorted(descending[::-1], cands, side="left")
+    pos_groups = group_of[order]
 
-    def recall_at(threshold: float) -> Stat:
-        def stat(yt: StrArr, ys: Arr) -> float:
-            return precision_recall_fpr(list(yt), list(ys), threshold, positive)[1]
-
-        return stat
-
-    for t in cands:
-        _, lo, _ = cluster_bootstrap_ci(
-            recall_at(t), y_true, y_score, groups, n_boot=n_boot, seed=seed
-        )
-        if lo >= target:
-            return t
-    return cands[-1]
+    rng = np.random.default_rng(seed)
+    recall = np.empty((n_boot, len(cands)), dtype=float)
+    for b in range(n_boot):
+        picked = rng.integers(0, len(keys), len(keys))
+        cum = np.cumsum(np.bincount(picked, minlength=len(keys))[pos_groups])
+        total = cum[-1]
+        recall[b] = cum[upto - 1] / total if total else 0.0
+    return cands, np.quantile(recall, alpha / 2, axis=0)
 
 
 def paired_bootstrap_diff(
