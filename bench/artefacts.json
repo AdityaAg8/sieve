@@ -15,11 +15,55 @@
     "THREAT_MODEL.md's residual risk 9 (no artefact digest) something to check."
   ],
   "artefacts": {
-    "deberta-v3-base-s0": { "hub_repo": null, "revision": null, "files": {} },
-    "deberta-v3-base-s1": { "hub_repo": null, "revision": null, "files": {} },
-    "deberta-v3-base-s2": { "hub_repo": null, "revision": null, "files": {} },
-    "deberta-v3-base-desc-s0": { "hub_repo": null, "revision": null, "files": {} },
-    "deberta-v3-base-desc-s1": { "hub_repo": null, "revision": null, "files": {} },
-    "deberta-v3-base-desc-s2": { "hub_repo": null, "revision": null, "files": {} }
+    "deberta-v3-base-s0": {
+      "hub_repo": null,
+      "revision": null,
+      "files": {}
+    },
+    "deberta-v3-base-s1": {
+      "hub_repo": null,
+      "revision": null,
+      "files": {}
+    },
+    "deberta-v3-base-s2": {
+      "hub_repo": null,
+      "revision": null,
+      "files": {}
+    },
+    "modernbert-base-s0": {
+      "hub_repo": null,
+      "revision": null,
+      "files": {}
+    },
+    "modernbert-base-s1": {
+      "hub_repo": null,
+      "revision": null,
+      "files": {}
+    },
+    "modernbert-base-s2": {
+      "hub_repo": null,
+      "revision": null,
+      "files": {}
+    },
+    "deberta-v3-base-desc-s0": {
+      "hub_repo": null,
+      "revision": null,
+      "files": {}
+    },
+    "deberta-v3-base-scanner-s0": {
+      "hub_repo": null,
+      "revision": null,
+      "files": {}
+    },
+    "deberta-v3-base-2c-s0": {
+      "hub_repo": null,
+      "revision": null,
+      "files": {}
+    },
+    "modernbert-base-1024-s0": {
+      "hub_repo": null,
+      "revision": null,
+      "files": {}
+    }
   }
 }

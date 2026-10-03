@@ -115,8 +115,9 @@ def _evaluate(spec: RowSpec, inputs: Inputs, **kwargs: Any) -> dict[str, Any]:
 
 
 def test_the_committed_matrix_has_the_fourteen_rows_of_prd_11_5() -> None:
+    """Plus row 15, ModernBERT-1024 (training plan H5, §6.3)."""
     specs = load_matrix(Path("bench/ablations.yaml"))
-    assert [s.row for s in specs] == list(range(1, 15))
+    assert [s.row for s in specs] == list(range(1, 16))
     by_row = {s.row: s for s in specs}
     assert by_row[1].classifier == "baseline"
     assert by_row[2].classifier == "tfidf"
@@ -127,6 +128,51 @@ def test_the_committed_matrix_has_the_fourteen_rows_of_prd_11_5() -> None:
     assert by_row[12].num_labels == 2
     assert by_row[13].classifier == "unicode_hygiene"
     assert by_row[14].minimal_pairs is True
+    assert by_row[15].classifier == "models/modernbert-base-1024-s*"
+
+
+def test_single_seed_rows_and_three_seed_rows_follow_d9() -> None:
+    by_row = {s.row: s for s in load_matrix(Path("bench/ablations.yaml"))}
+    assert all(by_row[r].seeds == [0] for r in (3, 9, 12, 15))
+    assert by_row[4].seeds is None and by_row[5].seeds is None  # the run's three seeds
+    assert {r for r, s in by_row.items() if s.status == "deferred"} == {6, 7, 8}
+
+
+def test_the_primary_encoder_comes_from_selection_json(tmp_path: Path) -> None:
+    selection = tmp_path / "selection.json"
+    selection.write_text(
+        json.dumps({"winner": "modernbert-base",
+                    "per_architecture": {"modernbert-base": {}, "deberta-v3-base": {}}}),
+        encoding="utf-8",
+    )  # fmt: skip
+    by_row = {s.row: s for s in load_matrix(Path("bench/ablations.yaml"), selection)}
+    assert by_row[4].classifier == "models/modernbert-base-s*"
+    assert by_row[5].classifier == "models/deberta-v3-base-s*"
+    default = {s.row: s for s in load_matrix(Path("bench/ablations.yaml"))}
+    assert default[4].classifier == "models/deberta-v3-base-s*"
+
+
+def test_a_deferred_judge_row_is_emitted_not_scored(inputs: Inputs) -> None:
+    def no_classifier(spec: RowSpec, seed: int) -> Any:
+        raise AssertionError("a deferred row must not be scored")
+
+    payload = run_matrix(
+        [_spec(row=6, judge="claude-haiku-4-5", status="deferred"),
+         _spec(row=10, classifier="tfidf", breakdown_of=[4, 6])],
+        inputs, classifier_factory=no_classifier, judge_factory=None, n_boot=N_BOOT,
+    )  # fmt: skip
+    six, ten = payload["rows"]
+    assert six["status"] == "deferred" and "D8" in six["reason"]
+    assert ten["deferred_breakdown_of"] == [6]
+
+
+def test_a_declared_single_seed_row_runs_at_its_one_seed(inputs: Inputs, artefacts: Path) -> None:
+    result = _row(
+        RowSpec(row=3, name="desc", classifier=str(artefacts / "tiny-s*"), judge="none",
+                seeds=[0]),
+        inputs,
+    )  # fmt: skip
+    assert result["seeds"] == [0] and result["single_seed"] is True
 
 
 def test_a_matrix_with_a_repeated_row_number_is_rejected(tmp_path: Path) -> None:

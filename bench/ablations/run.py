@@ -93,6 +93,11 @@ class RowSpec(BaseModel):
     #: OOF arrays. In-sample over dev; off for every committed row.
     reinference: bool = False
     note: str | None = None
+    #: The row's own seeds (training plan D9: rows 3, 9, 12 and 15 at one seed). None: the
+    #: run's seeds, and then the three-seed rule applies.
+    seeds: list[int] | None = None
+    #: "deferred" rows are emitted, not scored (D8: the LLM judge is deferred to v1.1).
+    status: Literal["active", "deferred"] = "active"
 
     @property
     def seeded(self) -> bool:
@@ -150,12 +155,37 @@ def no_network() -> Iterator[None]:
 # ------------------------------------------------------------------------------- loading
 
 
-def load_matrix(path: Path) -> list[RowSpec]:
+#: The declared default when no selection exists yet (sieve/model/select.py RULE's tie-break).
+DEFAULT_PRIMARY, DEFAULT_SECONDARY = "deberta-v3-base", "modernbert-base"
+
+
+def architectures(selection: Path | None) -> dict[str, str]:
+    """`{primary, secondary}` from `selection.json`: the winner and the other architecture.
+    Before a selection exists, the declared default order."""
+    if selection is None or not selection.exists():
+        return {"primary": DEFAULT_PRIMARY, "secondary": DEFAULT_SECONDARY}
+    payload = json.loads(selection.read_text(encoding="utf-8"))
+    winner = str(payload["winner"])
+    others = sorted(set(payload.get("per_architecture", {})) - {winner})
+    secondary = (
+        others[0]
+        if others
+        else (DEFAULT_SECONDARY if winner == DEFAULT_PRIMARY else DEFAULT_PRIMARY)
+    )
+    return {"primary": winner, "secondary": secondary}
+
+
+def load_matrix(path: Path, selection: Path | None = None) -> list[RowSpec]:
+    """The rows, with `{primary}` / `{secondary}` in a classifier resolved at run time."""
     raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     rows = raw.get("rows")
     if not rows:
         raise MatrixError(f"{path} has no rows")
-    specs = [RowSpec.model_validate(row) for row in rows]
+    names = architectures(selection)
+    specs = [
+        RowSpec.model_validate({**row, "classifier": str(row["classifier"]).format(**names)})
+        for row in rows
+    ]
     numbers = [s.row for s in specs]
     if len(set(numbers)) != len(numbers):
         raise MatrixError(f"{path} repeats a row number: {sorted(numbers)}")
@@ -587,9 +617,20 @@ def evaluate_row(
     n_boot: int,
 ) -> dict[str, Any]:
     records = inputs.records
+    if spec.status == "deferred":
+        return {
+            "row": spec.row,
+            "name": spec.name,
+            "classifier": spec.classifier,
+            "judge": spec.judge,
+            "status": "deferred",
+            "reason": "D8: the LLM judge is deferred to v1.1; v1 publishes Stage-1 numbers",
+            "note": spec.note,
+        }
 
-    row_seeds = tuple(seeds) if spec.seeded else (0,)
-    if spec.seeded and len(row_seeds) < 3:
+    declared = spec.seeds is not None
+    row_seeds = tuple(spec.seeds or ()) if declared else (tuple(seeds) if spec.seeded else (0,))
+    if spec.seeded and not declared and len(row_seeds) < 3:
         raise InsufficientSeeds(
             f"row {spec.row} names an encoder artefact and was given {len(row_seeds)} seed(s); "
             "mean and std across three seeds are required and a single-seed number is never "
@@ -624,6 +665,8 @@ def evaluate_row(
         "num_labels": spec.num_labels,
         "scanner_features": spec.scanner_features,
         "seeds": list(row_seeds),
+        "single_seed": spec.seeded and len(row_seeds) == 1,
+        "status": "active",
         "n": len(records),
         **{key: _aggregate([b[key] for b in blocks]) for key in _SEED_KEYS},
         "macro_f1_mean": float(np.mean(macro)) if macro else None,
@@ -824,6 +867,7 @@ def run_matrix(
     wanted = [s for s in specs if rows is None or s.row in set(rows)]
     if not wanted:
         raise MatrixError(f"no matrix row matches {list(rows or [])}")
+    deferred = {s.row for s in specs if s.status == "deferred"}
     if any(r.split != "dev" for r in inputs.records):
         raise MatrixError(
             "the ablation matrix was handed a non-dev row; every number here is out-of-fold "
@@ -841,6 +885,10 @@ def run_matrix(
             )
             for spec in wanted
         ]
+    for result, spec in zip(results, wanted, strict=True):
+        parts = [r for r in spec.breakdown_of if r in deferred]
+        if parts:
+            result["deferred_breakdown_of"] = parts  # the judge halves of rows 10, 11 and 14
     return {
         "rows": results,
         "dataset_version": inputs.dataset_version,
@@ -905,7 +953,7 @@ def main(argv: Sequence[str] | None = None) -> Path:
     from sieve.model.data import load_corpus
 
     records = [r for r in load_corpus(ns.corpus) if r.split == "dev"]
-    specs = load_matrix(ns.matrix)
+    specs = load_matrix(ns.matrix, ns.results_dir / "selection.json")
     wanted = [int(x) for x in ns.rows.split(",")] if ns.rows else None
     selected = [s for s in specs if wanted is None or s.row in set(wanted)]
 

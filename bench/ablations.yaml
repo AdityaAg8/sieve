@@ -12,9 +12,10 @@
 # artefact directory and its own training run; `mode`, `num_labels` and `scanner_features`
 # record how that artefact was trained rather than changing anything at scoring time.
 #
-# Row 4 is the pre-registered headline configuration. `models/deberta-v3-base-s*` is a
-# placeholder until bench/results/selection.json names the winner; the retrain and the Hub push
-# are human runbook steps, so no committed number depends on these paths resolving yet.
+# Row 4 is the pre-registered headline configuration. `{primary}` and `{secondary}` are resolved
+# at run time from bench/results/selection.json (the winner and the other architecture; before a
+# selection exists, deberta-v3-base then modernbert-base). Training plan H5, D8, D9: rows 3, 9,
+# 12 and 15 run at one seed (rows 4 and 5 at three); the judge rows are emitted as deferred.
 rows:
   - row: 1
     name: Cisco YARA baseline alone
@@ -32,35 +33,39 @@ rows:
     classifier: models/deberta-v3-base-desc-s*
     judge: none
     mode: description_only
+    seeds: [0]
 
   - row: 4
     name: Primary encoder, full serialisation (pre-registered headline)
-    classifier: models/deberta-v3-base-s*
+    classifier: models/{primary}-s*
     judge: none
     mode: full
     minimal_pairs: true
 
   - row: 5
-    name: ModernBERT-base, 512
-    classifier: models/modernbert-base-s*
+    name: Secondary encoder, full serialisation, 512
+    classifier: models/{secondary}-s*
     judge: none
     mode: full
 
   - row: 6
     name: Classifier + judge, Haiku 4.5
-    classifier: models/deberta-v3-base-s*
+    status: deferred
+    classifier: models/{primary}-s*
     judge: claude-haiku-4-5
     mode: full
     minimal_pairs: true
 
   - row: 7
     name: Classifier + judge, Sonnet 5
-    classifier: models/deberta-v3-base-s*
+    status: deferred
+    classifier: models/{primary}-s*
     judge: claude-sonnet-5
     mode: full
 
   - row: 8
     name: Judge alone on every row
+    status: deferred
     classifier: none
     judge: claude-haiku-4-5
     note: >-
@@ -73,10 +78,11 @@ rows:
     judge: none
     mode: full
     scanner_features: true
+    seeds: [0]
 
   - row: 10
     name: Per-difficulty-tier and per-concealment breakdown of rows 4 and 6
-    classifier: models/deberta-v3-base-s*
+    classifier: models/{primary}-s*
     judge: none
     mode: full
     breakdown_of: [4, 6]
@@ -84,7 +90,7 @@ rows:
 
   - row: 11
     name: Per-source breakdown of rows 4 and 6
-    classifier: models/deberta-v3-base-s*
+    classifier: models/{primary}-s*
     judge: none
     mode: full
     breakdown_of: [4, 6]
@@ -98,6 +104,7 @@ rows:
     judge: none
     mode: full
     num_labels: 2
+    seeds: [0]
     minimal_pairs: true
     note: Report the FPR difference against row 4.
 
@@ -111,9 +118,19 @@ rows:
 
   - row: 14
     name: Minimal-pair accuracy (M11) for rows 2, 4, 6 and 12
-    classifier: models/deberta-v3-base-s*
+    classifier: models/{primary}-s*
     judge: none
     mode: full
     minimal_pairs: true
     breakdown_of: [2, 4, 6, 12]
     note: Read `minimal_pair_accuracy` on rows 2, 4, 6 and 12; this row carries no new fit.
+
+  - row: 15
+    name: ModernBERT-base at 1,024 tokens
+    classifier: models/modernbert-base-1024-s*
+    judge: none
+    mode: full
+    seeds: [0]
+    note: >-
+      Training plan §6.3: the PRD's 1,024-token option (§11.3, §24.1) measured at one seed rather
+      than silently cut. Compare against row 5 at its seed 0.

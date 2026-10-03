@@ -17,6 +17,7 @@ from bench.artefacts import (
     ARTEFACT_MISSING,
     MANIFEST,
     REQUIRED,
+    REQUIRED_FILES,
     Artefact,
     ManifestError,
     load_manifest,
@@ -32,7 +33,7 @@ FILLED = {
         name: {
             "hub_repo": "example/sieve-triage",
             "revision": "0" * 40,
-            "files": {"sieve_config.json": "0" * 64},
+            "files": {f: "0" * 64 for f in sorted(REQUIRED_FILES)},
         }
         for name in REQUIRED
     }
@@ -49,6 +50,16 @@ def _artefact_dir(root: Path, name: str, body: bytes) -> str:
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "sieve_config.json").write_bytes(body)
     return hashlib.sha256(body).hexdigest()
+
+
+def _oof_files(root: Path, name: str) -> dict[str, str]:
+    """The OOF arrays every filled entry pins (H5), written and hashed."""
+    out = {}
+    for f in sorted(REQUIRED_FILES - {"sieve_config.json"}):
+        body = f"{name}/{f}".encode()
+        (root / name / f).write_bytes(body)
+        out[f] = hashlib.sha256(body).hexdigest()
+    return out
 
 
 # ------------------------------------------------------------------ the committed manifest
@@ -103,9 +114,29 @@ def test_a_nested_thresholds_file_satisfies_the_requirement(tmp_path: Path) -> N
     """An artefact may legitimately nest (`fold0/sieve_config.json`); what matters is that the
     thresholds are among the bytes the entry hashes, not where they sit."""
     payload = json.loads(json.dumps(FILLED))
-    payload["artefacts"][REQUIRED[0]]["files"] = {"fold0/sieve_config.json": "0" * 64}
+    files = {f"fold0/{f}": "0" * 64 for f in sorted(REQUIRED_FILES)}
+    payload["artefacts"][REQUIRED[0]]["files"] = files
     manifest = load_manifest(_write(tmp_path / "m.json", payload))
-    assert manifest[REQUIRED[0]].files == {"fold0/sieve_config.json": "0" * 64}
+    assert manifest[REQUIRED[0]].files == files
+
+
+def test_a_filled_entry_must_pin_the_oof_arrays(tmp_path: Path) -> None:
+    """H5: every ablation row is scored from the OOF arrays, so they are hashed too."""
+    payload = json.loads(json.dumps(FILLED))
+    payload["artefacts"][REQUIRED[0]]["files"] = {"sieve_config.json": "0" * 64}
+    with pytest.raises(ManifestError, match="oof_logits.npy"):
+        load_manifest(_write(tmp_path / "m.json", payload))
+
+
+def test_every_family_an_ablation_row_names_is_required() -> None:
+    from bench.ablations.run import load_matrix, seed_dir
+
+    names = set()
+    for spec in load_matrix(Path("bench/ablations.yaml")):
+        if spec.seeded and spec.status == "active":
+            for seed in spec.seeds or (0, 1, 2):
+                names.add(seed_dir(spec.classifier, seed).name)
+    assert names <= set(REQUIRED), sorted(names - set(REQUIRED))
 
 
 def test_a_pending_entry_is_not_asked_for_the_thresholds_yet(tmp_path: Path) -> None:
@@ -186,7 +217,7 @@ def test_verify_only_checks_a_supplied_directory_without_downloading(tmp_path: P
         payload["artefacts"][name] = {
             "hub_repo": "example/sieve-triage",
             "revision": "0" * 40,
-            "files": {"sieve_config.json": digest},
+            "files": {"sieve_config.json": digest, **_oof_files(dest, name)},
         }
     _write(manifest, payload)
 

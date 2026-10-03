@@ -38,15 +38,19 @@ log = logging.getLogger("bench.artefacts")
 
 MANIFEST = Path("bench/artefacts.json")
 
-#: The six artefact directories ablation rows 3 and 4 name, across the default three seeds.
-#: `bench/ablations.yaml` spells them `models/deberta-v3-base{,-desc}-s*`.
+#: Every artefact directory an ablation row names (training plan H5): both architectures at the
+#: three headline seeds (rows 4, 5), and the single-seed families of rows 3, 9, 12 and 15 (D9).
 REQUIRED: tuple[str, ...] = (
     "deberta-v3-base-s0",
     "deberta-v3-base-s1",
     "deberta-v3-base-s2",
+    "modernbert-base-s0",
+    "modernbert-base-s1",
+    "modernbert-base-s2",
     "deberta-v3-base-desc-s0",
-    "deberta-v3-base-desc-s1",
-    "deberta-v3-base-desc-s2",
+    "deberta-v3-base-scanner-s0",
+    "deberta-v3-base-2c-s0",
+    "modernbert-base-1024-s0",
 )
 
 #: Files a filled-in entry must list, whatever else it lists. `verify()` only hashes what the
@@ -55,7 +59,11 @@ REQUIRED: tuple[str, ...] = (
 #: human points `SIEVE_ARTEFACTS_DIR` at. `sieve_config.json` carries the thresholds every
 #: routing decision reads (PRD §11.4), so an entry that does not hash it has pinned the weights
 #: and left the verdicts free (fix round 2, M8).
-REQUIRED_FILES: frozenset[str] = frozenset({"sieve_config.json"})
+#: The OOF arrays are required too (H5): every ablation row is scored from them, so pinning an
+#: artefact without them would leave the reproduced numbers unverified.
+REQUIRED_FILES: frozenset[str] = frozenset(
+    {"sieve_config.json", "oof_logits.npy", "oof_labels.npy", "oof_ids.json"}
+)
 
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
