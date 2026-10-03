@@ -2,7 +2,7 @@ ifeq ($(OS),Windows_NT)
 SHELL := C:/Program Files/Git/usr/bin/bash.exe
 endif
 
-.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id model-dir sweep gpu-bench probes tfidf-ood gate review-queue pairs dedup-cross
+.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id model-dir sweep gpu-bench probes tfidf-ood gate review-queue pairs dedup-cross select export push reproduce-check latency-http
 
 .DEFAULT_GOAL := help
 
@@ -44,6 +44,23 @@ BENCH_CORPUS ?= bench/data/labelled.jsonl
 # `bench/latency.py` variables: LATENCY_BASE_URL is the running deployment `make serve` (or a
 # real deployment) answers on; the script's own defaults name everything else (Task 11.2).
 LATENCY_BASE_URL ?= http://127.0.0.1:8000
+
+# Training plan C7. RESULTS_DIR is where every `bench` step reads and writes (a test points it at
+# a temp dir); ABLATIONS_MATRIX the row file. PUBLISHED_DIR is the calibrated artefact the
+# in-process latency, the demo, `export` and `push` use -- the winner's seed 0 once
+# `selection.json` names it. CANDIDATES feeds `sieve.model.select`, one NAME=DIR,DIR,DIR per
+# architecture. `push` is a dry run unless CONFIRM=1 (and the owner said so in chat).
+RESULTS_DIR ?= bench/results
+ABLATIONS_MATRIX ?= bench/ablations.yaml
+PUBLISHED_DIR ?= $(MODEL_DIR)
+CANDIDATES ?= deberta-v3-base=models/deberta-v3-base-s0,models/deberta-v3-base-s1,models/deberta-v3-base-s2 modernbert-base=models/modernbert-base-s0,models/modernbert-base-s1,models/modernbert-base-s2
+HF_REPO ?=
+N_BOOT ?=
+BOOT = $(if $(N_BOOT),--n-boot $(N_BOOT))
+# `reproduce-check` (M6b): re-score these rows from the retrained models/ and compare macro-F1
+# against the committed ablations.json within ±0.01.
+REPRO_ROWS ?= 4,5
+REPRO_OUT ?= bench/data/_reproduce/ablations.json
 
 setup:  ## uv sync --all-extras --group dev, then cd web && npm ci
 	uv sync --all-extras --group dev
@@ -133,19 +150,38 @@ sweep:  ## PROFILE= SEEDS="0 1 2": per seed 5 folds -> best epoch -> FOLD=all ->
 calibrate:  ## temperature, T_low and T_high from the five folds' pooled OOF logits, into MODEL_DIR
 	uv run python -m sieve.model.calibrate --dirs $(FOLD_DIRS) --corpus $(BENCH_CORPUS) --out $(MODEL_DIR)
 
-bench:  ## regenerate bench/results/* offline (latency, ablations, errors, judge agreement)
-	# Task 11.2: first, so a server missing at LATENCY_BASE_URL (`make serve` in another
-	# terminal, or a real deployment) fails fast -- before the expensive steps below, not
-	# after. p50/p95/p99 for POST /api/v1/triage at 20 concurrent; PRD M6a: never edit
-	# bench/results/latency.json by hand, and the script itself refuses to write one there
-	# for the fixture/fake classifier.
-	uv run python -m bench.latency --base-url $(LATENCY_BASE_URL)
-	uv run python -m bench.ablations.run --matrix bench/ablations.yaml
-	uv run python -m bench.analysis.errors --dirs $(FOLD_DIRS) --corpus $(BENCH_CORPUS) --model-dir $(MODEL_DIR)
+# Training plan C7: no server needed. baseline -> pairs -> ablations -> errors -> report_final
+# (H3, only once predictions exist) -> in-process latency (H6) -> demo --final -> selection.
+# The judge is deferred (D8), so judge agreement is not a v1 step. The HTTP latency of a live
+# deployment stays available as `make latency-http`.
+SELECT = uv run python -m sieve.model.select $(foreach c,$(CANDIDATES),--candidate $(c)) --corpus $(BENCH_CORPUS) --results-dir $(RESULTS_DIR)
+bench:  ## regenerate bench/results/* offline, no server (baseline ... selection; training plan C7)
+	uv run python -m bench.baseline.run --corpus $(BENCH_CORPUS) --results-dir $(RESULTS_DIR)
+	uv run python -m bench.split.pairs --corpus $(BENCH_CORPUS) --out $(RESULTS_DIR)/minimal_pairs.json
+	uv run python -m bench.ablations.run --matrix $(ABLATIONS_MATRIX) --corpus $(BENCH_CORPUS) --results-dir $(RESULTS_DIR) $(BOOT)
+	uv run python -m bench.analysis.errors --dirs $(FOLD_DIRS) --corpus $(BENCH_CORPUS) --model-dir $(MODEL_DIR) --results-dir $(RESULTS_DIR)
 	# H3: the sealed report is a pure function of the saved predictions; re-rendered when they exist.
-	@if [ -f bench/results/holdout_predictions.jsonl ]; then uv run python -m bench.report_final $(if $(HEADLINE),--headline $(HEADLINE),); fi
-	uv run python -m bench.analysis.judge_agreement
-	uv run python -m bench.demo
+	@if [ -f $(RESULTS_DIR)/holdout_predictions.jsonl ]; then uv run python -m bench.report_final --results-dir $(RESULTS_DIR) $(BOOT) $(if $(HEADLINE),--headline $(HEADLINE),); fi
+	uv run python -m bench.latency --in-process --model-dir $(PUBLISHED_DIR) --corpus $(BENCH_CORPUS) --results-dir $(RESULTS_DIR)
+	uv run python -m bench.demo --model-id $(PUBLISHED_DIR) --final --results-dir $(RESULTS_DIR)
+	$(SELECT)
+
+latency-http:  ## p50/p95/p99 of POST /api/v1/triage against a running server at LATENCY_BASE_URL
+	uv run python -m bench.latency --base-url $(LATENCY_BASE_URL)
+
+select:  ## the pre-registered architecture choice from CANDIDATES' OOF arrays -> selection.json
+	$(SELECT)
+
+export:  ## ONNX export of PUBLISHED_DIR with dev-set parity -> export_parity.json (H6)
+	uv run python -m sieve.model.export $(PUBLISHED_DIR) --corpus $(BENCH_CORPUS) --results-dir $(RESULTS_DIR)
+
+push:  ## card + Hub upload of PUBLISHED_DIR to HF_REPO; a dry run unless CONFIRM=1
+	@test -n "$(HF_REPO)" || (echo "make push needs HF_REPO=<owner/name>" && exit 2)
+	uv run python -m sieve.model.push --model-dir $(PUBLISHED_DIR) --repo $(HF_REPO) --results-dir $(RESULTS_DIR) $(if $(filter 1,$(CONFIRM)),,--dry-run)
+
+reproduce-check:  ## M6b: re-score REPRO_ROWS from models/ and compare macro-F1 to the committed rows (±0.01)
+	uv run python -m bench.ablations.run --matrix $(ABLATIONS_MATRIX) --corpus $(BENCH_CORPUS) --results-dir $(RESULTS_DIR) --rows $(REPRO_ROWS) --out $(REPRO_OUT) $(BOOT)
+	uv run python -m bench.reproduce --committed $(RESULTS_DIR)/ablations.json --regenerated $(REPRO_OUT) --rows $(REPRO_ROWS) --tolerance 0.01
 
 eval-final:  ## the one-shot sealed evaluation, SIEVE_FINAL=1; REASON= and MODEL_DIRS= required
 	@test -n "$(REASON)" || (echo "make eval-final REASON=\"why the holdout is being opened\" MODEL_DIRS=\"...\"" && exit 2)
@@ -180,7 +216,7 @@ gate:  ## pre-registered style gate -> bench/results/gate.json (exit 3 = stop an
 	uv run python -m bench.gate $(if $(NO_REGENERATE),--check-only,)
 
 pairs:  ## minimal-pair index of the built corpus -> bench/results/minimal_pairs.json (section 13 step 4)
-	uv run python -m bench.split.pairs --corpus bench/data/labelled.jsonl
+	uv run python -m bench.split.pairs --corpus $(BENCH_CORPUS) --out $(RESULTS_DIR)/minimal_pairs.json
 
 dedup-cross:  ## eval-vs-dev dedup of every OOD set -> bench/results/dedup_cross.json (after make corpus)
 	uv run python -m bench.split.dedup_cross
