@@ -34,6 +34,7 @@ from sieve.model.data import (
     load_corpus,
     load_scanner_findings,
 )
+from sieve.model.thresholds import TWO_CLASS_LABELS
 from sieve.model.tokenizer_guard import TOKENIZER_NOTE
 from sieve.model.version import dirty_paths, git_sha, require_clean_tree
 from sieve.serialise import param_lines, serialise
@@ -45,7 +46,7 @@ Precision = Literal["fp32", "bf16"]
 Mode = Literal["full", "description_only"]
 Fold = int | Literal["all"]
 
-TWO_CLASS_ID2LABEL: dict[int, str] = {0: "not_poisoned", 1: "poisoned"}
+TWO_CLASS_ID2LABEL: dict[int, str] = dict(enumerate(TWO_CLASS_LABELS))
 
 
 class PrecisionRefused(ValueError):  # noqa: N818 - a refusal, not an error condition

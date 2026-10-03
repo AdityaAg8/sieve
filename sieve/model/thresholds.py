@@ -55,13 +55,31 @@ class ThresholdsMissing(Exception):  # noqa: N818 - named by the lane brief; oth
     """The artefact carries no usable operating point. Serving it would invent one."""
 
 
+TWO_CLASS_LABELS: tuple[str, str] = ("not_poisoned", "poisoned")
+"""Ablation row 12's head (training plan B11): the two benign classes collapsed into one."""
+
+
+def head_labels(n_columns: int) -> tuple[str, ...]:
+    """The explicit label map of a head with `n_columns` outputs. Poisoned is always the last."""
+    if n_columns == len(LABELS):
+        return tuple(LABELS)
+    if n_columns == len(TWO_CLASS_LABELS):
+        return TWO_CLASS_LABELS
+    raise ValueError(f"a head has 2 or 3 columns, not {n_columns}")
+
+
 def poisoned_scores(probs: npt.NDArray[np.float64]) -> list[float]:
-    """Column 2 of a calibrated `[n, 3]` block, in `sieve.types.LABELS` order."""
-    return [float(x) for x in np.asarray(probs, dtype=np.float64)[:, LABELS.index("poisoned")]]
+    """The poisoned column of a calibrated `[n, 3]` or `[n, 2]` block (its last column)."""
+    block = np.asarray(probs, dtype=np.float64)
+    return [float(x) for x in block[:, head_labels(block.shape[1]).index("poisoned")]]
 
 
-def label_strings(labels: Sequence[int] | npt.NDArray[np.int_]) -> list[str]:
-    return [LABELS[int(i)] for i in labels]
+def label_strings(
+    labels: Sequence[int] | npt.NDArray[np.int_], n_columns: int = len(LABELS)
+) -> list[str]:
+    """Head ids to label names, through the map of a head with `n_columns` outputs."""
+    names = head_labels(n_columns)
+    return [names[int(i)] for i in labels]
 
 
 def select(
@@ -76,7 +94,7 @@ def select(
     seed: int = 0,
 ) -> Thresholds:
     """The operating point, from pooled OOF calibrated probabilities. `Thresholds` is a contract."""
-    truth = label_strings(labels)
+    truth = label_strings(labels, np.shape(probs)[1])
     scores = poisoned_scores(probs)
     t_low = t_low_for_recall_lcb(
         truth, scores, groups, target=recall_target, n_boot=n_boot, seed=seed
@@ -115,7 +133,7 @@ def t_low_spread(
     Published beside `t_low` so its variability is visible rather than implied. It brackets
     `select`'s `t_low` whenever `select` used a seed in the same range, which is the default.
     """
-    truth = label_strings(labels)
+    truth = label_strings(labels, np.shape(probs)[1])
     scores = poisoned_scores(probs)
     return [
         float(t_low_for_recall_lcb(truth, scores, groups, target=target, n_boot=n_boot, seed=seed))
@@ -139,7 +157,7 @@ def write_curves(
     bootstrap replicate and reuses it across every threshold and every statistic, so `n_boot`
     defaults to the full 1,000 of a published point estimate rather than a cheaper number.
     """
-    truth = label_strings(labels)
+    truth = label_strings(labels, np.shape(probs)[1])
     scores = poisoned_scores(probs)
     grid = np.linspace(0.0, 1.0, n_thresholds)
 

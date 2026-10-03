@@ -57,6 +57,28 @@ def fit_temperature(
     return float(np.clip(result.x, *TEMPERATURE_BOUNDS))
 
 
+def _check_head(
+    directory: Path, logits: npt.NDArray[np.float64], labels: npt.NDArray[np.int_]
+) -> None:
+    """The logits' width is the configured head (B11), and every label is one of its ids."""
+    try:
+        th.head_labels(logits.shape[1])
+    except ValueError as error:
+        raise PoolError(f"{directory}: {error}") from error
+    config_path = directory / th.CONFIG_FILE
+    if config_path.exists():
+        configured = json.loads(config_path.read_text(encoding="utf-8")).get("num_labels")
+        if configured is not None and int(configured) != logits.shape[1]:
+            raise PoolError(
+                f"{directory}: sieve_config.json says num_labels={configured} but the OOF "
+                f"logits have {logits.shape[1]} columns"
+            )
+    if len(labels) and (labels.min() < 0 or labels.max() >= logits.shape[1]):
+        raise PoolError(
+            f"{directory}: an OOF label is outside the {logits.shape[1]}-column head's ids"
+        )
+
+
 def pool_oof(
     model_dirs: Sequence[Path], *, expected_ids: Sequence[str] | None = None
 ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int_], list[str]]:
@@ -75,6 +97,12 @@ def pool_oof(
             raise PoolError(
                 f"{directory}: length mismatch — {len(logits)} logits, {len(labels)} labels, "
                 f"{len(fold_ids)} ids"
+            )
+        _check_head(directory, logits, labels)
+        if blocks and logits.shape[1] != blocks[0].shape[1]:
+            raise PoolError(
+                f"{directory} has {logits.shape[1]} logit columns, the first fold "
+                f"{blocks[0].shape[1]}; one pool holds one head"
             )
         blocks.append(logits)
         label_blocks.append(labels)
