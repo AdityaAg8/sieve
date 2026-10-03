@@ -147,13 +147,31 @@ class TorchClassifier:
     available (`CUDA_VISIBLE_DEVICES=-1` keeps it on the CPU).
     """
 
-    def __init__(self, model_dir: Path, *, batch_size: int = DEFAULT_BATCH_SIZE) -> None:
+    def __init__(
+        self,
+        model_dir: Path,
+        *,
+        batch_size: int = DEFAULT_BATCH_SIZE,
+        thresholds: Thresholds | None = None,
+    ) -> None:
+        """`thresholds` scores an uncalibrated fold model at its parent's frozen operating
+        point (the threshold-transfer diagnostic, training plan §6.5); otherwise the
+        artefact's own, and an uncalibrated artefact raises."""
         import torch
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
         self._torch = torch
         self.model_dir = Path(model_dir)
-        self.model_version, self._max_length, self.thresholds = _artefact(self.model_dir)
+        if thresholds is None:
+            self.model_version, self._max_length, self.thresholds = _artefact(self.model_dir)
+        else:
+            config_path = self.model_dir / th.CONFIG_FILE
+            config = (
+                json.loads(config_path.read_text(encoding="utf-8")) if config_path.exists() else {}
+            )
+            self.model_version = str(config.get("model_version") or self.model_dir.name)
+            self._max_length = int(config.get("max_length") or DEFAULT_MAX_LENGTH)
+            self.thresholds = thresholds
         self._tokenizer: Any = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call]
             str(self.model_dir)
         )

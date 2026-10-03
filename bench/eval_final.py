@@ -324,6 +324,18 @@ def earlier_openings(version: str, log_path: Path | None = None) -> list[dict[st
     return entries
 
 
+def preflight_models(
+    model_dirs: Sequence[Path], corpus: Path, results_dir: Path, *, loader: Loader = _default_loader
+) -> list[LoadedModel]:
+    """The model half of the preflight, which touches no sealed input: load every model, refuse
+    fixture/fake versions and non-finite thresholds, smoke-score 8 dev rows, check the output
+    directory. `bench.eval_val_ood --dry-run-on-dev` runs exactly this."""
+    models = load_models(model_dirs, loader)
+    smoke(models, _load_corpus(corpus))
+    _writable(results_dir)
+    return models
+
+
 def preflight(
     model_dirs: Sequence[Path],
     inputs: SealedInputs,
@@ -339,10 +351,7 @@ def preflight(
     missing = inputs.missing()
     if missing:
         raise PreflightError(f"sealed inputs missing: {missing}")
-    models = load_models(model_dirs, loader)
-    corpus = _load_corpus(inputs.corpus)
-    smoke(models, corpus)
-    _writable(results_dir)
+    models = preflight_models(model_dirs, inputs.corpus, results_dir, loader=loader)
     _writable(LOG_PATH.parent)
     version = dataset_version(inputs.corpus)
     if earlier_openings(version) and not new_version:
