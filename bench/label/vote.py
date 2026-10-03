@@ -68,6 +68,17 @@ class Paths:
     queue: Path
     agreement: Path
     majority: Path
+    #: The built view the split assignments live in. `corpus.jsonl` carries none (split is set
+    #: by `bench.split.split`, never written back), so reading `row.split` there skipped every
+    #: real row (Z2 review). None: use the rows' own split (tests).
+    labelled: Path | None = None
+
+
+def dev_ids(rows: Sequence[CorpusRecord], labelled: Path | None) -> frozenset[str]:
+    """Ids of the real dev rows: from the built view when given, else the rows' own split."""
+    if labelled is None:
+        return frozenset(r.id for r in rows if r.split == "dev")
+    return frozenset(r.id for r in load(labelled) if r.split == "dev")
 
 
 def decide_real(votes: Mapping[str, str | None]) -> Decision:
@@ -184,6 +195,7 @@ def run_vote(
 
     # ------------------------------------------------------------------ real rows (F2)
     rows = load(paths.corpus)
+    dev = dev_ids(rows, paths.labelled)
     queue: list[str] = []
     majority: dict[str, str | None] = {}
     out = []
@@ -196,7 +208,7 @@ def run_vote(
         majority[row.id] = decision.label or (
             "poisoned" if decision.queue == "poisoned_vote" else None
         )
-        if row.split != "dev" or is_human(row.labeller):
+        if row.id not in dev or is_human(row.labeller):
             out.append(row)  # sealed rows feed the audits only; a person's label always wins
             continue
         if decision.label is None:
@@ -218,7 +230,10 @@ def run_vote(
     _json(paths.queue, sorted(queue))
     _json(paths.majority, majority)
     construction = {r.id: r.label for r in synthetic}  # round 0: dropped rows count too
-    _json(paths.agreement, _agreement(rows, log, sonnet, first, construction, state, len(queue)))
+    _json(
+        paths.agreement,
+        _agreement(rows, log, sonnet, first, construction, state, len(queue), dev),
+    )
     print(
         f"vote: {len(queue)} row(s) in the review queue; {len(state['dropped'])} synthetic dropped"
     )
@@ -233,8 +248,13 @@ def _agreement(
     construction: Mapping[str, str],
     state: Mapping[str, Any],
     queue: int,
+    dev: frozenset[str] | None = None,
 ) -> dict[str, Any]:
-    real = [r for r in rows if r.source in REAL_SOURCES and r.split == "dev"]
+    real = [
+        r
+        for r in rows
+        if r.source in REAL_SOURCES and (r.id in dev if dev is not None else r.split == "dev")
+    ]
     voters = {
         "sonnet": lambda r: sonnet.get(r.id),
         "qwen": lambda r: _vote(log, MODELS["qwen"], r.id),
@@ -345,6 +365,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--majority", type=Path, default=Path("bench/data/ensemble/majority_v1.json")
     )
+    parser.add_argument(
+        "--labelled",
+        type=Path,
+        default=Path("bench/data/labelled.jsonl"),
+        help="the built view whose split assignments decide which real rows are dev",
+    )
     ns = parser.parse_args(argv)
     paths = Paths(
         corpus=ns.corpus,
@@ -356,6 +382,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         queue=ns.queue,
         agreement=ns.agreement,
         majority=ns.majority,
+        labelled=ns.labelled,
     )
     return run_vote(paths, regenerate=_regenerate, rebuild=_rebuild)
 

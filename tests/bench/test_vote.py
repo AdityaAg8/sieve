@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from pathlib import Path
 from typing import Any
@@ -231,3 +232,22 @@ def test_the_majority_file_covers_every_voted_row_for_the_audits(tmp_path: Path)
     world.run()
     majority = json.loads(world.paths.majority.read_text(encoding="utf-8"))
     assert majority["real-5"] == IMP and majority["real-1"] == B and majority["real-4"] == P
+
+
+def test_splits_come_from_the_built_view_when_corpus_rows_carry_none(tmp_path: Path) -> None:
+    """Z2: corpus.jsonl has split=None on every row; reading it skipped every real row."""
+    world = World(tmp_path)
+    original = world.rows()
+    labelled = tmp_path / "labelled.jsonl"
+    labelled.write_text(
+        "".join(r.model_dump_json() + "\n" for r in original.values()),
+        encoding="utf-8",
+        newline="\n",
+    )
+    world.write([r.model_copy(update={"split": None}) for r in original.values()])
+    world.paths = dataclasses.replace(world.paths, labelled=labelled)
+    assert world.run() == 0
+    rows = world.rows()
+    assert (rows["real-1"].label, rows["real-1"].labeller) == (B, vt.LABELLER)
+    assert rows["real-5"].labeller == "claude-sonnet-5-provisional"  # sealed in the view
+    assert json.loads(world.paths.queue.read_text(encoding="utf-8")) == ["real-4"]
