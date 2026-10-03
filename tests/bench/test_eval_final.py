@@ -119,6 +119,8 @@ def test_nothing_else_in_the_repository_opens_the_holdout() -> None:
         # Read the holdout REPORT (`holdout.json`), never a row.
         "sieve/model/push.py",
         "sieve/model/card.md",
+        # Serves the holdout REPORT (`holdout.json`) to the web (training plan I5); no row.
+        "sieve/api/routes/bench.py",
     }
     assert hits <= allowed, f"unexpected holdout/eval_only reader(s): {sorted(hits - allowed)}"
 
