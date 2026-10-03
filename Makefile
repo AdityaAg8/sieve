@@ -142,6 +142,8 @@ bench:  ## regenerate bench/results/* offline (latency, ablations, errors, judge
 	uv run python -m bench.latency --base-url $(LATENCY_BASE_URL)
 	uv run python -m bench.ablations.run --matrix bench/ablations.yaml
 	uv run python -m bench.analysis.errors --dirs $(FOLD_DIRS) --corpus $(BENCH_CORPUS) --model-dir $(MODEL_DIR)
+	# H3: the sealed report is a pure function of the saved predictions; re-rendered when they exist.
+	@if [ -f bench/results/holdout_predictions.jsonl ]; then uv run python -m bench.report_final $(if $(HEADLINE),--headline $(HEADLINE),); fi
 	uv run python -m bench.analysis.judge_agreement
 	uv run python -m bench.demo
 
@@ -149,6 +151,7 @@ eval-final:  ## the one-shot sealed evaluation, SIEVE_FINAL=1; REASON= and MODEL
 	@test -n "$(REASON)" || (echo "make eval-final REASON=\"why the holdout is being opened\" MODEL_DIRS=\"...\"" && exit 2)
 	@test -n "$(MODEL_DIRS)" || (echo "make eval-final needs MODEL_DIRS=\"<every artefact to score>\"" && exit 2)
 	SIEVE_FINAL=1 uv run python -m bench.eval_final --reason "$(REASON)" --model-dirs $(MODEL_DIRS) $(if $(NEW_VERSION),--new-version,)
+	uv run python -m bench.report_final $(if $(HEADLINE),--headline $(HEADLINE),)
 
 readme:  ## rewrite README numbers from bench/results/ (refuses without holdout.json)
 	uv run python docs/scripts/readme_numbers.py
