@@ -16,9 +16,10 @@ Two artefacts are compared, and they answer different questions:
 * `oof_logits.npy` -- **byte-identical**. These are the pooled out-of-fold predictions every
   downstream decision is made from (thresholds, calibration, ablations, error analysis). A
   difference here, however small, is a different set of verdicts.
-* `metrics.json` -- identical **except `wall_clock_seconds`**, which is a measurement of the
-  machine and not an output of the training. Comparing the two files byte-for-byte would assert
-  that two runs took the same number of milliseconds, which is not determinism and is not true.
+* `metrics.json` -- identical **except the clock** (`wall_clock_seconds` and the training plan
+  B4 throughput keys), which measures the machine and is not an output of the training.
+  Comparing the two files byte-for-byte would assert that two runs took the same number of
+  milliseconds, which is not determinism and is not true.
 
 The cross-seed control is part of the test: seed 1 into a third directory, asserted to differ
 from seed 0. Without it, a comparison that accidentally compared nothing would also pass.
@@ -102,9 +103,15 @@ def _train(corpus: Path, out: Path, *, seed: str = "0") -> Path:
     return out
 
 
+#: Measurements of the machine (training plan B4), not outputs of the training.
+CLOCK_KEYS = ("train_seconds", "seconds_per_step", "tokens_per_second", "peak_cuda_mem_bytes")
+
+
 def _metrics_without_the_clock(directory: Path) -> dict:
     metrics = json.loads((directory / "metrics.json").read_text(encoding="utf-8"))
     assert metrics.pop("wall_clock_seconds") > 0, "the run has to have taken some time"
+    for key in CLOCK_KEYS:
+        metrics.pop(key)
     return metrics
 
 
