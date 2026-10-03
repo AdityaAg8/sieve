@@ -52,11 +52,18 @@ def test_a_process_with_its_own_memory_is_a_compute_process() -> None:
     assert gpu.busy_reason(state, own_pids={4242}) is None
 
 
+def test_the_owners_measured_idle_desktop_is_not_busy() -> None:
+    """2026-10-03: 1,344 MiB used with nothing loaded (desktop and an idle Docker stack)."""
+    state = gpu.query(run=_runner(WINDOWS_APPS, "1344, 12282, 36\n"))
+    assert state is not None
+    assert gpu.busy_reason(state) is None
+
+
 def test_the_idle_threshold_is_a_parameter() -> None:
-    state = gpu.query(run=_runner(WINDOWS_APPS, "1500, 12282, 1\n"))
+    state = gpu.query(run=_runner(WINDOWS_APPS, "2500, 12282, 1\n"))
     assert state is not None
     assert gpu.busy_reason(state) is not None
-    assert gpu.busy_reason(state, idle_mib=2048) is None
+    assert gpu.busy_reason(state, idle_mib=3072) is None
 
 
 def test_no_nvidia_smi_means_no_state() -> None:

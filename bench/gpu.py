@@ -18,9 +18,10 @@ from collections.abc import Callable, Collection, Mapping
 from dataclasses import dataclass
 from typing import Any
 
-#: Board memory above which the card counts as in use by someone else. The owner's idle desktop
-#: renders on the integrated GPU, so the discrete card sits well below this when nothing runs.
-IDLE_MIB = 1024
+#: Board memory above which the card counts as in use by someone else. Measured 2026-10-03 with
+#: nothing loaded: 1,344 MiB (desktop apps and an idle Docker stack). The smallest model job seen
+#: on this card holds ~3.5 GiB, so 2 GiB separates the two with room on both sides.
+IDLE_MIB = 2048
 
 Runner = Callable[..., Any]
 
