@@ -123,6 +123,9 @@ def model_dir(tmp_path: Path) -> Path:
                 "t_low_spread": [0.09, 0.11, 0.12, 0.1, 0.13],
                 "ece_before": 0.18,
                 "ece_after": 0.03,
+                "ece_after_crossfit": 0.041,
+                "ece_poisoned_after_crossfit": 0.027,
+                "recall_at_t_low_crossfit": 0.962,
                 "routing_rate": 0.21,
                 "val_recall_at_t_low": 0.99,
                 "val_precision_at_t_high": 0.96,
@@ -190,6 +193,12 @@ def test_the_card_carries_the_thresholds_the_spread_and_the_ece(
     assert "0.11" in text and "0.87" in text
     assert "0.0900–0.1300 over 5 refits" in text
     assert "0.18" in text and "0.03" in text
+
+
+def test_the_card_carries_the_cross_fitted_recall_and_ece(results: Path, model_dir: Path) -> None:
+    """D6: the in-sample recall at T_low is tautological, so the card prints the honest one."""
+    text = render_card(build_context(model_dir, results, sha=SHA))
+    assert "0.9620" in text and "0.0410" in text and "0.0270" in text
 
 
 def test_the_card_carries_the_selection_outcome_and_margin(results: Path, model_dir: Path) -> None:
@@ -460,12 +469,31 @@ def written_model_dir(dev_records_for_writers: list[Any], tmp_path: Path) -> Pat
             chosen, t_low_spread=[0.09, 0.11, 0.12, 0.1, 0.13], ece_before=0.18, ece_after=0.03
         )
     )
+    payload.update(_crossfit_payload())
     # What `export.main` appends.
     payload.update({"onnx_int8_parity": 0.004, "p50_ms": 61.0, "p95_ms": 120.0})
     (directory / "sieve_config.json").write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
     )
     return directory
+
+
+def _crossfit_payload() -> dict[str, Any]:
+    """What `calibrate.main` merges in from `crossfit_report`, run on a small synthetic pool."""
+    import numpy as np
+
+    from sieve.model.calibrate import crossfit_report
+
+    rng = np.random.default_rng(0)
+    labels = np.tile(np.arange(3), 40)
+    logits = rng.normal(size=(120, 3))
+    logits[np.arange(120), labels] += 3.0
+    fold_of = np.repeat(np.arange(5), 24)
+    report = crossfit_report(
+        logits, labels, [f"s{i % 30}" for i in range(120)], fold_of, target=0.9, n_boot=30
+    )
+    report.pop("reliability")
+    return report
 
 
 def test_a_card_built_entirely_from_real_writer_output_has_no_blank_slot(

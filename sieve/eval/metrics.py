@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -201,19 +202,55 @@ def ranking_ci(
     return cluster_bootstrap(stat, y_true, y_score, clusters, n_boot=n_boot, seed=seed, alpha=alpha)
 
 
-def expected_calibration_error(
-    probs: Arr, y_true_idx: npt.NDArray[np.int_], n_bins: int = 15
-) -> float:
-    conf = probs.max(axis=1)
-    pred = probs.argmax(axis=1)
-    acc = (pred == y_true_idx).astype(float)
-    bins = np.linspace(0.0, 1.0, n_bins + 1)
-    ece = 0.0
-    for lo, hi in zip(bins[:-1], bins[1:], strict=True):
+ECE_BINS = 15
+
+
+def reliability_bins(
+    confidence: Arr | Sequence[float], outcome: Arr | Sequence[float], n_bins: int = ECE_BINS
+) -> list[dict[str, Any]]:
+    """Equal-width reliability-diagram bins over [0, 1] (training plan D6).
+
+    `confidence` is a predicted probability and `outcome` the 0/1 event it predicts: the
+    top-label probability and whether the argmax was right, or the poisoned column and whether
+    the row is poisoned. The first bin is closed on both sides, every other is (lo, hi]. Empty
+    bins are kept with `None` means so every curve has the same x-axis.
+    """
+    conf = np.asarray(confidence, dtype=float)
+    hit = np.asarray(outcome, dtype=float)
+    edges = np.linspace(0.0, 1.0, n_bins + 1)
+    out: list[dict[str, Any]] = []
+    for lo, hi in zip(edges[:-1], edges[1:], strict=True):
         m = (conf > lo) & (conf <= hi) if lo > 0 else (conf >= lo) & (conf <= hi)
-        if m.any():
-            ece += m.mean() * abs(acc[m].mean() - conf[m].mean())
-    return float(ece)
+        n = int(m.sum())
+        out.append(
+            {
+                "lo": float(lo),
+                "hi": float(hi),
+                "n": n,
+                "mean_confidence": float(conf[m].mean()) if n else None,
+                "observed": float(hit[m].mean()) if n else None,
+            }
+        )
+    return out
+
+
+def calibration_error(bins: Sequence[dict[str, Any]]) -> float:
+    """ECE of `reliability_bins`: the row-weighted mean |observed - mean confidence|."""
+    total = sum(b["n"] for b in bins)
+    if not total:
+        return float("nan")
+    return float(
+        sum(b["n"] / total * abs(b["observed"] - b["mean_confidence"]) for b in bins if b["n"])
+    )
+
+
+def expected_calibration_error(
+    probs: Arr, y_true_idx: npt.NDArray[np.int_], n_bins: int = ECE_BINS
+) -> float:
+    """Top-label ECE: the argmax's probability against whether the argmax was right."""
+    conf = probs.max(axis=1)
+    correct = (probs.argmax(axis=1) == y_true_idx).astype(float)
+    return calibration_error(reliability_bins(conf, correct, n_bins))
 
 
 def cohens_kappa(a: Sequence[str], b: Sequence[str]) -> float:

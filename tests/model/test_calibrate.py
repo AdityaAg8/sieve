@@ -203,6 +203,21 @@ def test_cli_fills_every_fold_config_and_writes_the_curves(
     assert len(curves["recall_vs_threshold"]) == 20
     assert len(curves["fpr_vs_recall"]) == 20
 
+    # D6: cross-fitted recall and ECE beside the in-sample ones, the poisoned-column ECE, and
+    # the reliability-curve data. The shipped operating point is still the pooled fit's.
+    for field in (
+        "recall_at_t_low_crossfit", "ece_after_crossfit", "ece_poisoned_before",
+        "ece_poisoned_after", "ece_poisoned_after_crossfit",
+    ):  # fmt: skip
+        assert 0.0 <= shared[field] <= 1.0, field
+    assert len(shared["crossfit_t_low_per_fold"]) == 5
+    reliability = curves["reliability"]
+    for key in (
+        "top_label_before", "top_label_after", "top_label_after_crossfit",
+        "poisoned_before", "poisoned_after", "poisoned_after_crossfit",
+    ):  # fmt: skip
+        assert sum(b["n"] for b in reliability[key]) == len(dev_records), key
+
 
 def _calibrate_nested(
     dev_records: list, tmp_path: Path, *extra: str

@@ -18,7 +18,12 @@ import numpy as np
 import numpy.typing as npt
 from scipy.optimize import minimize_scalar  # type: ignore[import-untyped]
 
-from sieve.eval.metrics import expected_calibration_error
+from sieve.eval.metrics import (
+    ECE_BINS,
+    calibration_error,
+    expected_calibration_error,
+    reliability_bins,
+)
 from sieve.model import thresholds as th
 from sieve.model.data import load_corpus
 
@@ -129,6 +134,117 @@ def pool_oof(
     return np.concatenate(blocks), np.concatenate(label_blocks), ids
 
 
+# ------------------------------------------------------------------------- cross-fitting
+
+ECE_KIND = f"top-label, {ECE_BINS} equal-width bins"
+
+
+def _top_label_bins(
+    probs: npt.NDArray[np.float64], labels: npt.NDArray[np.int_]
+) -> list[dict[str, Any]]:
+    correct = (probs.argmax(axis=1) == labels).astype(float)
+    return reliability_bins(probs.max(axis=1), correct)
+
+
+def _poisoned_bins(
+    probs: npt.NDArray[np.float64], labels: npt.NDArray[np.int_]
+) -> list[dict[str, Any]]:
+    poisoned = th.head_labels(probs.shape[1]).index("poisoned")
+    return reliability_bins(probs[:, poisoned], (labels == poisoned).astype(float))
+
+
+def reliability_report(
+    logits: npt.NDArray[np.float64], labels: npt.NDArray[np.int_], temperature: float
+) -> tuple[dict[str, float], dict[str, list[dict[str, Any]]]]:
+    """In-sample poisoned-column ECE and the reliability bins before and after scaling."""
+    before, after = apply(logits, 1.0), apply(logits, temperature)
+    bins = {
+        "top_label_before": _top_label_bins(before, labels),
+        "top_label_after": _top_label_bins(after, labels),
+        "poisoned_before": _poisoned_bins(before, labels),
+        "poisoned_after": _poisoned_bins(after, labels),
+    }
+    errors = {
+        "ece_poisoned_before": calibration_error(bins["poisoned_before"]),
+        "ece_poisoned_after": calibration_error(bins["poisoned_after"]),
+    }
+    return errors, bins
+
+
+def crossfit_report(
+    logits: npt.NDArray[Any],
+    labels: Sequence[int] | npt.NDArray[np.int_],
+    groups: Sequence[str],
+    fold_of: Sequence[int] | npt.NDArray[np.int_],
+    *,
+    target: float = 0.98,
+    n_boot: int = 1000,
+) -> dict[str, Any]:
+    """Recall at `T_low` and ECE after temperature, cross-fitted by fold (training plan D6).
+
+    For each fold the temperature and `T_low` are fitted on the OTHER folds' pooled OOF
+    predictions and that fold is scored with them, so neither number is measured on the rows
+    that chose it. In-sample, recall at `T_low` clears the target by construction. Reported
+    only: the shipped operating point is still the pooled fit's. One fold cannot be
+    cross-fitted, and every number is then None.
+    """
+    x = np.asarray(logits, dtype=np.float64)
+    y = np.asarray(labels, dtype=np.int64)
+    folds = np.asarray(fold_of)
+    keys = sorted({int(f) for f in folds})
+    temperatures: list[float] = []
+    t_lows: list[float] = []
+    report: dict[str, Any] = {
+        "ece_kind": ECE_KIND,
+        "recall_at_t_low_crossfit": None,
+        "ece_after_crossfit": None,
+        "ece_poisoned_after_crossfit": None,
+        "crossfit_temperature_per_fold": temperatures,
+        "crossfit_t_low_per_fold": t_lows,
+        "reliability": {"top_label_after_crossfit": None, "poisoned_after_crossfit": None},
+    }
+    if len(keys) < 2:
+        return report
+
+    poisoned = th.head_labels(x.shape[1]).index("poisoned")
+    probs = np.empty_like(x)
+    hits = positives = 0
+    for k in keys:
+        train, test = folds != k, folds == k
+        temperature = fit_temperature(x[train], y[train])
+        probs[test] = apply(x[test], temperature)
+        chosen = th.select(
+            apply(x[train], temperature),
+            y[train],
+            [g for g, m in zip(groups, train, strict=True) if m],
+            temperature=temperature,
+            recall_target=target,
+            n_boot=n_boot,
+        )
+        temperatures.append(temperature)
+        t_lows.append(chosen.t_low)
+        held = y[test] == poisoned
+        hits += int((probs[test][held, poisoned] >= chosen.t_low).sum())
+        positives += int(held.sum())
+
+    top, column = _top_label_bins(probs, y), _poisoned_bins(probs, y)
+    report.update(
+        {
+            "recall_at_t_low_crossfit": hits / positives if positives else None,
+            "ece_after_crossfit": calibration_error(top),
+            "ece_poisoned_after_crossfit": calibration_error(column),
+            "reliability": {"top_label_after_crossfit": top, "poisoned_after_crossfit": column},
+        }
+    )
+    return report
+
+
+def _fold_of(model_dirs: Sequence[Path]) -> npt.NDArray[np.int_]:
+    """Which directory each pooled row came from, in `pool_oof`'s concatenation order."""
+    sizes = [len(json.loads((d / "oof_ids.json").read_text(encoding="utf-8"))) for d in model_dirs]
+    return np.repeat(np.arange(len(model_dirs)), sizes)
+
+
 # ----------------------------------------------------------------------------------- CLI
 
 
@@ -195,6 +311,18 @@ def main(argv: Sequence[str] | None = None) -> Path:
     payload.update(
         th.t_low_report(probs, labels, groups, target=ns.recall_target, n_boot=ns.n_boot)
     )
+    in_sample_errors, reliability = reliability_report(logits, labels, temperature)
+    crossfit = crossfit_report(
+        logits, labels, groups, _fold_of(ns.dirs), target=ns.recall_target, n_boot=ns.n_boot
+    )
+    reliability.update(crossfit.pop("reliability"))
+    payload.update(in_sample_errors)
+    payload.update(crossfit)
+    log.info(
+        "cross-fitted: recall at T_low %s, ECE after %s",
+        crossfit["recall_at_t_low_crossfit"],
+        crossfit["ece_after_crossfit"],
+    )
 
     shared = _shared_dir(ns.dirs, ns.out)
     shared.mkdir(parents=True, exist_ok=True)
@@ -235,11 +363,20 @@ def main(argv: Sequence[str] | None = None) -> Path:
         ns.results_dir / "curves.json",
         n_thresholds=ns.curve_points,
         n_boot=ns.curve_boot,
+        reliability={"n_bins": ECE_BINS, **reliability},
     )
     return written
 
 
-__all__ = ["PoolError", "apply", "fit_temperature", "main", "pool_oof"]
+__all__ = [
+    "PoolError",
+    "apply",
+    "crossfit_report",
+    "fit_temperature",
+    "main",
+    "pool_oof",
+    "reliability_report",
+]
 
 if __name__ == "__main__":  # pragma: no cover
     main()

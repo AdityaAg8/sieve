@@ -83,6 +83,16 @@ def _mean_std(row: Mapping[str, Any]) -> str | None:
     return f"{mean:.4f} ± {_spread(std)} over seeds {row.get('seeds')}"
 
 
+def _crossfit(config: Mapping[str, Any]) -> str | None:
+    """Training plan D6: the cross-fitted recall and ECE `calibrate` writes, or None."""
+    keys = ("recall_at_t_low_crossfit", "ece_after_crossfit", "ece_poisoned_after_crossfit")
+    values = [config.get(k) for k in keys]
+    if any(v is None for v in values):
+        return None
+    recall, top, poisoned = values
+    return f"{recall:.4f} / {top:.4f}, {poisoned:.4f}"
+
+
 def _table(breakdown: Mapping[str, Mapping[str, float]] | None) -> str | None:
     if not breakdown:
         return None
@@ -160,6 +170,7 @@ def build_context(
         "temperature": config.get("temperature"),
         "ece_before": config.get("ece_before"),
         "ece_after": config.get("ece_after"),
+        "crossfit": _crossfit(config),
         "routing_rate": config.get("routing_rate"),
         "macro_f1": _mean_std(row),
         "fpr_stage1_at_t_low": _interval(row.get("fpr_stage1_at_t_low")),

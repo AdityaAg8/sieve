@@ -52,12 +52,18 @@ Thresholds live in this artefact's `sieve_config.json` and are never hardcoded b
 | `T_low` spread over five bootstrap refits | {{t_low_spread}} |
 | Temperature | {{temperature}} |
 | ECE before / after temperature scaling | {{ece_before}} / {{ece_after}} |
+| Cross-fitted by fold: recall at `T_low` / ECE after (top-label, poisoned column) | {{crossfit}} |
 | Judge routing rate | {{routing_rate}} |
 
 `T_low` is the highest threshold whose **cluster-bootstrap (by server) 95% lower bound** of
 `poisoned` recall clears the target, not the lowest positive score, which is a one-row
 statistic. The recall-vs-threshold and FPR-vs-recall curves are published in
 `bench/results/curves.json`, so the operating point is visibly a choice on a curve.
+
+Recall at `T_low` measured on the rows that chose `T_low` clears the target by construction, so
+the cross-fitted row is the honest one: each fold is scored with a temperature and a `T_low`
+fitted on the other four folds. ECE is top-label over 15 equal-width bins; the reliability
+diagrams, in-sample and cross-fitted, are in `curves.json` under `reliability`.
 
 ## Metrics
 

@@ -8,7 +8,7 @@ relabelled row can move, and it was the v2.0 bug this file exists to avoid (PRD 
 from __future__ import annotations
 
 import json
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -177,8 +177,12 @@ def write_curves(
     n_thresholds: int = 200,
     n_boot: int = 1000,
     seed: int = 0,
+    reliability: Mapping[str, Any] | None = None,
 ) -> Path:
     """Recall-vs-threshold and FPR-vs-recall with cluster-bootstrap bounds (PRD §11.4).
+
+    `reliability` (training plan D6) is written beside them under `"reliability"`: the
+    reliability-diagram bins `calibrate` computed, in-sample and cross-fitted.
 
     Backed by `metrics.cluster_bootstrap_curve`, which draws the server resample once per
     bootstrap replicate and reuses it across every threshold and every statistic, so `n_boot`
@@ -207,7 +211,9 @@ def write_curves(
     # Ties matter: several thresholds can share a recall while differing in FPR, and the
     # threshold order within a tie runs the wrong way, so order by (recall, FPR).
     fpr_rows.sort(key=lambda row: (row[0], row[1]))
-    payload = {"recall_vs_threshold": recall_rows, "fpr_vs_recall": fpr_rows}
+    payload: dict[str, Any] = {"recall_vs_threshold": recall_rows, "fpr_vs_recall": fpr_rows}
+    if reliability is not None:
+        payload["reliability"] = dict(reliability)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8", newline="\n")
     return path
