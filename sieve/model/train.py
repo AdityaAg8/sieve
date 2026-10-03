@@ -33,6 +33,7 @@ from sieve.model.data import (
     load_corpus,
     load_scanner_findings,
 )
+from sieve.model.tokenizer_guard import TOKENIZER_NOTE
 from sieve.model.version import dirty_paths, git_sha, require_clean_tree
 from sieve.serialise import param_lines, serialise
 from sieve.types import LABELS, CorpusRecord, EvidenceField, Label, ScannerFinding
@@ -400,6 +401,8 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
 
     tokenizer: Any = AutoTokenizer.from_pretrained(config.base_model, revision=config.revision)  # type: ignore[no-untyped-call]
     vocab_size = add_markers(tokenizer)
+    if "deberta" in config.base_model.lower():
+        log.info(TOKENIZER_NOTE)
 
     findings = scanner_findings_for(config)
     failures = payload_survival_failures(
