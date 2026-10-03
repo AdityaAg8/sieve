@@ -1,51 +1,89 @@
-import { formatPercent, type HumanReference as HumanPoint } from "@/lib/bench";
+import { NO_NUMBER, formatPercent, formatPercentRange, type LabelAudit } from "@/lib/bench";
 
+import { auditLabel } from "./Agreement";
 import { BenchSection, EmptyNote, Num, TableWrap, Td, Th } from "./primitives";
 
 /**
- * M12. "Is 0.94 recall good?" has no answer without a scale. The second annotator's own
- * (recall, FPR) point is that scale: it is what a careful person achieved on the same rows.
+ * The scale under every number on this page is label quality, and v1 measures it one way:
+ * human gold vs the labelling ensemble on the 104-row sealed audit (`label_audit.json`, training
+ * plan F3). test-ID holds no poisoned row, so this is an error rate on labels — never a human's
+ * recall, and never a second annotator's (PRD M8 is not met; a disclosed deviation).
  *
- * Two numbers for one or two entities is a table, not a chart — plotting two points on an ROC
- * axis would be chart junk dressed as rigour.
+ * A row the ensemble left undecided counts as an error, so the undecided count is shown beside
+ * the rate rather than hidden in it.
  */
-export function HumanReference({ points }: { points: HumanPoint[] }) {
+export function HumanReference({ audit }: { audit: LabelAudit }) {
+  const testId = audit.test_id;
+
   return (
     <BenchSection
       id="human-reference"
       title="Human reference point"
-      lede="The second annotator read the same rows blind. Their recall and false-positive rate are
-        the scale against which the model’s numbers mean anything at all."
+      lede="How often the labelling ensemble disagreed with one person's gold label, on real rows
+        nobody trained or tuned on. Every recall and false-positive rate above rests on labels at
+        least this noisy."
     >
-      {points.length === 0 ? (
+      {!testId ? (
         <EmptyNote>
-          No human reference yet. It appears with the first{" "}
-          <code className="t-mono">make bench</code>.
+          No audit yet. It appears once the human gold labels exist and{" "}
+          <code className="t-mono">bench.label.audit --report test-id</code> has run.
         </EmptyNote>
       ) : (
-        <TableWrap label="Human reference table">
-          <thead>
-            <tr>
-              <Th>Reader</Th>
-              <Th>Recall</Th>
-              <Th>False-positive rate</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {points.map((point) => (
-              <tr key={point.label}>
-                <Td>{point.label}</Td>
+        <>
+          <p className="t-ui text-ink-2">{auditLabel(testId)}, report-only</p>
+          <TableWrap label="Human reference table">
+            <thead>
+              <tr>
+                <Th>Measure</Th>
+                <Th>Value</Th>
+                <Th>95% interval</Th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <Td>Ensemble label error, Clopper–Pearson</Td>
                 <Td>
-                  <Num>{formatPercent(point.recall)}</Num>
+                  <Num>{formatPercent(testId.error_rate)}</Num>
                 </Td>
                 <Td>
-                  <Num>{formatPercent(point.fpr)}</Num>
+                  <Num>{formatPercentRange(testId.cp_lo, testId.cp_hi)}</Num>
                 </Td>
               </tr>
-            ))}
-          </tbody>
-        </TableWrap>
+              <tr>
+                <Td>Ensemble label error, server-cluster bootstrap</Td>
+                <Td>
+                  <Num>{formatPercent(testId.error_rate)}</Num>
+                </Td>
+                <Td>
+                  <Num>{formatPercentRange(testId.cluster_lo, testId.cluster_hi)}</Num>
+                </Td>
+              </tr>
+              <tr>
+                <Td>Disagreements, undecided rows included</Td>
+                <Td>
+                  <Num>{count(testId.errors, testId.n)}</Num>
+                </Td>
+                <Td>
+                  <span className="text-ink-2">exact count</span>
+                </Td>
+              </tr>
+              <tr>
+                <Td>Rows the ensemble left undecided</Td>
+                <Td>
+                  <Num>{count(testId.undecided, testId.n)}</Num>
+                </Td>
+                <Td>
+                  <span className="text-ink-2">exact count</span>
+                </Td>
+              </tr>
+            </tbody>
+          </TableWrap>
+        </>
       )}
     </BenchSection>
   );
+}
+
+function count(k: number | undefined, n: number | undefined): string {
+  return typeof k === "number" && typeof n === "number" ? `${k} of ${n}` : NO_NUMBER;
 }

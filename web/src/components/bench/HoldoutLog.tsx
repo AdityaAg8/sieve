@@ -1,9 +1,9 @@
-import type { HoldoutLogRow } from "@/lib/bench";
+import { NO_NUMBER, type HoldoutLogRow } from "@/lib/bench";
 
 import { BenchSection, Num, TableWrap, Td, Th } from "./primitives";
 
 /**
- * `bench/results/test_opened.log`, every line of it.
+ * `bench/results/test_opened.log`, every line of it (`bench.eval_final.append_log_line`).
  *
  * Publishing the log is the point. "We opened the holdout once" is a claim; an append-only log
  * with a git SHA and a reason per line is something a reader can check. A short log is the
@@ -46,7 +46,9 @@ export function HoldoutLog({ rows }: { rows: HoldoutLogRow[] }) {
                   <span className="t-mono t-num">{row.utc}</span>
                 </Td>
                 <Td>
-                  <Num>{String(row.rows)}</Num>
+                  <Num>
+                    {typeof row.rows_evaluated === "number" ? String(row.rows_evaluated) : NO_NUMBER}
+                  </Num>
                 </Td>
                 <Td>{row.reason}</Td>
               </tr>

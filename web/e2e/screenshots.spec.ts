@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-import { EXPECTED, WIDTHS, expectNoHorizontalScroll } from "./helpers";
+import fixture from "../src/mocks/fixtures/bench-summary.json";
+
+import { EXPECTED, WIDTHS, expectNoHorizontalScroll, mockOverride } from "./helpers";
 
 /**
  * Full-page screenshots at the six widths PRD §14.8 names, committed to `web/screenshots/` for
@@ -17,6 +19,8 @@ type Route = {
   readyName: string;
   /** Extra wait for a page that fills in after first paint. */
   settled?: (page: import("@playwright/test").Page) => Promise<void>;
+  /** A benchmark summary to serve instead of the provisional default. */
+  bench?: Record<string, unknown>;
 };
 
 const ROUTES: Route[] = [
@@ -31,7 +35,17 @@ const ROUTES: Route[] = [
     settled: async (page: import("@playwright/test").Page) =>
       expect(page.getByTestId("group-count-dismissed")).toHaveText(String(EXPECTED.dismissed)),
   },
-  { name: "benchmark", path: "/benchmark", ready: "region" as const, readyName: "Headline" },
+  {
+    // The fixture results (`python -m tests.api.bench_fixture`, training plan I5): every panel
+    // filled from its producer's keys, the deferred judge rows included.
+    name: "benchmark",
+    path: "/benchmark",
+    ready: "region" as const,
+    readyName: "Headline",
+    bench: fixture as unknown as Record<string, unknown>,
+    settled: async (page: import("@playwright/test").Page) =>
+      expect(page.getByTestId("provisional-notice")).toHaveCount(0),
+  },
 ];
 
 test.use({ reducedMotion: "reduce" });
@@ -39,6 +53,7 @@ test.use({ reducedMotion: "reduce" });
 for (const route of ROUTES) {
   for (const width of WIDTHS) {
     test(`${route.name} at ${width} px`, async ({ page }) => {
+      if (route.bench) await mockOverride(page, "bench", route.bench);
       await page.setViewportSize({ width, height: 900 });
       await page.goto(route.path);
       await expect(page.getByRole(route.ready, { name: route.readyName }).first()).toBeVisible();

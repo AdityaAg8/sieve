@@ -1,0 +1,2270 @@
+{
+  "dataset_version": "mini-50.jsonl@fixture",
+  "generated_at": "2026-10-03T00:00:00Z",
+  "headline": {},
+  "model_version": "deberta@s0",
+  "provisional": false,
+  "tables": {
+    "ablations": [
+      {
+        "breakdown_of": [],
+        "classes_present": [],
+        "classifier": "baseline",
+        "cost_usd_per_50": null,
+        "fp_reduction_all_sources": {
+          "absolute": 0.0,
+          "absolute_hi": 0.0,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.14814814814814814,
+          "baseline_recall": 1.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "mcnemar_p": 1.0,
+          "mcnemar_p_clustered": 1.0,
+          "n_undefined": 3.0,
+          "per_seed": [
+            0.0
+          ],
+          "point": 0.0,
+          "recall_not_lower": true,
+          "sieve_fpr": 0.14814814814814814,
+          "sieve_recall": 1.0,
+          "std": null
+        },
+        "fp_reduction_vs_baseline": {
+          "absolute": 0.0,
+          "absolute_hi": 0.0,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.2222222222222222,
+          "baseline_recall": 1.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "mcnemar_p": 1.0,
+          "mcnemar_p_clustered": 1.0,
+          "n_undefined": 3.0,
+          "per_seed": [
+            0.0
+          ],
+          "point": 0.0,
+          "recall_not_lower": true,
+          "sieve_fpr": 0.2222222222222222,
+          "sieve_recall": 1.0,
+          "std": null
+        },
+        "fpr_pipeline": {
+          "hi": 0.323891129032258,
+          "lo": 0.0,
+          "per_seed": [
+            0.14814814814814814
+          ],
+          "point": 0.14814814814814814,
+          "std": null
+        },
+        "fpr_stage1_at_t_low": {
+          "hi": 0.323891129032258,
+          "lo": 0.0,
+          "per_seed": [
+            0.14814814814814814
+          ],
+          "point": 0.14814814814814814,
+          "std": null
+        },
+        "judge": "none",
+        "macro_f1_mean": null,
+        "macro_f1_per_seed": [],
+        "macro_f1_std": null,
+        "minimal_pair_accuracy": null,
+        "mode": "full",
+        "n": 41,
+        "name": "Cisco YARA baseline alone",
+        "note": null,
+        "num_labels": 3,
+        "oof_recall_at_t_low": {
+          "hi": 1.0,
+          "lo": 1.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "std": null
+        },
+        "p95_ms": null,
+        "per_concealment": {
+          "html_comment": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 1.0,
+            "recall_at_t_low": 1.0
+          },
+          "none": {
+            "fpr_pipeline": 0.14814814814814814,
+            "fpr_stage1_at_t_low": 0.14814814814814814,
+            "n": 40.0,
+            "recall_at_t_low": 1.0
+          }
+        },
+        "per_source": {
+          "public_repo/none": {
+            "fpr_pipeline": 0.2222222222222222,
+            "fpr_stage1_at_t_low": 0.2222222222222222,
+            "n": 23.0,
+            "recall_at_t_low": 1.0
+          },
+          "synthetic_mutation/human": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 18.0,
+            "recall_at_t_low": 1.0
+          }
+        },
+        "per_tier": {
+          "easy": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 10.0,
+            "recall_at_t_low": 1.0
+          },
+          "hard": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "medium": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "unscored": {
+            "fpr_pipeline": 0.14814814814814814,
+            "fpr_stage1_at_t_low": 0.14814814814814814,
+            "n": 27.0,
+            "recall_at_t_low": 0.0
+          }
+        },
+        "routing_rate": 0.0,
+        "row": 1,
+        "scanner_features": false,
+        "seeds": [
+          0
+        ],
+        "single_seed": false,
+        "status": "active",
+        "t_high": 0.5,
+        "t_low": 0.5
+      },
+      {
+        "breakdown_of": [],
+        "classes_present": [
+          "benign",
+          "imperative_benign",
+          "poisoned"
+        ],
+        "classifier": "tfidf",
+        "cost_usd_per_50": null,
+        "fp_reduction_all_sources": {
+          "absolute": 0.14814814814814814,
+          "absolute_hi": 0.323891129032258,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.14814814814814814,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": false,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 0.8571428571428571,
+          "std": null
+        },
+        "fp_reduction_vs_baseline": {
+          "absolute": 0.2222222222222222,
+          "absolute_hi": 0.5298245614035085,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.2222222222222222,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": true,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 1.0,
+          "std": null
+        },
+        "fpr_pipeline": {
+          "hi": 0.0,
+          "lo": 0.0,
+          "per_seed": [
+            0.0
+          ],
+          "point": 0.0,
+          "std": null
+        },
+        "fpr_stage1_at_t_low": {
+          "hi": 0.20235294117647046,
+          "lo": 0.0,
+          "per_seed": [
+            0.07407407407407407
+          ],
+          "point": 0.07407407407407407,
+          "std": null
+        },
+        "judge": "none",
+        "macro_f1_mean": 0.9299145299145298,
+        "macro_f1_per_seed": [
+          0.9299145299145298
+        ],
+        "macro_f1_std": null,
+        "minimal_pair_accuracy": 0.7777777777777778,
+        "mode": "full",
+        "n": 41,
+        "name": "TF-IDF + logistic regression",
+        "note": null,
+        "num_labels": 3,
+        "oof_recall_at_t_low": {
+          "hi": 1.0,
+          "lo": 1.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "std": null
+        },
+        "p95_ms": null,
+        "per_concealment": {
+          "html_comment": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 1.0,
+            "recall_at_t_low": 1.0
+          },
+          "none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.07407407407407407,
+            "n": 40.0,
+            "recall_at_t_low": 1.0
+          }
+        },
+        "per_source": {
+          "public_repo/none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.1111111111111111,
+            "n": 23.0,
+            "recall_at_t_low": 1.0
+          },
+          "synthetic_mutation/human": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 18.0,
+            "recall_at_t_low": 1.0
+          }
+        },
+        "per_tier": {
+          "easy": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 10.0,
+            "recall_at_t_low": 1.0
+          },
+          "hard": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "medium": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "unscored": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.07407407407407407,
+            "n": 27.0,
+            "recall_at_t_low": 0.0
+          }
+        },
+        "routing_rate": 0.0975609756097561,
+        "row": 2,
+        "scanner_features": false,
+        "seeds": [
+          0
+        ],
+        "single_seed": false,
+        "status": "active",
+        "t_high": 0.44116326540996015,
+        "t_low": 0.3055111033208269
+      },
+      {
+        "breakdown_of": [],
+        "classes_present": [
+          "benign",
+          "imperative_benign",
+          "poisoned"
+        ],
+        "classifier": "models/deberta-v3-base-desc-s*",
+        "cost_usd_per_50": null,
+        "fp_reduction_all_sources": {
+          "absolute": 0.14814814814814814,
+          "absolute_hi": 0.323891129032258,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.14814814814814814,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": false,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 0.42857142857142855,
+          "std": null
+        },
+        "fp_reduction_vs_baseline": {
+          "absolute": 0.2222222222222222,
+          "absolute_hi": 0.5298245614035085,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.2222222222222222,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": false,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 0.8,
+          "std": null
+        },
+        "fpr_pipeline": {
+          "hi": 0.0,
+          "lo": 0.0,
+          "per_seed": [
+            0.0
+          ],
+          "point": 0.0,
+          "std": null
+        },
+        "fpr_stage1_at_t_low": {
+          "hi": 0.577155172413793,
+          "lo": 0.27032085561497327,
+          "per_seed": [
+            0.4444444444444444
+          ],
+          "point": 0.4444444444444444,
+          "std": null
+        },
+        "judge": "none",
+        "macro_f1_mean": 0.3406862745098039,
+        "macro_f1_per_seed": [
+          0.3406862745098039
+        ],
+        "macro_f1_std": null,
+        "minimal_pair_accuracy": null,
+        "mode": "description_only",
+        "n": 41,
+        "name": "Primary encoder, description-only serialisation",
+        "note": null,
+        "num_labels": 3,
+        "oof_recall_at_t_low": {
+          "hi": 0.6442857142857142,
+          "lo": 0.22166666666666665,
+          "per_seed": [
+            0.42857142857142855
+          ],
+          "point": 0.42857142857142855,
+          "std": null
+        },
+        "p95_ms": null,
+        "per_concealment": {
+          "html_comment": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 1.0,
+            "recall_at_t_low": 1.0
+          },
+          "none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.4444444444444444,
+            "n": 40.0,
+            "recall_at_t_low": 0.38461538461538464
+          }
+        },
+        "per_source": {
+          "public_repo/none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.3333333333333333,
+            "n": 23.0,
+            "recall_at_t_low": 0.8
+          },
+          "synthetic_mutation/human": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.6666666666666666,
+            "n": 18.0,
+            "recall_at_t_low": 0.2222222222222222
+          }
+        },
+        "per_tier": {
+          "easy": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 10.0,
+            "recall_at_t_low": 0.3
+          },
+          "hard": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 0.5
+          },
+          "medium": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "unscored": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.4444444444444444,
+            "n": 27.0,
+            "recall_at_t_low": 0.0
+          }
+        },
+        "routing_rate": 0.2926829268292683,
+        "row": 3,
+        "scanner_features": false,
+        "seeds": [
+          0
+        ],
+        "single_seed": true,
+        "status": "active",
+        "t_high": 0.85,
+        "t_low": 0.3
+      },
+      {
+        "breakdown_of": [],
+        "classes_present": [
+          "benign",
+          "imperative_benign",
+          "poisoned"
+        ],
+        "classifier": "models/deberta-v3-base-s*",
+        "cost_usd_per_50": null,
+        "fp_reduction_all_sources": {
+          "absolute": 0.14814814814814814,
+          "absolute_hi": 0.323891129032258,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.14814814814814814,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": false,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 0.5,
+          "std": 0.0
+        },
+        "fp_reduction_vs_baseline": {
+          "absolute": 0.2222222222222222,
+          "absolute_hi": 0.5298245614035085,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.2222222222222222,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": true,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 1.0,
+          "std": 0.0
+        },
+        "fpr_pipeline": {
+          "hi": 0.0,
+          "lo": 0.0,
+          "per_seed": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "point": 0.0,
+          "std": 0.0
+        },
+        "fpr_stage1_at_t_low": {
+          "hi": 0.577155172413793,
+          "lo": 0.27032085561497327,
+          "per_seed": [
+            0.4444444444444444,
+            0.4444444444444444,
+            0.4444444444444444
+          ],
+          "point": 0.4444444444444444,
+          "std": 0.0
+        },
+        "judge": "none",
+        "macro_f1_mean": 0.3636363636363636,
+        "macro_f1_per_seed": [
+          0.3636363636363636,
+          0.3636363636363636,
+          0.3636363636363636
+        ],
+        "macro_f1_std": 0.0,
+        "minimal_pair_accuracy": 0.2222222222222222,
+        "mode": "full",
+        "n": 41,
+        "name": "Primary encoder, full serialisation (pre-registered headline)",
+        "note": null,
+        "num_labels": 3,
+        "oof_recall_at_t_low": {
+          "hi": 0.7512500000000001,
+          "lo": 0.28482142857142856,
+          "per_seed": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "point": 0.5,
+          "std": 0.0
+        },
+        "p95_ms": null,
+        "per_concealment": {
+          "html_comment": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 1.0,
+            "recall_at_t_low": 1.0
+          },
+          "none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.4444444444444444,
+            "n": 40.0,
+            "recall_at_t_low": 0.4615384615384615
+          }
+        },
+        "per_source": {
+          "public_repo/none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.3333333333333333,
+            "n": 23.0,
+            "recall_at_t_low": 1.0
+          },
+          "synthetic_mutation/human": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.6666666666666666,
+            "n": 18.0,
+            "recall_at_t_low": 0.2222222222222222
+          }
+        },
+        "per_tier": {
+          "easy": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 10.0,
+            "recall_at_t_low": 0.3
+          },
+          "hard": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "medium": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "unscored": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.4444444444444444,
+            "n": 27.0,
+            "recall_at_t_low": 0.0
+          }
+        },
+        "routing_rate": 0.2926829268292683,
+        "row": 4,
+        "scanner_features": false,
+        "seeds": [
+          0,
+          1,
+          2
+        ],
+        "single_seed": false,
+        "status": "active",
+        "t_high": 0.85,
+        "t_low": 0.3
+      },
+      {
+        "breakdown_of": [],
+        "classes_present": [
+          "benign",
+          "imperative_benign",
+          "poisoned"
+        ],
+        "classifier": "models/modernbert-base-s*",
+        "cost_usd_per_50": null,
+        "fp_reduction_all_sources": {
+          "absolute": 0.14814814814814814,
+          "absolute_hi": 0.323891129032258,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.14814814814814814,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": false,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 0.5,
+          "std": 0.0
+        },
+        "fp_reduction_vs_baseline": {
+          "absolute": 0.2222222222222222,
+          "absolute_hi": 0.5298245614035085,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.2222222222222222,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": true,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 1.0,
+          "std": 0.0
+        },
+        "fpr_pipeline": {
+          "hi": 0.0,
+          "lo": 0.0,
+          "per_seed": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "point": 0.0,
+          "std": 0.0
+        },
+        "fpr_stage1_at_t_low": {
+          "hi": 0.577155172413793,
+          "lo": 0.27032085561497327,
+          "per_seed": [
+            0.4444444444444444,
+            0.4444444444444444,
+            0.4444444444444444
+          ],
+          "point": 0.4444444444444444,
+          "std": 0.0
+        },
+        "judge": "none",
+        "macro_f1_mean": 0.3636363636363636,
+        "macro_f1_per_seed": [
+          0.3636363636363636,
+          0.3636363636363636,
+          0.3636363636363636
+        ],
+        "macro_f1_std": 0.0,
+        "minimal_pair_accuracy": null,
+        "mode": "full",
+        "n": 41,
+        "name": "Secondary encoder, full serialisation, 512",
+        "note": null,
+        "num_labels": 3,
+        "oof_recall_at_t_low": {
+          "hi": 0.7512500000000001,
+          "lo": 0.28482142857142856,
+          "per_seed": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "point": 0.5,
+          "std": 0.0
+        },
+        "p95_ms": null,
+        "per_concealment": {
+          "html_comment": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 1.0,
+            "recall_at_t_low": 1.0
+          },
+          "none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.4444444444444444,
+            "n": 40.0,
+            "recall_at_t_low": 0.4615384615384615
+          }
+        },
+        "per_source": {
+          "public_repo/none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.3333333333333333,
+            "n": 23.0,
+            "recall_at_t_low": 1.0
+          },
+          "synthetic_mutation/human": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.6666666666666666,
+            "n": 18.0,
+            "recall_at_t_low": 0.2222222222222222
+          }
+        },
+        "per_tier": {
+          "easy": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 10.0,
+            "recall_at_t_low": 0.3
+          },
+          "hard": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "medium": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "unscored": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.4444444444444444,
+            "n": 27.0,
+            "recall_at_t_low": 0.0
+          }
+        },
+        "routing_rate": 0.2926829268292683,
+        "row": 5,
+        "scanner_features": false,
+        "seeds": [
+          0,
+          1,
+          2
+        ],
+        "single_seed": false,
+        "status": "active",
+        "t_high": 0.85,
+        "t_low": 0.3
+      },
+      {
+        "classifier": "models/deberta-v3-base-s*",
+        "judge": "claude-haiku-4-5",
+        "name": "Classifier + judge, Haiku 4.5",
+        "note": null,
+        "reason": "D8: the LLM judge is deferred to v1.1; v1 publishes Stage-1 numbers",
+        "row": 6,
+        "status": "deferred"
+      },
+      {
+        "classifier": "models/deberta-v3-base-s*",
+        "judge": "claude-sonnet-5",
+        "name": "Classifier + judge, Sonnet 5",
+        "note": null,
+        "reason": "D8: the LLM judge is deferred to v1.1; v1 publishes Stage-1 numbers",
+        "row": 7,
+        "status": "deferred"
+      },
+      {
+        "classifier": "none",
+        "judge": "claude-haiku-4-5",
+        "name": "Judge alone on every row",
+        "note": "No Stage 1, so every row reaches the judge. Read the cost and latency columns beside row 6: this is what the classifier buys.",
+        "reason": "D8: the LLM judge is deferred to v1.1; v1 publishes Stage-1 numbers",
+        "row": 8,
+        "status": "deferred"
+      },
+      {
+        "breakdown_of": [],
+        "classes_present": [
+          "benign",
+          "imperative_benign",
+          "poisoned"
+        ],
+        "classifier": "models/deberta-v3-base-scanner-s*",
+        "cost_usd_per_50": null,
+        "fp_reduction_all_sources": {
+          "absolute": 0.14814814814814814,
+          "absolute_hi": 0.323891129032258,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.14814814814814814,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": false,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 0.5,
+          "std": null
+        },
+        "fp_reduction_vs_baseline": {
+          "absolute": 0.2222222222222222,
+          "absolute_hi": 0.5298245614035085,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.2222222222222222,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": true,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 1.0,
+          "std": null
+        },
+        "fpr_pipeline": {
+          "hi": 0.0,
+          "lo": 0.0,
+          "per_seed": [
+            0.0
+          ],
+          "point": 0.0,
+          "std": null
+        },
+        "fpr_stage1_at_t_low": {
+          "hi": 0.577155172413793,
+          "lo": 0.27032085561497327,
+          "per_seed": [
+            0.4444444444444444
+          ],
+          "point": 0.4444444444444444,
+          "std": null
+        },
+        "judge": "none",
+        "macro_f1_mean": 0.3636363636363636,
+        "macro_f1_per_seed": [
+          0.3636363636363636
+        ],
+        "macro_f1_std": null,
+        "minimal_pair_accuracy": null,
+        "mode": "full",
+        "n": 41,
+        "name": "Full serialisation + scanner features",
+        "note": null,
+        "num_labels": 3,
+        "oof_recall_at_t_low": {
+          "hi": 0.75125,
+          "lo": 0.28482142857142856,
+          "per_seed": [
+            0.5
+          ],
+          "point": 0.5,
+          "std": null
+        },
+        "p95_ms": null,
+        "per_concealment": {
+          "html_comment": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 1.0,
+            "recall_at_t_low": 1.0
+          },
+          "none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.4444444444444444,
+            "n": 40.0,
+            "recall_at_t_low": 0.46153846153846156
+          }
+        },
+        "per_source": {
+          "public_repo/none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.3333333333333333,
+            "n": 23.0,
+            "recall_at_t_low": 1.0
+          },
+          "synthetic_mutation/human": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.6666666666666666,
+            "n": 18.0,
+            "recall_at_t_low": 0.2222222222222222
+          }
+        },
+        "per_tier": {
+          "easy": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 10.0,
+            "recall_at_t_low": 0.3
+          },
+          "hard": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "medium": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "unscored": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.4444444444444444,
+            "n": 27.0,
+            "recall_at_t_low": 0.0
+          }
+        },
+        "routing_rate": 0.2926829268292683,
+        "row": 9,
+        "scanner_features": true,
+        "seeds": [
+          0
+        ],
+        "single_seed": true,
+        "status": "active",
+        "t_high": 0.85,
+        "t_low": 0.3
+      },
+      {
+        "breakdown_of": [
+          4,
+          6
+        ],
+        "classes_present": [
+          "benign",
+          "imperative_benign",
+          "poisoned"
+        ],
+        "classifier": "models/deberta-v3-base-s*",
+        "cost_usd_per_50": null,
+        "deferred_breakdown_of": [
+          6
+        ],
+        "fp_reduction_all_sources": {
+          "absolute": 0.14814814814814814,
+          "absolute_hi": 0.323891129032258,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.14814814814814814,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": false,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 0.5,
+          "std": 0.0
+        },
+        "fp_reduction_vs_baseline": {
+          "absolute": 0.2222222222222222,
+          "absolute_hi": 0.5298245614035085,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.2222222222222222,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": true,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 1.0,
+          "std": 0.0
+        },
+        "fpr_pipeline": {
+          "hi": 0.0,
+          "lo": 0.0,
+          "per_seed": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "point": 0.0,
+          "std": 0.0
+        },
+        "fpr_stage1_at_t_low": {
+          "hi": 0.577155172413793,
+          "lo": 0.27032085561497327,
+          "per_seed": [
+            0.4444444444444444,
+            0.4444444444444444,
+            0.4444444444444444
+          ],
+          "point": 0.4444444444444444,
+          "std": 0.0
+        },
+        "judge": "none",
+        "macro_f1_mean": 0.3636363636363636,
+        "macro_f1_per_seed": [
+          0.3636363636363636,
+          0.3636363636363636,
+          0.3636363636363636
+        ],
+        "macro_f1_std": 0.0,
+        "minimal_pair_accuracy": null,
+        "mode": "full",
+        "n": 41,
+        "name": "Per-difficulty-tier and per-concealment breakdown of rows 4 and 6",
+        "note": "Read `per_tier` and `per_concealment` on rows 4 and 6; this row carries no new fit.",
+        "num_labels": 3,
+        "oof_recall_at_t_low": {
+          "hi": 0.7512500000000001,
+          "lo": 0.28482142857142856,
+          "per_seed": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "point": 0.5,
+          "std": 0.0
+        },
+        "p95_ms": null,
+        "per_concealment": {
+          "html_comment": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 1.0,
+            "recall_at_t_low": 1.0
+          },
+          "none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.4444444444444444,
+            "n": 40.0,
+            "recall_at_t_low": 0.4615384615384615
+          }
+        },
+        "per_source": {
+          "public_repo/none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.3333333333333333,
+            "n": 23.0,
+            "recall_at_t_low": 1.0
+          },
+          "synthetic_mutation/human": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.6666666666666666,
+            "n": 18.0,
+            "recall_at_t_low": 0.2222222222222222
+          }
+        },
+        "per_tier": {
+          "easy": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 10.0,
+            "recall_at_t_low": 0.3
+          },
+          "hard": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "medium": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "unscored": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.4444444444444444,
+            "n": 27.0,
+            "recall_at_t_low": 0.0
+          }
+        },
+        "routing_rate": 0.2926829268292683,
+        "row": 10,
+        "scanner_features": false,
+        "seeds": [
+          0,
+          1,
+          2
+        ],
+        "single_seed": false,
+        "status": "active",
+        "t_high": 0.85,
+        "t_low": 0.3
+      },
+      {
+        "breakdown_of": [
+          4,
+          6
+        ],
+        "classes_present": [
+          "benign",
+          "imperative_benign",
+          "poisoned"
+        ],
+        "classifier": "models/deberta-v3-base-s*",
+        "cost_usd_per_50": null,
+        "deferred_breakdown_of": [
+          6
+        ],
+        "fp_reduction_all_sources": {
+          "absolute": 0.14814814814814814,
+          "absolute_hi": 0.323891129032258,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.14814814814814814,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": false,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 0.5,
+          "std": 0.0
+        },
+        "fp_reduction_vs_baseline": {
+          "absolute": 0.2222222222222222,
+          "absolute_hi": 0.5298245614035085,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.2222222222222222,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": true,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 1.0,
+          "std": 0.0
+        },
+        "fpr_pipeline": {
+          "hi": 0.0,
+          "lo": 0.0,
+          "per_seed": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "point": 0.0,
+          "std": 0.0
+        },
+        "fpr_stage1_at_t_low": {
+          "hi": 0.577155172413793,
+          "lo": 0.27032085561497327,
+          "per_seed": [
+            0.4444444444444444,
+            0.4444444444444444,
+            0.4444444444444444
+          ],
+          "point": 0.4444444444444444,
+          "std": 0.0
+        },
+        "judge": "none",
+        "macro_f1_mean": 0.3636363636363636,
+        "macro_f1_per_seed": [
+          0.3636363636363636,
+          0.3636363636363636,
+          0.3636363636363636
+        ],
+        "macro_f1_std": 0.0,
+        "minimal_pair_accuracy": null,
+        "mode": "full",
+        "n": 41,
+        "name": "Per-source breakdown of rows 4 and 6",
+        "note": "Read `per_source` on rows 4 and 6, keyed `source/generator_model`. The source-leakage probe is a corpus statistic in corpus_stats.json, not a model ablation.",
+        "num_labels": 3,
+        "oof_recall_at_t_low": {
+          "hi": 0.7512500000000001,
+          "lo": 0.28482142857142856,
+          "per_seed": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "point": 0.5,
+          "std": 0.0
+        },
+        "p95_ms": null,
+        "per_concealment": {
+          "html_comment": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 1.0,
+            "recall_at_t_low": 1.0
+          },
+          "none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.4444444444444444,
+            "n": 40.0,
+            "recall_at_t_low": 0.4615384615384615
+          }
+        },
+        "per_source": {
+          "public_repo/none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.3333333333333333,
+            "n": 23.0,
+            "recall_at_t_low": 1.0
+          },
+          "synthetic_mutation/human": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.6666666666666666,
+            "n": 18.0,
+            "recall_at_t_low": 0.2222222222222222
+          }
+        },
+        "per_tier": {
+          "easy": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 10.0,
+            "recall_at_t_low": 0.3
+          },
+          "hard": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "medium": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "unscored": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.4444444444444444,
+            "n": 27.0,
+            "recall_at_t_low": 0.0
+          }
+        },
+        "routing_rate": 0.2926829268292683,
+        "row": 11,
+        "scanner_features": false,
+        "seeds": [
+          0,
+          1,
+          2
+        ],
+        "single_seed": false,
+        "status": "active",
+        "t_high": 0.85,
+        "t_low": 0.3
+      },
+      {
+        "breakdown_of": [],
+        "classes_present": [
+          "benign",
+          "imperative_benign",
+          "poisoned"
+        ],
+        "classifier": "models/deberta-v3-base-2c-s*",
+        "cost_usd_per_50": null,
+        "fp_reduction_all_sources": {
+          "absolute": 0.14814814814814814,
+          "absolute_hi": 0.323891129032258,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.14814814814814814,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": false,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 0.5,
+          "std": null
+        },
+        "fp_reduction_vs_baseline": {
+          "absolute": 0.2222222222222222,
+          "absolute_hi": 0.5298245614035085,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.2222222222222222,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": true,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 1.0,
+          "std": null
+        },
+        "fpr_pipeline": {
+          "hi": 0.0,
+          "lo": 0.0,
+          "per_seed": [
+            0.0
+          ],
+          "point": 0.0,
+          "std": null
+        },
+        "fpr_stage1_at_t_low": {
+          "hi": 0.577155172413793,
+          "lo": 0.27032085561497327,
+          "per_seed": [
+            0.4444444444444444
+          ],
+          "point": 0.4444444444444444,
+          "std": null
+        },
+        "judge": "none",
+        "macro_f1_mean": 0.3636363636363636,
+        "macro_f1_per_seed": [
+          0.3636363636363636
+        ],
+        "macro_f1_std": null,
+        "minimal_pair_accuracy": 0.2222222222222222,
+        "mode": "full",
+        "n": 41,
+        "name": "Two-class head, identical data, folds and seeds",
+        "note": "Report the FPR difference against row 4.",
+        "num_labels": 2,
+        "oof_recall_at_t_low": {
+          "hi": 0.75125,
+          "lo": 0.28482142857142856,
+          "per_seed": [
+            0.5
+          ],
+          "point": 0.5,
+          "std": null
+        },
+        "p95_ms": null,
+        "per_concealment": {
+          "html_comment": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 1.0,
+            "recall_at_t_low": 1.0
+          },
+          "none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.4444444444444444,
+            "n": 40.0,
+            "recall_at_t_low": 0.46153846153846156
+          }
+        },
+        "per_source": {
+          "public_repo/none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.3333333333333333,
+            "n": 23.0,
+            "recall_at_t_low": 1.0
+          },
+          "synthetic_mutation/human": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.6666666666666666,
+            "n": 18.0,
+            "recall_at_t_low": 0.2222222222222222
+          }
+        },
+        "per_tier": {
+          "easy": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 10.0,
+            "recall_at_t_low": 0.3
+          },
+          "hard": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "medium": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "unscored": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.4444444444444444,
+            "n": 27.0,
+            "recall_at_t_low": 0.0
+          }
+        },
+        "routing_rate": 0.2926829268292683,
+        "row": 12,
+        "scanner_features": false,
+        "seeds": [
+          0
+        ],
+        "single_seed": true,
+        "status": "active",
+        "t_high": 0.85,
+        "t_low": 0.3
+      },
+      {
+        "breakdown_of": [],
+        "classes_present": [],
+        "classifier": "unicode_hygiene",
+        "cost_usd_per_50": null,
+        "fp_reduction_all_sources": {
+          "absolute": 0.14814814814814814,
+          "absolute_hi": 0.323891129032258,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.14814814814814814,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": false,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 0.07142857142857142,
+          "std": null
+        },
+        "fp_reduction_vs_baseline": {
+          "absolute": 0.2222222222222222,
+          "absolute_hi": 0.5298245614035085,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.2222222222222222,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": false,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 0.2,
+          "std": null
+        },
+        "fpr_pipeline": {
+          "hi": 0.0,
+          "lo": 0.0,
+          "per_seed": [
+            0.0
+          ],
+          "point": 0.0,
+          "std": null
+        },
+        "fpr_stage1_at_t_low": {
+          "hi": 0.0,
+          "lo": 0.0,
+          "per_seed": [
+            0.0
+          ],
+          "point": 0.0,
+          "std": null
+        },
+        "judge": "none",
+        "macro_f1_mean": null,
+        "macro_f1_per_seed": [],
+        "macro_f1_std": null,
+        "minimal_pair_accuracy": null,
+        "mode": "full",
+        "n": 41,
+        "name": "Unicode-hygiene detector alone",
+        "note": "If the ten-line unicode detector beats the encoder on a concealment bucket, that is the honest result and it belongs in preprocessing, not in the model.",
+        "num_labels": 3,
+        "oof_recall_at_t_low": {
+          "hi": 0.2505681818181818,
+          "lo": 0.0,
+          "per_seed": [
+            0.07142857142857142
+          ],
+          "point": 0.07142857142857142,
+          "std": null
+        },
+        "p95_ms": null,
+        "per_concealment": {
+          "html_comment": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 1.0,
+            "recall_at_t_low": 1.0
+          },
+          "none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 40.0,
+            "recall_at_t_low": 0.0
+          }
+        },
+        "per_source": {
+          "public_repo/none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 23.0,
+            "recall_at_t_low": 0.2
+          },
+          "synthetic_mutation/human": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 18.0,
+            "recall_at_t_low": 0.0
+          }
+        },
+        "per_tier": {
+          "easy": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 10.0,
+            "recall_at_t_low": 0.0
+          },
+          "hard": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 0.5
+          },
+          "medium": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 0.0
+          },
+          "unscored": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 27.0,
+            "recall_at_t_low": 0.0
+          }
+        },
+        "routing_rate": 0.0,
+        "row": 13,
+        "scanner_features": false,
+        "seeds": [
+          0
+        ],
+        "single_seed": false,
+        "status": "active",
+        "t_high": 0.5,
+        "t_low": 0.5
+      },
+      {
+        "breakdown_of": [
+          2,
+          4,
+          6,
+          12
+        ],
+        "classes_present": [
+          "benign",
+          "imperative_benign",
+          "poisoned"
+        ],
+        "classifier": "models/deberta-v3-base-s*",
+        "cost_usd_per_50": null,
+        "deferred_breakdown_of": [
+          6
+        ],
+        "fp_reduction_all_sources": {
+          "absolute": 0.14814814814814814,
+          "absolute_hi": 0.323891129032258,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.14814814814814814,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": false,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 0.5,
+          "std": 0.0
+        },
+        "fp_reduction_vs_baseline": {
+          "absolute": 0.2222222222222222,
+          "absolute_hi": 0.5298245614035085,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.2222222222222222,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": true,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 1.0,
+          "std": 0.0
+        },
+        "fpr_pipeline": {
+          "hi": 0.0,
+          "lo": 0.0,
+          "per_seed": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "point": 0.0,
+          "std": 0.0
+        },
+        "fpr_stage1_at_t_low": {
+          "hi": 0.577155172413793,
+          "lo": 0.27032085561497327,
+          "per_seed": [
+            0.4444444444444444,
+            0.4444444444444444,
+            0.4444444444444444
+          ],
+          "point": 0.4444444444444444,
+          "std": 0.0
+        },
+        "judge": "none",
+        "macro_f1_mean": 0.3636363636363636,
+        "macro_f1_per_seed": [
+          0.3636363636363636,
+          0.3636363636363636,
+          0.3636363636363636
+        ],
+        "macro_f1_std": 0.0,
+        "minimal_pair_accuracy": 0.2222222222222222,
+        "mode": "full",
+        "n": 41,
+        "name": "Minimal-pair accuracy (M11) for rows 2, 4, 6 and 12",
+        "note": "Read `minimal_pair_accuracy` on rows 2, 4, 6 and 12; this row carries no new fit.",
+        "num_labels": 3,
+        "oof_recall_at_t_low": {
+          "hi": 0.7512500000000001,
+          "lo": 0.28482142857142856,
+          "per_seed": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "point": 0.5,
+          "std": 0.0
+        },
+        "p95_ms": null,
+        "per_concealment": {
+          "html_comment": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 1.0,
+            "recall_at_t_low": 1.0
+          },
+          "none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.4444444444444444,
+            "n": 40.0,
+            "recall_at_t_low": 0.4615384615384615
+          }
+        },
+        "per_source": {
+          "public_repo/none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.3333333333333333,
+            "n": 23.0,
+            "recall_at_t_low": 1.0
+          },
+          "synthetic_mutation/human": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.6666666666666666,
+            "n": 18.0,
+            "recall_at_t_low": 0.2222222222222222
+          }
+        },
+        "per_tier": {
+          "easy": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 10.0,
+            "recall_at_t_low": 0.3
+          },
+          "hard": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "medium": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "unscored": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.4444444444444444,
+            "n": 27.0,
+            "recall_at_t_low": 0.0
+          }
+        },
+        "routing_rate": 0.2926829268292683,
+        "row": 14,
+        "scanner_features": false,
+        "seeds": [
+          0,
+          1,
+          2
+        ],
+        "single_seed": false,
+        "status": "active",
+        "t_high": 0.85,
+        "t_low": 0.3
+      },
+      {
+        "breakdown_of": [],
+        "classes_present": [
+          "benign",
+          "imperative_benign",
+          "poisoned"
+        ],
+        "classifier": "models/modernbert-base-1024-s*",
+        "cost_usd_per_50": null,
+        "fp_reduction_all_sources": {
+          "absolute": 0.14814814814814814,
+          "absolute_hi": 0.323891129032258,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.14814814814814814,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": false,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 0.5,
+          "std": null
+        },
+        "fp_reduction_vs_baseline": {
+          "absolute": 0.2222222222222222,
+          "absolute_hi": 0.5298245614035085,
+          "absolute_lo": 0.0,
+          "baseline_fpr": 0.2222222222222222,
+          "baseline_recall": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.125,
+          "mcnemar_p_clustered": 0.2059032107320683,
+          "n_undefined": 3.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "recall_not_lower": true,
+          "sieve_fpr": 0.0,
+          "sieve_recall": 1.0,
+          "std": null
+        },
+        "fpr_pipeline": {
+          "hi": 0.0,
+          "lo": 0.0,
+          "per_seed": [
+            0.0
+          ],
+          "point": 0.0,
+          "std": null
+        },
+        "fpr_stage1_at_t_low": {
+          "hi": 0.577155172413793,
+          "lo": 0.27032085561497327,
+          "per_seed": [
+            0.4444444444444444
+          ],
+          "point": 0.4444444444444444,
+          "std": null
+        },
+        "judge": "none",
+        "macro_f1_mean": 0.3636363636363636,
+        "macro_f1_per_seed": [
+          0.3636363636363636
+        ],
+        "macro_f1_std": null,
+        "minimal_pair_accuracy": null,
+        "mode": "full",
+        "n": 41,
+        "name": "ModernBERT-base at 1,024 tokens",
+        "note": "Training plan \u00a76.3: the PRD's 1,024-token option (\u00a711.3, \u00a724.1) measured at one seed rather than silently cut. Compare against row 5 at its seed 0.",
+        "num_labels": 3,
+        "oof_recall_at_t_low": {
+          "hi": 0.75125,
+          "lo": 0.28482142857142856,
+          "per_seed": [
+            0.5
+          ],
+          "point": 0.5,
+          "std": null
+        },
+        "p95_ms": null,
+        "per_concealment": {
+          "html_comment": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 1.0,
+            "recall_at_t_low": 1.0
+          },
+          "none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.4444444444444444,
+            "n": 40.0,
+            "recall_at_t_low": 0.46153846153846156
+          }
+        },
+        "per_source": {
+          "public_repo/none": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.3333333333333333,
+            "n": 23.0,
+            "recall_at_t_low": 1.0
+          },
+          "synthetic_mutation/human": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.6666666666666666,
+            "n": 18.0,
+            "recall_at_t_low": 0.2222222222222222
+          }
+        },
+        "per_tier": {
+          "easy": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 10.0,
+            "recall_at_t_low": 0.3
+          },
+          "hard": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "medium": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 2.0,
+            "recall_at_t_low": 1.0
+          },
+          "unscored": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.4444444444444444,
+            "n": 27.0,
+            "recall_at_t_low": 0.0
+          }
+        },
+        "routing_rate": 0.2926829268292683,
+        "row": 15,
+        "scanner_features": false,
+        "seeds": [
+          0
+        ],
+        "single_seed": true,
+        "status": "active",
+        "t_high": 0.85,
+        "t_low": 0.3
+      }
+    ],
+    "holdout": {
+      "dataset_version": "mini-50.jsonl@fixture",
+      "fpr_pipeline_real": {
+        "hi": 0.0,
+        "lo": 0.0,
+        "n": 27,
+        "n_undefined": 0,
+        "point": 0.0
+      },
+      "fpr_stage1_real": {
+        "hi": 0.5222373188405797,
+        "lo": 0.09285714285714286,
+        "n": 27,
+        "n_undefined": 0,
+        "point": 0.2857142857142857
+      },
+      "headline_model": "deberta@s0",
+      "headline_report": {
+        "holdout": {
+          "auprc": 0.6894117647058824,
+          "auroc": 0.6577540106951871,
+          "deberta_unk": null,
+          "fp_reduction_standalone": null,
+          "fp_reduction_triage": null,
+          "fpr_pipeline_real": {
+            "hi": 0.0,
+            "lo": 0.0,
+            "n": 27,
+            "n_undefined": 0,
+            "point": 0.0
+          },
+          "n": 50,
+          "per_concealment": {
+            "html_comment": {
+              "fpr_pipeline": 0.0,
+              "fpr_stage1_at_t_low": 0.0,
+              "n": 1.0,
+              "recall_at_t_low": 1.0
+            },
+            "none": {
+              "fpr_pipeline": 0.0,
+              "fpr_stage1_at_t_low": 0.45454545454545453,
+              "n": 49.0,
+              "recall_at_t_low": 0.5
+            }
+          },
+          "per_tier": {
+            "easy": {
+              "fpr_pipeline": 0.0,
+              "fpr_stage1_at_t_low": 0.0,
+              "n": 13.0,
+              "recall_at_t_low": 0.38461538461538464
+            },
+            "hard": {
+              "fpr_pipeline": 0.0,
+              "fpr_stage1_at_t_low": 0.0,
+              "n": 2.0,
+              "recall_at_t_low": 1.0
+            },
+            "medium": {
+              "fpr_pipeline": 0.0,
+              "fpr_stage1_at_t_low": 0.0,
+              "n": 2.0,
+              "recall_at_t_low": 1.0
+            },
+            "unscored": {
+              "fpr_pipeline": 0.0,
+              "fpr_stage1_at_t_low": 0.45454545454545453,
+              "n": 33.0,
+              "recall_at_t_low": 0.0
+            }
+          },
+          "routing_rate": 0.3
+        },
+        "holdout_synthetic": {
+          "auprc": 0.6205533596837944,
+          "auroc": 0.36363636363636365,
+          "miss_catch_recall": 0.2727272727272727,
+          "n": 23,
+          "n_poisoned": 11,
+          "per_concealment": {
+            "none": {
+              "n": 11,
+              "recall_at_t_low": 0.2727272727272727
+            }
+          },
+          "per_generator": {
+            "human": {
+              "n": 11,
+              "recall_at_t_low": 0.2727272727272727
+            }
+          },
+          "per_payload_field": {
+            "description": {
+              "n": 11,
+              "recall_at_t_low": 0.2727272727272727
+            }
+          },
+          "recall_at_t_low": {
+            "hi": 0.6681818181818181,
+            "lo": 0.0,
+            "n": 23,
+            "n_undefined": 0,
+            "point": 0.2727272727272727
+          }
+        },
+        "real_poisoned": {
+          "miss_catch_recall": 0.6666666666666666,
+          "n": 6,
+          "per_risk": {
+            "Privacy Leakage": {
+              "n": 6,
+              "recall_at_t_low": 0.3333333333333333
+            }
+          },
+          "per_template": {
+            "Template-1": {
+              "n": 2,
+              "recall_at_t_low": 0.5
+            },
+            "Template-2": {
+              "n": 2,
+              "recall_at_t_low": 0.0
+            },
+            "Template-3": {
+              "n": 2,
+              "recall_at_t_low": 0.5
+            }
+          },
+          "recall_pipeline": 0.16666666666666666,
+          "recall_stage1": {
+            "hi": 0.6666666666666666,
+            "lo": 0.0,
+            "n": 6,
+            "n_undefined": 0,
+            "point": 0.3333333333333333
+          }
+        },
+        "t_high": 0.85,
+        "t_low": 0.3,
+        "test_id": {
+          "fpr_by_source": {
+            "public_repo": 0.4444444444444444,
+            "wild_fp": null
+          },
+          "fpr_prevalence_weighted": null,
+          "fpr_stage1_at_t_low": {
+            "hi": 0.5222373188405797,
+            "lo": 0.09285714285714286,
+            "n": 27,
+            "n_undefined": 0,
+            "point": 0.2857142857142857
+          },
+          "fpr_triage_slice": {
+            "hi": null,
+            "lo": null,
+            "n": 0,
+            "n_undefined": 0,
+            "point": null
+          },
+          "macro_f1_2class": 0.5317460317460317,
+          "macro_f1_classes": [
+            "benign",
+            "imperative_benign",
+            "poisoned"
+          ],
+          "n": 27,
+          "routing_rate": 0.2222222222222222
+        },
+        "test_ood": {
+          "auprc": 0.696969696969697,
+          "auroc": 0.6666666666666666,
+          "docker": {
+            "hi": 0.0,
+            "lo": 0.0,
+            "n": 3,
+            "n_undefined": 0,
+            "point": 0.0
+          },
+          "fp_reduction_vs_yara": {
+            "absolute": 0.4,
+            "absolute_hi": 0.5,
+            "absolute_lo": 0.3333333333333333,
+            "baseline_fpr": 0.4,
+            "baseline_recall": 0.5,
+            "mcnemar_p": 0.5,
+            "mcnemar_p_clustered": 0.1572992070502851,
+            "n_undefined": 2,
+            "recall_not_lower": false,
+            "relative": 1.0,
+            "relative_hi": 1.0,
+            "relative_lo": 1.0,
+            "sieve_fpr": 0.0,
+            "sieve_recall": 0.3333333333333333
+          },
+          "mcptox_clean": {
+            "hi": 0.0,
+            "lo": 0.0,
+            "n": 2,
+            "n_undefined": 0,
+            "point": 0.0
+          }
+        }
+      },
+      "judge": {
+        "decision": "D8",
+        "status": "deferred"
+      },
+      "limitations": "- The release gate rests on 11 holdout-synthetic positive(s); every interval is a server-cluster bootstrap, so it is wide by construction.\n- test-ID is 27 real row(s) with no poisoned row: it measures false positives and the benign/imperative split, never recall.\n- The LLM judge is deferred to v1.1 (D8): pipeline figures are Stage-1 only, and the band [T_low, T_high) is routed to review.\n- Holdout-synthetic recall is 0.273 with a 95% lower bound of 0.000; read the lower bound, not the point.\n- MCPTox (6 rows) is unlicensed: evaluated locally, never trained on.",
+      "log_line": "{\"reason\": \"fixture: the web's measured-benchmark state (training plan I5)\"}",
+      "model_version": "deberta@s0",
+      "n_boot": 40,
+      "n_eval_only": 6,
+      "n_holdout": 50,
+      "per_concealment": {
+        "html_comment": {
+          "fpr_pipeline": 0.0,
+          "fpr_stage1_at_t_low": 0.0,
+          "n": 1.0,
+          "recall_at_t_low": 1.0
+        },
+        "none": {
+          "fpr_pipeline": 0.0,
+          "fpr_stage1_at_t_low": 0.45454545454545453,
+          "n": 49.0,
+          "recall_at_t_low": 0.5
+        }
+      },
+      "per_tier": {
+        "easy": {
+          "fpr_pipeline": 0.0,
+          "fpr_stage1_at_t_low": 0.0,
+          "n": 13.0,
+          "recall_at_t_low": 0.38461538461538464
+        },
+        "hard": {
+          "fpr_pipeline": 0.0,
+          "fpr_stage1_at_t_low": 0.0,
+          "n": 2.0,
+          "recall_at_t_low": 1.0
+        },
+        "medium": {
+          "fpr_pipeline": 0.0,
+          "fpr_stage1_at_t_low": 0.0,
+          "n": 2.0,
+          "recall_at_t_low": 1.0
+        },
+        "unscored": {
+          "fpr_pipeline": 0.0,
+          "fpr_stage1_at_t_low": 0.45454545454545453,
+          "n": 33.0,
+          "recall_at_t_low": 0.0
+        }
+      },
+      "preregistration_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "real_poisoned_recall_pipeline": 0.16666666666666666,
+      "real_poisoned_recall_stage1": 0.3333333333333333,
+      "reason": "fixture: the web's measured-benchmark state (training plan I5)",
+      "recall": 0.2727272727272727,
+      "recall_interval": {
+        "hi": 0.6681818181818181,
+        "lo": 0.0,
+        "n": 23,
+        "n_undefined": 0,
+        "point": 0.2727272727272727
+      },
+      "recall_lcb": 0.0,
+      "release_gate": {
+        "recall_lower_bound": 0.9,
+        "recall_point": 0.95
+      },
+      "release_gate_passed": false,
+      "t_high": 0.85,
+      "t_low": 0.3
+    },
+    "label_audit": {
+      "test_id": {
+        "cluster_hi": 0.0673076923076923,
+        "cluster_lo": 0.009615384615384616,
+        "cp_hi": 0.09555507539167207,
+        "cp_lo": 0.010577266531079165,
+        "error_rate": 0.038461538461538464,
+        "errors": 4,
+        "kappa": 0.903,
+        "kappa_hi": 0.9768,
+        "kappa_lo": 0.8098,
+        "kappa_n_undefined": 0,
+        "n": 104,
+        "report_only": true,
+        "undecided": 1
+      }
+    },
+    "test_opened": [
+      {
+        "dataset_version": "mini-50.jsonl@fixture",
+        "git_sha": "744e15e8ab5968c1fa95d6ad6f05edc6bba18f76",
+        "models": [
+          "deberta@s0",
+          "deberta@s1"
+        ],
+        "new_version": false,
+        "reason": "fixture: the web's measured-benchmark state (training plan I5)",
+        "rows_evaluated": 50,
+        "utc": "2026-10-03T19:09:34.245118Z"
+      }
+    ]
+  }
+}

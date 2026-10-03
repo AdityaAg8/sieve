@@ -32,19 +32,17 @@ export function Proof() {
     },
     {
       label: "False positives removed",
-      note: headline.baseline_name
-        ? `vs ${headline.baseline_name}, paired bootstrap`
-        : "vs the scanner baseline, paired bootstrap",
-      value: formatInterval(headline.fp_reduction_vs_baseline),
+      note: "vs YARA as a triage layer, cluster bootstrap",
+      value: formatInterval(headline.fp_reduction),
     },
     {
       label: "Recall on the sealed holdout",
-      note: "opened once, logged",
+      note: "holdout-synthetic, opened once, logged",
       value: formatInterval(headline.holdout_recall),
     },
     {
       label: "Recall on real poisoned tools",
-      note: "evaluation-only slice",
+      note: "MCPTox, evaluation-only slice",
       value: formatInterval(headline.real_poisoned_recall),
     },
   ];

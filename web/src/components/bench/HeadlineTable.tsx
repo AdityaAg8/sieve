@@ -24,40 +24,48 @@ function mcnemar(headline: Headline): TestCell {
   return { text: NO_NUMBER, unmeasured: true };
 }
 
+function releaseGate(headline: Headline): TestCell {
+  if (typeof headline.release_gate_passed !== "boolean") {
+    return { text: NO_NUMBER, unmeasured: true };
+  }
+  return { text: headline.release_gate_passed ? "Release gate passed" : "Release gate not met" };
+}
+
 /**
- * The real-subset figure first, the synthetic-inclusive figure second and labelled as such — the
- * order is the claim. The McNemar p-value sits beside the reduction figure rather than in a
- * footnote, because a reduction without a significance test is a number, not a result.
+ * Every figure comes from the sealed report (`holdout.json`, training plan H3), read at the
+ * pre-registered headline model's own thresholds. The real-subset figure first — the order is
+ * the claim. The McNemar p-value sits beside the reduction figure rather than in a footnote,
+ * because a reduction without a significance test is a number, not a result.
  */
 export function HeadlineTable({ headline }: { headline: Headline }) {
   const rows: { metric: string; slice: string; value: string; test: TestCell }[] = [
     {
       metric: "Pipeline false-positive rate",
-      slice: "real subset (headline)",
+      slice: "real subset, test-ID (headline)",
       value: formatInterval(headline.fpr_pipeline_real),
       test: { text: NO_TEST_DEFINED },
     },
     {
-      metric: "Pipeline false-positive rate",
-      slice: "synthetic-inclusive",
-      value: formatInterval(headline.fpr_pipeline_all),
+      metric: "Stage-1 false-positive rate at T_low",
+      slice: "real subset, test-ID",
+      value: formatInterval(headline.fpr_stage1_real),
       test: { text: NO_TEST_DEFINED },
     },
     {
-      metric: "False positives removed",
-      slice: headline.baseline_name ? `vs ${headline.baseline_name}` : "vs the scanner baseline",
-      value: formatInterval(headline.fp_reduction_vs_baseline),
+      metric: "False positives removed (relative)",
+      slice: "vs YARA, Sieve as a triage layer",
+      value: formatInterval(headline.fp_reduction),
       test: mcnemar(headline),
     },
     {
-      metric: "Recall",
-      slice: "sealed holdout",
+      metric: "Recall at T_low",
+      slice: "holdout-synthetic (release gate)",
       value: formatInterval(headline.holdout_recall),
-      test: { text: NO_TEST_DEFINED },
+      test: releaseGate(headline),
     },
     {
-      metric: "Recall",
-      slice: "real poisoned (evaluation-only)",
+      metric: "Stage-1 recall at T_low",
+      slice: "real poisoned, MCPTox (evaluation-only)",
       value: formatInterval(headline.real_poisoned_recall),
       test: { text: NO_TEST_DEFINED },
     },
@@ -69,7 +77,8 @@ export function HeadlineTable({ headline }: { headline: Headline }) {
       title="Headline"
       lede="Every interval is a 95% cluster bootstrap resampling servers, not rows — the unit of
         independence here is the server, and resampling rows would report an interval narrower
-        than the evidence supports."
+        than the evidence supports. The LLM judge is deferred to v1.1, so pipeline figures are
+        Stage 1 alone: a tool in the uncertain band is routed to review, never confirmed."
     >
       <TableWrap label="Headline numbers table">
         <thead>
@@ -77,7 +86,7 @@ export function HeadlineTable({ headline }: { headline: Headline }) {
             <Th>Metric</Th>
             <Th>Slice</Th>
             <Th>Value [95% CI]</Th>
-            <Th>Test</Th>
+            <Th>Test or gate</Th>
           </tr>
         </thead>
         <tbody>

@@ -1,7 +1,18 @@
 "use client";
 
 import { ErrorNote } from "@/components/shell/ErrorNote";
-import { headlineOf, isProvisional, tablesOf } from "@/lib/bench";
+import {
+  ablationsOf,
+  ensembleAgreementOf,
+  headlineOf,
+  holdoutLogOf,
+  isProvisional,
+  labelAuditOf,
+  minimalPairsOf,
+  perConcealmentOf,
+  perTierOf,
+  tablesOf,
+} from "@/lib/bench";
 import { footerDestinations } from "@/lib/links";
 import { useBench } from "@/lib/queries";
 
@@ -21,8 +32,12 @@ export function BenchmarkScreen() {
   // "numbers appear after the first make bench" during an outage is a false explanation.
   const unreachable = bench.isError;
   const provisional = !unreachable && isProvisional(bench.data);
+  // Each panel reads its own results file's keys (training plan I5); a missing file leaves its
+  // panel with dashes or an empty note, never a placeholder number.
   const headline = headlineOf(bench.data);
   const tables = tablesOf(bench.data);
+  const minimalPairs = minimalPairsOf(bench.data);
+  const audit = labelAuditOf(bench.data);
 
   return (
     <>
@@ -70,14 +85,14 @@ export function BenchmarkScreen() {
 
       <div className="wrap flex min-w-0 flex-col gap-10 pb-20">
         <HeadlineTable headline={headline} />
-        <AblationTable rows={tables.ablations ?? []} />
-        <TierChart rows={tables.per_tier ?? []} />
-        <ConcealmentChart rows={tables.per_concealment ?? []} />
+        <AblationTable rows={ablationsOf(bench.data)} />
+        <TierChart rows={perTierOf(bench.data)} />
+        <ConcealmentChart rows={perConcealmentOf(bench.data)} />
         <ConfusionMatrix matrix={tables.confusion} />
-        <Agreement agreement={tables.agreement} />
-        <MinimalPairs rows={tables.minimal_pairs ?? []} />
-        <HumanReference points={tables.human_reference ?? []} />
-        <HoldoutLog rows={tables.test_opened ?? []} />
+        <Agreement audit={audit} ensemble={ensembleAgreementOf(bench.data)} />
+        <MinimalPairs rows={minimalPairs.rows} deferred={minimalPairs.deferred} />
+        <HumanReference audit={audit} />
+        <HoldoutLog rows={holdoutLogOf(bench.data)} />
 
         <section aria-labelledby="artefacts" className="border-line-0 flex min-w-0 flex-col gap-4 border-t pt-10">
           <h2 id="artefacts" className="t-h3 text-ink-0">

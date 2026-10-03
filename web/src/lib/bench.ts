@@ -2,43 +2,158 @@
  * The shape the web reads out of `GET /api/v1/bench/summary`.
  *
  * `BenchSummary.headline` and `BenchSummary.tables` are free-form objects in the frozen OpenAPI
- * contract, so this file is the web's half of that agreement: the keys below are what the
- * benchmark page and the landing proof block look for, and every one of them is optional. A key
- * that is missing renders as `—` with "metric to confirm" beside it — never as a zero, never as
- * a plausible placeholder (PRD §14.2).
+ * contract. The API serves each `bench/results/` file under `tables`, keyed by what it is and
+ * carrying **its producer's own keys** (training plan I5, finding F73):
  *
- * The API owns the producer; these are the keys this view requires of it.
+ * - `tables.ablations` — the rows of `ablations.json`, written by `bench.ablations.run` (H5);
+ * - `tables.holdout` — `holdout.json` from `bench.report_final` (H3), minus the per-model bulk,
+ *   plus the pre-registered headline model's own report as `headline_report`;
+ * - `tables.label_audit` — `label_audit.json` from `bench.label.audit` (F3);
+ * - `tables.ensemble_agreement` — `ensemble_agreement.json` from `bench.label.vote` (E5);
+ * - `tables.test_opened` — the lines of `test_opened.log`.
+ *
+ * The types below mirror those producers and every key is optional. A key that is missing
+ * renders as `—` with "metric to confirm" beside it — never as a zero, never as a plausible
+ * placeholder (PRD §14.2). The functions below only pick keys out; nothing here computes a number.
  */
 import type { BenchSummary } from "./api";
 
-/** A point estimate with a 95 % cluster-bootstrap interval. */
-export type Interval = { value: number; lo: number; hi: number };
+/**
+ * A cluster-bootstrap interval as `bench/` writes it. Across seeds (the ablation matrix) it also
+ * carries `std`, the sample std of the per-seed points, and `per_seed`.
+ */
+export type Interval = {
+  point?: number | null;
+  lo?: number | null;
+  hi?: number | null;
+  std?: number | null;
+  per_seed?: number[];
+  n?: number;
+  n_undefined?: number;
+};
 
-export type Headline = {
-  /** Pipeline false-positive rate on the real subset — the headline number (PRD §4.3). */
+/** `sieve.eval.metrics.FpReduction`, as `bench.report_final` writes it (M2, D7). */
+export type FpReduction = {
+  relative?: number | null;
+  relative_lo?: number | null;
+  relative_hi?: number | null;
+  absolute?: number | null;
+  baseline_fpr?: number | null;
+  sieve_fpr?: number | null;
+  mcnemar_p?: number | null;
+  mcnemar_p_clustered?: number | null;
+  baseline_recall?: number | null;
+  sieve_recall?: number | null;
+  recall_not_lower?: boolean;
+};
+
+/** `bench.ablations.run.breakdown`: bucket → its counts and rates. */
+export type Breakdown = Record<
+  string,
+  {
+    n?: number;
+    recall_at_t_low?: number | null;
+    fpr_stage1_at_t_low?: number | null;
+    fpr_pipeline?: number | null;
+  }
+>;
+
+/** One model's report (`bench.report_final.model_report`), the parts the page reads. */
+export type ModelReport = {
+  t_low?: number;
+  t_high?: number;
+  real_poisoned?: { n?: number; recall_stage1?: Interval; recall_pipeline?: number | null };
+  holdout?: {
+    n?: number;
+    fpr_pipeline_real?: Interval;
+    fp_reduction_triage?: FpReduction | null;
+    fp_reduction_standalone?: FpReduction | null;
+    per_tier?: Breakdown;
+    per_concealment?: Breakdown;
+  };
+};
+
+/** `holdout.json` (H3) as the API serves it. */
+export type HoldoutReport = {
+  headline_model?: string;
+  dataset_version?: string | null;
+  n_holdout?: number;
+  n_eval_only?: number;
+  recall_interval?: Interval;
   fpr_pipeline_real?: Interval;
-  /** The synthetic-inclusive figure, reported second and labelled. */
-  fpr_pipeline_all?: Interval;
-  /** Reduction in scanner false positives, with the paired-bootstrap interval. */
-  fp_reduction_vs_baseline?: Interval;
-  /** McNemar's exact test p-value beside the reduction figure. */
-  mcnemar_p?: number;
-  holdout_recall?: Interval;
-  real_poisoned_recall?: Interval;
-  /** Which baseline the comparison is against, e.g. "cisco_yara@4.8.0". */
-  baseline_name?: string;
+  fpr_stage1_real?: Interval;
+  per_tier?: Breakdown;
+  per_concealment?: Breakdown;
+  release_gate?: { recall_point?: number; recall_lower_bound?: number };
+  release_gate_passed?: boolean;
+  judge?: { status?: string; decision?: string };
+  headline_report?: ModelReport;
 };
 
+/** One row of `ablations.json` (H5). A deferred row carries no metric keys at all (D8). */
 export type AblationRow = {
-  id: number | string;
+  row: number;
   name: string;
-  recall?: Interval;
-  fpr?: Interval;
-  macro_f1?: Interval;
-  note?: string;
+  status?: "active" | "deferred";
+  /** Why a deferred row is deferred. */
+  reason?: string;
+  note?: string | null;
+  classifier?: string;
+  judge?: string;
+  seeds?: number[];
+  single_seed?: boolean;
+  oof_recall_at_t_low?: Interval | null;
+  fpr_stage1_at_t_low?: Interval | null;
+  fpr_pipeline?: Interval | null;
+  macro_f1_mean?: number | null;
+  macro_f1_std?: number | null;
+  macro_f1_per_seed?: number[];
+  minimal_pair_accuracy?: number | null;
+  breakdown_of?: number[];
+  /** The rows this breakdown row covers whose judge half is deferred (rows 10, 11, 14). */
+  deferred_breakdown_of?: number[];
 };
 
-export type BreakdownRow = { bucket: string; recall?: number; fpr?: number; n?: number };
+/** One audit block of `label_audit.json` (F3): human labels vs the ensemble's. */
+export type AuditBlock = {
+  n?: number;
+  of?: number;
+  errors?: number;
+  undecided?: number;
+  kappa?: number | null;
+  kappa_lo?: number | null;
+  kappa_hi?: number | null;
+  error_rate?: number | null;
+  cp_lo?: number | null;
+  cp_hi?: number | null;
+  cluster_lo?: number | null;
+  cluster_hi?: number | null;
+  gate?: number;
+  ready?: boolean;
+  passed?: boolean;
+};
+
+export type LabelAudit = {
+  /** Report-only: human gold vs ensemble on the 104-row sealed audit (test-ID). */
+  test_id?: AuditBlock;
+  /** Decision-driving: human vs ensemble on 50 dev rows, gated at κ ≥ 0.70. */
+  dev50?: AuditBlock;
+};
+
+/** `ensemble_agreement.json` (E5): the three labellers among themselves. */
+export type EnsembleAgreement = {
+  pairwise_kappa?: Record<string, { kappa?: number | null; n?: number }>;
+  synthetic?: { checker_agreement_round0?: number | null };
+};
+
+/** One line of `bench/results/test_opened.log`. */
+export type HoldoutLogRow = {
+  git_sha: string;
+  utc: string;
+  rows_evaluated?: number;
+  reason: string;
+  models?: string[];
+};
 
 export type ConfusionMatrix = {
   labels: string[];
@@ -47,40 +162,141 @@ export type ConfusionMatrix = {
   called_out?: [number, number];
 };
 
-export type Agreement = {
-  overall?: number;
-  real_subset?: number;
-  per_class?: { class: string; observed?: number; ac1?: number }[];
-  /** Not an inter-rater κ. Labelled as its own statistic, never as "κ". */
-  blind_vs_generator?: number;
-};
-
-export type MinimalPairRow = { tier: string; m11?: number; n?: number };
-
-export type HumanReference = { label: string; recall: number; fpr: number };
-
-export type HoldoutLogRow = { git_sha: string; utc: string; rows: number; reason: string };
-
 export type Tables = {
   ablations?: AblationRow[];
-  per_tier?: BreakdownRow[];
-  per_concealment?: BreakdownRow[];
-  confusion?: ConfusionMatrix;
-  agreement?: Agreement;
-  minimal_pairs?: MinimalPairRow[];
-  human_reference?: HumanReference[];
+  holdout?: HoldoutReport;
+  label_audit?: LabelAudit;
+  ensemble_agreement?: EnsembleAgreement;
   test_opened?: HoldoutLogRow[];
+  confusion?: ConfusionMatrix;
 };
 
-export function headlineOf(summary: BenchSummary | undefined): Headline {
-  return (summary?.headline ?? {}) as Headline;
-}
+/** The headline figures, picked out of the sealed report. */
+export type Headline = {
+  /** Pipeline false-positive rate on the real subset (test-ID) — the headline (PRD §4.3). */
+  fpr_pipeline_real?: Interval;
+  /** Stage-1 false-positive rate at `T_low` on the same rows. */
+  fpr_stage1_real?: Interval;
+  /** Relative reduction in YARA's false positives with Sieve as a triage layer (M2). */
+  fp_reduction?: Interval;
+  /** McNemar's exact test p-value beside the reduction figure. */
+  mcnemar_p?: number;
+  /** Recall at `T_low` on holdout-synthetic: the release gate's number. */
+  holdout_recall?: Interval;
+  /** Stage-1 recall on the evaluation-only real poisoned slice (MCPTox, M13). */
+  real_poisoned_recall?: Interval;
+  release_gate_passed?: boolean;
+};
+
+export type BreakdownRow = { bucket: string; recall?: number; fpr?: number; n?: number };
+
+export type MinimalPairRow = { row: number; name: string; m11: number };
 
 export function tablesOf(summary: BenchSummary | undefined): Tables {
   return (summary?.tables ?? {}) as Tables;
 }
 
-/** True while `make bench` has not produced numbers for this deployment. */
+function isNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function present<T extends object>(value: T | null | undefined): value is T {
+  return typeof value === "object" && value !== null;
+}
+
+/** Only the keys the report actually carries; an absent figure stays absent. */
+export function headlineOf(summary: BenchSummary | undefined): Headline {
+  const report = tablesOf(summary).holdout;
+  if (!present(report)) return {};
+  const own = report.headline_report;
+  const reduction = own?.holdout?.fp_reduction_triage;
+  const headline: Headline = {};
+  if (present(report.fpr_pipeline_real)) headline.fpr_pipeline_real = report.fpr_pipeline_real;
+  if (present(report.fpr_stage1_real)) headline.fpr_stage1_real = report.fpr_stage1_real;
+  if (present(report.recall_interval)) headline.holdout_recall = report.recall_interval;
+  const realPoisoned = own?.real_poisoned?.recall_stage1;
+  if (present(realPoisoned)) headline.real_poisoned_recall = realPoisoned;
+  if (present(reduction)) {
+    headline.fp_reduction = {
+      point: reduction.relative,
+      lo: reduction.relative_lo,
+      hi: reduction.relative_hi,
+    };
+    if (isNumber(reduction.mcnemar_p)) headline.mcnemar_p = reduction.mcnemar_p;
+  }
+  if (typeof report.release_gate_passed === "boolean") {
+    headline.release_gate_passed = report.release_gate_passed;
+  }
+  return headline;
+}
+
+export function ablationsOf(summary: BenchSummary | undefined): AblationRow[] {
+  const rows = tablesOf(summary).ablations;
+  return Array.isArray(rows) ? rows.filter((r) => present(r) && isNumber(r.row)) : [];
+}
+
+/**
+ * M11 off the scored rows. Breakdown rows (row 14) re-read the same fits, so they are left out;
+ * the judge rows they would have covered are returned as `deferred` so the page can say so.
+ */
+export function minimalPairsOf(summary: BenchSummary | undefined): {
+  rows: MinimalPairRow[];
+  deferred: number[];
+} {
+  const ablations = ablationsOf(summary);
+  const rows = ablations
+    .filter((r) => isNumber(r.minimal_pair_accuracy) && (r.breakdown_of ?? []).length === 0)
+    .map((r) => ({ row: r.row, name: r.name, m11: r.minimal_pair_accuracy as number }));
+  const deferred = new Set<number>();
+  for (const r of ablations) {
+    if (isNumber(r.minimal_pair_accuracy)) {
+      for (const id of r.deferred_breakdown_of ?? []) deferred.add(id);
+    }
+  }
+  return { rows, deferred: [...deferred].sort((a, b) => a - b) };
+}
+
+function breakdownRows(breakdown: Breakdown | undefined): BreakdownRow[] {
+  if (!present(breakdown)) return [];
+  return Object.entries(breakdown).map(([bucket, cell]) => ({
+    bucket,
+    recall: isNumber(cell.recall_at_t_low) ? cell.recall_at_t_low : undefined,
+    fpr: isNumber(cell.fpr_pipeline) ? cell.fpr_pipeline : undefined,
+    n: isNumber(cell.n) ? cell.n : undefined,
+  }));
+}
+
+/** The headline model's holdout breakdown by difficulty tier (H3). */
+export function perTierOf(summary: BenchSummary | undefined): BreakdownRow[] {
+  return breakdownRows(tablesOf(summary).holdout?.per_tier);
+}
+
+/** The headline model's holdout breakdown by concealment mechanism (H3). */
+export function perConcealmentOf(summary: BenchSummary | undefined): BreakdownRow[] {
+  return breakdownRows(tablesOf(summary).holdout?.per_concealment);
+}
+
+export function labelAuditOf(summary: BenchSummary | undefined): LabelAudit {
+  const audit = tablesOf(summary).label_audit;
+  return present(audit) ? audit : {};
+}
+
+export function ensembleAgreementOf(
+  summary: BenchSummary | undefined,
+): EnsembleAgreement | undefined {
+  const agreement = tablesOf(summary).ensemble_agreement;
+  return present(agreement) ? agreement : undefined;
+}
+
+export function holdoutLogOf(summary: BenchSummary | undefined): HoldoutLogRow[] {
+  const log = tablesOf(summary).test_opened;
+  return Array.isArray(log) ? log.filter(present) : [];
+}
+
+/**
+ * True while `make bench` has not produced numbers for this deployment: the API clears it as
+ * soon as the ablation matrix or the sealed report exists.
+ */
 export function isProvisional(summary: BenchSummary | undefined): boolean {
   return summary?.provisional !== false;
 }
@@ -89,20 +305,39 @@ export function isProvisional(summary: BenchSummary | undefined): boolean {
 export const NO_NUMBER = "—";
 export const NO_NUMBER_LABEL = "metric to confirm";
 
-export function formatRatio(value: number | undefined, digits = 2): string {
-  return typeof value === "number" && Number.isFinite(value) ? value.toFixed(digits) : NO_NUMBER;
+export function formatRatio(value: number | null | undefined, digits = 2): string {
+  return isNumber(value) ? value.toFixed(digits) : NO_NUMBER;
 }
 
-export function formatPercent(value: number | undefined, digits = 1): string {
-  return typeof value === "number" && Number.isFinite(value)
-    ? `${(value * 100).toFixed(digits)}%`
-    : NO_NUMBER;
+export function formatPercent(value: number | null | undefined, digits = 1): string {
+  return isNumber(value) ? `${(value * 100).toFixed(digits)}%` : NO_NUMBER;
 }
 
 /** "0.31 [0.22, 0.42]" — the point estimate first, then the interval, or `—`. */
-export function formatInterval(interval: Interval | undefined, digits = 2): string {
-  if (!interval || typeof interval.value !== "number") return NO_NUMBER;
-  const point = interval.value.toFixed(digits);
-  if (typeof interval.lo !== "number" || typeof interval.hi !== "number") return point;
+export function formatInterval(interval: Interval | null | undefined, digits = 2): string {
+  if (!interval || !isNumber(interval.point)) return NO_NUMBER;
+  const point = interval.point.toFixed(digits);
+  if (!isNumber(interval.lo) || !isNumber(interval.hi)) return point;
   return `${point} [${interval.lo.toFixed(digits)}, ${interval.hi.toFixed(digits)}]`;
+}
+
+/** "[1.1%, 9.6%]", or `—` when either bound is missing. */
+export function formatPercentRange(
+  lo: number | null | undefined,
+  hi: number | null | undefined,
+  digits = 1,
+): string {
+  return isNumber(lo) && isNumber(hi)
+    ? `[${formatPercent(lo, digits)}, ${formatPercent(hi, digits)}]`
+    : NO_NUMBER;
+}
+
+/** "0.86 ± 0.01" across seeds, "0.86" for one value, or `—`. */
+export function formatMeanStd(
+  mean: number | null | undefined,
+  std: number | null | undefined,
+  digits = 2,
+): string {
+  if (!isNumber(mean)) return NO_NUMBER;
+  return isNumber(std) ? `${mean.toFixed(digits)} ± ${std.toFixed(digits)}` : mean.toFixed(digits);
 }

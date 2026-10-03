@@ -113,24 +113,21 @@ async def test_bench_summary_serves_the_committed_results(api: AsyncClient) -> N
     """`bench/results/` is generated only by `make bench`; the API reads, never computes."""
     body = (await api.get("/api/v1/bench/summary")).json()
     committed = json.loads(Path("bench/results/demo.json").read_text(encoding="utf-8"))
-    assert body["provisional"] is committed["meta"]["provisional"]
+    measured = (bench.RESULTS / bench.ABLATIONS_FILE).is_file() or (
+        bench.RESULTS / bench.REPORT_FILE
+    ).is_file()
+    assert body["provisional"] is (committed["meta"]["provisional"] and not measured)
     assert body["headline"]["tool_count"] == committed["summary"]["tool_count"]
     assert body["headline"]["confirmed"] == committed["summary"]["confirmed"]
 
 
-def test_bench_summary_falls_back_to_the_fixture_before_make_bench(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr(bench, "DEMO", tmp_path / "absent.json")
-    monkeypatch.setattr(bench, "ABLATIONS", tmp_path / "absent-too.json")
-    summary = bench.summary()
+def test_bench_summary_falls_back_to_the_fixture_before_make_bench(tmp_path: Path) -> None:
+    summary = bench.summary(tmp_path)
     assert summary.provisional is True
     assert summary.headline["tool_count"] == 27
 
 
-def test_bench_summary_merges_the_ablation_headline(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_bench_summary_reads_a_headline_document(tmp_path: Path) -> None:
     demo: dict[str, Any] = {
         "dataset_version": "sievebench@1",
         "model_version": "deberta@1",
@@ -139,25 +136,19 @@ def test_bench_summary_merges_the_ablation_headline(
         "generated_at": "2026-09-12T00:00:00Z",
         "provisional": False,
     }
-    ablations = {"headline": {"no_schema": {"delta_pr_auc": -0.04}}}
     (tmp_path / "demo.json").write_text(json.dumps(demo), encoding="utf-8", newline="\n")
-    (tmp_path / "ablations.json").write_text(json.dumps(ablations), encoding="utf-8", newline="\n")
-    monkeypatch.setattr(bench, "DEMO", tmp_path / "demo.json")
-    monkeypatch.setattr(bench, "ABLATIONS", tmp_path / "ablations.json")
 
-    summary = bench.summary()
+    summary = bench.summary(tmp_path)
     assert summary.provisional is False
     assert summary.headline["pr_auc"] == 0.91
-    assert summary.headline["ablations"]["no_schema"]["delta_pr_auc"] == -0.04
+    assert summary.tables["by_tier"] == []
     assert summary.dataset_version == "sievebench@1"
 
 
-def test_bench_summary_survives_an_unreadable_results_file(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_bench_summary_survives_an_unreadable_results_file(tmp_path: Path) -> None:
     (tmp_path / "demo.json").write_text("{ not json", encoding="utf-8", newline="\n")
-    monkeypatch.setattr(bench, "DEMO", tmp_path / "demo.json")
-    assert bench.summary().provisional is True
+    (tmp_path / "ablations.json").write_text("{ not json", encoding="utf-8", newline="\n")
+    assert bench.summary(tmp_path).provisional is True
 
 
 # --- logging ----------------------------------------------------------------------------

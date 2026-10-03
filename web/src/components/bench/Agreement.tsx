@@ -1,65 +1,100 @@
-import { formatRatio, type Agreement as AgreementData } from "@/lib/bench";
+import {
+  NO_NUMBER,
+  formatRatio,
+  type AuditBlock,
+  type EnsembleAgreement,
+  type LabelAudit,
+} from "@/lib/bench";
 
 import { BenchSection, Num, TableWrap, Td, Th } from "./primitives";
 
+/** The size of the sealed audit by design (training plan §4.3), used until the file says. */
+export const AUDIT_ROWS = 104;
+
+/** "human vs ensemble, 104-row sealed audit" — the one label both panels use (finding F73). */
+export function auditLabel(audit: AuditBlock | undefined): string {
+  return `human vs ensemble, ${audit?.n ?? AUDIT_ROWS}-row sealed audit`;
+}
+
+/** The three labeller pairs `bench.label.vote` scores, in its order. */
+const LABELLER_PAIRS = ["sonnet~qwen", "sonnet~gemma", "qwen~gemma"];
+
+function ciNote(lo: number | null | undefined, hi: number | null | undefined): string {
+  const range =
+    typeof lo === "number" && typeof hi === "number"
+      ? `[${formatRatio(lo)}, ${formatRatio(hi)}]`
+      : NO_NUMBER;
+  return `95% CI ${range}, server-cluster bootstrap`;
+}
+
 /**
- * κ three ways — overall, real subset (the headline, because that is where the boundary lives),
- * and per class as observed agreement plus Gwet's AC1, which is robust to the prevalence skew
- * that makes κ misleading on a rare class.
+ * v1 has no second human annotator: PRD M8 (second-human κ ≥ 0.70) is not met, and it is
+ * replaced — as a disclosed deviation — by Cohen's κ between one person's gold labels and the
+ * labelling ensemble's on a random 104-row sample of the sealed real rows (`label_audit.json`,
+ * training plan F3). The panel says exactly that and never calls the ensemble an annotator.
  *
- * Blind-vs-generator agreement is reported here too and is deliberately **not** called κ: the
- * generator wrote the payload and therefore knows the answer, so it is not an independent rater
- * and the number is not an inter-rater statistic. Mislabelling it would be the single most
- * flattering mistake this page could make.
+ * Checker-vs-generator agreement on synthetic rows is reported beside it and is deliberately
+ * **not** called κ: the generator wrote the payload and therefore knows the answer, so it is not
+ * an independent rater and the number is not an inter-rater statistic.
  */
-export function Agreement({ agreement }: { agreement: AgreementData | undefined }) {
-  const perClass = agreement?.per_class ?? [];
+export function Agreement({
+  audit,
+  ensemble,
+}: {
+  audit: LabelAudit;
+  ensemble: EnsembleAgreement | undefined;
+}) {
+  const testId = audit.test_id;
+  const dev50 = audit.dev50;
+  const pairs = ensemble?.pairwise_kappa ?? {};
+  const pairNames = Object.keys(pairs).length > 0 ? Object.keys(pairs) : LABELLER_PAIRS;
 
   return (
     <BenchSection
       id="agreement"
       title="Agreement"
-      lede="How much two people agreed about the labels, and — separately — how often a blind
-        annotator landed on the class the generator intended."
+      lede="Human vs ensemble, 104-row sealed audit. There is no second human annotator in v1:
+        one person's gold labels on a random sample of the sealed real rows are compared with the
+        labelling ensemble's. The audit is report-only — it never changed a label, a threshold or
+        a model."
     >
       <dl className="stat-strip">
         <Stat
-          term="κ, real subset"
-          value={formatRatio(agreement?.real_subset)}
-          note="the headline: the boundary lives here"
+          term="κ, human vs ensemble"
+          value={formatRatio(testId?.kappa)}
+          note={auditLabel(testId)}
+          detail={ciNote(testId?.kappa_lo, testId?.kappa_hi)}
         />
-        <Stat term="κ, overall" value={formatRatio(agreement?.overall)} note="all labelled rows" />
         <Stat
-          term="Blind-vs-generator agreement"
-          value={formatRatio(agreement?.blind_vs_generator)}
-          note="not an inter-rater κ — the generator knew the answer"
+          term="κ, dev-50 gate"
+          value={formatRatio(dev50?.kappa)}
+          note={`human vs ensemble on 50 dev rows; proceed at κ ≥ ${formatRatio(dev50?.gate ?? 0.7)}`}
+          detail={ciNote(dev50?.kappa_lo, dev50?.kappa_hi)}
+        />
+        <Stat
+          term="Checker-vs-generator agreement"
+          value={formatRatio(ensemble?.synthetic?.checker_agreement_round0)}
+          note="synthetic rows — not an inter-rater κ, the generator knew the answer"
         />
       </dl>
 
-      <TableWrap label="Per-class agreement table">
+      <TableWrap label="Labeller agreement table">
         <thead>
           <tr>
-            <Th>Class</Th>
-            <Th>Observed agreement</Th>
-            <Th>Gwet&rsquo;s AC1</Th>
+            <Th>Labeller pair</Th>
+            <Th>Cohen&rsquo;s κ</Th>
+            <Th>Rows</Th>
           </tr>
         </thead>
         <tbody>
-          {(perClass.length > 0
-            ? perClass
-            : [
-                { class: "benign" },
-                { class: "imperative_benign" },
-                { class: "poisoned" },
-              ]
-          ).map((row) => (
-            <tr key={row.class}>
-              <Td>{row.class}</Td>
+          {pairNames.map((name) => (
+            <tr key={name}>
+              <Td>{name.replace("~", " ~ ")}</Td>
               <Td>
-                <Num>{formatRatio((row as { observed?: number }).observed)}</Num>
+                <Num>{formatRatio(pairs[name]?.kappa)}</Num>
               </Td>
               <Td>
-                <Num>{formatRatio((row as { ac1?: number }).ac1)}</Num>
+                <Num>{typeof pairs[name]?.n === "number" ? String(pairs[name]?.n) : NO_NUMBER}</Num>
               </Td>
             </tr>
           ))}
@@ -69,7 +104,17 @@ export function Agreement({ agreement }: { agreement: AgreementData | undefined 
   );
 }
 
-function Stat({ term, value, note }: { term: string; value: string; note: string }) {
+function Stat({
+  term,
+  value,
+  note,
+  detail,
+}: {
+  term: string;
+  value: string;
+  note: string;
+  detail?: string;
+}) {
   return (
     // A `<dl>`'s `div` may only wrap `dt` and `dd`, and the term comes first in the DOM;
     // `flex-col-reverse` puts the figure on top without reordering the markup.
@@ -77,6 +122,9 @@ function Stat({ term, value, note }: { term: string; value: string; note: string
       <dt className="t-ui text-ink-1">
         <span data-testid="agreement-term">{term}</span>
         <span className="t-ui text-ink-2 mt-1 block font-normal">{note}</span>
+        {detail ? (
+          <span className="t-ui text-ink-2 mt-1 block font-normal">{detail}</span>
+        ) : null}
       </dt>
       <dd className="stat-figure">
         <Num>{value}</Num>

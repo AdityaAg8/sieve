@@ -5,7 +5,7 @@ import type { Headline } from "@/lib/bench";
 
 import { HeadlineTable, NO_TEST_DEFINED } from "./HeadlineTable";
 
-const interval = { value: 0.31, lo: 0.22, hi: 0.42 };
+const interval = { point: 0.31, lo: 0.22, hi: 0.42 };
 
 function rowNamed(slice: string): HTMLElement {
   const cell = screen.getByText(slice);
@@ -23,25 +23,26 @@ describe("<HeadlineTable />", () => {
    */
   it("says a row has no significance test rather than printing an em dash", () => {
     render(<HeadlineTable headline={{ fpr_pipeline_real: interval } satisfies Headline} />);
-    expect(within(rowNamed("real subset (headline)")).getByText(NO_TEST_DEFINED)).toBeInTheDocument();
+    expect(within(rowNamed("real subset, test-ID (headline)")).getByText(NO_TEST_DEFINED)).toBeInTheDocument();
   });
 
   it("marks the reduction's test as still to confirm when the summary carries no p-value", () => {
-    render(
-      <HeadlineTable
-        headline={{ fp_reduction_vs_baseline: interval, baseline_name: "cisco_yara@4.8.0" }}
-      />,
-    );
-    const row = within(rowNamed("vs cisco_yara@4.8.0"));
+    render(<HeadlineTable headline={{ fp_reduction: interval }} />);
+    const row = within(rowNamed("vs YARA, Sieve as a triage layer"));
+    expect(row.getByText("0.31 [0.22, 0.42]")).toBeInTheDocument();
     expect(row.getByText("—")).toBeInTheDocument();
     expect(row.getByText("metric to confirm")).toBeInTheDocument();
     expect(row.queryByText(NO_TEST_DEFINED)).not.toBeInTheDocument();
   });
 
   it("prints the p-value once the benchmark has one", () => {
-    render(
-      <HeadlineTable headline={{ fp_reduction_vs_baseline: interval, mcnemar_p: 0.0013 }} />,
-    );
+    render(<HeadlineTable headline={{ fp_reduction: interval, mcnemar_p: 0.0013 }} />);
     expect(screen.getByText("McNemar p = 0.0013")).toBeInTheDocument();
+  });
+
+  it("states the release gate's outcome beside the holdout-synthetic recall", () => {
+    render(<HeadlineTable headline={{ holdout_recall: interval, release_gate_passed: false }} />);
+    const row = within(rowNamed("holdout-synthetic (release gate)"));
+    expect(row.getByText("Release gate not met")).toBeInTheDocument();
   });
 });

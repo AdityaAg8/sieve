@@ -112,8 +112,25 @@ export function Th({ children, scope = "col" }: { children: React.ReactNode; sco
   );
 }
 
-export function Td({ children }: { children: React.ReactNode }) {
-  return <td className="t-ui border-line-1 text-ink-1 border-b px-4 py-3 align-top">{children}</td>;
+export function Td({ children, colSpan }: { children: React.ReactNode; colSpan?: number }) {
+  return (
+    <td colSpan={colSpan} className="t-ui border-line-1 text-ink-1 border-b px-4 py-3 align-top">
+      {children}
+    </td>
+  );
+}
+
+/**
+ * A row that is listed but not scored — the LLM judge rows, deferred to v1.1 (D8). Grey like a
+ * dismissed verdict, and it states its class in words: a deferred row has no number, which is
+ * neither a zero nor the `—` of a metric still to confirm.
+ */
+export function DeferredChip() {
+  return (
+    <span className="t-ui text-ink-3 border-line-2 rounded-1 inline-flex items-center border px-1.5 py-0.5 whitespace-nowrap">
+      Deferred
+    </span>
+  );
 }
 
 export function EmptyNote({ children }: { children: React.ReactNode }) {
