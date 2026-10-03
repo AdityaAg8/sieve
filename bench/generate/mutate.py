@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
@@ -57,6 +58,11 @@ class PayloadSpec(BaseModel):
     property_name: str | None
     concealment: Concealment = "none"
     host_name: str | None = None
+    #: Training plan E1 (§5.3 item 2): per field, the host sentence the payload goes BEFORE
+    #: (0 = first, the field's sentence count = after the last). None appends, as v0 did.
+    insert_at: dict[EvidenceField, int] | None = None
+    #: §5.3 item 3: a two-field payload is split across its fields, never copied into both.
+    split_payload: bool = False
 
 
 @runtime_checkable
@@ -209,28 +215,128 @@ def _append(existing: str | None, payload: str) -> str:
     return f"{base}{joiner}{payload}".strip()
 
 
-def _inject(record: CorpusRecord, field: EvidenceField, payload: str, property_name: str) -> None:
+#: Where a sentence ends inside running text. ":" and ";" do not end one here: a boundary
+#: on them would put a payload between a label and its list.
+_FULL_STOP = frozenset(".!?。！？")
+_WHITESPACE = re.compile(r"\s+")
+
+
+def _gaps(text: str) -> list[tuple[int, int]]:
+    """The whitespace runs between sentences: after a full stop (closing quotes allowed), or
+    any run holding a line break. Runs at either end of the text are not between sentences."""
+    gaps = []
+    for match in _WHITESPACE.finditer(text):
+        start, end = match.span()
+        if start == 0 or end == len(text):
+            continue
+        if "\n" in match.group() or text[:start].rstrip(_CLOSERS)[-1:] in _FULL_STOP:
+            gaps.append((start, end))
+    return gaps
+
+
+def sentence_count(text: str | None) -> int:
+    """How many sentences `insert_sentence` sees in `text` (0 for an empty field)."""
+    if not text or not text.strip():
+        return 0
+    return len(_gaps(text)) + 1
+
+
+def _terminate(payload: str) -> str:
+    stripped = payload.rstrip()
+    return stripped if stripped.rstrip(_CLOSERS)[-1:] in _FULL_STOP else f"{stripped}."
+
+
+def insert_sentence(
+    existing: str | None, payload: str, index: int, *, terminate: bool = True
+) -> str:
+    """`payload` as a sentence of its own, before sentence `index` of `existing`.
+
+    Index 0 opens the field, `sentence_count(existing)` (or more) closes it the way `_append`
+    always did, and anything between lands on that sentence boundary, reusing its whitespace
+    so a line-break boundary stays one. `terminate=False` is for an already-concealed payload,
+    whose full stop is inside the concealment.
+    """
+    text = _terminate(payload) if terminate else payload
+    if not existing or not existing.strip():
+        return text
+    gaps = _gaps(existing)
+    if index <= 0:
+        return f"{text} {existing.lstrip()}"
+    if index > len(gaps):
+        return _append(existing, text)
+    start, end = gaps[index - 1]
+    sep = existing[start:end]
+    return f"{existing[:start]}{sep}{text}{sep}{existing[end:]}"
+
+
+def split_payload(payload: str) -> tuple[str, str]:
+    """Two halves of one payload, for the description + inputSchema site (§5.3 item 3).
+
+    Between sentences when there are two or more, otherwise after the comma nearest the middle,
+    otherwise at the space nearest the middle.
+    """
+    text = payload.strip()
+    gaps = _gaps(text)
+    if gaps:
+        start, end = gaps[(len(gaps) + 1) // 2 - 1]
+        return text[:start].strip(), text[end:].strip()
+    middle = len(text) / 2
+    commas = [m.end() for m in re.finditer(r",\s", text)]
+    spaces = [m.start() for m in re.finditer(r"\s", text)]
+    cuts = commas or spaces
+    if not cuts:
+        raise ValueError(f"cannot split a one-word payload across two fields: {payload!r}")
+    cut = min(cuts, key=lambda c: (abs(c - middle), c))
+    return text[:cut].strip(), text[cut:].strip()
+
+
+def _place(existing: str | None, payload: str, index: int | None) -> str:
+    if index is None:
+        return _append(existing, payload)
+    return insert_sentence(existing, payload, index, terminate=False)
+
+
+def _inject(
+    record: CorpusRecord,
+    field: EvidenceField,
+    payload: str,
+    property_name: str,
+    index: int | None = None,
+) -> None:
     if field == "description":
-        record.tool.description = _append(record.tool.description, payload)
+        record.tool.description = _place(record.tool.description, payload, index)
     elif field == "inputSchema":
         properties = record.tool.inputSchema.setdefault("properties", {})
         prop = properties.setdefault(property_name, {"type": "string"})
-        prop["description"] = _append(prop.get("description"), payload)
+        prop["description"] = _place(prop.get("description"), payload, index)
     elif field == "annotations":
         annotations = record.tool.annotations or {}
-        annotations["title"] = _append(annotations.get("title"), payload)
+        annotations["title"] = _place(annotations.get("title"), payload, index)
         record.tool.annotations = annotations
     else:
         raise ValueError(f"cannot inject a payload into {field}")
 
 
+def _pieces(raw: str, spec: PayloadSpec) -> list[str]:
+    """The (unconcealed) text each target field receives, in `target_fields` order."""
+    if spec.insert_at is None:
+        return [raw] * len(spec.target_fields)  # v0: appended as written, to every field
+    text = _terminate(raw)
+    if spec.split_payload:
+        if len(spec.target_fields) != 2:
+            raise ValueError("a split payload needs exactly two target fields")
+        return list(split_payload(text))
+    return [text] * len(spec.target_fields)
+
+
 def mutate(host: CorpusRecord, spec: PayloadSpec, gen: Generator, *, new_id: str) -> CorpusRecord:
     """Insert a generated payload into a copy of `host` and return the synthetic record."""
     record = copy.deepcopy(host)
-    payload = conceal.apply(gen.generate(spec, host.tool.description or ""), spec.concealment)
+    raw = gen.generate(spec, host.tool.description or "")
     property_name = spec.property_name or "input"
-    for field in spec.target_fields:
-        _inject(record, field, payload, property_name)
+    for field, piece in zip(spec.target_fields, _pieces(raw, spec), strict=True):
+        index = None if spec.insert_at is None else spec.insert_at.get(field)
+        _inject(record, field, conceal.apply(piece, spec.concealment), property_name, index)
     record.id = new_id
     record.source = "synthetic_mutation"
     record.capture_method = "authored"
