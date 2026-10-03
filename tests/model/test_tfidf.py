@@ -107,3 +107,24 @@ def test_fit_returns_self(dev_records: list[CorpusRecord]) -> None:
     model = TfidfClassifier()
     texts, labels = texts_and_labels(build_splits(dev_records, fold=0)["train"])
     assert model.fit(texts, labels) is model
+
+
+def test_load_keeps_the_saved_thresholds(dev_records: list[CorpusRecord], tmp_path: Path) -> None:
+    """C5: `load` used to drop the operating point `save` wrote, serving UNCALIBRATED."""
+    from sieve.protocols import Thresholds
+
+    model, _, _ = _fit_on_folds_1_to_4(dev_records)
+    model.thresholds = Thresholds(
+        t_low=0.2, t_high=0.8, temperature=1.0, val_recall_at_t_low=0.99,
+        val_precision_at_t_high=0.95, routing_rate=0.1,
+    )  # fmt: skip
+    model.save(tmp_path)
+    assert TfidfClassifier.load(tmp_path).thresholds == model.thresholds
+
+
+def test_an_uncalibrated_artefact_loads_uncalibrated(
+    dev_records: list[CorpusRecord], tmp_path: Path
+) -> None:
+    model, _, _ = _fit_on_folds_1_to_4(dev_records)
+    model.save(tmp_path)
+    assert np.isnan(TfidfClassifier.load(tmp_path).thresholds.t_low)

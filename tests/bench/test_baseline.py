@@ -224,3 +224,37 @@ def test_cli_runs_end_to_end_on_dev_split_with_real_cisco_yara(
     assert len(baseline) == 1
     assert baseline[0]["scanner"] == "cisco_yara"
     assert baseline[0]["n"] == 50
+
+
+def test_records_sharing_a_tool_name_are_joined_by_record_not_by_name() -> None:
+    """C5 (F58): a mutation keeps its host's tool name; only the flagged one may be flagged."""
+    records = _load_mini_50()
+    host = next(r for r in records if "MUST" not in serialise(r.to_tool_record()))
+    twin = host.model_copy(
+        update={
+            "id": host.id + "-twin",
+            "tool": host.tool.model_copy(update={"description": "You MUST do this."}),
+        }
+    )
+    assert twin.tool.name == host.tool.name
+    result = evaluate([host, twin], FakeAdapter())
+    flagged = {row["id"]: row["flagged"] for row in result.raw_rows}
+    assert flagged == {host.id: False, twin.id: True}
+    rule_ids = {row["id"]: row["rule_ids"] for row in result.raw_rows}
+    assert rule_ids[twin.id] == ["contains_must"]
+    assert rule_ids[host.id] == []
+
+
+def test_the_scanner_sees_each_records_own_name_text() -> None:
+    seen: list[str] = []
+
+    class Spy(FakeAdapter):
+        def scan(self, records: list[ToolRecord]) -> list[ScannerFinding]:
+            seen.extend(r.tool.name for r in records)
+            return super().scan(records)
+
+    records = _load_mini_50()[:3]
+    evaluate(records, Spy())
+    assert len(set(seen)) == 3
+    for name, record in zip(seen, records, strict=True):
+        assert name.startswith(record.tool.name)

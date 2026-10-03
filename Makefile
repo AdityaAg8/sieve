@@ -2,7 +2,7 @@ ifeq ($(OS),Windows_NT)
 SHELL := C:/Program Files/Git/usr/bin/bash.exe
 endif
 
-.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id model-dir sweep gpu-bench probes
+.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id model-dir sweep gpu-bench probes tfidf-ood
 
 .DEFAULT_GOAL := help
 
@@ -87,8 +87,13 @@ down:  ## docker compose down
 serve:  ## run the API locally (python -m sieve.api, --reload)
 	uv run python -m sieve.api --reload
 
-baseline:  ## TF-IDF + LR baseline (dev split only)
+baseline:  ## Cisco YARA scanner on dev rows -> bench/results/baseline{,_raw}.json (record-id keyed)
 	uv run python -m bench.baseline.run
+
+# `tfidf-ood` (training plan C5): the repo's own TF-IDF (sieve/model/tfidf.py), fitted on dev, on
+# val-OOD (report-only). test-OOD is scored by `eval-final` only.
+tfidf-ood:  ## the repo's TF-IDF baseline, fitted on dev, on val-OOD -> bench/results/tfidf_ood.json
+	uv run python -m bench.tfidf_ood --corpus $(BENCH_CORPUS)
 
 train:  ## one FP32 training run: PROFILE= SEED= FOLD=<0-4|all>
 	uv run python -m sieve.model.train --config bench/train.yaml --profile $(PROFILE) --fold $(FOLD) --seed $(SEED) --out $(MODEL_OUT) $(TRAIN_EPOCHS)

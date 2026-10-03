@@ -96,10 +96,19 @@ class TfidfClassifier:
         import joblib
 
         config = json.loads((directory / CONFIG_FILE).read_text(encoding="utf-8"))
-        model = cls()
+        model = cls(thresholds=_thresholds(config))
         model.model_version = str(config["model_version"])
         model._pipeline = joblib.load(directory / MODEL_FILE)
         return model
+
+
+def _thresholds(config: dict[str, Any]) -> Thresholds:
+    """The operating point `save` wrote (C5: `load` used to drop it), or UNCALIBRATED."""
+    fields = ("t_low", "t_high", "temperature", "val_recall_at_t_low",
+              "val_precision_at_t_high", "routing_rate")  # fmt: skip
+    if any(config.get(f) is None for f in fields):
+        return UNCALIBRATED
+    return Thresholds(**{f: float(config[f]) for f in fields})
 
 
 def _nullable(value: float) -> float | None:

@@ -8,13 +8,14 @@ works unchanged for a scanner's binary yes/no. All confidence intervals use
 rows from one server share an author and a register, so resampling rows alone understates the
 interval.
 
-Known limitation, for whoever builds the full corpus in Phase 2: `scan()` is called ONCE for the
-whole record list (so SC-2's invocation cap counts scans, not tools) and results are joined back
-to records by tool name. If two records in the same evaluation batch ever share a tool name (e.g.
-a synthetic mutation that keeps its host's tool name), the join can misattribute findings between
-them. `fixtures/corpus/mini-50.jsonl` has no such collisions. The fix, if it is ever needed, is to
-carry the record `id` through `ScannerFinding.raw` instead of relying on `tool_name` alone — a
-contracts-adjacent change to how adapters are invoked, out of this lane's scope to make unasked.
+`scan()` is called ONCE for the whole record list (so SC-2's invocation cap counts scans, not
+tools). Each record is scanned under a name unique to it, `<its tool name>__r<position>`, and its
+findings are joined back by that name, so `baseline_raw.json` is keyed by record id exactly
+(training plan C5, finding F58). Joining by the bare tool name misattributed findings whenever two
+records shared one (a mutation keeps its host's name: 302 names over 794 rows in the corpus), and
+the adapters' `by_tool` documents are dicts, so one twin's findings also overwrote the other's.
+The suffix keeps the original name text in front of the scanner, so a rule that reads names still
+sees it.
 """
 
 from __future__ import annotations
@@ -82,8 +83,17 @@ class _Row:
     rule_ids: list[str]
 
 
+def scan_name(record: CorpusRecord, position: int) -> str:
+    """The name a record is scanned under: unique within the batch, original text first."""
+    return f"{record.tool.name}__r{position}"
+
+
 def _join_findings(records: list[CorpusRecord], adapter: ScannerAdapter) -> list[_Row]:
-    tool_records = [r.to_tool_record() for r in records]
+    names = [scan_name(r, i) for i, r in enumerate(records)]
+    tool_records = [
+        r.to_tool_record().model_copy(update={"tool": r.tool.model_copy(update={"name": name})})
+        for r, name in zip(records, names, strict=True)
+    ]
     findings = adapter.scan(tool_records)
     by_tool: dict[str, list[Any]] = defaultdict(list)
     for f in findings:
@@ -92,8 +102,8 @@ def _join_findings(records: list[CorpusRecord], adapter: ScannerAdapter) -> list
             by_tool[tool_name].append(f)
 
     rows: list[_Row] = []
-    for r in records:
-        matched = by_tool.get(r.tool.name, [])
+    for r, name in zip(records, names, strict=True):
+        matched = by_tool.get(name, [])
         rule_ids = [f.rule_id for f in matched if f.rule_id]
         rows.append(_Row(record=r, flagged=len(matched) > 0, rule_ids=rule_ids))
     return rows
