@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "url": "https://github.com/zhiqiangwang4/MCPTox-Benchmark",
+    "sha256": "9a321dc4ecf4869883cf2a29ea8189e1f7663720a9c41a3e5ce2323d580e31c1",
+    "licence": "none – eval-only, not redistributed",
+    "extract": {
+      "path": "pure_tool.json",
+      "json_pointer": ""
+    },
+    "walker": "mcptox",
+    "labeller": "source:mcptox",
+    "commit": "f85189f9",
+    "local_dir": "bench/data/external/MCPTox-Benchmark"
+  }
+]

@@ -15,6 +15,9 @@ from bench.collect.real_poisoned import (
     NoArtefactRows,
     Pointer,
     collect,
+    hash_server_name,
+    mcptox_risk,
+    mcptox_template,
     reconstruct,
 )
 
@@ -160,8 +163,10 @@ def test_the_committed_pointers_file_stores_no_tool_text() -> None:
     path = Path("bench/data/real_poisoned.pointers.json")
     entries = json.loads(path.read_text(encoding="utf-8"))
     assert isinstance(entries, list)
+    optional = {"walker", "labeller", "commit", "fields", "local_dir"}
     for entry in entries:
-        assert set(entry) == {"url", "sha256", "licence", "extract"}
+        assert {"url", "sha256", "licence", "extract"} <= set(entry)
+        assert set(entry) <= {"url", "sha256", "licence", "extract"} | optional
         assert set(entry["extract"]) == {"path", "json_pointer"}
     assert b"\r\n" not in path.read_bytes()
 
@@ -243,3 +248,91 @@ def test_stored_rows_are_redacted(tmp_path: Path) -> None:
     assert "sk-abcdefghijklmnopqrstuvwxyz012345" not in blob
     assert "[REDACTED:aws_access_key]" in (records[0].tool.description or "")
     assert records[0].tool.name == "leaky"  # the identifier is never redacted
+
+
+# ------------------------------------------------------------------- MCPTox (training plan G1)
+
+
+def _mcptox_fixture(root: Path) -> Path:
+    """Shaped like MCPTox `pure_tool.json`: 45 servers, 485 poisoned tools in all."""
+    import hashlib as _h
+
+    servers, entries, n = 45, [], 0
+    for s in range(servers):
+        k = 11 if s < 35 else 10  # 35 * 11 + 10 * 10 = 485
+        entry = {}
+        for t in range(k):
+            entry[f"Server{s}_{t}"] = {
+                "server_name": f"server-{s}",
+                "tool_name": f"tool_{s}_{t}",
+                "tool_content": f"Description {n} of a tool. ",
+                "paradigm": f"Template-{1 + n % 3}",
+                "security risk": f"Risk {n % 11}",
+                "query": "q",
+                "tool_address": "a",
+            }
+            n += 1
+        entries.append(entry)
+    path = root / "pure_tool.json"
+    path.write_text(json.dumps(entries), encoding="utf-8", newline="\n")
+    assert n == 485
+    del _h
+    return path
+
+
+def test_the_mcptox_walker_rebuilds_485_rows_on_45_hashed_servers(tmp_path: Path) -> None:
+    import hashlib as _h
+
+    path = _mcptox_fixture(tmp_path)
+    pointer = Pointer(
+        url="https://github.com/zhiqiangwang4/MCPTox-Benchmark",
+        sha256=_h.sha256(path.read_bytes()).hexdigest(),
+        licence="none – eval-only, not redistributed",
+        extract={"path": "pure_tool.json", "json_pointer": ""},
+        walker="mcptox",
+        labeller="source:mcptox",
+        commit="f85189f9",
+    )
+    records = reconstruct([pointer], tmp_path)
+    assert len(records) == 485
+    assert len({r.server_name for r in records}) == 45
+    assert all(r.server_name.startswith("hashed:") for r in records)
+    assert {r.labeller for r in records} == {"source:mcptox"}
+    assert all(r.source_commit == "f85189f9" for r in records)
+    assert {mcptox_template(r) for r in records} == {"Template-1", "Template-2", "Template-3"}
+    assert len({mcptox_risk(r) for r in records}) == 11
+    assert records[0].tool.description == "Description 0 of a tool."
+    assert "server-0" not in json.dumps([r.model_dump(mode="json") for r in records])
+
+
+def test_mcptox_clean_hashes_the_same_servers_to_the_same_clusters() -> None:
+    assert hash_server_name("server-3") == hash_server_name("server-3")
+    assert hash_server_name("server-3") != hash_server_name("server-4")
+
+
+def test_field_mapping_reads_a_source_with_its_own_keys(tmp_path: Path) -> None:
+    import hashlib as _h
+
+    path = tmp_path / "other.json"
+    path.write_text(json.dumps([{"tool": "t1", "text": "Desc one.", "srv": "a"}]), encoding="utf-8")
+    pointer = Pointer(
+        url="https://example.invalid/other",
+        sha256=_h.sha256(path.read_bytes()).hexdigest(),
+        licence="eval-only",
+        extract={"path": "other.json", "json_pointer": ""},
+        fields={"name_key": "tool", "description_key": "text", "server_key": "srv"},
+    )
+    (record,) = reconstruct([pointer], tmp_path)
+    assert (record.tool.name, record.tool.description) == ("t1", "Desc one.")
+    assert record.server_name == hash_server_name("a")
+
+
+def test_the_committed_mcptox_pointer_names_the_pinned_artefact() -> None:
+    pointers = json.loads(
+        Path("bench/data/real_poisoned.pointers.json").read_text(encoding="utf-8")
+    )
+    (mcptox,) = [p for p in pointers if p.get("walker") == "mcptox"]
+    assert mcptox["commit"] == "f85189f9"
+    assert mcptox["sha256"] == "9a321dc4ecf4869883cf2a29ea8189e1f7663720a9c41a3e5ce2323d580e31c1"
+    assert mcptox["licence"] == "none – eval-only, not redistributed"
+    assert mcptox["labeller"] == "source:mcptox"

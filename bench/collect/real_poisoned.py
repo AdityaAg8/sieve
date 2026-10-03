@@ -63,17 +63,75 @@ class ArtefactSource(BaseModel):
 
 
 class Pointer(BaseModel):
-    """What is committed for a source whose licence forbids redistribution."""
+    """What is committed for a source whose licence forbids redistribution.
+
+    Training plan G1: a source can name its own keys (`fields`: `name_key`, `description_key`,
+    `server_key`) or a `walker` for a nested shape (`"mcptox"`: `pure_tool.json`), the
+    `labeller` its rows carry (`"source:mcptox"`), the pinned `commit` recorded as
+    `source_commit`, and the `local_dir` holding the pinned clone instead of the cache.
+    """
 
     url: str
     sha256: str
     licence: str
     extract: dict[str, str]  # {"path": <file in the cache>, "json_pointer": <RFC 6901>}
+    walker: str | None = None
+    labeller: str | None = None
+    commit: str | None = None
+    fields: dict[str, str] | None = None
+    local_dir: str | None = None
 
 
 def hash_server_name(name: str) -> str:
     """Hash the server name; the citation stays in the clear, the target does not."""
     return "hashed:" + hashlib.sha256(name.encode("utf-8")).hexdigest()[:8]
+
+
+MCPTOX_RATIONALE = "MCPTox paradigm: {template}; security risk: {risk}"
+_MCPTOX_RATIONALE = re.compile(r"^MCPTox paradigm: (.*?); security risk: (.*)$")
+
+
+def mcptox_template(record: CorpusRecord) -> str | None:
+    """The MCPTox attack template of a row (template x server clusters, training plan D4)."""
+    match = _MCPTOX_RATIONALE.match(record.label_rationale or "")
+    return match.group(1) if match else None
+
+
+def mcptox_risk(record: CorpusRecord) -> str | None:
+    """The MCPTox security-risk class of a row (one of 11)."""
+    match = _MCPTOX_RATIONALE.match(record.label_rationale or "")
+    return match.group(2) if match else None
+
+
+def _mcptox_entries(payload: Any) -> list[dict[str, Any]]:
+    """MCPTox `pure_tool.json`: a list of {key: tool} objects, 485 poisoned tools on 45
+    servers. Template and risk class ride along into the label rationale."""
+    out = []
+    for group in payload:
+        for tool in group.values():
+            out.append(
+                {
+                    "name": tool["tool_name"],
+                    "description": str(tool["tool_content"]).strip(),
+                    "server": tool["server_name"],
+                    "rationale": MCPTOX_RATIONALE.format(
+                        template=tool["paradigm"], risk=tool["security risk"]
+                    ),
+                }
+            )
+    return out
+
+
+def _mapped(entries: list[dict[str, Any]], fields: dict[str, str]) -> list[dict[str, Any]]:
+    return [
+        {
+            "name": e[fields.get("name_key", "name")],
+            "description": e.get(fields.get("description_key", "description")),
+            "server": e.get(fields.get("server_key", "server"), "unknown"),
+            "inputSchema": e.get("inputSchema"),
+        }
+        for e in entries
+    ]
 
 
 def _tool_entries(text: str, *, suffix: str) -> list[dict[str, Any]]:
@@ -111,9 +169,13 @@ def _records_from(
     licence: str,
     sha256: str,
     start: int,
+    entries: list[dict[str, Any]] | None = None,
+    labeller: str = "aditya",
+    commit: str | None = None,
 ) -> list[CorpusRecord]:
     out: list[CorpusRecord] = []
-    for offset, entry in enumerate(_tool_entries(text, suffix=suffix)):
+    rows = entries if entries is not None else _tool_entries(text, suffix=suffix)
+    for offset, entry in enumerate(rows):
         # PRD SC-5: a published artefact can carry a credential-shaped string, and this is
         # the last point before it is written to disk. Redaction is idempotent.
         tool, redacted = redact_tool(
@@ -133,14 +195,15 @@ def _records_from(
                 id=f"{ID_PREFIX}{start + offset:04d}",
                 source="real_poisoned",
                 source_repo=url,
-                source_commit=sha256[:12],
+                source_commit=commit or sha256[:12],
                 source_license=licence,
                 capture_method="published_artifact",
                 schema_fidelity="exact",
                 server_name=hash_server_name(str(entry.get("server", "unknown"))),
                 tool=tool,
                 label="poisoned",
-                labeller="aditya",
+                label_rationale=entry.get("rationale"),
+                labeller=labeller,
                 labelled_at=LABELLED_AT,  # type: ignore[arg-type]
                 split="eval_only",
                 fold=None,
@@ -215,7 +278,7 @@ def collect(
     if pointer_entries:
         pointers.parent.mkdir(parents=True, exist_ok=True)
         pointers.write_text(
-            json.dumps([p.model_dump() for p in pointer_entries], indent=2) + "\n",
+            json.dumps([p.model_dump(exclude_none=True) for p in pointer_entries], indent=2) + "\n",
             encoding="utf-8",
             newline="\n",
         )
@@ -226,7 +289,8 @@ def reconstruct(pointers: list[Pointer], cache_dir: Path) -> list[CorpusRecord]:
     """Rebuild the non-redistributable rows from a verified local cache."""
     records: list[CorpusRecord] = []
     for pointer in pointers:
-        path = cache_dir / pointer.extract["path"]
+        root = Path(pointer.local_dir) if pointer.local_dir else cache_dir
+        path = root / pointer.extract["path"]
         if not path.exists():
             raise FileNotFoundError(f"{path} is not in the artefact cache; fetch {pointer.url}")
         _verify(path, pointer.sha256)
@@ -234,6 +298,15 @@ def reconstruct(pointers: list[Pointer], cache_dir: Path) -> list[CorpusRecord]:
         json_pointer = pointer.extract.get("json_pointer", "")
         if path.suffix == ".json" and json_pointer:
             text = json.dumps(_resolve(json.loads(text), json_pointer))
+        entries = None
+        if pointer.walker == "mcptox":
+            entries = _mcptox_entries(json.loads(text))
+        elif pointer.walker is not None:
+            raise ValueError(f"unknown walker {pointer.walker!r} for {pointer.url}")
+        elif pointer.fields is not None:
+            payload = json.loads(text)
+            listed = payload.get("tools", payload) if isinstance(payload, dict) else payload
+            entries = _mapped(list(listed), pointer.fields)
         records.extend(
             _records_from(
                 text,
@@ -242,6 +315,9 @@ def reconstruct(pointers: list[Pointer], cache_dir: Path) -> list[CorpusRecord]:
                 licence=pointer.licence,
                 sha256=pointer.sha256,
                 start=len(records),
+                entries=entries,
+                labeller=pointer.labeller or "aditya",
+                commit=pointer.commit,
             )
         )
     return records
@@ -255,7 +331,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--sources",
         type=Path,
-        required=True,
+        default=None,
         help="JSON list of ArtefactSource objects (url, licence, redistributable, sha256, path)",
     )
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
@@ -276,6 +352,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"reconstructed {len(records)} eval-only records")
         return 0
 
+    if args.sources is None:
+        parser.error("--sources is required unless --reconstruct")
     sources = [
         ArtefactSource.model_validate(e)
         for e in json.loads(args.sources.read_text(encoding="utf-8"))
