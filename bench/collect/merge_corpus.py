@@ -15,7 +15,8 @@ Per id:
 * in both, judged text changed under any other label (a human's or the ensemble's): a
   **conflict**, because that label judged text that no longer exists;
 * only in the build: added after the existing rows, in build order;
-* only in the corpus: **removed**.
+* only in the corpus: **removed**, except a synthetic row still under its construction label,
+  which is **retired** (the v1 generator or its checker dropped it, training plan E2/E5).
 
 Conflicts and removals stop the merge with a diff and leave `corpus.jsonl` untouched.
 """
@@ -45,6 +46,7 @@ LABEL_FIELDS: tuple[str, ...] = (
     "adjudicated",
 )
 CONSTRUCTION = "generator"
+SYNTHETIC = "synthetic_mutation"
 #: Labellers that are not a person. Anything else counts as human, so an unknown name is
 #: protected rather than overwritten -- the safe way to be wrong.
 MACHINE_PREFIXES: tuple[str, ...] = (CONSTRUCTION, "claude-", "ensemble", "source:")
@@ -59,6 +61,7 @@ class Diff:
     added: list[str] = field(default_factory=list)
     regenerated: list[str] = field(default_factory=list)
     removed: list[str] = field(default_factory=list)
+    retired: list[str] = field(default_factory=list)
     conflicts: list[str] = field(default_factory=list)
 
     @property
@@ -68,9 +71,11 @@ class Diff:
     def render(self) -> str:
         lines = [
             f"merge: +{len(self.added)} added, ~{len(self.regenerated)} regenerated, "
-            f"-{len(self.removed)} removed, !{len(self.conflicts)} conflicts"
+            f"-{len(self.removed)} removed, x{len(self.retired)} retired, "
+            f"!{len(self.conflicts)} conflicts"
         ]
         lines += [f"- {i}  (in corpus.jsonl, gone from the build)" for i in self.removed]
+        lines += [f"x {i}  (synthetic, construction label only: retired)" for i in self.retired]
         lines += [f"! {i}  (text changed under a non-construction label)" for i in self.conflicts]
         lines += [f"~ {i}" for i in self.regenerated]
         lines += [f"+ {i}" for i in self.added]
@@ -91,7 +96,10 @@ def merge(
     for old in existing:
         new = by_id.get(old.id)
         if new is None:
-            diff.removed.append(old.id)
+            # A synthetic row the generator or its checker dropped (training plan E2, E5) holds
+            # only its construction label; anything else gone from the build is a decision.
+            retire = old.source == SYNTHETIC and old.labeller == CONSTRUCTION
+            (diff.retired if retire else diff.removed).append(old.id)
             continue
         if _judged(old) == _judged(new):
             keep = {name: getattr(old, name) for name in LABEL_FIELDS}

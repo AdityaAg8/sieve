@@ -150,3 +150,25 @@ def test_the_label_fields_are_explicit() -> None:
     }  # fmt: skip
     assert set(mc.LABEL_FIELDS) < set(CorpusRecord.model_fields)
     json.dumps(mc.LABEL_FIELDS)
+
+
+def test_a_synthetic_row_the_generator_dropped_is_retired_not_a_stop() -> None:
+    """Synthetic v1 (training plan E2/E5): a row the generator or the checker dropped leaves the
+    build. It still carries only its construction label, so nothing a person did is lost."""
+    dropped = _row("sb-syn-0007", source="synthetic_mutation", labeller="generator")
+    merged, diff = mc.merge([_row("a"), dropped], [_row("a")])
+    assert diff.ok and diff.retired == ["sb-syn-0007"]
+    assert [r.id for r in merged] == ["a"]
+    assert "retired" in diff.render()
+
+
+@pytest.mark.parametrize("labeller", ["aditya", "ensemble:v1", "claude-sonnet-5-provisional"])
+def test_a_removed_synthetic_row_with_any_other_label_still_stops(labeller: str) -> None:
+    row = _row("sb-syn-0008", source="synthetic_mutation", labeller=labeller)
+    _, diff = mc.merge([row], [])
+    assert not diff.ok and diff.removed == ["sb-syn-0008"]
+
+
+def test_a_removed_real_row_still_stops_even_under_construction() -> None:
+    _, diff = mc.merge([_row("r", labeller="generator")], [])
+    assert not diff.ok and diff.removed == ["r"]
