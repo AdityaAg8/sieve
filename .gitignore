@@ -53,6 +53,8 @@ bench/data/synthetic/prompts_used/
 bench/data/_backup/
 bench/data/external/
 bench/data/_dryrun/
+# Reconstructed test-OOD rows and their YARA sidecar (task G2); never redistributed.
+bench/data/ood/
 # Working copies of the blind labelling sessions (task F4); the gold labels are exported out.
 bench/data/_labelling/
 bench/results/corpus_stats.json
