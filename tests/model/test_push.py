@@ -94,6 +94,8 @@ def results(tmp_path: Path) -> Path:
         },
     )
     dump("curves.json", {"recall_vs_threshold": [], "fpr_vs_recall": []})
+    dump("latency.json", {"mode": "in_process", "p50_ms": 61.0, "p95_ms": 120.0, "n": 1000})
+    dump("export_parity.json", {"max_abs_delta": 0.004, "n": 600, "passed": True})
     (directory / "test_opened.log").write_text(
         json.dumps({"git_sha": SHA, "utc": "2026-09-12T00:00:00Z", "rows_evaluated": 120,
                     "reason": "v0.1.0 release"}) + "\n",
@@ -222,9 +224,7 @@ def test_the_card_says_sieve_is_not_a_scanner(results: Path, model_dir: Path) ->
     assert "not a scanner" in text.lower()
 
 
-@pytest.mark.parametrize(
-    "field", ["t_low", "ece_after", "p95_ms", "onnx_int8_parity", "training_command"]
-)
+@pytest.mark.parametrize("field", ["t_low", "ece_after", "training_command"])
 def test_a_missing_number_is_a_build_failure_not_a_blank(
     results: Path, model_dir: Path, field: str
 ) -> None:
@@ -233,6 +233,32 @@ def test_a_missing_number_is_a_build_failure_not_a_blank(
     (model_dir / "sieve_config.json").write_text(json.dumps(config), encoding="utf-8", newline="\n")
     with pytest.raises(IncompleteCard, match="unfilled slot"):
         write_card(build_context(model_dir, results, sha=SHA), model_dir)
+
+
+@pytest.mark.parametrize(
+    ("name", "key"), [("latency.json", "p95_ms"), ("export_parity.json", "max_abs_delta")]
+)
+def test_measured_numbers_come_from_bench_results_only(
+    results: Path, model_dir: Path, name: str, key: str
+) -> None:
+    """H6: a figure left in the artefact's config does not fill the card; bench/results does."""
+    payload = json.loads((results / name).read_text(encoding="utf-8"))
+    payload.pop(key)
+    (results / name).write_text(json.dumps(payload), encoding="utf-8", newline="\n")
+    with pytest.raises(IncompleteCard, match="unfilled slot"):
+        write_card(build_context(model_dir, results, sha=SHA), model_dir)
+
+
+def test_the_upload_ignores_folds_checkpoints_and_oof_arrays(
+    results: Path, model_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("sieve.model.push.git_sha", lambda short=True: SHA)
+    seen: dict[str, Any] = {}
+    monkeypatch.setattr(
+        "huggingface_hub.HfApi.upload_folder", lambda self, **kwargs: seen.update(kwargs)
+    )
+    main(["--model-dir", str(model_dir), "--repo", "someone/sieve", "--results-dir", str(results)])
+    assert seen["ignore_patterns"] == ["fold*/**", "_checkpoints/**", "*.npy", "oof_ids.json"]
 
 
 def test_a_missing_results_file_is_a_build_failure(results: Path, model_dir: Path) -> None:
@@ -443,6 +469,27 @@ def written_results(
     )
     line = json.loads((results / "test_opened.log").read_text(encoding="utf-8").splitlines()[0])
     assert line["git_sha"], "the log line must carry a SHA for the card to quote"
+
+    # `bench.latency` (in-process, H6) writes latency.json; `export.parity_report` the parity.
+    from bench import latency
+    from sieve.model import export
+
+    class Versioned(FakeClassifier):
+        model_version = "deberta@s0"
+
+    latency.write_report(
+        latency.in_process_report(Versioned(), "[DESC] x", tokens=512, n=1000, warmup=5),
+        results / "latency.json",
+    )
+    probs = FakeClassifier().predict_proba(["[DESC] a", "[DESC] b"])
+    monkeypatch.setattr(export, "_torch_probs", lambda d, t: probs)
+    monkeypatch.setattr(export, "_onnx_probs", lambda g, t, model_dir: probs + 0.001)
+    (tmp_path / "g.onnx").write_bytes(b"x")
+    (results / export.PARITY_REPORT).write_text(
+        json.dumps(export.parity_report(tmp_path, tmp_path / "g.onnx", ["a", "b"])),
+        encoding="utf-8",
+        newline="\n",
+    )
     return results
 
 

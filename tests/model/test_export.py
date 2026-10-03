@@ -122,3 +122,56 @@ def test_cli_appends_parity_and_latency_to_the_artefact(trained_tiny: Path, tmp_
 def test_parity_refuses_a_missing_graph(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError):
         parity(tmp_path, tmp_path / "nope.onnx", ["[DESC] x"])
+
+
+# ------------------------------------------------------------------- enforced parity (H6)
+
+
+@pytest.mark.slow
+def test_parity_runs_on_the_dev_set_and_is_written_to_results(
+    trained_tiny: Path, tmp_path: Path
+) -> None:
+    from sieve.model.export import PARITY_REPORT
+
+    results = tmp_path / "results"
+    main([str(trained_tiny), "--out", str(tmp_path / "onnx"), "--results-dir", str(results),
+          "--corpus", "fixtures/corpus/mini-50.jsonl"])  # fmt: skip
+    report = json.loads((results / PARITY_REPORT).read_text(encoding="utf-8"))
+    assert report["n"] == 50 and report["passed"] is True
+    assert report["max_abs_delta"] <= 0.01
+    assert {"flips_t_low", "flips_t_high"} <= set(report)
+
+
+@pytest.mark.slow
+def test_parity_above_tolerance_refuses_the_export(
+    trained_tiny: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from sieve.model import export as ex
+
+    monkeypatch.setattr(ex, "PARITY_TOLERANCE", -1.0)
+    with pytest.raises(ex.ParityError, match="refused"):
+        main([str(trained_tiny), "--out", str(tmp_path / "onnx"), "--results-dir",
+              str(tmp_path / "r"), "--corpus", "fixtures/corpus/mini-50.jsonl"])  # fmt: skip
+    assert (
+        json.loads((tmp_path / "r" / ex.PARITY_REPORT).read_text(encoding="utf-8"))["passed"]
+        is False
+    )
+
+
+def test_parity_counts_verdict_flips_at_each_threshold(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import numpy as np
+
+    from sieve.model import export as ex
+
+    (tmp_path / "g.onnx").write_bytes(b"x")
+    (tmp_path / "sieve_config.json").write_text(json.dumps({"t_low": 0.3, "t_high": 0.8}),
+                                                encoding="utf-8")  # fmt: skip
+    torch_p = np.array([[0.7, 0.0, 0.29], [0.1, 0.1, 0.81], [0.5, 0.0, 0.5]])
+    onnx_p = np.array([[0.69, 0.0, 0.31], [0.1, 0.11, 0.79], [0.5, 0.0, 0.5]])
+    monkeypatch.setattr(ex, "_torch_probs", lambda d, t: torch_p)
+    monkeypatch.setattr(ex, "_onnx_probs", lambda g, t, model_dir: onnx_p)
+    report = ex.parity_report(tmp_path, tmp_path / "g.onnx", ["a", "b", "c"])
+    assert (report["flips_t_low"], report["flips_t_high"]) == (1, 1)
+    assert report["max_abs_delta"] == pytest.approx(0.02)

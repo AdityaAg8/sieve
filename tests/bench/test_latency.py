@@ -209,3 +209,41 @@ async def test_run_gives_a_clear_message_when_nothing_is_listening() -> None:
         await latency.run(
             "http://test", n=1, concurrency=1, payload=latency.DEFAULT_TOOL, transport=transport
         )
+
+
+# ------------------------------------------------------------------- in-process (H6)
+
+
+def test_the_representative_sample_is_the_text_closest_to_512_tokens() -> None:
+    from bench.latency import representative_text
+
+    texts = ["a " * 100, "b " * 700, "c " * 480]
+    text, tokens = representative_text(texts, lambda t: len(t.split()))
+    assert text.startswith("b") and tokens == 512  # truncated at the limit, so it IS 512
+
+
+def test_in_process_timing_runs_at_least_a_thousand_calls_after_warmup() -> None:
+    from bench.latency import IN_PROCESS_N, in_process_report
+    from sieve.protocols import FakeClassifier
+
+    class Counting(FakeClassifier):
+        model_version = "deberta@0"
+        calls = 0
+
+        def predict_proba(self, texts):  # type: ignore[no-untyped-def]
+            type(self).calls += 1
+            assert len(texts) == 1
+            return super().predict_proba(texts)
+
+    report = in_process_report(Counting(), "[DESC] x", tokens=512)
+    assert Counting.calls == IN_PROCESS_N + report["warmup"]
+    assert report["n"] >= 1000 and report["threads"] == 2 and report["mode"] == "in_process"
+    assert report["cpu"] and report["sample_tokens"] == 512
+    assert 0 < report["p50_ms"] <= report["p95_ms"] <= report["p99_ms"]
+
+
+def test_in_process_refuses_too_few_iterations_for_bench_results() -> None:
+    from bench.latency import main
+
+    with pytest.raises(SystemExit, match="1000"):
+        main(["--in-process", "--model-dir", "x", "--n", "10"])

@@ -53,8 +53,17 @@ def _split(records: list[CorpusRecord]) -> list[CorpusRecord]:
     return out
 
 
+def _opened(tmp_path: Path) -> Path:
+    log = tmp_path / "test_opened.log"
+    log.write_text('{"reason": "v1 release", "rows_evaluated": 9}\n', encoding="utf-8")
+    return log
+
+
 def _run(tmp_path: Path, records: list[CorpusRecord], *extra: str) -> tuple[int, Path]:
+    """A run AFTER an opening: the sealed splits may be published."""
     hub = tmp_path / "hub"
+    if "--test-opened-log" not in extra:
+        extra = (*extra, "--test-opened-log", str(_opened(tmp_path)))
     code = publish.main(
         [
             "--dry-run",
@@ -91,6 +100,26 @@ def test_rows_are_written_to_the_file_their_split_names(
         assert loaded, f"{name}.jsonl is empty"
         assert {r.split for r in loaded} == {split}
         assert len(loaded) == sum(1 for r in records if r.split == split)
+
+
+def test_before_an_opening_the_sealed_splits_are_never_written(
+    tmp_path: Path, mini_records: list[CorpusRecord]
+) -> None:
+    code, hub = _run(
+        tmp_path, _split(mini_records), "--test-opened-log", str(tmp_path / "none.log")
+    )
+    assert code == 0
+    assert {p.name for p in hub.iterdir()} == {"README.md", "dev.jsonl", "NOTICE"}
+    assert "withheld" in (hub / "README.md").read_text(encoding="utf-8")
+
+
+def test_the_card_quotes_the_opening_log(tmp_path: Path, mini_records: list[CorpusRecord]) -> None:
+    _, hub = _run(tmp_path, _split(mini_records))
+    assert '"reason": "v1 release"' in (hub / "README.md").read_text(encoding="utf-8")
+
+
+def test_the_default_corpus_is_the_split_one() -> None:
+    assert Path("bench/data/labelled.jsonl") == publish.DEFAULT_CORPUS
 
 
 def test_the_card_never_quotes_a_holdout_metric(

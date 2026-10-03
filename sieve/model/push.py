@@ -130,6 +130,10 @@ def _headline_row(ablations: Mapping[str, Any], row: int) -> Mapping[str, Any]:
     raise IncompleteCard(f"ablations.json has no row {row}; the headline configuration is §11.5")
 
 
+#: Never uploaded (H6): fold models, checkpoints, OOF arrays and their id lists stay local.
+IGNORE_PATTERNS = ("fold*/**", "_checkpoints/**", "*.npy", "oof_ids.json")
+
+
 def build_context(
     model_dir: Path,
     results_dir: Path,
@@ -143,6 +147,9 @@ def build_context(
     selection = read_json(results_dir / "selection.json")
     holdout = read_json(results_dir / "holdout.json")
     read_json(results_dir / "curves.json")  # presence is the claim that the curves are published
+    # H6: measured numbers come from bench/results, never from a figure copied into a config.
+    latency = read_json(results_dir / "latency.json")
+    export_parity = read_json(results_dir / "export_parity.json")
     config = read_json(model_dir / "sieve_config.json")
     row = _headline_row(ablations, headline_row)
 
@@ -183,9 +190,9 @@ def build_context(
         "real_poisoned_pipeline": holdout.get("real_poisoned_recall_pipeline"),
         "per_tier": _table(holdout.get("per_tier")),
         "per_concealment": _table(holdout.get("per_concealment")),
-        "onnx_int8_parity": config.get("onnx_int8_parity"),
-        "p50_ms": config.get("p50_ms"),
-        "p95_ms": config.get("p95_ms"),
+        "onnx_int8_parity": export_parity.get("max_abs_delta"),
+        "p50_ms": latency.get("p50_ms"),
+        "p95_ms": latency.get("p95_ms"),
         "holdout_log_line": holdout_log_line(results_dir, sha),
         "limitations": _limitations(holdout.get("limitations"), limitations),
     }
@@ -268,7 +275,12 @@ def main(argv: Sequence[str] | None = None) -> Path:
 
     from huggingface_hub import HfApi
 
-    HfApi().upload_folder(folder_path=str(ns.model_dir), repo_id=ns.repo, repo_type="model")
+    HfApi().upload_folder(
+        folder_path=str(ns.model_dir),
+        repo_id=ns.repo,
+        repo_type="model",
+        ignore_patterns=list(IGNORE_PATTERNS),
+    )
     log.info("pushed %s to %s", ns.model_dir, ns.repo)
     return path
 

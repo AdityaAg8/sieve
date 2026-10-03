@@ -25,6 +25,16 @@ FP32_ONNX = "model.onnx"
 INT8_ONNX = "model.int8.onnx"
 CONFIG_FILE = "sieve_config.json"
 DEFAULT_MAX_LENGTH = 512
+#: Max |Δp| between PyTorch and the published graph, on the dev set. Enforced (H6): above it
+#: the export fails rather than shipping a graph that disagrees with the model it claims to be.
+PARITY_TOLERANCE = 0.01
+PARITY_BATCH = 32
+PARITY_REPORT = "export_parity.json"
+
+
+class ParityError(RuntimeError):
+    """The exported graph disagrees with PyTorch by more than `PARITY_TOLERANCE`."""
+
 
 _COPIED = ("sieve_config.json", "metrics.json")
 
@@ -112,16 +122,19 @@ def _onnx_probs(
     )
     tokenizer = AutoTokenizer.from_pretrained(str(onnx_path.parent))  # type: ignore[no-untyped-call]
     wanted = {i.name for i in session.get_inputs()}
-    encoded = tokenizer(
-        list(texts),
-        truncation=True,
-        max_length=_max_length(model_dir),
-        padding=True,
-        return_tensors="np",
-    )
-    feed = {k: v.astype(np.int64) for k, v in encoded.items() if k in wanted}
-    logits = session.run(None, feed)[0]
-    return _softmax(logits, _temperature(model_dir))
+    blocks = []
+    items = list(texts)
+    for start in range(0, len(items), PARITY_BATCH):
+        encoded = tokenizer(
+            items[start : start + PARITY_BATCH],
+            truncation=True,
+            max_length=_max_length(model_dir),
+            padding=True,
+            return_tensors="np",
+        )
+        feed = {k: v.astype(np.int64) for k, v in encoded.items() if k in wanted}
+        blocks.append(_softmax(session.run(None, feed)[0], _temperature(model_dir)))
+    return np.concatenate(blocks, axis=0) if blocks else np.zeros((0, 3))
 
 
 def _torch_probs(model_dir: Path, texts: Sequence[str]) -> npt.NDArray[np.float64]:
@@ -130,32 +143,75 @@ def _torch_probs(model_dir: Path, texts: Sequence[str]) -> npt.NDArray[np.float6
 
     tokenizer = AutoTokenizer.from_pretrained(str(model_dir))  # type: ignore[no-untyped-call]
     model = AutoModelForSequenceClassification.from_pretrained(str(model_dir)).eval()
-    encoded = tokenizer(
-        list(texts),
-        truncation=True,
-        max_length=_max_length(model_dir),
-        padding=True,
-        return_tensors="pt",
-    )
-    with torch.no_grad():
-        logits = model(**encoded).logits.numpy()
-    return _softmax(logits, _temperature(model_dir))
+    blocks = []
+    items = list(texts)
+    for start in range(0, len(items), PARITY_BATCH):
+        encoded = tokenizer(
+            items[start : start + PARITY_BATCH],
+            truncation=True,
+            max_length=_max_length(model_dir),
+            padding=True,
+            return_tensors="pt",
+        )
+        with torch.inference_mode():
+            logits = model(**encoded).logits.float().numpy()
+        blocks.append(_softmax(logits, _temperature(model_dir)))
+    return np.concatenate(blocks, axis=0) if blocks else np.zeros((0, 3))
 
 
-def parity(model_dir: Path, onnx_path: Path, texts: Sequence[str], *, tol: float = 0.01) -> float:
-    """Max |Δp| between the PyTorch and ONNX probabilities. Logs a warning above `tol`."""
+def _threshold(model_dir: Path, name: str) -> float | None:
+    path = model_dir / CONFIG_FILE
+    if not path.exists():
+        return None
+    value = json.loads(path.read_text(encoding="utf-8")).get(name)
+    return None if value is None else float(value)
+
+
+def parity_report(model_dir: Path, onnx_path: Path, texts: Sequence[str]) -> dict[str, Any]:
+    """Max |Δp| between PyTorch and the graph, plus the verdict flips it causes: rows on the
+    other side of `T_low` or `T_high` (poisoned column) under the graph than under PyTorch."""
     if not onnx_path.exists():
         raise FileNotFoundError(onnx_path)
-    delta = float(
-        np.max(
-            np.abs(
-                _torch_probs(model_dir, texts) - _onnx_probs(onnx_path, texts, model_dir=model_dir)
-            )
+    torch_probs = _torch_probs(model_dir, texts)
+    onnx_probs = _onnx_probs(onnx_path, texts, model_dir=model_dir)
+    delta = float(np.max(np.abs(torch_probs - onnx_probs))) if len(texts) else 0.0
+    report: dict[str, Any] = {
+        "graph": onnx_path.name,
+        "n": len(texts),
+        "max_abs_delta": delta,
+        "tolerance": PARITY_TOLERANCE,
+        "passed": delta <= PARITY_TOLERANCE,
+    }
+    for name in ("t_low", "t_high"):
+        threshold = _threshold(model_dir, name)
+        report[f"flips_{name}"] = (
+            None
+            if threshold is None
+            else int(np.sum((torch_probs[:, 2] >= threshold) != (onnx_probs[:, 2] >= threshold)))
         )
-    )
+    return report
+
+
+def parity(
+    model_dir: Path, onnx_path: Path, texts: Sequence[str], *, tol: float = PARITY_TOLERANCE
+) -> float:
+    """Max |Δp| between the PyTorch and ONNX probabilities. Logs a warning above `tol`."""
+    delta = float(parity_report(model_dir, onnx_path, texts)["max_abs_delta"])
     if delta > tol:
         log.warning("ONNX parity %.4f exceeds the %.4f tolerance for %s", delta, tol, onnx_path)
     return delta
+
+
+def parity_texts(corpus: Path, limit: int = 0) -> list[str]:
+    """The dev set's texts (H6): parity is measured where the model is used, not on a toy."""
+    from sieve.model.data import load_corpus
+    from sieve.serialise import serialise
+
+    source = corpus if corpus.exists() else Path("fixtures/corpus/mini-50.jsonl")
+    records = load_corpus(source)
+    dev = [r for r in records if r.split == "dev"] or records
+    texts = [serialise(r.to_tool_record()) for r in dev]
+    return texts[:limit] if limit else texts
 
 
 def bench_latency(onnx_path: Path, text: str, *, n: int = 50, threads: int = 2) -> dict[str, float]:
@@ -194,7 +250,9 @@ def main(argv: Sequence[str] | None = None) -> Path:
     parser.add_argument("--latency", action="store_true")
     parser.add_argument("--latency-n", type=int, default=50)
     parser.add_argument("--threads", type=int, default=2)
-    parser.add_argument("--parity-texts", type=int, default=20)
+    parser.add_argument("--parity-texts", type=int, default=0, help="0: the whole dev set")
+    parser.add_argument("--corpus", type=Path, default=Path("bench/data/labelled.jsonl"))
+    parser.add_argument("--results-dir", type=Path, default=Path("bench/results"))
     ns = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO)
 
@@ -202,12 +260,23 @@ def main(argv: Sequence[str] | None = None) -> Path:
     export(ns.model_dir, out_dir, quantize=not ns.no_quantize)
     graph = out_dir / (FP32_ONNX if ns.no_quantize else INT8_ONNX)
 
-    from sieve.model.data import load_corpus
-    from sieve.serialise import serialise
-
-    corpus = Path("fixtures/corpus/mini-50.jsonl")
-    texts = [serialise(r.to_tool_record()) for r in load_corpus(corpus)[: ns.parity_texts]]
-    measured: dict[str, Any] = {"onnx_int8_parity": parity(ns.model_dir, graph, texts)}
+    texts = parity_texts(ns.corpus, ns.parity_texts)
+    report = parity_report(ns.model_dir, graph, texts)
+    config_path = ns.model_dir / CONFIG_FILE
+    if config_path.exists():
+        report["model_version"] = json.loads(config_path.read_text(encoding="utf-8")).get(
+            "model_version"
+        )
+    ns.results_dir.mkdir(parents=True, exist_ok=True)
+    (ns.results_dir / PARITY_REPORT).write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
+    )
+    if not report["passed"]:
+        raise ParityError(
+            f"{graph}: max |Δp| {report['max_abs_delta']:.4f} > {PARITY_TOLERANCE} on "
+            f"{report['n']} dev rows; the export is refused"
+        )
+    measured: dict[str, Any] = {"onnx_int8_parity": report["max_abs_delta"]}
     if ns.latency:
         measured.update(bench_latency(graph, texts[0], n=ns.latency_n, threads=ns.threads))
 
@@ -227,7 +296,17 @@ def main(argv: Sequence[str] | None = None) -> Path:
     return Path(out_dir)
 
 
-__all__ = ["FP32_ONNX", "INT8_ONNX", "bench_latency", "export", "main", "parity"]
+__all__ = [
+    "FP32_ONNX",
+    "INT8_ONNX",
+    "PARITY_TOLERANCE",
+    "ParityError",
+    "bench_latency",
+    "export",
+    "main",
+    "parity",
+    "parity_report",
+]
 
 if __name__ == "__main__":  # pragma: no cover
     main()

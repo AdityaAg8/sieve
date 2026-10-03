@@ -27,7 +27,10 @@ from typing import Any
 from bench.collect.registry import PERMISSIVE_LICENCES
 from sieve.types import CorpusRecord
 
-DEFAULT_CORPUS = Path("bench/data/corpus.jsonl")
+#: The split corpus (H6): the dataset publishes splits, so it reads the file that has them.
+DEFAULT_CORPUS = Path("bench/data/labelled.jsonl")
+DEFAULT_TEST_OPENED_LOG = Path("bench/results/test_opened.log")
+SEALED_FILES = ("holdout", "eval_only")
 DEFAULT_STATS = Path("bench/results/corpus_stats.json")
 DEFAULT_AGREEMENT = Path("bench/results/agreement.json")
 DEFAULT_LEAKAGE = Path("bench/results/leakage_probe.json")
@@ -213,6 +216,13 @@ def _leakage(leakage: dict[str, Any], stats: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def opening_lines(path: Path = DEFAULT_TEST_OPENED_LOG) -> list[str]:
+    """`test_opened.log`'s lines: one per opening of the sealed splits (eval_final, H2)."""
+    if not path.exists():
+        return []
+    return [x for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
+
+
 def build_card(
     records: list[CorpusRecord],
     *,
@@ -220,19 +230,21 @@ def build_card(
     agreement: dict[str, Any],
     leakage: dict[str, Any],
     datasheet: Path = DATASHEET,
+    opened: list[str] | None = None,
 ) -> str:
     """The dataset card is the datasheet with the generated numbers substituted in."""
     text = datasheet.read_text(encoding="utf-8")
-    opened = stats.get("test_opened_log")
+    log = "\n".join(opened) if opened else None
     return (
         text.replace("<!-- COMPOSITION -->", _composition(records, stats))
         .replace("<!-- AGREEMENT -->", _agreement(agreement))
         .replace("<!-- LEAKAGE -->", _leakage(leakage, stats))
         .replace(
             "<!-- TEST_OPENED -->",
-            str(opened)
-            if opened
-            else "_The holdout has not been opened yet; `test_opened.log` is empty._",
+            f"```\n{log}\n```"
+            if log
+            else "_The holdout has not been opened yet; `test_opened.log` is empty, so the "
+            "sealed splits are withheld from this upload._",
         )
     )
 
@@ -244,15 +256,21 @@ def write_folder(
     stats: dict[str, Any],
     agreement: dict[str, Any],
     leakage: dict[str, Any],
+    opened: list[str] | None = None,
 ) -> Path:
+    """The dataset folder. Before an opening the sealed splits are never written, so they can
+    never be uploaded: a published holdout is an opened holdout (H6, PRD §11.6)."""
     out.mkdir(parents=True, exist_ok=True)
     for name in SPLIT_FILES:
+        if name in SEALED_FILES and not opened:
+            (out / f"{name}.jsonl").unlink(missing_ok=True)
+            continue
         rows = [r for r in records if r.split == name]
         (out / f"{name}.jsonl").write_text(
             "".join(r.model_dump_json() + "\n" for r in rows), encoding="utf-8", newline="\n"
         )
     (out / "README.md").write_text(
-        build_card(records, stats=stats, agreement=agreement, leakage=leakage),
+        build_card(records, stats=stats, agreement=agreement, leakage=leakage, opened=opened),
         encoding="utf-8",
         newline="\n",
     )
@@ -287,6 +305,7 @@ def main(argv: list[str] | None = None) -> int:
         "--dry-run", action="store_true", help="build the folder and upload nothing"
     )
     parser.add_argument("--repo-id", default=None, help="Hub dataset repo, e.g. user/sievebench")
+    parser.add_argument("--test-opened-log", type=Path, default=DEFAULT_TEST_OPENED_LOG)
     args = parser.parse_args(argv)
     if not args.dry_run and not args.repo_id:
         parser.error("--repo-id is required for a real upload; use --dry-run to build locally")
@@ -304,6 +323,7 @@ def main(argv: list[str] | None = None) -> int:
         stats=_read_json(args.stats),
         agreement=_read_json(args.agreement),
         leakage=_read_json(args.leakage),
+        opened=opening_lines(args.test_opened_log),
     )
     print(f"built {folder} with {len(records)} records")
     if args.dry_run:
