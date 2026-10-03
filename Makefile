@@ -2,7 +2,7 @@ ifeq ($(OS),Windows_NT)
 SHELL := C:/Program Files/Git/usr/bin/bash.exe
 endif
 
-.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id model-dir sweep gpu-bench
+.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id model-dir sweep gpu-bench probes
 
 .DEFAULT_GOAL := help
 
@@ -107,6 +107,11 @@ best-epoch:  ## the EPOCHS= for FOLD=all: the median best_epoch of MODEL_DIR's f
 # directories' parent, which under this layout nests (models/<family>-s0/<family>-s0).
 model-dir:  ## print MODEL_DIR for PROFILE= SEED= (models/<family>-s<seed>)
 	@echo $(MODEL_DIR)
+
+# `probes` (training plan C4, §5.3): the four style-leakage probes on dev rows -- per-stratum
+# source leakage (imperative, benign), surface, length-only, transfer. Exit 1 if any > 0.70.
+probes:  ## the §5.3 leakage probes on dev rows -> bench/results/leakage_probe.json (exit 1 if any > 0.70)
+	uv run python -m bench.analysis.probes --corpus $(BENCH_CORPUS)
 
 # `gpu-bench` (training plan C3, §13 step 7): every speed variant timed on real batches, the
 # pre-registered profile choice printed, residual non-determinism measured. Refuses on the CPU
