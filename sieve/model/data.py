@@ -7,6 +7,7 @@ from training by construction rather than by convention (PRD §11.6, §9.7).
 
 from __future__ import annotations
 
+import json
 import logging
 from collections import defaultdict
 from collections.abc import Sequence
@@ -50,6 +51,30 @@ def load_corpus(path: Path) -> list[CorpusRecord]:
     """Read a JSONL corpus file. Blank lines are skipped; every other line must parse."""
     lines = path.read_text(encoding="utf-8").splitlines()
     return [CorpusRecord.model_validate_json(line) for line in lines if line.strip()]
+
+
+def load_scanner_findings(path: Path) -> dict[str, list[ScannerFinding]]:
+    """Record id -> its YARA findings, from `bench/results/baseline_raw.json` (B3, C5).
+
+    The file is a list of `{id, rule_ids, ...}` rows keyed by record id, never by tool name
+    (F58). Only the rule ids are rendered (`[SCANNER] cisco_yara:<rule_id>`, PRD §11.2).
+    """
+    out: dict[str, list[ScannerFinding]] = {}
+    for row in json.loads(path.read_text(encoding="utf-8")):
+        rule_ids = [str(x) for x in row.get("rule_ids") or []]
+        if rule_ids:
+            out[str(row["id"])] = [
+                ScannerFinding(
+                    scanner="cisco_yara",
+                    scanner_version=str(row.get("scanner_version") or "replayed"),
+                    rule_id=rule_id,
+                    severity=None,
+                    message=None,
+                    raw={},
+                )
+                for rule_id in rule_ids
+            ]
+    return out
 
 
 def add_markers(tokenizer: _Tokenizer) -> int:

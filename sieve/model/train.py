@@ -25,10 +25,17 @@ import numpy.typing as npt
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
-from sieve.model.data import ID2LABEL, LABEL2ID, add_markers, build_splits, load_corpus
+from sieve.model.data import (
+    ID2LABEL,
+    LABEL2ID,
+    add_markers,
+    build_splits,
+    load_corpus,
+    load_scanner_findings,
+)
 from sieve.model.version import dirty_paths, git_sha, require_clean_tree
 from sieve.serialise import param_lines, serialise
-from sieve.types import LABELS, CorpusRecord, EvidenceField, Label
+from sieve.types import LABELS, CorpusRecord, EvidenceField, Label, ScannerFinding
 
 log = logging.getLogger("sieve.model.train")
 
@@ -66,6 +73,8 @@ class TrainConfig(BaseModel):
     class_weights: bool
     gradient_checkpointing: bool = False
     scanner_features: bool = False
+    # Record-id-keyed YARA findings (`baseline_raw.json`) that `--scanner-features` renders.
+    findings: Path | None = None
     profile: str = "custom"
     allow_reduced_precision: bool = False
     allow_dirty: bool = False
@@ -89,6 +98,13 @@ class TrainConfig(BaseModel):
                 "fragile under reduced precision. Pass --allow-reduced-precision to run the "
                 "bf16 ablation deliberately."
             )
+        if self.scanner_features and self.findings is None:
+            raise ValueError(
+                "--scanner-features needs --findings <baseline_raw.json>: without the record-id "
+                "keyed findings the flag would silently train the plain model (F3)"
+            )
+        if self.findings is not None and not self.scanner_features:
+            raise ValueError("--findings is only read with --scanner-features (ablation row 9)")
         if self.fold == "all" and not self.epochs_explicit:
             raise ValueError(
                 "--fold all has no held-out fold to early-stop against, so it needs the "
@@ -128,6 +144,7 @@ class TrainConfig(BaseModel):
             parts.append(f"--mode {self.mode}")
         if self.scanner_features:
             parts.append("--scanner-features")
+            parts.append(f"--findings {self.findings.as_posix() if self.findings else ''}")
         if self.allow_reduced_precision:
             parts.append("--allow-reduced-precision")
         parts.append(f"--corpus {corpus.as_posix()}")
@@ -144,6 +161,7 @@ def load_profile(
     mode: Mode = "full",
     num_labels: int = 3,
     scanner_features: bool = False,
+    findings: Path | None = None,
     epochs: int | None = None,
     allow_reduced_precision: bool = False,
     allow_dirty: bool = False,
@@ -162,6 +180,7 @@ def load_profile(
         mode=mode,
         num_labels=num_labels,
         scanner_features=scanner_features,
+        findings=findings,
         profile=profile,
         allow_reduced_precision=allow_reduced_precision,
         allow_dirty=allow_dirty,
@@ -212,6 +231,7 @@ def payload_survival_failures(
     *,
     max_length: int,
     mode: Mode = "full",
+    scanner_findings_by_id: dict[str, list[ScannerFinding]] | None = None,
 ) -> list[tuple[str, EvidenceField]]:
     """`(record id, field)` for every payload field TRUNCATED away at `max_length`.
 
@@ -229,7 +249,8 @@ def payload_survival_failures(
     for record in records:
         if not record.payload_fields:
             continue
-        text = serialise(record.to_tool_record(), mode=mode)
+        findings = (scanner_findings_by_id or {}).get(record.id)
+        text = serialise(record.to_tool_record(), mode=mode, scanner_findings=findings)
         full = _normalise(text)
         ids = tokenizer(text, truncation=True, max_length=max_length)["input_ids"]
         decoded = tokenizer.decode(ids, skip_special_tokens=False)
@@ -247,6 +268,13 @@ def payload_survival_failures(
 
 
 # ------------------------------------------------------------------------------ training
+
+
+def scanner_findings_for(config: TrainConfig) -> dict[str, list[ScannerFinding]] | None:
+    """The findings a run serialises with: only under `--scanner-features` (ablation row 9)."""
+    if not config.scanner_features or config.findings is None:
+        return None
+    return load_scanner_findings(config.findings)
 
 
 def file_sha256(path: Path) -> str:
@@ -369,11 +397,13 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
     tokenizer: Any = AutoTokenizer.from_pretrained(config.base_model, revision=config.revision)  # type: ignore[no-untyped-call]
     vocab_size = add_markers(tokenizer)
 
+    findings = scanner_findings_for(config)
     failures = payload_survival_failures(
         [r for r in records if r.split == "dev"],
         tokenizer,
         max_length=config.max_length,
         mode=config.mode,
+        scanner_findings_by_id=findings,
     )
     if failures:
         raise ValueError(
@@ -382,7 +412,9 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         )
 
     if config.fold == "all":
-        splits = build_splits(records, fold=-1, mode=config.mode, seed=config.seed)
+        splits = build_splits(
+            records, fold=-1, mode=config.mode, seed=config.seed, scanner_findings_by_id=findings
+        )
         train_ds = splits["train"]
         early_ds = splits["early_stop"]
         # `--fold all` trains on every dev server: fold -1 holds nothing out, so fold the
@@ -393,7 +425,13 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         early_ds = None
         oof_ds = None
     else:
-        splits = build_splits(records, fold=config.fold, mode=config.mode, seed=config.seed)
+        splits = build_splits(
+            records,
+            fold=config.fold,
+            mode=config.mode,
+            seed=config.seed,
+            scanner_findings_by_id=findings,
+        )
         train_ds, early_ds, oof_ds = splits["train"], splits["early_stop"], splits["oof"]
 
     mapping = config.label_map()
@@ -577,6 +615,9 @@ def main(argv: Sequence[str] | None = None) -> Path:
     parser.add_argument("--num-labels", type=int, default=3, choices=(2, 3))
     parser.add_argument("--mode", default="full", choices=("full", "description_only"))
     parser.add_argument("--scanner-features", action="store_true")
+    parser.add_argument(
+        "--findings", type=Path, default=None, help="baseline_raw.json for --scanner-features"
+    )
     parser.add_argument("--allow-reduced-precision", action="store_true")
     parser.add_argument(
         "--allow-dirty", action="store_true", help="train from uncommitted code (tests only)"
@@ -594,6 +635,7 @@ def main(argv: Sequence[str] | None = None) -> Path:
         mode=ns.mode,
         num_labels=ns.num_labels,
         scanner_features=ns.scanner_features,
+        findings=ns.findings,
         epochs=ns.epochs,
         allow_reduced_precision=ns.allow_reduced_precision,
         allow_dirty=ns.allow_dirty,
