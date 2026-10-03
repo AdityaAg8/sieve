@@ -152,15 +152,17 @@ eval-final:  ## the one-shot sealed evaluation, SIEVE_FINAL=1, REASON= required
 readme:  ## rewrite README numbers from bench/results/ (refuses without holdout.json)
 	uv run python docs/scripts/readme_numbers.py
 
-# `corpus`: real catalog rows -> mutations -> dedup -> grouped split -> stats. The merged
-# `constructed.jsonl` is rebuilt every run, but it only seeds `corpus.jsonl` (the file the
-# labelling TUI edits in place) when that does not exist yet: human labels are never clobbered.
+# `corpus`: real catalog rows -> mutations -> dedup -> grouped split -> stats. `constructed.jsonl`
+# is rebuilt every run and merged into `corpus.jsonl` (the file the TUI and the vote label in
+# place) by `bench.collect.merge_corpus` (training plan C6): content from the build, labels from
+# the corpus, regenerated synthetic rows taken whole; a removed row or a label on changed text
+# stops with a diff and leaves the corpus untouched.
 corpus:  ## build bench/data/labelled.jsonl (catalog import, mutations, dedup, split, stats)
 	uv run python -m bench.collect.catalog --out bench/data/real.jsonl
 	uv run python -m bench.generate.mutate --corpus bench/data/real.jsonl --plan bench/data/synthetic/human_plan.json --generator human --id-prefix sb-hum- --out bench/data/synthetic/human.jsonl
 	uv run python -m bench.generate.mutate --corpus bench/data/real.jsonl --plan bench/data/synthetic/plan.json --generator file --payloads bench/data/synthetic/payloads.jsonl --id-prefix sb-syn- --out bench/data/synthetic/model.jsonl
 	cat bench/data/real.jsonl bench/data/synthetic/human.jsonl bench/data/synthetic/model.jsonl > bench/data/constructed.jsonl
-	test -f bench/data/corpus.jsonl || cp bench/data/constructed.jsonl bench/data/corpus.jsonl
+	uv run python -m bench.collect.merge_corpus --constructed bench/data/constructed.jsonl --corpus bench/data/corpus.jsonl
 	uv run python -m bench.split.dedup --corpus bench/data/corpus.jsonl --out bench/data/deduped.jsonl
 	uv run python -m bench.split.split --corpus bench/data/deduped.jsonl --out bench/data/labelled.jsonl --split-map bench/data/split_map.json
 	uv run python -m bench.stats --corpus bench/data/labelled.jsonl
