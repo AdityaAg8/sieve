@@ -100,7 +100,8 @@ def test_bench_latency_returns_positive_percentiles(trained_tiny: Path, tmp_path
 @pytest.mark.slow
 def test_cli_appends_parity_and_latency_to_the_artefact(trained_tiny: Path, tmp_path: Path) -> None:
     out = tmp_path / "onnx"
-    main([str(trained_tiny), "--out", str(out), "--latency", "--latency-n", "5"])
+    main([str(trained_tiny), "--out", str(out), "--latency", "--latency-n", "5",
+          "--results-dir", str(tmp_path / "results")])  # fmt: skip
     config = json.loads((out / "sieve_config.json").read_text(encoding="utf-8"))
     assert config["onnx_int8_parity"] <= 0.01
     assert config["p50_ms"] > 0
