@@ -9,12 +9,20 @@ Mutations never get an assignment of their own: a mutation and its host differ b
 sentence, so putting them in different folds is the same leak in a smaller package.
 `real_poisoned` is `eval_only` and never carries a fold — it is opened once, by
 `bench/eval_final.py`.
+
+**Frozen splits (training plan A4).** Once a corpus is published its assignment is frozen in
+`bench/data/split_map.json` (host server -> split, fold). With a map, every mapped server keeps
+its split and fold whatever the seed, the corpus size or the labels; a server the map has never
+seen goes to dev, on the fold `sha256(server_name) % folds`, and never to the holdout. So adding
+servers or relabelling rows can no longer reshuffle the strata and move the holdout (F25).
 """
 
 from __future__ import annotations
 
 import argparse
 import collections
+import hashlib
+import json
 from pathlib import Path
 
 import numpy as np
@@ -24,6 +32,11 @@ from sieve.types import CorpusRecord
 DEFAULT_SEED = 42
 DEFAULT_HOLDOUT = 0.15
 DEFAULT_FOLDS = 5
+SPLIT_MAP = Path("bench/data/split_map.json")
+
+#: host server -> (split, fold); fold is None outside dev.
+SplitMap = dict[str, tuple[str, int | None]]
+_MAPPABLE = {"dev", "holdout"}
 
 
 def _server_signature(records: list[CorpusRecord]) -> str:
@@ -42,14 +55,75 @@ def _resolve_host(record: CorpusRecord, by_id: dict[str, CorpusRecord]) -> Corpu
     return current
 
 
+def new_server_fold(server: str, folds: int = DEFAULT_FOLDS) -> int:
+    """The dev fold of a server the split map has never seen: stable, seed-independent."""
+    return int(hashlib.sha256(server.encode("utf-8")).hexdigest(), 16) % folds
+
+
+def split_map_from(records: list[CorpusRecord]) -> SplitMap:
+    """The frozen map of an assigned corpus: each host server's split and fold."""
+    by_id = {r.id: r for r in records}
+    out: SplitMap = {}
+    for record in records:
+        host = _resolve_host(record, by_id)
+        if host.source == "real_poisoned":
+            continue
+        entry = (record.split, record.fold)
+        if out.setdefault(host.server_name, entry) != entry:
+            raise ValueError(f"server {host.server_name!r} carries two assignments")
+    return out
+
+
+def write_split_map(mapping: SplitMap, path: Path) -> None:
+    servers = {s: {"split": mapping[s][0], "fold": mapping[s][1]} for s in sorted(mapping)}
+    payload = {
+        "about": "Frozen split assignment per host server (training plan A4). Never edit by hand.",
+        "servers": servers,
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=1) + "\n", encoding="utf-8", newline="\n")
+
+
+def load_split_map(path: Path = SPLIT_MAP) -> SplitMap:
+    servers = json.loads(path.read_text(encoding="utf-8"))["servers"]
+    return {s: (v["split"], v["fold"]) for s, v in servers.items()}
+
+
+def _assign_frozen(
+    records: list[CorpusRecord], mapping: SplitMap, folds: int
+) -> list[CorpusRecord]:
+    bad = {s for s, (split, _) in mapping.items() if split not in _MAPPABLE}
+    if bad:
+        raise ValueError(f"split map entries with an unknown split: {sorted(bad)[:5]}")
+    by_id = {r.id: r for r in records}
+    out: list[CorpusRecord] = []
+    for record in records:
+        host = _resolve_host(record, by_id)
+        if host.source == "real_poisoned":
+            update: dict[str, object] = {"split": "eval_only", "fold": None}
+        elif host.server_name in mapping:
+            split, fold = mapping[host.server_name]
+            update = {"split": split, "fold": fold}
+        else:
+            update = {"split": "dev", "fold": new_server_fold(host.server_name, folds)}
+        out.append(record.model_copy(update=update))
+    return out
+
+
 def assign(
     records: list[CorpusRecord],
     *,
     seed: int = DEFAULT_SEED,
     holdout: float = DEFAULT_HOLDOUT,
     folds: int = DEFAULT_FOLDS,
+    split_map: SplitMap | None = None,
 ) -> list[CorpusRecord]:
-    """Return copies of `records` carrying `split` and `fold`. The input is not mutated."""
+    """Return copies of `records` carrying `split` and `fold`. The input is not mutated.
+
+    With `split_map`, the map decides (see the module docstring) and `seed`/`holdout` are unused.
+    """
+    if split_map is not None:
+        return _assign_frozen(records, split_map, folds)
     by_id = {r.id: r for r in records}
     groupable = [r for r in records if _resolve_host(r, by_id).source != "real_poisoned"]
 
@@ -118,8 +192,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--holdout", type=float, default=DEFAULT_HOLDOUT)
     parser.add_argument("--folds", type=int, default=DEFAULT_FOLDS)
+    parser.add_argument(
+        "--split-map", type=Path, default=None, help="honour this frozen map (training plan A4)"
+    )
+    parser.add_argument(
+        "--write-split-map", type=Path, default=None, help="write the resulting assignment's map"
+    )
     args = parser.parse_args(argv)
-    assigned = assign(_load(args.corpus), seed=args.seed, holdout=args.holdout, folds=args.folds)
+    mapping = load_split_map(args.split_map) if args.split_map else None
+    assigned = assign(
+        _load(args.corpus),
+        seed=args.seed,
+        holdout=args.holdout,
+        folds=args.folds,
+        split_map=mapping,
+    )
+    if args.write_split_map:
+        write_split_map(split_map_from(assigned), args.write_split_map)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(
         "".join(r.model_dump_json() + "\n" for r in assigned), encoding="utf-8", newline="\n"

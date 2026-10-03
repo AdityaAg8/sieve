@@ -91,6 +91,8 @@ def test_nothing_else_in_the_repository_opens_the_holdout() -> None:
         "bench/eval_final.py",
         # Assigns the splits in the first place (L1 Task 1.8).
         "bench/split/split.py",
+        # The frozen assignment split.py honours (training plan A4): server names, never rows.
+        "bench/data/split_map.json",
         # Produces `eval_only` rows (L1's real_poisoned collector).
         "bench/collect/real_poisoned.py",
         # L2's own gate: refuses to score a sealed row.

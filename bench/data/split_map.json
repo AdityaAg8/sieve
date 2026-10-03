@@ -1,0 +1,1169 @@
+{
+ "about": "Frozen split assignment per host server (training plan A4). Never edit by hand.",
+ "servers": {
+  "12306-mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@21st-dev/magic": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@aashari/mcp-server-atlassian-bitbucket": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@aashari/mcp-server-atlassian-confluence": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@aashari/mcp-server-atlassian-jira": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@aegis-scan/mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@agent-infra/mcp-server-browser": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@agentdeskai/browser-tools-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@agentmemory/mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@ahmetbarut/mcp-database-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@alchemy/mcp-server": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@angelogiacco/elevenlabs-mcp-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@antv/mcp-server-chart": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@aputime/mcp": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@arabold/docs-mcp-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@assistant-ui/mcp-docs-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@ateam-ai/mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@automatalabs/mcp-server-playwright": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@automatelab/ai-seo-mcp": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@automatelab/n8n-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@avallon-labs/mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@bangdao-ai/acw-tools": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@bharathvaj/whois-mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@bitbonsai/mcpvault": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@buywhere/mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@cachly-dev/mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@cap-js/mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@chakra-ui/react-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@chrusic/todoist-mcp-server-extended": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@circleci/mcp-server-circleci": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@claude-flow/cli": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@cleocode/mcp-adapter": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@cloudbase/cloudbase-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@codacy/codacy-mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@contextium/mcp-server": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@contextlint/mcp-server": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@currents/mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@cyanheads/arxiv-mcp-server": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@cyanheads/calculator-mcp-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@cyanheads/git-mcp-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@cyanheads/pubchem-mcp-server": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@cyanheads/pubmed-mcp-server": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@dangahagan/weather-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@diagrammo/dgmo-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@dikshitrj/quickfill-mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@doitintl/doit-mcp-server": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@drawio/mcp": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@driflyte/mcp-server": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@ehrocks/fe-mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@eslint/mcp": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@eternalai-org/mcp-server": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@exaudeus/workrail": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@extentos/mcp-server": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@fabriqa.ai/youtube-transcript-mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@fre4x/arxiv": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@fre4x/fred": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@fre4x/gemini": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@fre4x/inspector-bridge": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@fre4x/yahoo-finance": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@gitee/mcp-gitee": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@gleanwork/local-mcp-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@google-cloud/cloud-run-mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@google-cloud/observability-mcp": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@google-cloud/storage-mcp": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@guillehr2/excel-mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@h-ear/mcp-server": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@harusame64/desktop-touch-mcp": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@heroku/mcp-server": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@heroui/react-mcp": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@hisma/server-puppeteer": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@hostsmith/mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@hovecapital/read-only-mysql-mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@hugeicons/mcp-server": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@iflow-mcp/outlook-calendar-mcp": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@intlayer/mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@iris-eval/mcp-server": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@izumisy/mcp-universal-db-client": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@jaypie/mcp": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@jianruidutong/obsidian-mcp": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@john8844/jira-mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@jpisnice/shadcn-ui-mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@jschuller/perplexity-mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@jtalk22/slack-mcp": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@just-every/mcp-read-website-fast": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@just-every/mcp-screenshot-website-fast": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@kirkdeam/puppeteer-mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@knip/mcp": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@kubb/mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@kurihiro0119/datadog-mcp-server": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@leviai/publicfinance-mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@magicuidesign/mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@mantine/mcp-server": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@mapbox/mcp-server": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@mastergo/magic-mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@mastra/mcp-docs-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@mcp-apps/kusto-mcp-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@microsoft/clarity-mcp-server": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@microsoft/devbox-mcp": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@midscene/android-mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@mobilenext/mobile-mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@model-graph-tools/mcp-server": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@modelcontextprotocol/server-brave-search": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@modelcontextprotocol/server-github": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@modelcontextprotocol/server-gitlab": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@modelcontextprotocol/server-google-maps": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@modelcontextprotocol/server-puppeteer": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@modelcontextprotocol/server-slack": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@moralisweb3/api-mcp-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@mseep/git-mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@mui/mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@n24q02m/better-godot-mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@negokaz/excel-mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@netlify/mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@neurynae/toolcairn-mcp": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@next-ai-drawio/mcp-server": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@nexusforgetools/eu-finance": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@ng-primitives/mcp": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@nookplot/mcp": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@nordsym/apiclaw": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@notcrippledgod/uk-business-intelligence-mcp": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@notionhq/notion-mcp-server": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@notprolands/ast-grep-mcp": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@o3r/mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@ohah/react-native-mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@okx_ai/okx-trade-mcp": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@onesub/mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@openbnb/mcp-server-airbnb": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@openephemeris/mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@openfinclaw/cli": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@origintrail-official/dkg-mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@padenot/firefox-devtools-mcp": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@perplexity-ai/mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@pinecone-database/mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@piotr-agier/google-drive-mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@playwright/mcp": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@poisedhq/dearuser-mcp": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@professional-wiki/mediawiki-mcp-server": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@qase/mcp-server": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@r-huijts/strava-mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@railway/mcp-server": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@remotion/mcp": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@respira/wordpress-mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@robinmordasiewicz/f5xc-terraform-mcp": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@ryanmarc/youtube-summarizer-mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@sap-ux/fiori-mcp-server": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@seed-design/docs-mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@seldonframe/mcp": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@sellable/mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@shopify/dev-mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@siemens/element-mcp": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@siemens/ix-mcp-angular": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@siemens/ix-mcp-react": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@sinco-lab/mcp-youtube-transcript": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@skew-labs/mcp": {
+   "split": "dev",
+   "fold": 2
+  },
+  "@smartbear/mcp": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@softeria/ms-365-mcp-server": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@structured-world/gitlab-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@sveltejs/mcp": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@sylphlab/pdf-reader-mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@sylphx/pdf-reader-mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "@taiga-ui/mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@tankpkg/mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@tbrgeek/spotify-mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@tocharianou/mcp-server-kibana": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@tokenizin/mcp-npx-fetch": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@tosspayments/integration-guide-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@transloadit/mcp-server": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@tsmztech/mcp-server-salesforce": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@ttpears/gitlab-mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@ui5/mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "@unclick/mcp-server": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@upstash/context7-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@variflight-ai/variflight-mcp": {
+   "split": "dev",
+   "fold": 0
+  },
+  "@vizejs/musea-mcp-server": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@wonderwhy-er/desktop-commander": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@xrpl-utilities/mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@yawlabs/mcp-compliance": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@yjzf/mcp-server-yjzf": {
+   "split": "dev",
+   "fold": 3
+  },
+  "@zindex-ai/mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "@zsc-glitch/knowledge-keeper-mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "agent-hansa-mcp": {
+   "split": "dev",
+   "fold": 0
+  },
+  "agent-passport-system-mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "agent-recall-mcp": {
+   "split": "dev",
+   "fold": 0
+  },
+  "agentcash": {
+   "split": "dev",
+   "fold": 4
+  },
+  "agentmail-mcp": {
+   "split": "dev",
+   "fold": 2
+  },
+  "agentschat-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "alibabacloud-devops-mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "attio-mcp": {
+   "split": "dev",
+   "fold": 0
+  },
+  "auxiliar-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "bbox-mcp-server": {
+   "split": "dev",
+   "fold": 1
+  },
+  "chaimi-keep-mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "chrome-devtools-mcp": {
+   "split": "dev",
+   "fold": 4
+  },
+  "claude-video-vision": {
+   "split": "dev",
+   "fold": 1
+  },
+  "clinicaltrialsgov-mcp-server": {
+   "split": "dev",
+   "fold": 3
+  },
+  "cls-mcp-server": {
+   "split": "holdout",
+   "fold": null
+  },
+  "codeloop-mcp-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "codewikitap": {
+   "split": "dev",
+   "fold": 1
+  },
+  "codex-mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "cogmemai-mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "contextplus": {
+   "split": "holdout",
+   "fold": null
+  },
+  "dataforseo-mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "domain-search-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "duckduckgo-mcp-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "efficient-gitlab-mcp-server": {
+   "split": "holdout",
+   "fold": null
+  },
+  "european-parliament-mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "excalidraw-mcp": {
+   "split": "dev",
+   "fold": 4
+  },
+  "fetcher-mcp": {
+   "split": "dev",
+   "fold": 4
+  },
+  "figma-console-mcp": {
+   "split": "dev",
+   "fold": 4
+  },
+  "fsb-mcp-server": {
+   "split": "dev",
+   "fold": 3
+  },
+  "gcp-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "gemini-mcp-tool": {
+   "split": "dev",
+   "fold": 3
+  },
+  "gezhe-mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "godot-mcp-server": {
+   "split": "holdout",
+   "fold": null
+  },
+  "google-searchconsole-mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "graphlit-mcp-server": {
+   "split": "dev",
+   "fold": 1
+  },
+  "growth-mcp": {
+   "split": "dev",
+   "fold": 0
+  },
+  "guardvibe": {
+   "split": "dev",
+   "fold": 3
+  },
+  "heor-agent-mcp": {
+   "split": "dev",
+   "fold": 2
+  },
+  "hn-mcp": {
+   "split": "dev",
+   "fold": 2
+  },
+  "hostinger-api-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "igniteui-theming": {
+   "split": "dev",
+   "fold": 4
+  },
+  "ios-simulator-mcp": {
+   "split": "dev",
+   "fold": 4
+  },
+  "js-reverse-mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "korean-law-mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "kosyak-evm-mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "langsmith-mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "lsp-mcp-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "malicious-mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "markitdown-mcp-npx": {
+   "split": "holdout",
+   "fold": null
+  },
+  "mcp-deepwiki": {
+   "split": "dev",
+   "fold": 3
+  },
+  "mcp-dev-cli": {
+   "split": "dev",
+   "fold": 4
+  },
+  "mcp-fetch-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "mcp-google-drive": {
+   "split": "holdout",
+   "fold": null
+  },
+  "mcp-grafana-npx": {
+   "split": "dev",
+   "fold": 2
+  },
+  "mcp-graphql": {
+   "split": "dev",
+   "fold": 4
+  },
+  "mcp-hello-world": {
+   "split": "dev",
+   "fold": 2
+  },
+  "mcp-image": {
+   "split": "dev",
+   "fold": 2
+  },
+  "mcp-local-rag": {
+   "split": "dev",
+   "fold": 2
+  },
+  "mcp-mermaid": {
+   "split": "dev",
+   "fold": 4
+  },
+  "mcp-searxng": {
+   "split": "dev",
+   "fold": 2
+  },
+  "mcp-server-code-runner": {
+   "split": "dev",
+   "fold": 0
+  },
+  "mcp-server-discord": {
+   "split": "dev",
+   "fold": 0
+  },
+  "mcp-server-docker": {
+   "split": "dev",
+   "fold": 1
+  },
+  "mcp-server-linear": {
+   "split": "dev",
+   "fold": 3
+  },
+  "mcp-server-madeonsol": {
+   "split": "holdout",
+   "fold": null
+  },
+  "mcp-server-mysql": {
+   "split": "holdout",
+   "fold": null
+  },
+  "mcp-server-sqlite": {
+   "split": "dev",
+   "fold": 2
+  },
+  "mcp-ssh-manager": {
+   "split": "dev",
+   "fold": 0
+  },
+  "mcp-swiss": {
+   "split": "dev",
+   "fold": 1
+  },
+  "mcpbrowser": {
+   "split": "dev",
+   "fold": 4
+  },
+  "metmuseum-mcp": {
+   "split": "dev",
+   "fold": 2
+  },
+  "metro-mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "moflo": {
+   "split": "dev",
+   "fold": 3
+  },
+  "mpp32-mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "mssql-mcp-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "myoperator-mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "n8n-mcp": {
+   "split": "dev",
+   "fold": 0
+  },
+  "narrarium-mcp-server": {
+   "split": "dev",
+   "fold": 4
+  },
+  "next-devtools-mcp": {
+   "split": "dev",
+   "fold": 4
+  },
+  "nexus-agents": {
+   "split": "dev",
+   "fold": 0
+  },
+  "notebooklm-mcp": {
+   "split": "dev",
+   "fold": 0
+  },
+  "npm-search-mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "nx-mcp": {
+   "split": "dev",
+   "fold": 2
+  },
+  "obsidian-github-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "octocode-mcp": {
+   "split": "dev",
+   "fold": 2
+  },
+  "ollama-intern-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "ollama-mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "openapi-mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "package-registry-mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "postfast-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "pretext-pdf-mcp": {
+   "split": "dev",
+   "fold": 0
+  },
+  "prism-mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "puppeteer-mcp-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "resend-mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "robloxstudio-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "run402-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "shadcn-ui-mcp-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "spartanode-mcp": {
+   "split": "dev",
+   "fold": 3
+  },
+  "stock-scanner-mcp": {
+   "split": "dev",
+   "fold": 4
+  },
+  "sverklo": {
+   "split": "dev",
+   "fold": 0
+  },
+  "tailwindcss-mcp-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "targetprocess-mcp-server": {
+   "split": "dev",
+   "fold": 0
+  },
+  "tavily-mcp": {
+   "split": "dev",
+   "fold": 4
+  },
+  "terraform-mcp-server": {
+   "split": "dev",
+   "fold": 1
+  },
+  "token-pilot": {
+   "split": "dev",
+   "fold": 0
+  },
+  "tokrepo-mcp-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "touchdesigner-mcp-server": {
+   "split": "dev",
+   "fold": 2
+  },
+  "ue-mcp": {
+   "split": "dev",
+   "fold": 1
+  },
+  "warp-agent-mcp": {
+   "split": "holdout",
+   "fold": null
+  },
+  "wikipedia-mcp-server": {
+   "split": "holdout",
+   "fold": null
+  },
+  "worldbank-mcp": {
+   "split": "dev",
+   "fold": 3
+  }
+ }
+}

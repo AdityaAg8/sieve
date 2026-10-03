@@ -132,7 +132,7 @@ corpus:  ## build bench/data/labelled.jsonl (catalog import, mutations, dedup, s
 	cat bench/data/real.jsonl bench/data/synthetic/human.jsonl bench/data/synthetic/model.jsonl > bench/data/constructed.jsonl
 	test -f bench/data/corpus.jsonl || cp bench/data/constructed.jsonl bench/data/corpus.jsonl
 	uv run python -m bench.split.dedup --corpus bench/data/corpus.jsonl --out bench/data/deduped.jsonl
-	uv run python -m bench.split.split --corpus bench/data/deduped.jsonl --out bench/data/labelled.jsonl
+	uv run python -m bench.split.split --corpus bench/data/deduped.jsonl --out bench/data/labelled.jsonl --split-map bench/data/split_map.json
 	uv run python -m bench.stats --corpus bench/data/labelled.jsonl
 
 corpus-stats:  ## corpus statistics report
