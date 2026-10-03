@@ -30,6 +30,7 @@ from sieve.model.data import (
     LABEL2ID,
     add_markers,
     build_splits,
+    init_marker_rows,
     load_corpus,
     load_scanner_findings,
 )
@@ -400,7 +401,8 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
     log.info("dropped %d row(s) whose split is not 'dev'", dropped)
 
     tokenizer: Any = AutoTokenizer.from_pretrained(config.base_model, revision=config.revision)  # type: ignore[no-untyped-call]
-    vocab_size = add_markers(tokenizer)
+    trained_rows = len(tokenizer)
+    add_markers(tokenizer)
     if "deberta" in config.base_model.lower():
         log.info(TOKENIZER_NOTE)
 
@@ -465,7 +467,7 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         id2label=config.id2label(),
         label2id={v: k for k, v in config.id2label().items()},
     )
-    model.resize_token_embeddings(vocab_size)
+    init_marker_rows(model, tokenizer, trained_rows=trained_rows)
 
     head_labels = list(config.id2label().values())
 

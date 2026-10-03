@@ -53,6 +53,29 @@ def load_corpus(path: Path) -> list[CorpusRecord]:
     return [CorpusRecord.model_validate_json(line) for line in lines if line.strip()]
 
 
+def init_marker_rows(model: Any, tokenizer: Any, *, trained_rows: int) -> None:
+    """Give every field marker the mean of the model's trained embedding rows (B8, F46).
+
+    `trained_rows` is the tokenizer's size BEFORE `add_markers`. The matrix is grown if the
+    markers do not fit and is never shrunk: DeBERTa-v3 ships 128,100 rows for a 128,001-token
+    vocabulary, and resizing it down to the tokenizer left the markers on never-trained spare
+    rows (norm ~0.59 against ~3.49), while ModernBERT's grown rows were mean-initialised. Both
+    architectures now start their markers from the same place.
+    """
+    import torch
+
+    if len(tokenizer) > model.get_input_embeddings().weight.shape[0]:
+        model.resize_token_embeddings(len(tokenizer))
+    weight = model.get_input_embeddings().weight
+    if len(tokenizer) > weight.shape[0]:
+        raise ValueError(f"tokenizer has {len(tokenizer)} ids, embeddings {weight.shape[0]} rows")
+    ids = tokenizer.convert_tokens_to_ids(list(MARKERS))
+    with torch.no_grad():
+        mean = weight[:trained_rows].mean(dim=0)
+        for marker_id in ids:
+            weight[marker_id] = mean
+
+
 def load_scanner_findings(path: Path) -> dict[str, list[ScannerFinding]]:
     """Record id -> its YARA findings, from `bench/results/baseline_raw.json` (B3, C5).
 
