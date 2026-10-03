@@ -517,7 +517,13 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         if has_early
         else None,
     )
-    trainer.train()
+    cuda = torch.cuda.is_available()
+    if cuda:
+        torch.cuda.reset_peak_memory_stats()
+    train_output = trainer.train()
+    train_seconds = float(train_output.metrics["train_runtime"])
+    # Real (unpadded) tokens the optimiser saw: every training row once per epoch run.
+    real_tokens = sum(len(ids) for ids in tokenised["train"]["input_ids"]) * trainer.state.epoch
 
     out_dir.mkdir(parents=True, exist_ok=True)
     trainer.save_model(str(out_dir))
@@ -568,6 +574,14 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         "best_global_step": trainer.state.best_global_step,
         "profile_variant": config.variant or config.profile,
         "cudnn_deterministic": bool(torch.backends.cudnn.deterministic),
+        # Throughput and memory (B4): what `make gpu-bench` and the §7.2 budget compare against.
+        "eval_loss_per_epoch": [
+            float(entry["eval_loss"]) for entry in trainer.state.log_history if "eval_loss" in entry
+        ],
+        "train_seconds": train_seconds,
+        "seconds_per_step": train_seconds / max(trainer.state.global_step, 1),
+        "tokens_per_second": float(real_tokens / train_seconds) if train_seconds else 0.0,
+        "peak_cuda_mem_bytes": int(torch.cuda.max_memory_allocated()) if cuda else None,
     }
     _write_json(out_dir / "metrics.json", metrics)
     _write_json(

@@ -111,3 +111,21 @@ def test_metrics_record_the_provenance_fields(
     assert isinstance(metrics["best_global_step"], int) and metrics["best_global_step"] > 0
     assert metrics["profile_variant"] == "tiny"
     assert metrics["cudnn_deterministic"] is True
+
+
+@pytest.mark.slow
+def test_metrics_record_throughput_and_loss(
+    dev_records: list[CorpusRecord], tmp_path: Path
+) -> None:
+    corpus = tmp_path / "corpus.jsonl"
+    corpus.write_text("".join(r.model_dump_json() + "\n" for r in dev_records), encoding="utf-8")
+    out = tmp_path / "run"
+    main(["--profile", "tiny", "--fold", "1", "--corpus", str(corpus), "--out", str(out)])
+    m = json.loads((out / "metrics.json").read_text(encoding="utf-8"))
+    assert m["corpus_sha256"] == hashlib.sha256(corpus.read_bytes()).hexdigest()
+    assert isinstance(m["eval_loss_per_epoch"], list) and m["eval_loss_per_epoch"]
+    assert all(isinstance(x, float) for x in m["eval_loss_per_epoch"])
+    assert len(m["eval_loss_per_epoch"]) == len(m["early_stop_macro_f1_per_epoch"])
+    for key in ("train_seconds", "seconds_per_step", "tokens_per_second"):
+        assert isinstance(m[key], float) and m[key] > 0, key
+    assert m["peak_cuda_mem_bytes"] is None  # CPU run
