@@ -154,8 +154,30 @@ def test_survival_failures_and_lost_pairs_fail_the_gate(tmp_path: Path) -> None:
 
 def test_the_top_ngrams_are_the_synthetic_side_of_the_stratum() -> None:
     grams = gate.top_ngrams(corpus({"poisoned": "kindly ensure"}), "poisoned", k=20)
-    assert len(grams) == 20
+    assert 0 < len(grams) <= 20
     assert {"kindly", "ensure"} & set(grams[:5])
+
+
+def test_a_ban_never_targets_stop_words_or_the_real_register() -> None:
+    """The real run's bug: "the", "and" and "tool" were banned, and the lint then rejected
+    almost every payload. Only n-grams rare in the stratum's real rows may be banned."""
+    records = []
+    for r in corpus({"imperative_benign": "kindly always ensure the tool"}):
+        if r.source != SYN and r.label == "imperative_benign":  # the real register has it too
+            tool = r.tool.model_copy(update={"description": f"{r.tool.description} the tool"})
+            r = r.model_copy(update={"tool": tool})
+        records.append(r)
+    grams = gate.top_ngrams(records, "imperative_benign", k=20)
+    assert not {"the", "the tool", "tool"} & set(grams)
+    assert {"kindly", "always ensure"} <= set(grams)
+
+
+def test_with_payloads_a_ban_must_occur_in_a_generated_payload() -> None:
+    """A host-side tell (which servers were mutated) is not a payload's to fix."""
+    records = corpus({"imperative_benign": "kindly always ensure"})
+    payloads = {r.id: "always ensure it" for r in records if r.source == SYN}
+    grams = gate.top_ngrams(records, "imperative_benign", payloads=payloads)
+    assert "always ensure" in grams and "kindly" not in grams
 
 
 def test_each_failing_probe_names_the_stratum_it_regenerates() -> None:

@@ -16,9 +16,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -33,6 +34,11 @@ STOP = 3
 #: The dev minimal-pair count of the corpus on 2026-10-03, before the v1 regeneration.
 BASELINE_PAIRS = 480
 TOP_NGRAMS = 20
+#: A tightening ban must target the generator's tell, not the language. An n-gram made only of
+#: stop words, or one found in more than this share of the stratum's REAL rows, is the real
+#: authors' register too: the first real run banned "the", "and", "tool" and "returns", and the
+#: lint then rejected almost every regenerated payload (§13 step 3, 2026-10-03).
+REAL_DF_CEILING = 0.05
 #: The stratum a failing probe regenerates.
 STRATUM_OF = {
     "imperative": "imperative_benign",
@@ -78,10 +84,36 @@ def evaluate(
     }
 
 
-def top_ngrams(records: Sequence[CorpusRecord], stratum: str, *, k: int = TOP_NGRAMS) -> list[str]:
+PAYLOADS = Path("bench/data/synthetic/payloads_v1.jsonl")
+
+
+def payload_texts(path: Path = PAYLOADS) -> dict[str, str]:
+    """`sb-syn-<plan_index>` -> its generated payload: the only text a regeneration changes."""
+    if not path.exists():
+        return {}
+    out: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            entry = json.loads(line)
+            if entry.get("payload"):
+                out[f"sb-syn-{int(entry['plan_index']):04d}"] = str(entry["payload"])
+    return out
+
+
+def top_ngrams(
+    records: Sequence[CorpusRecord],
+    stratum: str,
+    *,
+    k: int = TOP_NGRAMS,
+    payloads: Mapping[str, str] | None = None,
+) -> list[str]:
     """The `k` n-grams that most say "synthetic" in `stratum`'s dev rows: real vs synthetic
     within the stratum, or, for `poisoned`, synthetic poisoned vs real imperative_benign (the
-    transfer probe's comparison). Same TF-IDF + logistic model as the probes."""
+    transfer probe's comparison). Same TF-IDF + logistic model as the probes.
+
+    With `payloads`, an n-gram is a candidate only if it occurs in the stratum's generated
+    payloads: a tell that lives in the host text (which servers were mutated) is not something a
+    regeneration can change, so banning it would only cost payloads."""
     dev = [r for r in records if r.split == "dev"]
     if stratum == "poisoned":
         rows = [r for r in dev if (r.label == "poisoned" and r.source == SYNTHETIC)
@@ -89,11 +121,48 @@ def top_ngrams(records: Sequence[CorpusRecord], stratum: str, *, k: int = TOP_NG
     else:
         rows = [r for r in dev if r.label == stratum]
     y = np.array([int(r.source == SYNTHETIC) for r in rows])
-    model = _tfidf_model().fit([text_of(r) for r in rows], y)
+    texts = [text_of(r) for r in rows]
+    model = _tfidf_model().fit(texts, y)
     names = model.steps[0][1].get_feature_names_out()
     coef = model.steps[1][1].coef_[0]
-    order = np.argsort(-coef)
-    return [str(names[i]) for i in order[:k] if coef[i] > 0]
+    real = [t.lower() for t, label in zip(texts, y, strict=True) if not label]
+    # (payload, the rest of its row) per synthetic row of the stratum: a payload tell is an
+    # n-gram the payload uses where its own host text does not (topic words echo the host).
+    generated: list[tuple[str, str]] | None = None
+    if payloads is not None:
+        by_id = {r.id: r for r in records}
+        generated = []
+        for r in rows:
+            if r.id in payloads and r.label == stratum:
+                host = by_id.get(r.mutation_of or "")
+                generated.append((payloads[r.id].lower(), text_of(host).lower() if host else ""))
+        generated = generated or None  # ids from elsewhere (a fixture): rank on rows alone
+    out: list[str] = []
+    for i in np.argsort(-coef):
+        if coef[i] <= 0 or len(out) == k:
+            break
+        gram = str(names[i])
+        pattern = re.compile(rf"\b{re.escape(gram)}\b")
+        if generated is not None and not any(
+            pattern.search(payload) and not pattern.search(host) for payload, host in generated
+        ):
+            continue
+        if _bannable(gram, real):
+            out.append(gram)
+    return out
+
+
+def _bannable(gram: str, real_texts: Sequence[str]) -> bool:
+    from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+
+    words = gram.split()
+    if all(w in ENGLISH_STOP_WORDS or w.isdigit() or len(w) < 3 for w in words):
+        return False
+    if not real_texts:
+        return True
+    pattern = re.compile(rf"\b{re.escape(gram)}\b")
+    share = sum(bool(pattern.search(t)) for t in real_texts) / len(real_texts)
+    return share <= REAL_DF_CEILING
 
 
 def _read(out: Path) -> dict[str, Any]:
@@ -132,7 +201,8 @@ def run_gate(
     if not attempts[0]["passed"] and not check_only and not used:
         strata = sorted({STRATUM_OF[p] for p in attempts[0]["failing_probes"]})
         records = load()
-        banned = sorted({g for s in strata for g in top_ngrams(records, s)})
+        texts = payload_texts()
+        banned = sorted({g for s in strata for g in top_ngrams(records, s, payloads=texts)})
         report["tightening"] = {"strata": strata, "banned_ngrams": banned}
         report["tightening_used"] = True
         _write(out, {**report, "passed": False, "stop": False, "in_progress": True})
