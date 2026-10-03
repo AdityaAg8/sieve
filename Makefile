@@ -2,7 +2,7 @@ ifeq ($(OS),Windows_NT)
 SHELL := C:/Program Files/Git/usr/bin/bash.exe
 endif
 
-.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id model-dir sweep gpu-bench probes tfidf-ood
+.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id model-dir sweep gpu-bench probes tfidf-ood gate
 
 .DEFAULT_GOAL := help
 
@@ -168,6 +168,12 @@ corpus:  ## build bench/data/labelled.jsonl (catalog import, mutations, dedup, s
 	uv run python -m bench.split.dedup --corpus bench/data/corpus.jsonl --out bench/data/deduped.jsonl --twins bench/data/near_twins.json --split-map bench/data/split_map.json
 	uv run python -m bench.split.split --corpus bench/data/deduped.jsonl --out bench/data/labelled.jsonl --split-map bench/data/split_map.json --near-twins bench/data/near_twins.json
 	uv run python -m bench.stats --corpus bench/data/labelled.jsonl
+
+# `gate` (training plan E4, §5.3): the pre-registered synthetic-style gate on dev rows, with one
+# tightening pass (regenerate the failing stratum, rebuild the corpus) and then stop (exit 3).
+# NO_REGENERATE=1 only checks (§13 step 5, after relabelling).
+gate:  ## pre-registered style gate -> bench/results/gate.json (exit 3 = stop and ask)
+	uv run python -m bench.gate $(if $(NO_REGENERATE),--check-only,)
 
 corpus-stats:  ## corpus statistics report
 	uv run python -m bench.stats
