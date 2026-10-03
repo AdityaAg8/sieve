@@ -770,15 +770,15 @@ def test_dataset_version_is_recorded(inputs: Inputs, corpus_file: Path) -> None:
 def test_the_two_breakdown_helpers_share_one_key_vocabulary(
     inputs: Inputs, dev: list[CorpusRecord]
 ) -> None:
-    """`push._table` reads one set of keys; both writers must emit it."""
-    from bench.eval_final import evaluate as holdout_evaluate
+    """`push._table` reads one set of keys; both writers must emit it. The sealed report
+    (`bench.report_final`, H3) builds its slices with the same `breakdown`."""
+    from bench.ablations.run import breakdown
 
     row = _row(RowSpec(row=13, name="hygiene", classifier="unicode_hygiene", judge="none"), inputs)
-    sealed = [r.model_copy(update={"split": "holdout"}) for r in dev]
-    holdout = holdout_evaluate(sealed, [], FakeClassifier(), None, n_boot=N_BOOT)
-    assert set(next(iter(row["per_tier"].values()))) == set(
-        next(iter(holdout["per_tier"].values()))
-    )
+    scores = [0.5] * len(dev)
+    direct = breakdown(dev, [r.label for r in dev], scores, [0.0] * len(dev), 0.3,
+                       lambda r: r.difficulty or "unscored")  # fmt: skip
+    assert set(next(iter(row["per_tier"].values()))) == set(next(iter(direct.values())))
 
 
 # ------------------------------------------------------------------- the CLI's judge factory
