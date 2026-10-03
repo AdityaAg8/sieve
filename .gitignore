@@ -48,6 +48,10 @@ bench/data/labelled.jsonl
 bench/data/synthetic/human.jsonl
 bench/data/synthetic/model.jsonl
 bench/data/synthetic/prompts_used/
+# Local backups of the gitignored corpus files (task A2), external clones (A3) and dry runs (E1).
+bench/data/_backup/
+bench/data/external/
+bench/data/_dryrun/
 bench/results/corpus_stats.json
 bench/results/dedup_dropped.json
 fixtures/scanner/.tools-only.json
