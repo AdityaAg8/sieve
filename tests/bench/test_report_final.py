@@ -107,3 +107,21 @@ def test_main_renders_saved_predictions_and_records_the_hash(tmp_path: Path) -> 
     assert report["preregistration_sha256"] == rf.preregistration_hash(prereg)
     assert report["reason"] == "v1 release" and report["dataset_version"] == "l@1"
     jsonschema.validate(report, SCHEMA)
+
+
+def test_the_committed_preregistration_matches_its_committed_hash() -> None:
+    """H7: committed before the GPU phase; report_final refuses on any later edit."""
+    assert rf.check_preregistration() == rf.preregistration_hash()
+    text = rf.PREREGISTRATION.read_text(encoding="utf-8")
+    for clause in ("row 4 vs row 1", "Holm", "≥ 0.95", "≥ 0.90", "RULE",
+                   "median-seed `FOLD=all` model", "template|server", "Probe gate",
+                   "dev-50 gate", "Test-ID labels are report-only"):  # fmt: skip
+        assert clause in text, clause
+
+
+def test_report_final_refuses_an_edited_preregistration(tmp_path: Path) -> None:
+    edited = tmp_path / "PREREGISTRATION.md"
+    edited.write_text(rf.PREREGISTRATION.read_text(encoding="utf-8") + "\nmoved the gate\n",
+                      encoding="utf-8")  # fmt: skip
+    with pytest.raises(rf.PreregistrationError, match="hashes to"):
+        rf.main(["--results-dir", str(tmp_path), "--preregistration", str(edited)])
