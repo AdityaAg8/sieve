@@ -108,6 +108,11 @@ def test_nothing_else_in_the_repository_opens_the_holdout() -> None:
         "bench/analysis/errors.py",
         # Declares the `Split` literal.
         "sieve/types.py",
+        # Renders `holdout.json` from eval_final's saved predictions (training plan H3): it
+        # reads scores and row metadata, never a sealed row's text, and scores nothing.
+        "bench/report_final.py",
+        # The pre-registration (H7): prose naming the sealed sets, read by no code but a hash.
+        "bench/PREREGISTRATION.md",
         # Read the holdout REPORT (`holdout.json`), never a row.
         "sieve/model/push.py",
         "sieve/model/card.md",
