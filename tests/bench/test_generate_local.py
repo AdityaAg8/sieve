@@ -17,6 +17,13 @@ from sieve.types import CorpusRecord, Label
 RULES = json.loads(Path("bench/generate/scanner_rule_names.json").read_text(encoding="utf-8"))
 
 
+@pytest.fixture(autouse=True)
+def _no_live_tightening(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A real `make gate` writes `lint_banned_extra.json` beside the module; no test reads it.
+    Tests that exercise a tightening write their own."""
+    monkeypatch.setattr(gl, "EXTRA_BANNED_FILE", tmp_path / "no_tightening.json")
+
+
 def _record(i: int, server: str, label: Label, desc: str) -> CorpusRecord:
     return CorpusRecord(
         id=f"real-{i:04d}",
