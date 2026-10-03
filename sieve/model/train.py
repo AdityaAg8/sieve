@@ -287,16 +287,65 @@ def _write_npy(path: Path, array: npt.NDArray[Any]) -> None:
         np.save(handle, array)
 
 
+def training_arguments(
+    config: TrainConfig, checkpoints: Path, *, has_early: bool, **overrides: Any
+) -> Any:
+    """The Trainer settings for one run. `overrides` exist for tests only."""
+    import torch
+    from transformers import TrainingArguments
+
+    settings: dict[str, Any] = {
+        "output_dir": str(checkpoints),
+        "learning_rate": config.lr,
+        "warmup_ratio": config.warmup_ratio,
+        "per_device_train_batch_size": config.batch_size,
+        "per_device_eval_batch_size": config.batch_size,
+        "num_train_epochs": config.epochs,
+        "eval_strategy": "epoch" if has_early else "no",
+        "save_strategy": "epoch" if has_early else "no",
+        "save_total_limit": 1,
+        "load_best_model_at_end": has_early,
+        "metric_for_best_model": "macro_f1",
+        "greater_is_better": True,
+        "seed": config.seed,
+        "data_seed": config.seed,
+        "fp16": False,
+        "bf16": config.precision == "bf16",
+        # Non-reentrant: DeBERTa-v2 feeds one relative-position tensor to every layer, and the
+        # reentrant implementation (transformers' default) backwards through it twice and dies.
+        "gradient_checkpointing": config.gradient_checkpointing,
+        "gradient_checkpointing_kwargs": {"use_reentrant": False}
+        if config.gradient_checkpointing
+        else None,
+        # Length-grouped batches (B1): ~1.85x fewer padded tokens per epoch at 512 (plan §7.3).
+        # No `length` column: in transformers 4.57.6 `_get_dataloader` strips every column the
+        # model's forward does not take BEFORE the sampler is built, so the sampler would never
+        # see one; `LengthGroupedSampler` then measures `input_ids` itself, the same numbers.
+        "group_by_length": True,
+        "use_cpu": not torch.cuda.is_available(),
+        "report_to": [],
+        "disable_tqdm": True,
+        "logging_strategy": "epoch",
+    }
+    settings.update(overrides)
+    return TrainingArguments(**settings)
+
+
+def collator(tokenizer: Any) -> Any:
+    """Dynamic padding to the longest row of each batch."""
+    from transformers import DataCollatorWithPadding
+
+    return DataCollatorWithPadding(tokenizer=tokenizer)
+
+
 def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
     """Train one (profile, fold, seed) and write the artefact directory. Returns `out_dir`."""
     import torch
     from transformers import (
         AutoModelForSequenceClassification,
         AutoTokenizer,
-        DataCollatorWithPadding,
         EarlyStoppingCallback,
         Trainer,
-        TrainingArguments,
         set_seed,
     )
 
@@ -414,41 +463,14 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
 
     has_early = "early_stop" in tokenised
     checkpoints = out_dir / "_checkpoints"
-    args = TrainingArguments(
-        output_dir=str(checkpoints),
-        learning_rate=config.lr,
-        warmup_ratio=config.warmup_ratio,
-        per_device_train_batch_size=config.batch_size,
-        per_device_eval_batch_size=config.batch_size,
-        num_train_epochs=config.epochs,
-        eval_strategy="epoch" if has_early else "no",
-        save_strategy="epoch" if has_early else "no",
-        save_total_limit=1,
-        load_best_model_at_end=has_early,
-        metric_for_best_model="macro_f1",
-        greater_is_better=True,
-        seed=config.seed,
-        data_seed=config.seed,
-        fp16=False,
-        bf16=(config.precision == "bf16"),
-        # Non-reentrant: DeBERTa-v2 feeds one relative-position tensor to every layer, and the
-        # reentrant implementation (transformers' default) backwards through it twice and dies.
-        gradient_checkpointing=config.gradient_checkpointing,
-        gradient_checkpointing_kwargs={"use_reentrant": False}
-        if config.gradient_checkpointing
-        else None,
-        use_cpu=not torch.cuda.is_available(),
-        report_to=[],
-        disable_tqdm=True,
-        logging_strategy="epoch",
-    )
+    args = training_arguments(config, checkpoints, has_early=has_early)
     trainer = WeightedTrainer(
         model=model,
         args=args,
         train_dataset=tokenised["train"],
         eval_dataset=tokenised.get("early_stop"),
         processing_class=tokenizer,
-        data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
+        data_collator=collator(tokenizer),
         compute_metrics=compute_metrics,
         callbacks=[EarlyStoppingCallback(early_stopping_patience=config.patience)]
         if has_early
