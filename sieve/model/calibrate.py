@@ -146,10 +146,12 @@ def _shared_dir(model_dirs: Sequence[Path], override: Path | None) -> Path:
     if override is not None:
         return override
     config = json.loads((model_dirs[0] / "sieve_config.json").read_text(encoding="utf-8"))
-    profile = str(config["model_version"]).split("@", 1)[0]
-    name = f"{profile}-s{config['seed']}"
-    # The Makefile nests the folds inside the seed directory (models/<profile>-s<seed>/fold<k>);
-    # folds kept beside it (models/<profile>-f<k>-s<seed>) name it as a sibling instead.
+    # The artefact family (C1) names the directory; artefacts from before it fall back to the
+    # profile in `model_version`.
+    family = config.get("family") or str(config["model_version"]).split("@", 1)[0]
+    name = f"{family}-s{config['seed']}"
+    # The Makefile nests the folds inside the seed directory (models/<family>-s<seed>/fold<k>);
+    # folds kept beside it (models/<family>-f<k>-s<seed>) name it as a sibling instead.
     parent = model_dirs[0].parent
     return parent if parent.name == name else parent / name
 

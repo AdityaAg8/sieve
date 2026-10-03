@@ -2,7 +2,7 @@ ifeq ($(OS),Windows_NT)
 SHELL := C:/Program Files/Git/usr/bin/bash.exe
 endif
 
-.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id
+.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id model-dir
 
 .DEFAULT_GOAL := help
 
@@ -11,21 +11,26 @@ help: ## list every target with its one-line purpose
 	@echo && echo 'Human steps (GPU, keys, deploys): docs/RUNBOOK.md'
 
 # `train`/`train-all` variables: PROFILE names a `bench/train.yaml` profile; SEED and FOLD are
-# the CLI's own `--seed`/`--fold`. MODEL_OUT follows the "models/<profile>-s<seed>/fold<fold>"
-# layout `bench/ablations/run.py` and `sieve/model/select.py` already assume ("models/<profile>-s*").
+# the CLI's own `--seed`/`--fold`. MODEL_OUT follows the "models/<family>-s<seed>/fold<fold>"
+# layout `bench/ablations.yaml` and `sieve/model/select.py` read ("models/<family>-s*").
 PROFILE ?= deberta
 SEED ?= 0
 FOLD ?= 0
 
+# FAMILY is the profile's artefact family (training plan C1): every speed variant of one recipe
+# (`deberta`, `deberta-nockpt`) writes the same directory, the one the ablation rows name. Read
+# from `bench/train.yaml` once, on first use, so `make help` never starts Python.
+FAMILY ?= $(eval FAMILY := $(shell uv run python -m sieve.model.family $(PROFILE)))$(FAMILY)
+
 # `bench` variables: MODEL_DIR is the calibrated (`--fold all`) artefact `bench.analysis.errors`
 # reads thresholds from; FOLD_DIRS are the five per-fold artefacts its `--dirs` pools OOF logits
 # from. BENCH_CORPUS matches the CLIs' own `--corpus` default.
-MODEL_DIR ?= models/$(PROFILE)-s$(SEED)
+MODEL_DIR ?= models/$(FAMILY)-s$(SEED)
 
 # `--fold all` is not a sixth fold: it is the whole-dev artefact everything downstream reads
 # thresholds and weights from, so it belongs at MODEL_DIR itself -- the path `make bench` passes
-# as `--model-dir`, and the one `models/<profile>-s*` globs to. A literal `fold$(FOLD)` would
-# have put it in `models/<profile>-s<seed>/foldall`, where nothing looks for it.
+# as `--model-dir`, and the one `models/<family>-s*` names. A literal `fold$(FOLD)` would
+# have put it in `models/<family>-s<seed>/foldall`, where nothing looks for it.
 MODEL_OUT ?= $(if $(filter all,$(FOLD)),$(MODEL_DIR),$(MODEL_DIR)/fold$(FOLD))
 
 # `--fold all` also refuses to run without an explicit epoch count (`TrainConfig`: there is no
@@ -92,14 +97,17 @@ train-all:  ## every fold and seed (GPU)
 	# `|| exit 1`: a loop's status is its last command's, so without it a failed fold scrolls
 	# past, the next folds run, and `calibrate` pools whatever that fold left from before.
 	for f in 0 1 2 3 4; do \
-		uv run python -m sieve.model.train --config bench/train.yaml --profile $(PROFILE) --fold $$f --seed $(SEED) --out models/$(PROFILE)-s$(SEED)/fold$$f || exit 1; \
+		uv run python -m sieve.model.train --config bench/train.yaml --profile $(PROFILE) --fold $$f --seed $(SEED) --out $(MODEL_DIR)/fold$$f || exit 1; \
 	done
 
 best-epoch:  ## the EPOCHS= for FOLD=all: the median best_epoch of MODEL_DIR's five folds
 	uv run python -c "import json, statistics; e = [json.load(open(r'$(MODEL_DIR)/fold%d/metrics.json' % k, encoding='utf-8'))['best_epoch'] for k in range(5)]; print('best epochs', e, '-> EPOCHS =', int(statistics.median(e)))"
 
 # `calibrate` passes --out explicitly: the CLI's own default is a sibling of the fold
-# directories' parent, which under this layout nests (models/deberta-s0/deberta-s0).
+# directories' parent, which under this layout nests (models/<family>-s0/<family>-s0).
+model-dir:  ## print MODEL_DIR for PROFILE= SEED= (models/<family>-s<seed>)
+	@echo $(MODEL_DIR)
+
 calibrate:  ## temperature, T_low and T_high from the five folds' pooled OOF logits, into MODEL_DIR
 	uv run python -m sieve.model.calibrate --dirs $(FOLD_DIRS) --corpus $(BENCH_CORPUS) --out $(MODEL_DIR)
 

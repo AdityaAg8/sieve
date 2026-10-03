@@ -110,7 +110,10 @@ def test_metrics_record_the_provenance_fields(
     assert set(metrics["library_versions"]) >= {"torch", "transformers"}
     assert isinstance(metrics["best_global_step"], int) and metrics["best_global_step"] > 0
     assert metrics["profile_variant"] == "bs16"
+    assert metrics["profile_family"] == "tiny"
     assert metrics["cudnn_deterministic"] is True
+    config = json.loads((out / "sieve_config.json").read_text(encoding="utf-8"))
+    assert config["family"] == "tiny"  # C1: calibrate names the seed directory from it
 
 
 @pytest.mark.slow

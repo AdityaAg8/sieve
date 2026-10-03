@@ -205,7 +205,7 @@ def main(argv: Sequence[str] | None = None) -> Path:
         action="append",
         required=True,
         metavar="NAME=DIR[,DIR...]",
-        help="one per architecture, e.g. deberta-v3-base=models/deberta-s0,models/deberta-s1,...",
+        help="one per architecture, e.g. deberta-v3-base=models/deberta-v3-base-s0,...-s1,...",
     )
     parser.add_argument("--corpus", type=Path, required=True)
     parser.add_argument("--results-dir", type=Path, default=Path("bench/results"))

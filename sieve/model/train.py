@@ -608,6 +608,7 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         "base_model_revision": config.revision,
         "best_global_step": trainer.state.best_global_step,
         "profile_variant": config.variant or config.profile,
+        "profile_family": config.family or config.profile,
         "cudnn_deterministic": bool(torch.backends.cudnn.deterministic),
         # Throughput and memory (B4): what `make gpu-bench` and the §7.2 budget compare against.
         "eval_loss_per_epoch": [
@@ -629,6 +630,7 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         {
             "model_version": config.model_version(),
             "base_model": config.base_model,
+            "family": config.family or config.profile,
             "training_command": config.training_command(corpus_path, out_dir),
             "fold": config.fold,
             "seed": config.seed,
