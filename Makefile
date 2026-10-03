@@ -2,7 +2,7 @@ ifeq ($(OS),Windows_NT)
 SHELL := C:/Program Files/Git/usr/bin/bash.exe
 endif
 
-.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats
+.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence
 
 .DEFAULT_GOAL := help
 
@@ -137,3 +137,9 @@ corpus:  ## build bench/data/labelled.jsonl (catalog import, mutations, dedup, s
 
 corpus-stats:  ## corpus statistics report
 	uv run python -m bench.stats
+
+# `plan-evidence`: every measured number in SIEVE_TRAINING_PLAN.md (task A3). Fetches the pinned
+# third-party clones into the gitignored bench/data/external/ first; CPU only, HF cache offline.
+plan-evidence:  ## regenerate the training plan's measured numbers (bench/data/external/plan_evidence/)
+	uv run python -m bench.collect.external
+	CUDA_VISIBLE_DEVICES=-1 uv run python -m bench.analysis.plan_evidence all
