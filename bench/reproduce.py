@@ -10,6 +10,10 @@ heredoc that compares nothing at all also exits 0.
 Rows are compared as canonical JSON (`indent=2, sort_keys=True`) per row number, so a
 reordered key is not a difference and a changed number is.
 
+`--tolerance` is the other half (PRD M6b, training plan C7): a retrained artefact is not
+byte-identical, so its rows are compared on macro-F1 within the tolerance instead
+(`make reproduce-check`, ±0.01).
+
 Exit codes are the script's, and the script's header documents the contract:
 
     0  every requested row matched
@@ -82,15 +86,61 @@ def report(
     return 1, lines
 
 
+#: PRD M6b: a retrain reproduces the published out-of-fold macro-F1 within this.
+M6B_TOLERANCE = 0.01
+TOLERANCE_KEY = "macro_f1_mean"
+
+
+def tolerance_report(
+    committed: dict[int, str],
+    regenerated: dict[int, str],
+    wanted: Iterable[int],
+    tolerance: float = M6B_TOLERANCE,
+) -> tuple[int, list[str]]:
+    """`(exit code, lines)` for M6b: each row's `macro_f1_mean` within `tolerance`."""
+    keep = sorted(set(wanted))
+    absent = [n for n in keep if n not in committed]
+    if absent:
+        return ARTEFACT_MISSING, [
+            f"SKIP: the committed file has no row(s) {absent}; there is nothing to compare"
+        ]
+    lines: list[str] = []
+    bad: list[int] = []
+    for number in keep:
+        old = json.loads(committed[number]).get(TOLERANCE_KEY)
+        new = json.loads(regenerated[number]).get(TOLERANCE_KEY) if number in regenerated else None
+        if old is None:
+            # A deferred or unscored row has no macro-F1 to reproduce; say so rather than pass it.
+            lines.append(f"row {number}: no committed {TOLERANCE_KEY}; not compared")
+            continue
+        if new is None or abs(float(new) - float(old)) > tolerance:
+            bad.append(number)
+        shown = "absent" if new is None else f"{float(new):.4f}"
+        lines.append(f"row {number}: committed {float(old):.4f}, regenerated {shown}")
+    if bad:
+        return 1, [f"FAIL: rows {bad} are outside ±{tolerance} macro-F1 (M6b)", *lines]
+    return 0, [f"OK: rows {keep} within ±{tolerance} macro-F1 (M6b)", *lines]
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m bench.reproduce")
     parser.add_argument("--committed", type=Path, required=True)
     parser.add_argument("--regenerated", type=Path, required=True)
     parser.add_argument("--rows", required=True, help="comma-separated row numbers")
+    parser.add_argument(
+        "--tolerance",
+        type=float,
+        default=None,
+        help="compare macro_f1_mean within this (M6b) instead of byte for byte",
+    )
     ns = parser.parse_args(argv)
 
     wanted = [int(x) for x in ns.rows.split(",")]
-    code, lines = report(load_rows(ns.committed, wanted), load_rows(ns.regenerated, wanted), wanted)
+    committed, regenerated = load_rows(ns.committed, wanted), load_rows(ns.regenerated, wanted)
+    if ns.tolerance is None:
+        code, lines = report(committed, regenerated, wanted)
+    else:
+        code, lines = tolerance_report(committed, regenerated, wanted, ns.tolerance)
     for line in lines:
         print(line)  # noqa: T201 -- this is a CLI; the shell script reads its output
     return code

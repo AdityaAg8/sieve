@@ -266,6 +266,7 @@ def main(argv: list[str] | None = None) -> int:
     # `SIEVE_FINAL=1` (PRD §9.7, §11.6) — never by a routine `make baseline` run. `--split` takes
     # no other value; there is nothing for `SIEVE_FINAL` to gate here.
     parser.add_argument("--split", type=str, default="dev", choices=["dev"])
+    parser.add_argument("--results-dir", type=Path, default=None, help="default bench/results")
     args = parser.parse_args(argv)
 
     records = _filter_split(_load_corpus(args.corpus), args.split)
@@ -277,7 +278,7 @@ def main(argv: list[str] | None = None) -> int:
 
     from bench.baseline import report
 
-    report.write(results)
+    report.write(results, args.results_dir)
     return 0
 
 

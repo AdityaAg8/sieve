@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 import yaml
 
-from bench.ablations.run import RowSpec, seed_dir
+from bench.ablations.run import load_matrix, seed_dir
 from sieve.model.family import family
 
 CONFIG = Path("bench/train.yaml")
@@ -70,6 +70,12 @@ def _make_model_dir(profile: str, seed: int) -> str:
     return out.stdout.strip()
 
 
+def _selection(tmp_path: Path, winner: str) -> Path:
+    path = tmp_path / "selection.json"
+    path.write_text(json.dumps({"winner": winner}), encoding="utf-8")
+    return path
+
+
 def test_every_ablation_row_resolves_against_the_makefiles_tree(tmp_path: Path) -> None:
     seeds = (0, 1, 2)
     made: dict[Path, str] = {}
@@ -80,11 +86,17 @@ def test_every_ablation_row_resolves_against_the_makefiles_tree(tmp_path: Path) 
             (tmp_path / directory).mkdir(parents=True, exist_ok=True)
             made.setdefault(directory, EXPECTED[profile])
 
-    rows = yaml.safe_load(Path("bench/ablations.yaml").read_text(encoding="utf-8"))["rows"]
-    seeded = [RowSpec(**row) for row in rows if RowSpec(**row).seeded]
+    # H5: `{primary}`/`{secondary}` resolve to either architecture, and rows 3, 9, 12 and 15
+    # declare their one seed (D9); deferred judge rows (D8) still name a real family.
+    seeded = [
+        spec
+        for selection in (None, _selection(tmp_path, "modernbert-base"))
+        for spec in load_matrix(Path("bench/ablations.yaml"), selection)
+        if spec.seeded
+    ]
     assert seeded
     for spec in seeded:
-        for seed in seeds:
+        for seed in spec.seeds or seeds:
             resolved = seed_dir(spec.classifier, seed)
             assert (tmp_path / resolved).is_dir(), (spec.row, resolved)
             # Seed substitution, not a glob: `deberta-v3-base-s*` as a glob would also match the

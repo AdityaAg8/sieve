@@ -73,21 +73,22 @@ def _markdown_for(result: BaselineResult) -> list[str]:
     return lines
 
 
-def write(results: list[BaselineResult]) -> None:
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+def write(results: list[BaselineResult], results_dir: Path | None = None) -> None:
+    results_dir = RESULTS_DIR if results_dir is None else results_dir
+    results_dir.mkdir(parents=True, exist_ok=True)
 
-    _write_json(RESULTS_DIR / "baseline.json", [r.model_dump(mode="json") for r in results])
+    _write_json(results_dir / "baseline.json", [r.model_dump(mode="json") for r in results])
 
     multi_scanner = len(results) > 1
     raw_rows: list[dict[str, Any]] = []
     for r in results:
         for row in r.raw_rows:
             raw_rows.append({**row, "scanner": r.scanner} if multi_scanner else dict(row))
-    _write_json(RESULTS_DIR / "baseline_raw.json", raw_rows)
+    _write_json(results_dir / "baseline_raw.json", raw_rows)
 
     lines = ["# Sieve baseline report", ""]
     for r in results:
         lines.extend(_markdown_for(r))
-    (RESULTS_DIR / "baseline.md").write_text(
+    (results_dir / "baseline.md").write_text(
         "\n".join(lines) + "\n", encoding="utf-8", newline="\n"
     )

@@ -98,10 +98,16 @@ require "bench/results/ablations.json"
 require "bench/data/labelled.jsonl"
 require "bench/results/baseline_raw.json"
 require "bench/results/minimal_pairs.json"
+# Row 4 is `models/{primary}-s*` (training plan H5): the winner selection.json names, or the
+# declared default before one exists. Row 3 is single-seed (D9), so only its s0 is required.
+primary=deberta-v3-base
+if [ -f "$clone/bench/results/selection.json" ]; then
+  primary=$(sed -n 's/.*"winner": *"\([^"]*\)".*/\1/p' "$clone/bench/results/selection.json")
+fi
 for seed in ${SEEDS//,/ }; do
-  require "models/deberta-v3-base-s$seed"
-  require "models/deberta-v3-base-desc-s$seed"
+  require "models/$primary-s$seed"
 done
+require "models/deberta-v3-base-desc-s0"
 if [ ${#missing[@]} -ne 0 ]; then
   skip "artefact missing -- the prepared clone has no:" "${missing[@]}"
 fi

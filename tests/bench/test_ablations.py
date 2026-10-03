@@ -987,3 +987,17 @@ def test_the_fp_reduction_is_m2_with_its_recall_comparison(inputs: Inputs) -> No
         if block["baseline_fpr"]:
             relative = (block["baseline_fpr"] - block["sieve_fpr"]) / block["baseline_fpr"]
             assert block["point"] == pytest.approx(relative)
+
+
+def test_load_minimal_pairs_reads_what_bench_split_pairs_writes(
+    dev: list[CorpusRecord], tmp_path: Path
+) -> None:
+    """C7: the writer says `host`/`mutation`; the reader must not need `host_id`."""
+    from bench.ablations.run import load_minimal_pairs
+    from bench.split.pairs import write
+
+    path = tmp_path / "minimal_pairs.json"
+    assert write(dev, path) > 0
+    pairs = load_minimal_pairs(path)
+    assert all(p["host_id"] and p["mutation_id"] for p in pairs)
+    assert minimal_pair_accuracy(pairs, {r.id: r.label for r in dev}) is not None

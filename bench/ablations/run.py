@@ -202,7 +202,14 @@ def load_minimal_pairs(path: Path) -> list[dict[str, Any]]:
     if not path.exists():
         raise MatrixError(f"{path} is missing; row 14 reports minimal-pair accuracy (M11)")
     payload = json.loads(path.read_text(encoding="utf-8"))
-    return list(payload["pairs"] if isinstance(payload, dict) else payload)
+    pairs = list(payload["pairs"] if isinstance(payload, dict) else payload)
+    # `bench.split.pairs` writes `host`/`mutation`; scoring reads `host_id`/`mutation_id`. The
+    # tiny-fixture `make bench` (C7) found the two had never met.
+    return [
+        {**p, "host_id": p.get("host_id", p.get("host")),
+         "mutation_id": p.get("mutation_id", p.get("mutation"))}
+        for p in pairs
+    ]  # fmt: skip
 
 
 def load_judge_usage(path: Path | None) -> list[dict[str, Any]]:
@@ -946,6 +953,14 @@ def main(argv: Sequence[str] | None = None) -> Path:
     parser.add_argument("--rows", default=None, help="comma-separated row numbers")
     parser.add_argument("--seeds", default="0,1,2")
     parser.add_argument("--n-boot", type=int, default=1000)
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="where to write; default <results-dir>/ablations.json. The inputs (baseline, "
+        "pairs, selection) are still read from --results-dir, so `make reproduce-check` can "
+        "re-score into a scratch file beside the committed one (C7, M6b)",
+    )
     ns = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO)
     require_offline()
@@ -984,7 +999,7 @@ def main(argv: Sequence[str] | None = None) -> Path:
         seeds=[int(x) for x in ns.seeds.split(",")],
         n_boot=ns.n_boot,
     )
-    return write_results(payload, ns.results_dir / "ablations.json")
+    return write_results(payload, ns.out or ns.results_dir / "ablations.json")
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -114,3 +114,46 @@ def test_a_non_ascii_row_is_read_as_utf8_and_compares_by_its_characters(tmp_path
     assert load_rows(one, [1]) == load_rows(copy, [1])
     assert load_rows(one, [1]) != load_rows(other, [1])
     assert "na\\u00efve" in load_rows(one, [1])[1], "the writer's own escaping, not ours"
+
+
+# --- M6b: a retrain within ±0.01 macro-F1 (training plan C7) -------------------------------
+
+
+def _f1_rows(**values: float | None) -> dict[int, str]:
+    from bench.reproduce import canonical
+
+    return {
+        int(k[1:]): canonical({"row": int(k[1:]), "macro_f1_mean": v}) for k, v in values.items()
+    }
+
+
+def test_tolerance_passes_within_and_fails_outside_0_01() -> None:
+    from bench.reproduce import tolerance_report
+
+    committed = _f1_rows(r4=0.80, r5=0.75)
+    code, lines = tolerance_report(committed, _f1_rows(r4=0.809, r5=0.741), [4, 5])
+    assert code == 0 and lines[0].startswith("OK")
+    code, lines = tolerance_report(committed, _f1_rows(r4=0.812, r5=0.75), [4, 5])
+    assert code == 1 and "[4]" in lines[0]
+
+
+def test_tolerance_counts_an_absent_regenerated_row_as_a_failure() -> None:
+    from bench.reproduce import tolerance_report
+
+    code, _ = tolerance_report(_f1_rows(r4=0.8), {}, [4])
+    assert code == 1
+
+
+def test_tolerance_skips_when_the_committed_row_is_absent() -> None:
+    from bench.reproduce import tolerance_report
+
+    code, _ = tolerance_report({}, _f1_rows(r4=0.8), [4])
+    assert code == ARTEFACT_MISSING
+
+
+def test_the_cli_takes_a_tolerance(tmp_path: Path) -> None:
+    committed = _write(tmp_path / "c.json", [{"row": 4, "macro_f1_mean": 0.8, "x": 1}])
+    regenerated = _write(tmp_path / "r.json", [{"row": 4, "macro_f1_mean": 0.805, "x": 2}])
+    argv = ["--committed", str(committed), "--regenerated", str(regenerated), "--rows", "4"]
+    assert main(argv) == 1, "byte for byte, x differs"
+    assert main([*argv, "--tolerance", "0.01"]) == 0
