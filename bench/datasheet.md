@@ -179,7 +179,7 @@ Deduplication runs over the whole mutation graph (`bench/split/dedup.py`):
   never a twin signal: short shared schemas would pair thousands of unrelated tools;
 - near-twin components are kept in one dev fold;
 - dev copies of exact cross-split duplicates are dropped;
-- the holdout is untouched;
+- the sealed split is untouched;
 - dropping a host drops its mutations.
 
 Every evaluation set is also deduplicated against dev (`make dedup-cross`), with exact and near
