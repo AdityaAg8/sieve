@@ -64,16 +64,26 @@ def t_high_for_precision(
     y_score: Sequence[float],
     target: float = 0.95,
     positive: str = "poisoned",
+    min_tp: int = 5,
 ) -> float:
-    """Lowest threshold at which precision of `positive` is >= target; > 1.0 if unattainable."""
-    best = 1.0 + 1e-9
-    for t in sorted({float(s) for s in y_score}, reverse=True):
-        p, _, _ = precision_recall_fpr(y_true, y_score, t, positive)
-        if p >= target:
-            best = t
-        else:
-            break
-    return best
+    """min{t : precision(t) >= target and TP(t) >= min_tp} over every distinct score.
+
+    > 1.0 when no threshold qualifies. Training plan D2: the old scan walked down from the top
+    and stopped at the first threshold that missed the target, so a single negative above every
+    positive returned 1 + 1e-9 (nothing ever auto-confirmed) whatever the rest looked like.
+    Precision is not monotone in the threshold, so every candidate is checked; `min_tp` keeps a
+    lucky handful of top positives from setting the operating point.
+    """
+    truth = np.asarray([t == positive for t in y_true], dtype=bool)
+    scores: Arr = np.asarray(y_score, dtype=float)
+    order = np.argsort(-scores, kind="stable")
+    tp = np.cumsum(truth[order])
+    predicted = np.arange(1, len(scores) + 1)
+    # Ties: a threshold admits every row at its score, so read the counts at each tie's end.
+    last = np.r_[scores[order][1:] != scores[order][:-1], True]
+    thresholds, tp, predicted = scores[order][last], tp[last], predicted[last]
+    ok = (tp >= min_tp) & (tp >= target * predicted)
+    return float(thresholds[ok].min()) if ok.any() else 1.0 + 1e-9
 
 
 def macro_f1(y_true: Sequence[str], y_pred: Sequence[str], labels: Sequence[str] = LABELS) -> float:

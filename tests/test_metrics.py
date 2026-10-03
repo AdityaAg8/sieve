@@ -54,7 +54,7 @@ def test_t_low_partial_recall() -> None:
 
 def test_t_high_for_precision() -> None:
     # at t=0.9 precision=1.0; at t=0.7 precision=0.5. Lowest t with precision>=0.95 is 0.9
-    assert t_high_for_precision(Y, S, 0.95) == pytest.approx(0.9)
+    assert t_high_for_precision(Y, S, 0.95, min_tp=1) == pytest.approx(0.9)
 
 
 def test_t_high_unattainable_returns_above_one() -> None:
@@ -202,3 +202,20 @@ def test_t_low_for_recall_lcb_returns_on_first_candidate_when_target_is_trivial(
     # success branch (as opposed to the target=1.0/0.5 tests above, which fall through to the
     # last-candidate fallback given this dataset's cluster structure).
     assert t_low_for_recall_lcb(Y, S, G, target=0.0, n_boot=50, seed=0) == pytest.approx(0.9)
+
+
+def test_t_high_survives_one_top_scoring_negative() -> None:
+    """D2: a negative above every positive used to break the scan at once (1 + 1e-9)."""
+    rng = np.random.default_rng(0)
+    y = ["benign"] + ["poisoned"] * 50 + ["benign"] * 200
+    s = [0.99] + list(np.linspace(0.6, 0.98, 50)) + list(rng.uniform(0.0, 0.59, 200))
+    got = t_high_for_precision(y, s, target=0.95)
+    # The lowest qualifying threshold admits the top sub-0.6 negative too (50 / 52 >= 0.95).
+    assert got == pytest.approx(0.6, abs=0.02)
+
+
+def test_t_high_needs_five_true_positives() -> None:
+    y = ["poisoned"] * 4 + ["benign"] * 10
+    s = [0.9, 0.8, 0.7, 0.6] + [0.1] * 10
+    assert t_high_for_precision(y, s, target=0.95) > 1.0
+    assert t_high_for_precision(y, s, target=0.95, min_tp=4) == pytest.approx(0.6)
