@@ -111,6 +111,9 @@ def test_nothing_else_in_the_repository_opens_the_holdout() -> None:
         # Renders `holdout.json` from eval_final's saved predictions (training plan H3): it
         # reads scores and row metadata, never a sealed row's text, and scores nothing.
         "bench/report_final.py",
+        # The dev dry run (H4): rehearses eval_final's preflight, writers and report on DEV
+        # rows under the sealed set names; it reads no sealed row and never logs an opening.
+        "bench/eval_val_ood.py",
         # The pre-registration (H7): prose naming the sealed sets, read by no code but a hash.
         "bench/PREREGISTRATION.md",
         # Read the holdout REPORT (`holdout.json`), never a row.
