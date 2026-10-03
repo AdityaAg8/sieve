@@ -2,7 +2,7 @@ ifeq ($(OS),Windows_NT)
 SHELL := C:/Program Files/Git/usr/bin/bash.exe
 endif
 
-.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id model-dir sweep gpu-bench probes tfidf-ood gate
+.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id model-dir sweep gpu-bench probes tfidf-ood gate review-queue pairs
 
 .DEFAULT_GOAL := help
 
@@ -175,6 +175,9 @@ corpus:  ## build bench/data/labelled.jsonl (catalog import, mutations, dedup, s
 gate:  ## pre-registered style gate -> bench/results/gate.json (exit 3 = stop and ask)
 	uv run python -m bench.gate $(if $(NO_REGENERATE),--check-only,)
 
+pairs:  ## minimal-pair index of the built corpus -> bench/results/minimal_pairs.json (section 13 step 4)
+	uv run python -m bench.split.pairs --corpus bench/data/labelled.jsonl
+
 corpus-stats:  ## corpus statistics report
 	uv run python -m bench.stats
 
@@ -188,6 +191,11 @@ plan-evidence:  ## regenerate the training plan's measured numbers (bench/data/e
 # the provenance, present rows in a seeded order, and save as you go (`w`); quit with `q`.
 label-dev-audit:  ## blind-label the 50 seeded real dev rows of the dev-50 audit (~1.7 h)
 	uv run python -m bench.label.tui bench/data/corpus.jsonl --blind --dev-audit
+
+# `review-queue` (training plan F2): the rows the ensemble vote could not decide (any poisoned
+# vote, or a split after a parse failure), blind in the TUI; a human label always wins.
+review-queue:  ## blind-label the ensemble's review queue in bench/data/corpus.jsonl
+	uv run python -m bench.label.tui bench/data/corpus.jsonl --blind --ids-file bench/data/_labelling/review_queue_ids.json
 
 label-test-id:  ## blind-label the 104 real test-ID rows into bench/data/holdout_gold.jsonl (~3.5 h)
 	uv run python -m bench.label.holdout_gold
