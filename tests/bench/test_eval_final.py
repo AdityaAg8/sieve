@@ -371,6 +371,18 @@ def test_predictions_are_byte_stable(world: World) -> None:
     assert b"\r\n" not in a
 
 
+@pytest.mark.usefixtures("unsealed")
+def test_the_log_is_opened_in_append_mode_and_never_truncated(world: World) -> None:
+    ef.LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    earlier = {"git_sha": "old", "utc": "2026-01-01T00:00:00Z", "rows_evaluated": 1,
+               "reason": "an earlier version", "dataset_version": "other@1"}  # fmt: skip
+    ef.LOG_PATH.write_text(json.dumps(earlier) + "\n", encoding="utf-8", newline="\n")
+    world.run(reason="this version")
+    lines = world.log_lines()
+    assert len(lines) == 2
+    assert lines[0] == earlier and lines[1]["reason"] == "this version"
+
+
 def test_the_cli_requires_a_reason_and_model_dirs(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

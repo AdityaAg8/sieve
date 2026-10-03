@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "holdout.json: every key a consumer reads (training plan H3)",
+  "description": "Readers: docs/scripts/readme_numbers.py and sieve/model/push.py (+ card.md). bench/publish.py and web/src/lib/bench.ts read no key of holdout.json (the web reads /api/v1/bench/summary, built from demo.json and ablations.json).",
+  "type": "object",
+  "$defs": {
+    "interval": {
+      "type": "object",
+      "required": ["point", "lo", "hi"],
+      "properties": {
+        "point": {"type": ["number", "null"]},
+        "lo": {"type": ["number", "null"]},
+        "hi": {"type": ["number", "null"]}
+      }
+    },
+    "breakdown": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["n", "recall_at_t_low", "fpr_stage1_at_t_low", "fpr_pipeline"],
+        "properties": {
+          "n": {"type": "number"},
+          "recall_at_t_low": {"type": "number"},
+          "fpr_stage1_at_t_low": {"type": "number"},
+          "fpr_pipeline": {"type": "number"}
+        }
+      }
+    },
+    "aggregate": {
+      "type": "object",
+      "required": ["mean", "std", "values"],
+      "properties": {
+        "mean": {"type": "number"},
+        "std": {"type": ["number", "null"]},
+        "values": {"type": "array", "items": {"type": "number"}}
+      }
+    }
+  },
+  "required": [
+    "dataset_version", "reason", "log_line", "t_low", "t_high", "n_holdout", "n_eval_only",
+    "recall", "recall_lcb", "recall_interval", "fpr_pipeline_real", "per_tier",
+    "per_concealment", "real_poisoned_recall_stage1", "real_poisoned_recall_pipeline",
+    "release_gate", "release_gate_passed", "limitations", "preregistration_sha256",
+    "headline_model", "per_model", "per_family", "judge"
+  ],
+  "properties": {
+    "dataset_version": {"type": "string"},
+    "reason": {"type": "string"},
+    "log_line": {"type": ["string", "null"]},
+    "t_low": {"type": "number"},
+    "t_high": {"type": "number"},
+    "n_holdout": {"type": "integer"},
+    "n_eval_only": {"type": "integer"},
+    "recall": {"type": "number"},
+    "recall_lcb": {"type": "number"},
+    "recall_interval": {"$ref": "#/$defs/interval"},
+    "fpr_pipeline_real": {"$ref": "#/$defs/interval"},
+    "per_tier": {"$ref": "#/$defs/breakdown"},
+    "per_concealment": {"$ref": "#/$defs/breakdown"},
+    "real_poisoned_recall_stage1": {"type": "number"},
+    "real_poisoned_recall_pipeline": {"type": "number"},
+    "release_gate": {
+      "type": "object",
+      "required": ["recall_point", "recall_lower_bound"],
+      "properties": {
+        "recall_point": {"const": 0.95},
+        "recall_lower_bound": {"const": 0.9}
+      }
+    },
+    "release_gate_passed": {"type": "boolean"},
+    "limitations": {"type": "string", "minLength": 1},
+    "preregistration_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "headline_model": {"type": "string"},
+    "judge": {"type": "object", "required": ["status"], "properties": {"status": {"const": "deferred"}}},
+    "per_model": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["t_low", "t_high", "test_id", "holdout_synthetic", "real_poisoned", "test_ood", "holdout"],
+        "properties": {
+          "test_id": {
+            "type": "object",
+            "required": ["n", "macro_f1_2class", "fpr_stage1_at_t_low", "fpr_triage_slice", "fpr_by_source", "fpr_prevalence_weighted", "routing_rate"]
+          },
+          "holdout_synthetic": {
+            "type": "object",
+            "required": ["n", "n_poisoned", "recall_at_t_low", "per_concealment", "per_generator", "per_payload_field", "miss_catch_recall", "auroc", "auprc"]
+          },
+          "real_poisoned": {
+            "type": "object",
+            "required": ["n", "recall_stage1", "recall_pipeline", "per_template", "per_risk", "miss_catch_recall"]
+          },
+          "test_ood": {
+            "type": "object",
+            "required": ["docker", "mcptox_clean", "auroc", "auprc", "fp_reduction_vs_yara"]
+          },
+          "holdout": {
+            "type": "object",
+            "required": ["n", "auroc", "auprc", "fpr_pipeline_real", "fp_reduction_triage", "fp_reduction_standalone", "per_tier", "per_concealment", "routing_rate"]
+          }
+        }
+      }
+    },
+    "per_family": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"type": "object", "additionalProperties": {"$ref": "#/$defs/aggregate"}}
+    }
+  }
+}

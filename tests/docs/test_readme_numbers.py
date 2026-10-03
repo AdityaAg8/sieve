@@ -136,10 +136,10 @@ def _write_ablations(directory: Path) -> None:
 
 
 def _write_holdout(directory: Path, tmp_path: Path) -> None:
-    from bench.eval_final import main as eval_final_main
+    from bench.ablations.run import dataset_version
     from bench.split.split import DEFAULT_SEED, assign
     from sieve.model.data import load_corpus
-    from sieve.protocols import FakeClassifier, FakeJudge
+    from tests.bench.report_fixture import render
 
     records = load_corpus(MINI_50)
     planted = [
@@ -161,15 +161,20 @@ def _write_holdout(directory: Path, tmp_path: Path) -> None:
         encoding="utf-8",
         newline="\n",
     )
-    with _sieve_final():
-        eval_final_main(
-            results_dir=directory,
-            reason="fixture run for tests/docs/test_readme_numbers.py",
-            corpus=corpus,
-            classifier=FakeClassifier(),
-            judge=FakeJudge(),
-            n_boot=N_BOOT,
-        )
+    # H3: `holdout.json` is rendered by `bench.report_final` from saved predictions; the
+    # fixture scores the assigned holdout and the planted slice through the production writers.
+    report = render(
+        [r for r in assigned if r.split == "holdout"],
+        [r for r in assigned if r.source == "real_poisoned"],
+        [],
+        n_boot=N_BOOT,
+        reason="fixture run for tests/docs/test_readme_numbers.py",
+        dataset_version=dataset_version(corpus),
+    )
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "holdout.json").write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
+    )
 
 
 def _write_baseline(directory: Path) -> None:

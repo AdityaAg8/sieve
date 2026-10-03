@@ -309,17 +309,19 @@ def dev_records_for_writers() -> list[Any]:
 
 
 @pytest.fixture
-def written_results(dev_records_for_writers: list[Any], tmp_path: Path) -> Path:
+def written_results(
+    dev_records_for_writers: list[Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Path:
     """`ablations.json`, `holdout.json`, `selection.json`, `curves.json`, `test_opened.log`,
     each produced by the production writer rather than typed here."""
     import numpy as np
 
     from bench.ablations.run import Inputs, RowSpec, dataset_version, run_matrix, write_results
-    from bench.eval_final import evaluate as holdout_evaluate
     from sieve.model.data import LABEL2ID
     from sieve.model.select import select, write_selection
     from sieve.model.thresholds import write_curves
     from sieve.protocols import Classifier, FakeClassifier
+    from tests.bench.report_fixture import render
 
     dev = dev_records_for_writers
     results = tmp_path / "results"
@@ -361,7 +363,7 @@ def written_results(dev_records_for_writers: list[Any], tmp_path: Path) -> Path:
         results / "ablations.json",
     )
 
-    # `eval_final.evaluate` writes holdout.json, including the derived `limitations` slot.
+    # `report_final.build_report` writes holdout.json (H3), including `limitations`.
     sealed = [r.model_copy(update={"split": "holdout"}) for r in dev]
     eval_only = [
         r.model_copy(
@@ -375,8 +377,7 @@ def written_results(dev_records_for_writers: list[Any], tmp_path: Path) -> Path:
         )
         for i, r in enumerate(dev[:4])
     ]
-    holdout = holdout_evaluate(sealed, eval_only, FakeClassifier(), None, n_boot=40)
-    holdout["dataset_version"] = dataset_version(corpus)
+    holdout = render(sealed, eval_only, [], n_boot=40, dataset_version=dataset_version(corpus))
     (results / "holdout.json").write_text(
         json.dumps(holdout, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
     )
@@ -430,9 +431,16 @@ def written_results(dev_records_for_writers: list[Any], tmp_path: Path) -> Path:
     )
 
     # `eval_final.append_log_line` writes the log line.
-    from bench.eval_final import append_log_line
+    from bench import eval_final
 
-    append_log_line(results, rows_evaluated=len(sealed), reason="fixture release")
+    monkeypatch.setattr(eval_final, "LOG_PATH", results / "test_opened.log")
+    eval_final.append_log_line(
+        rows_evaluated=len(sealed),
+        reason="fixture release",
+        version=dataset_version(corpus),
+        models=["fake@0"],
+        new_version=False,
+    )
     line = json.loads((results / "test_opened.log").read_text(encoding="utf-8").splitlines()[0])
     assert line["git_sha"], "the log line must carry a SHA for the card to quote"
     return results
@@ -560,7 +568,7 @@ def test_a_release_note_can_add_to_the_derived_limitations(
         limitations=note.read_text(encoding="utf-8"),
     )
     assert "Trained on a toy corpus." in str(context["limitations"])
-    assert "The holdout is" in str(context["limitations"])
+    assert "The release gate rests on" in str(context["limitations"])
 
 
 def _written_sha(results: Path) -> str:
