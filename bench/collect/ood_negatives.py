@@ -80,7 +80,7 @@ def content_hash(root: Path, files: Sequence[Path]) -> str:
     return digest.hexdigest()
 
 
-def _verify(root: Path, files: Sequence[Path], commit: str, sha256: str | None) -> None:
+def verify_clone(root: Path, files: Sequence[Path], commit: str, sha256: str | None) -> None:
     head = _head(root)
     if not head.startswith(commit) and not commit.startswith(head):
         raise PinMismatchError(f"{root} is at {head[:12]}, pinned to {commit[:12]}")
@@ -106,7 +106,7 @@ def _schema(tool: dict[str, Any]) -> dict[str, Any]:
 
 def docker_rows(root: Path, *, commit: str, sha256: str | None = None) -> list[OodRow]:
     files = sorted((root / "servers").glob("*/tools.json"))
-    _verify(root, files, commit, sha256)
+    verify_clone(root, files, commit, sha256)
     rows: list[OodRow] = []
     for path in files:
         for tool in json.loads(path.read_text(encoding="utf-8")) or []:
@@ -132,7 +132,7 @@ def docker_rows(root: Path, *, commit: str, sha256: str | None = None) -> list[O
 
 def mcptox_clean_rows(root: Path, *, commit: str, sha256: str | None = None) -> list[OodRow]:
     path = root / "response_all.json"
-    _verify(root, [path], commit, sha256)
+    verify_clone(root, [path], commit, sha256)
     rows: list[OodRow] = []
     seen: set[tuple[str, str]] = set()
     servers = json.loads(path.read_text(encoding="utf-8"))["servers"]

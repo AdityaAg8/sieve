@@ -1,0 +1,37 @@
+{
+  "scannerbench": {
+    "url": "https://github.com/fevziegeyurtsevenler/scannerbench",
+    "commit": "a8fb60196c91e9b61ae251096bde0d679ff5de88",
+    "sha256": "d65d8cfc0cb1ae5541f83082e64c831f3915ffeb22157878c70abfc1c2a4f22e",
+    "licence": "CC-BY-4.0 (data), Apache-2.0 (code)",
+    "local_dir": "bench/data/external/scannerbench"
+  },
+  "guardbench": {
+    "url": "https://github.com/getmcpm/mcp-guardbench",
+    "commit": "e879589f1e1abe5421573355616630a62304ecfc",
+    "sha256": "cdbe16b49c9d08dd4586e824da834f7b62b5d987b06d07e226939216eb8d2b1a",
+    "licence": "MIT",
+    "local_dir": "bench/data/external/mcp-guardbench"
+  },
+  "mcpsecbench": {
+    "url": "https://github.com/AIS2Lab/MCPSecBench",
+    "commit": "7612c5a3e811dcf01f64e4f2bb324591a2feaaf4",
+    "sha256": "c60fda5d9b43b10a5f1443c1a9834ffeb8757a9cc0128a902aaf1cffa98b9214",
+    "licence": "MIT",
+    "local_dir": "bench/data/external/MCPSecBench"
+  },
+  "when_attack": {
+    "url": "https://github.com/zhao-weibo/when-mcp-servers-attack",
+    "commit": "012843fb08f04fba7278d1d2116b587a8191efba",
+    "sha256": "58038857098923f0eaf9f741f2bcfd7772ff909fd40ea7d69f28b6634e7c4a3a",
+    "licence": "Apache-2.0",
+    "local_dir": "bench/data/external/when-mcp-servers-attack"
+  },
+  "mtp": {
+    "url": "https://huggingface.co/datasets/fevziegeyurtsevenler/mcp-tool-poisoning",
+    "commit": "9b7a1088526d424c518d856ba5204f935a279727",
+    "sha256": "c3b08ddae021e1cc4a99cabc2918549f65f4252bf5a5878baf897bc3b57bf7d3",
+    "licence": "Apache-2.0 (dataset card)",
+    "local_dir": ""
+  }
+}
