@@ -1,0 +1,29 @@
+[
+ {
+  "a": "cat-ae9f8401c8e1",
+  "b": "cat-24722857374e",
+  "labels": [
+   "imperative_benign",
+   "benign"
+  ],
+  "cosine": 0.9271
+ },
+ {
+  "a": "cat-24722857374e",
+  "b": "sb-syn-0334",
+  "labels": [
+   "benign",
+   "imperative_benign"
+  ],
+  "cosine": 0.9276
+ },
+ {
+  "a": "cat-e4b91aaae040",
+  "b": "cat-396892c232b3",
+  "labels": [
+   "benign",
+   "imperative_benign"
+  ],
+  "cosine": 0.9584
+ }
+]

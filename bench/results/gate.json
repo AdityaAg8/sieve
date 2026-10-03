@@ -1,0 +1,183 @@
+{
+  "tightening_used": true,
+  "check_only": false,
+  "attempts": [
+    {
+      "probes": {
+        "rows": "dev",
+        "imperative": {
+          "auroc": 0.815,
+          "n": 409,
+          "gate": 0.7,
+          "passed": false,
+          "stratum": "imperative_benign"
+        },
+        "benign": {
+          "auroc": 0.702,
+          "n": 432,
+          "gate": 0.7,
+          "passed": false,
+          "stratum": "benign"
+        },
+        "surface": {
+          "auroc": 0.5794,
+          "n": 409,
+          "gate": 0.7,
+          "passed": true,
+          "features": [
+            "log_len",
+            "newlines",
+            "caps_ratio",
+            "sentences",
+            "non_ascii",
+            "backticks"
+          ]
+        },
+        "length": {
+          "auroc": 0.7452,
+          "separation": 0.7452,
+          "real_only_separation": 0.7572,
+          "synthetic_length_leak": 0.5425,
+          "n": 841,
+          "gate": 0.7,
+          "absolute_passed": false,
+          "passed": true,
+          "feature": "serialised-token length (DeBERTa-v3, untruncated)"
+        },
+        "transfer": {
+          "auroc": 0.5719,
+          "n": 497,
+          "gate": 0.7,
+          "passed": true,
+          "versus": "real imperative_benign",
+          "auroc_vs_all_real": 0.7699
+        },
+        "passed": false
+      },
+      "failing_probes": [
+        "imperative",
+        "benign"
+      ],
+      "survival_failures": [
+        "sb-syn-0360"
+      ],
+      "minimal_pairs": {
+        "count": 477,
+        "baseline": 480,
+        "passed": false
+      },
+      "passed": false
+    },
+    {
+      "probes": {
+        "rows": "dev",
+        "imperative": {
+          "auroc": 0.6685,
+          "n": 380,
+          "gate": 0.7,
+          "passed": true,
+          "stratum": "imperative_benign"
+        },
+        "benign": {
+          "auroc": 0.5433,
+          "n": 427,
+          "gate": 0.7,
+          "passed": true,
+          "stratum": "benign"
+        },
+        "surface": {
+          "auroc": 0.5896,
+          "n": 380,
+          "gate": 0.7,
+          "passed": true,
+          "features": [
+            "log_len",
+            "newlines",
+            "caps_ratio",
+            "sentences",
+            "non_ascii",
+            "backticks"
+          ]
+        },
+        "length": {
+          "auroc": 0.747,
+          "separation": 0.747,
+          "real_only_separation": 0.7572,
+          "synthetic_length_leak": 0.544,
+          "n": 807,
+          "gate": 0.7,
+          "absolute_passed": false,
+          "passed": true,
+          "feature": "serialised-token length (DeBERTa-v3, untruncated)"
+        },
+        "transfer": {
+          "auroc": 0.5138,
+          "n": 497,
+          "gate": 0.7,
+          "passed": true,
+          "versus": "real imperative_benign",
+          "auroc_vs_all_real": 0.7266
+        },
+        "passed": true
+      },
+      "failing_probes": [],
+      "survival_failures": [],
+      "minimal_pairs": {
+        "count": 443,
+        "baseline": 480,
+        "passed": false
+      },
+      "passed": false
+    }
+  ],
+  "tightening": {
+    "strata": [
+      "benign",
+      "imperative_benign"
+    ],
+    "banned_ngrams": [
+      "always ensure",
+      "always pass",
+      "always provide",
+      "attempting",
+      "attempting to",
+      "before attempting",
+      "before calling",
+      "catalog of",
+      "channel",
+      "ensure the",
+      "executes",
+      "guide",
+      "identifier",
+      "including",
+      "including the",
+      "list of",
+      "metadata for",
+      "must pass",
+      "not attempt",
+      "of reusable",
+      "pass the",
+      "provide the",
+      "provides",
+      "returns the",
+      "sections",
+      "string you",
+      "the exact",
+      "the guide",
+      "the provided",
+      "the specified",
+      "the tool",
+      "this tool",
+      "to avoid",
+      "to ensure",
+      "to retrieve",
+      "tool before",
+      "tool generates",
+      "updates",
+      "variant",
+      "verify the"
+    ]
+  },
+  "passed": false,
+  "stop": true
+}
