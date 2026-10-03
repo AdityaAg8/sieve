@@ -583,14 +583,25 @@ _FP_REDUCTION_KEYS: tuple[str, ...] = (
 
 
 def minimal_pair_accuracy(
-    pairs: Sequence[dict[str, Any]], predicted_by_id: dict[str, str]
+    pairs: Sequence[dict[str, Any]],
+    predicted_by_id: dict[str, str],
+    labels_by_id: Mapping[str, str] | None = None,
 ) -> float | None:
-    """Share of (host, mutation) pairs where BOTH sides are classified correctly (M11)."""
+    """Share of (host, mutation) pairs where BOTH sides are classified correctly (M11).
+
+    PRD M11 is about a real host and its POISONED mutation. Plan v1 also mutates hosts into
+    benign and imperative_benign rows, and scoring those as "the mutation must be flagged"
+    biased M11 down (Z2 review), so only pairs whose mutation is labelled poisoned count: the
+    label comes from `labels_by_id`, else from the pair file's own `label`.
+    """
     scored = 0
     correct = 0
     for pair in pairs:
         host, mutation = str(pair["host_id"]), str(pair["mutation_id"])
         if host not in predicted_by_id or mutation not in predicted_by_id:
+            continue
+        label = (labels_by_id or {}).get(mutation, pair.get("label"))
+        if label is not None and label != "poisoned":
             continue
         scored += 1
         if predicted_by_id[host] != "poisoned" and predicted_by_id[mutation] == "poisoned":
@@ -788,7 +799,7 @@ def _seed_block(
             }
         )
         block["minimal_pair_accuracy"] = minimal_pair_accuracy(
-            inputs.minimal_pairs, predicted_by_id
+            inputs.minimal_pairs, predicted_by_id, {r.id: r.label for r in records}
         )
     return block
 

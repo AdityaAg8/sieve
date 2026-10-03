@@ -1001,3 +1001,17 @@ def test_load_minimal_pairs_reads_what_bench_split_pairs_writes(
     pairs = load_minimal_pairs(path)
     assert all(p["host_id"] and p["mutation_id"] for p in pairs)
     assert minimal_pair_accuracy(pairs, {r.id: r.label for r in dev}) is not None
+
+
+def test_minimal_pairs_count_only_poisoned_mutations() -> None:
+    """Z2: a benign mutation predicted benign is not an M11 error (PRD M11: poisoned pairs)."""
+    pairs = [
+        {"host_id": "h1", "mutation_id": "m1"},
+        {"host_id": "h2", "mutation_id": "m2"},
+    ]
+    predicted = {"h1": "benign", "m1": "poisoned", "h2": "benign", "m2": "benign"}
+    labels = {"h1": "benign", "m1": "poisoned", "h2": "benign", "m2": "imperative_benign"}
+    assert minimal_pair_accuracy(pairs, predicted, labels) == 1.0
+    assert minimal_pair_accuracy(pairs, predicted) == 0.5, "unlabelled pairs keep the old rule"
+    labelled = [{**p, "label": labels[p["mutation_id"]]} for p in pairs]
+    assert minimal_pair_accuracy(labelled, predicted) == 1.0
