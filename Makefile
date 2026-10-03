@@ -2,7 +2,7 @@ ifeq ($(OS),Windows_NT)
 SHELL := C:/Program Files/Git/usr/bin/bash.exe
 endif
 
-.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id model-dir
+.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id model-dir sweep
 
 .DEFAULT_GOAL := help
 
@@ -107,6 +107,12 @@ best-epoch:  ## the EPOCHS= for FOLD=all: the median best_epoch of MODEL_DIR's f
 # directories' parent, which under this layout nests (models/<family>-s0/<family>-s0).
 model-dir:  ## print MODEL_DIR for PROFILE= SEED= (models/<family>-s<seed>)
 	@echo $(MODEL_DIR)
+
+# `sweep` (training plan C2): the whole per-seed recipe, resumable, refusing a busy GPU before
+# every training step. FORCE=1 skips that refusal; GPU_IDLE_MIB moves its threshold.
+SEEDS ?= 0 1 2
+sweep:  ## PROFILE= SEEDS="0 1 2": per seed 5 folds -> best epoch -> FOLD=all -> calibrate (resumable)
+	uv run python -m bench.sweep --profile $(PROFILE) --seeds "$(SEEDS)" $(if $(FORCE),--force) $(if $(GPU_IDLE_MIB),--idle-mib $(GPU_IDLE_MIB))
 
 calibrate:  ## temperature, T_low and T_high from the five folds' pooled OOF logits, into MODEL_DIR
 	uv run python -m sieve.model.calibrate --dirs $(FOLD_DIRS) --corpus $(BENCH_CORPUS) --out $(MODEL_DIR)
