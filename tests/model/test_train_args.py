@@ -61,7 +61,7 @@ def test_training_uses_the_length_grouped_sampler(tmp_path: Path) -> None:
 
 
 def test_length_grouping_pads_far_less_than_random_batches(tmp_path: Path) -> None:
-    lengths = [int(x) for x in np.random.default_rng(1).integers(8, 128, size=960)]
+    lengths = [int(x) for x in np.random.default_rng(1).integers(16, 500, size=960)]
     grouped = _padded_tokens(_tiny_trainer(tmp_path, lengths))
     shuffled = _padded_tokens(_tiny_trainer(tmp_path, lengths, group_by_length=False))
     assert grouped <= 0.6 * shuffled
@@ -92,3 +92,21 @@ def test_a_run_writes_no_optimizer_state_and_at_most_two_checkpoints(
     assert not list((out / "_checkpoints").rglob("optimizer.pt"))
     assert not list((out / "_checkpoints").rglob("scheduler.pt"))
     shutil.rmtree(out / "_checkpoints")
+
+
+def test_collated_batches_are_padded_to_a_multiple_of_eight() -> None:
+    from transformers import AutoTokenizer
+
+    tokenizer = AutoTokenizer.from_pretrained(TINY)
+    rows = [
+        {"input_ids": [101] + [1000] * n + [102], "attention_mask": [1] * (n + 2)} for n in (3, 11)
+    ]
+    batch = collator(tokenizer)(rows)
+    assert batch["input_ids"].shape[1] % 8 == 0
+    assert batch["input_ids"].shape[1] == 16
+
+
+def test_eval_batch_is_twice_the_train_batch(tmp_path: Path) -> None:
+    config = load_profile(CONFIG, "tiny", fold=0, seed=0)
+    args = training_arguments(config, tmp_path, has_early=True)
+    assert args.per_device_eval_batch_size == 2 * args.per_device_train_batch_size

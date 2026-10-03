@@ -327,7 +327,8 @@ def training_arguments(
         "learning_rate": config.lr,
         "warmup_ratio": config.warmup_ratio,
         "per_device_train_batch_size": config.batch_size,
-        "per_device_eval_batch_size": config.batch_size,
+        # Evaluation keeps no activations for a backward pass, so twice the batch fits (B5).
+        "per_device_eval_batch_size": 2 * config.batch_size,
         "num_train_epochs": config.epochs,
         "eval_strategy": "epoch" if has_early else "no",
         "save_strategy": "epoch" if has_early else "no",
@@ -363,10 +364,13 @@ def training_arguments(
 
 
 def collator(tokenizer: Any) -> Any:
-    """Dynamic padding to the longest row of each batch."""
+    """Dynamic padding to the longest row of each batch, rounded up to a multiple of 8.
+
+    Multiples of 8 keep the matmul shapes tensor-core friendly (B5); the extra pad is < 8 tokens.
+    """
     from transformers import DataCollatorWithPadding
 
-    return DataCollatorWithPadding(tokenizer=tokenizer)
+    return DataCollatorWithPadding(tokenizer=tokenizer, pad_to_multiple_of=8)
 
 
 def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
