@@ -249,7 +249,8 @@ def build_report(
 
     # PRD §9.7 as amended by training plan C8 (I1 ADR): the gate fails on a poisoned row dropped
     # as a near-duplicate, the v2.0 bug. A dev row duplicating a sealed row, and the mutations
-    # of such a host, are dropped on purpose to keep the holdout clean; they are listed instead.
+    # of such a host, are dropped on purpose to keep the sealed splits clean; they are listed
+    # instead.
     leakage = {"sealed_twin", "host_dropped"}
     poisoned_dropped = sorted(
         str(row["id"])
