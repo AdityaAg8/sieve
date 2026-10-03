@@ -2,7 +2,7 @@ ifeq ($(OS),Windows_NT)
 SHELL := C:/Program Files/Git/usr/bin/bash.exe
 endif
 
-.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id model-dir sweep gpu-bench probes tfidf-ood gate review-queue pairs
+.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id model-dir sweep gpu-bench probes tfidf-ood gate review-queue pairs dedup-cross
 
 .DEFAULT_GOAL := help
 
@@ -177,6 +177,9 @@ gate:  ## pre-registered style gate -> bench/results/gate.json (exit 3 = stop an
 
 pairs:  ## minimal-pair index of the built corpus -> bench/results/minimal_pairs.json (section 13 step 4)
 	uv run python -m bench.split.pairs --corpus bench/data/labelled.jsonl
+
+dedup-cross:  ## eval-vs-dev dedup of every OOD set -> bench/results/dedup_cross.json (after make corpus)
+	uv run python -m bench.split.dedup_cross
 
 corpus-stats:  ## corpus statistics report
 	uv run python -m bench.stats
