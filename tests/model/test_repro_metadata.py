@@ -109,7 +109,7 @@ def test_metrics_record_the_provenance_fields(
     assert isinstance(metrics["git_dirty"], bool)
     assert set(metrics["library_versions"]) >= {"torch", "transformers"}
     assert isinstance(metrics["best_global_step"], int) and metrics["best_global_step"] > 0
-    assert metrics["profile_variant"] == "tiny"
+    assert metrics["profile_variant"] == "bs16"
     assert metrics["cudnn_deterministic"] is True
 
 

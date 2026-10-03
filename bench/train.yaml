@@ -3,52 +3,172 @@
 # Hyperparameters are PRD §11.3. `precision` is a binding safety setting, not a speed knob:
 # DeBERTa-v3's disentangled attention is numerically fragile in reduced precision, so it trains
 # in FP32 and `sieve.model.train` refuses bf16 for it without --allow-reduced-precision
-# (PRD §7.2). Fold, seed, mode and num_labels are CLI arguments, never defaults in this file.
+# (PRD §7.2). Fold and seed are CLI arguments, never defaults in this file.
+#
+# Profiles (training plan B10, §6.4). `family` is the artefact family name (C1):
+# models/<family>-s<seed>. `variant` names a speed/memory layout. Variants of one family change
+# batch size, accumulation and gradient checkpointing only, never the maths: the effective batch
+# (batch_size x gradient_accumulation_steps) is 16 everywhere, and the loss is Σwℓ/Σw over the
+# accumulation window (B7). §13 step 7 picks one variant per architecture from `make gpu-bench`.
+# `mode`, `num_labels` and `scanner_features` are fixed per profile; a contradicting flag is
+# refused.
 corpus: bench/data/labelled.jsonl
 
 profiles:
+  # Headline DeBERTa-v3 (ablation row 4) and its speed variant.
   deberta:
+    family: deberta-v3-base
     base_model: microsoft/deberta-v3-base
     revision: 8ccc9b6f36199bec6961081d44eb72fb3f7353f3  # refs/main in the HF cache, 2026-10-03 (A5)
-    max_length: 512
     lr: 2.0e-5
     warmup_ratio: 0.06
-    batch_size: 16
     epochs: 8
     patience: 2
     precision: fp32
     class_weights: true
+    max_length: 512
+    mode: full
+    num_labels: 3
+    variant: bs16-ckpt
+    batch_size: 16
     # Memory, not maths: FP32 batch 16 at 512 tokens peaks at 17.5 GiB without it, and a
     # 12 GiB card then spills into system RAM (114 s a step); with it, 4 GiB (2.9 s a step).
     gradient_checkpointing: true
 
-  modernbert:
-    base_model: answerdotai/ModernBERT-base
-    revision: 8949b909ec900327062f0ebf497f51aef5e6f0c8  # the cached revision (A5)
+  deberta-nockpt:
+    family: deberta-v3-base
+    base_model: microsoft/deberta-v3-base
+    revision: 8ccc9b6f36199bec6961081d44eb72fb3f7353f3  # refs/main in the HF cache, 2026-10-03 (A5)
+    lr: 2.0e-5
+    warmup_ratio: 0.06
+    epochs: 8
+    patience: 2
+    precision: fp32
+    class_weights: true
     max_length: 512
-    lr: 3.0e-5
-    warmup_ratio: 0.06
-    batch_size: 16
-    epochs: 8
-    patience: 2
-    precision: bf16
-    class_weights: true
+    mode: full
+    num_labels: 3
+    variant: bs8x2
+    batch_size: 8
+    gradient_accumulation_steps: 2
 
-  # Ablation row 5's long-context configuration; primary if the §11.2 truncation rule fires.
-  modernbert-1024:
+  # Headline ModernBERT (ablation row 5) and its speed variant.
+  modernbert:
+    family: modernbert-base
     base_model: answerdotai/ModernBERT-base
     revision: 8949b909ec900327062f0ebf497f51aef5e6f0c8  # the cached revision (A5)
-    max_length: 1024
     lr: 3.0e-5
     warmup_ratio: 0.06
-    batch_size: 16
     epochs: 8
     patience: 2
     precision: bf16
     class_weights: true
+    max_length: 512
+    mode: full
+    num_labels: 3
+    variant: bs16
+    batch_size: 16
+
+  modernbert-acc:
+    family: modernbert-base
+    base_model: answerdotai/ModernBERT-base
+    revision: 8949b909ec900327062f0ebf497f51aef5e6f0c8  # the cached revision (A5)
+    lr: 3.0e-5
+    warmup_ratio: 0.06
+    epochs: 8
+    patience: 2
+    precision: bf16
+    class_weights: true
+    max_length: 512
+    mode: full
+    num_labels: 3
+    variant: bs8x2
+    batch_size: 8
+    gradient_accumulation_steps: 2
+
+  # Single-seed ablation profiles (§13 step 10): rows 3, 9 and 12.
+  deberta-desc:
+    family: deberta-v3-base-desc
+    base_model: microsoft/deberta-v3-base
+    revision: 8ccc9b6f36199bec6961081d44eb72fb3f7353f3  # refs/main in the HF cache, 2026-10-03 (A5)
+    lr: 2.0e-5
+    warmup_ratio: 0.06
+    epochs: 8
+    patience: 2
+    precision: fp32
+    class_weights: true
+    max_length: 512
+    mode: description_only
+    num_labels: 3
+    variant: bs16-ckpt
+    batch_size: 16
+    # Memory, not maths: FP32 batch 16 at 512 tokens peaks at 17.5 GiB without it, and a
+    # 12 GiB card then spills into system RAM (114 s a step); with it, 4 GiB (2.9 s a step).
+    gradient_checkpointing: true
+
+  deberta-scanner:
+    family: deberta-v3-base-scanner
+    base_model: microsoft/deberta-v3-base
+    revision: 8ccc9b6f36199bec6961081d44eb72fb3f7353f3  # refs/main in the HF cache, 2026-10-03 (A5)
+    lr: 2.0e-5
+    warmup_ratio: 0.06
+    epochs: 8
+    patience: 2
+    precision: fp32
+    class_weights: true
+    max_length: 512
+    mode: full
+    num_labels: 3
+    variant: bs16-ckpt
+    batch_size: 16
+    # Memory, not maths: FP32 batch 16 at 512 tokens peaks at 17.5 GiB without it, and a
+    # 12 GiB card then spills into system RAM (114 s a step); with it, 4 GiB (2.9 s a step).
+    gradient_checkpointing: true
+    scanner_features: true
+    findings: bench/results/baseline_raw.json  # record-id keyed (C5)
+
+  deberta-2c:
+    family: deberta-v3-base-2c
+    base_model: microsoft/deberta-v3-base
+    revision: 8ccc9b6f36199bec6961081d44eb72fb3f7353f3  # refs/main in the HF cache, 2026-10-03 (A5)
+    lr: 2.0e-5
+    warmup_ratio: 0.06
+    epochs: 8
+    patience: 2
+    precision: fp32
+    class_weights: true
+    max_length: 512
+    mode: full
+    num_labels: 2
+    variant: bs16-ckpt
+    batch_size: 16
+    # Memory, not maths: FP32 batch 16 at 512 tokens peaks at 17.5 GiB without it, and a
+    # 12 GiB card then spills into system RAM (114 s a step); with it, 4 GiB (2.9 s a step).
+    gradient_checkpointing: true
+
+  # Ablation row 15's long-context configuration; primary if the §11.2 truncation rule fires.
+  # bs 8 x 2: twice the sequence length roughly doubles activation memory.
+  modernbert-1024:
+    family: modernbert-base-1024
+    base_model: answerdotai/ModernBERT-base
+    revision: 8949b909ec900327062f0ebf497f51aef5e6f0c8  # the cached revision (A5)
+    lr: 3.0e-5
+    warmup_ratio: 0.06
+    epochs: 8
+    patience: 2
+    precision: bf16
+    class_weights: true
+    max_length: 1024
+    mode: full
+    num_labels: 3
+    variant: bs8x2
+    batch_size: 8
+    gradient_accumulation_steps: 2
 
   # CI smoke profile only. Never published, never an ablation row.
   tiny:
+    family: tiny
+    variant: bs16
     base_model: prajjwal1/bert-tiny
     max_length: 128
     lr: 5.0e-4

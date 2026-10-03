@@ -59,12 +59,16 @@ class TrainConfig(BaseModel):
     # Hub commit of `base_model` (training plan A5): a moving `main` would change the weights
     # under an unchanged config. None only for the CI smoke profile.
     revision: str | None = None
+    # Artefact family (C1): speed/memory variants of one recipe share it.
+    family: str | None = None
     # Speed/memory variant of a profile family (B10); `metrics.json` records it.
     variant: str | None = None
     max_length: int
     lr: float
     warmup_ratio: float = 0.06
     batch_size: int
+    # Variants trade batch size for accumulation; the effective batch stays 16 (plan §6.4).
+    gradient_accumulation_steps: int = Field(default=1, ge=1)
     epochs: int
     patience: int
     precision: Precision
@@ -120,6 +124,10 @@ class TrainConfig(BaseModel):
                 "schedule horizon"
             )
 
+    @property
+    def effective_batch_size(self) -> int:
+        return self.batch_size * self.gradient_accumulation_steps
+
     def label_map(self) -> dict[int, int]:
         """Three-class ids to the training head's ids. Ablation 12 collapses the two benigns."""
         if self.num_labels == 2:
@@ -167,19 +175,42 @@ def load_profile(
     *,
     fold: Fold,
     seed: int,
-    mode: Mode = "full",
-    num_labels: int = 3,
+    mode: Mode | None = None,
+    num_labels: int | None = None,
     scanner_features: bool = False,
     findings: Path | None = None,
     epochs: int | None = None,
     allow_reduced_precision: bool = False,
     allow_dirty: bool = False,
 ) -> TrainConfig:
+    """One profile of `config_path`, with the CLI's run-specific settings.
+
+    What a profile declares (B10: mode, head, scanner features) is fixed: a flag that agrees is
+    accepted, one that contradicts it is refused, because the artefact family name says what
+    was trained. The smoke profile declares none of them, so the flags still set them there.
+    """
     raw = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
     profiles = raw.get("profiles") or {}
     if profile not in profiles:
         raise KeyError(f"no profile {profile!r} in {config_path}; have {sorted(profiles)}")
     fields = dict(profiles[profile])
+    flags: dict[str, Any] = {"mode": mode, "num_labels": num_labels}
+    if scanner_features:
+        flags["scanner_features"] = True
+    if findings is not None:
+        flags["findings"] = findings
+    for key, value in flags.items():
+        if value is None:
+            continue
+        declared = fields.get(key)
+        if key == "findings" and declared is not None:
+            declared = Path(declared)
+        if declared is not None and declared != value:
+            raise ValueError(
+                f"profile {profile!r} trains {key}={declared!r}; the flag asks for {value!r}. "
+                "Use the profile that trains it instead."
+            )
+        fields[key] = value
     # `--epochs` on a CV fold overrides the horizon; on `--fold all` it is the CV-selected stop
     # point and the horizon stays the profile's (B9), so the LR there matches the CV models'.
     stop_after = epochs if fold == "all" else None
@@ -189,10 +220,6 @@ def load_profile(
         **fields,
         seed=seed,
         fold=fold,
-        mode=mode,
-        num_labels=num_labels,
-        scanner_features=scanner_features,
-        findings=findings,
         profile=profile,
         allow_reduced_precision=allow_reduced_precision,
         allow_dirty=allow_dirty,
@@ -340,6 +367,7 @@ def training_arguments(
         "learning_rate": config.lr,
         "warmup_ratio": config.warmup_ratio,
         "per_device_train_batch_size": config.batch_size,
+        "gradient_accumulation_steps": config.gradient_accumulation_steps,
         # Evaluation keeps no activations for a backward pass, so twice the batch fits (B5).
         "per_device_eval_batch_size": 2 * config.batch_size,
         "num_train_epochs": config.epochs,
@@ -637,8 +665,9 @@ def main(argv: Sequence[str] | None = None) -> Path:
     parser.add_argument("--fold", required=True, type=_fold)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--epochs", type=int, default=None)
-    parser.add_argument("--num-labels", type=int, default=3, choices=(2, 3))
-    parser.add_argument("--mode", default="full", choices=("full", "description_only"))
+    # Default None: the profile's value (B10); a flag that contradicts the profile is refused.
+    parser.add_argument("--num-labels", type=int, default=None, choices=(2, 3))
+    parser.add_argument("--mode", default=None, choices=("full", "description_only"))
     parser.add_argument("--scanner-features", action="store_true")
     parser.add_argument(
         "--findings", type=Path, default=None, help="baseline_raw.json for --scanner-features"
