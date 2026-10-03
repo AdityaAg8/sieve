@@ -27,6 +27,10 @@ log = logging.getLogger("sieve.model.infer")
 
 FIXTURE_ID = "fixture"
 DEFAULT_MAX_LENGTH = 512
+#: Texts per forward pass. Scoring a whole split in one padded batch ran out of memory (H1).
+DEFAULT_BATCH_SIZE = 32
+#: `sieve.model.export`'s default output directory inside an artefact.
+ONNX_SUBDIR = "onnx"
 
 
 def _check_shape(probs: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
@@ -68,16 +72,38 @@ def _artefact(model_dir: Path) -> tuple[str, int, Thresholds]:
 
 
 def _onnx_graph(model_dir: Path) -> Path | None:
-    for name in (INT8_ONNX, FP32_ONNX):
-        if (model_dir / name).exists():
-            return model_dir / name
+    """The int8 graph, else the fp32 one: in `onnx/` (the default export) first, then the root."""
+    for directory in (model_dir / ONNX_SUBDIR, model_dir):
+        for name in (INT8_ONNX, FP32_ONNX):
+            if (directory / name).exists():
+                return directory / name
     return None
 
 
-class OnnxClassifier:
-    """Satisfies `sieve.protocols.Classifier`. The published serving path (PRD §11.7)."""
+def _chunks(texts: Sequence[str], batch_size: int) -> list[list[str]]:
+    if batch_size < 1:
+        raise ValueError(f"batch_size must be positive, got {batch_size}")
+    items = list(texts)
+    return [items[i : i + batch_size] for i in range(0, len(items), batch_size)]
 
-    def __init__(self, model_dir: Path, *, threads: int = 2) -> None:
+
+def _stack(blocks: list[npt.NDArray[np.float64]]) -> npt.NDArray[np.float64]:
+    if not blocks:
+        return np.zeros((0, len(LABELS)), dtype=np.float64)
+    return np.concatenate(blocks, axis=0)
+
+
+class OnnxClassifier:
+    """Satisfies `sieve.protocols.Classifier`. The published serving path (PRD §11.7).
+
+    The graph and its tokenizer come from `onnx/` when the default export wrote one there;
+    the operating point always comes from the artefact root's `sieve_config.json`, which is
+    the file `calibrate` writes (a copy inside `onnx/` can be stale).
+    """
+
+    def __init__(
+        self, model_dir: Path, *, threads: int = 2, batch_size: int = DEFAULT_BATCH_SIZE
+    ) -> None:
         import onnxruntime as ort  # type: ignore[import-untyped]
         from transformers import AutoTokenizer
 
@@ -94,26 +120,34 @@ class OnnxClassifier:
         )
         self._inputs = {i.name for i in self._session.get_inputs()}
         self._tokenizer: Any = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call]
-            str(self.model_dir)
+            str(graph.parent)
         )
+        self.batch_size = batch_size
 
     def predict_proba(self, texts: Sequence[str]) -> npt.NDArray[np.float64]:
-        encoded = self._tokenizer(
-            list(texts),
-            truncation=True,
-            max_length=self._max_length,
-            padding=True,
-            return_tensors="np",
-        )
-        feed = {k: v.astype(np.int64) for k, v in encoded.items() if k in self._inputs}
-        logits = self._session.run(None, feed)[0]
-        return _softmax(logits, self.thresholds.temperature)
+        blocks = []
+        for chunk in _chunks(texts, self.batch_size):
+            encoded = self._tokenizer(
+                chunk,
+                truncation=True,
+                max_length=self._max_length,
+                padding=True,
+                return_tensors="np",
+            )
+            feed = {k: v.astype(np.int64) for k, v in encoded.items() if k in self._inputs}
+            logits = self._session.run(None, feed)[0]
+            blocks.append(_softmax(logits, self.thresholds.temperature))
+        return _stack(blocks)
 
 
 class TorchClassifier:
-    """The reference implementation. Used to measure ONNX parity and when no graph exists."""
+    """The reference implementation. Used to measure ONNX parity and when no graph exists.
 
-    def __init__(self, model_dir: Path) -> None:
+    Scores in chunks of `batch_size` under `torch.inference_mode`, on CUDA when it is
+    available (`CUDA_VISIBLE_DEVICES=-1` keeps it on the CPU).
+    """
+
+    def __init__(self, model_dir: Path, *, batch_size: int = DEFAULT_BATCH_SIZE) -> None:
         import torch
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -123,19 +157,29 @@ class TorchClassifier:
         self._tokenizer: Any = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call]
             str(self.model_dir)
         )
-        self._model = AutoModelForSequenceClassification.from_pretrained(str(self.model_dir)).eval()
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self._model = (
+            AutoModelForSequenceClassification.from_pretrained(str(self.model_dir))
+            .to(self.device)
+            .eval()
+        )
+        self.batch_size = batch_size
 
     def predict_proba(self, texts: Sequence[str]) -> npt.NDArray[np.float64]:
-        encoded = self._tokenizer(
-            list(texts),
-            truncation=True,
-            max_length=self._max_length,
-            padding=True,
-            return_tensors="pt",
-        )
-        with self._torch.no_grad():
-            logits = self._model(**encoded).logits.numpy()
-        return _softmax(logits, self.thresholds.temperature)
+        blocks = []
+        for chunk in _chunks(texts, self.batch_size):
+            encoded = self._tokenizer(
+                chunk,
+                truncation=True,
+                max_length=self._max_length,
+                padding=True,
+                return_tensors="pt",
+            )
+            with self._torch.inference_mode():
+                batch = {k: v.to(self.device) for k, v in encoded.items()}
+                logits = self._model(**batch).logits.float().cpu().numpy()
+            blocks.append(_softmax(logits, self.thresholds.temperature))
+        return _stack(blocks)
 
 
 def load_classifier(

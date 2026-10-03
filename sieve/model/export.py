@@ -89,9 +89,10 @@ def export(model_dir: Path, out_dir: Path, *, quantize: bool = True) -> Path:
         )
 
     for name in _COPIED:
-        source = model_dir / name
-        if source.exists():
-            shutil.copyfile(source, out_dir / name)
+        source, target = model_dir / name, out_dir / name
+        # Exporting into the artefact itself: the file is already where it belongs.
+        if source.exists() and source.resolve() != target.resolve():
+            shutil.copyfile(source, target)
     return out_dir
 
 

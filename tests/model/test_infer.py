@@ -170,3 +170,80 @@ def test_load_classifier_raises_when_the_artefact_was_never_calibrated(tmp_path:
     (tmp_path / "model.onnx").write_bytes(b"not a real graph")
     with pytest.raises(ThresholdsMissing):
         load_classifier(str(tmp_path))
+
+
+# ------------------------------------------------------------- chunked scoring (H1)
+
+
+class _SpyTokenizer:
+    def __init__(self, inner: object) -> None:
+        self.inner, self.sizes = inner, []  # type: list[int]
+
+    def __call__(self, texts: list[str], **kwargs: object) -> object:
+        self.sizes.append(len(texts))
+        return self.inner(texts, **kwargs)  # type: ignore[operator]
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("kind", ["torch", "onnx"])
+def test_scoring_is_chunked_and_equals_the_unchunked_run(
+    calibrated_tiny: tuple[Path, Path], kind: str
+) -> None:
+    torch_dir, onnx_dir = calibrated_tiny
+    texts = _texts(50) + _texts(30)  # 80 texts: chunks of 32, 32, 16
+    model = TorchClassifier(torch_dir) if kind == "torch" else OnnxClassifier(onnx_dir)
+    whole = type(model)(torch_dir if kind == "torch" else onnx_dir, batch_size=len(texts))
+    spy = _SpyTokenizer(model._tokenizer)
+    model._tokenizer = spy
+    chunked = model.predict_proba(texts)
+    assert spy.sizes == [32, 32, 16] and max(spy.sizes) <= 32
+    # The int8 graph quantises activations with a per-batch scale, so its output moves with
+    # batch composition (0.0035 here); it is held to the export parity tolerance instead.
+    atol = 1e-5 if kind == "torch" else 0.01
+    assert np.allclose(chunked, whole.predict_proba(texts), atol=atol)
+
+
+def test_an_empty_batch_returns_an_empty_block() -> None:
+    from sieve.model.infer import _chunks, _stack
+
+    assert _chunks([], 32) == [] and _stack([]).shape == (0, 3)
+    with pytest.raises(ValueError, match="batch_size"):
+        _chunks(["a"], 0)
+
+
+@pytest.mark.slow
+def test_a_default_export_is_found_in_onnx_with_root_thresholds(
+    tmp_path: Path, calibrated_tiny: tuple[Path, Path]
+) -> None:
+    import shutil
+
+    from sieve.model.export import export
+
+    torch_dir, _ = calibrated_tiny
+    artefact = tmp_path / "artefact"
+    shutil.copytree(torch_dir, artefact)
+    export(artefact, artefact / "onnx", quantize=False)  # the export CLI's default target
+    root = artefact / "sieve_config.json"
+    config = json.loads(root.read_text(encoding="utf-8"))
+    config["t_low"] = 0.123  # calibrated after the export: only the root copy has it
+    root.write_text(json.dumps(config), encoding="utf-8", newline="\n")
+    model = load_classifier(str(artefact))
+    assert isinstance(model, OnnxClassifier)
+    assert model.thresholds.t_low == 0.123
+    assert model.predict_proba(_texts(3)).shape == (3, 3)
+
+
+@pytest.mark.slow
+def test_exporting_into_the_artefact_itself_skips_the_self_copy(
+    tmp_path: Path, calibrated_tiny: tuple[Path, Path]
+) -> None:
+    import shutil
+
+    from sieve.model.export import FP32_ONNX, export
+
+    torch_dir, _ = calibrated_tiny
+    artefact = tmp_path / "same"
+    shutil.copytree(torch_dir, artefact)
+    export(artefact, artefact, quantize=False)  # source == target: no SameFileError
+    assert (artefact / FP32_ONNX).exists()
+    assert isinstance(load_classifier(str(artefact)), OnnxClassifier)
