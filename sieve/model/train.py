@@ -145,7 +145,11 @@ class TrainConfig(BaseModel):
         return dict(TWO_CLASS_ID2LABEL) if self.num_labels == 2 else dict(ID2LABEL)
 
     def model_version(self) -> str:
-        return f"{self.profile}@{git_sha()}"
+        """`<family>-s<seed>[-f<fold>]@<sha>`: one string per artefact. Every seed of a profile
+        used to share `<profile>@<sha>`, and eval_final / report_final key their predictions on
+        it, so three seeds merged into one "model" (Z2 review)."""
+        fold = "" if self.fold == "all" else f"-f{self.fold}"
+        return f"{self.family or self.profile}-s{self.seed}{fold}@{git_sha()}"
 
     def training_command(self, corpus: Path, out_dir: Path) -> str:
         """The exact command that reproduces this artefact. The model card publishes it."""

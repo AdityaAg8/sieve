@@ -110,3 +110,18 @@ def test_eval_batch_is_twice_the_train_batch(tmp_path: Path) -> None:
     config = load_profile(CONFIG, "tiny", fold=0, seed=0)
     args = training_arguments(config, tmp_path, has_early=True)
     assert args.per_device_eval_batch_size == 2 * args.per_device_train_batch_size
+
+
+def test_every_seed_and_fold_has_its_own_model_version() -> None:
+    """Z2: `<profile>@<sha>` merged three seeds into one "model" in the sealed report."""
+    config = Path("bench/train.yaml")
+    versions = {
+        load_profile(config, profile, fold=fold, seed=seed, epochs=3 if fold == "all" else None)
+        .model_version()
+        .split("@")[0]
+        for profile in ("deberta", "deberta-nockpt")
+        for seed in (0, 1, 2)
+        for fold in ("all", 0)
+    }
+    assert "deberta-v3-base-s1" in versions and "deberta-v3-base-s1-f0" in versions
+    assert len(versions) == 6, "speed variants of one family share a version; seeds never do"

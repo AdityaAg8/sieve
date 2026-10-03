@@ -136,5 +136,5 @@ def test_the_dry_run_passes_on_cpu_with_the_tiny_artefact(
         json.loads(x)["fold"] == 0 for x in dev_corpus.read_text(encoding="utf-8").splitlines()
     )
     assert report["n_holdout"] == fold0 and report["dry_run"]["in_sample"] == []
-    assert report["headline_model"].startswith("tiny@")
+    assert report["headline_model"].startswith("tiny-s0-f0@")
     assert not (tmp_path / "test_opened.log").exists()

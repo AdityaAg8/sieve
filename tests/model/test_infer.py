@@ -152,7 +152,7 @@ def test_load_classifier_resolves_a_local_directory(
 @pytest.mark.slow
 def test_model_version_comes_from_the_artefact(calibrated_tiny: tuple[Path, Path]) -> None:
     _, onnx_dir = calibrated_tiny
-    assert OnnxClassifier(onnx_dir).model_version.startswith("tiny@")
+    assert OnnxClassifier(onnx_dir).model_version.startswith("tiny-s0-f0@")
 
 
 # ------------------------------------------------------------- there is no default threshold

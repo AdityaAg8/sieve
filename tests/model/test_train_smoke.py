@@ -323,7 +323,7 @@ def test_tiny_profile_fold_zero_writes_every_artefact_and_no_sealed_file(
     config = json.loads((out / "sieve_config.json").read_text(encoding="utf-8"))
     assert config["fold"] == 0 and config["seed"] == 0 and config["num_labels"] == 3
     assert config["temperature"] is None and config["t_low"] is None and config["t_high"] is None
-    assert config["model_version"].startswith("tiny@")
+    assert config["model_version"].startswith("tiny-s0-f0@")
 
     metrics = json.loads((out / "metrics.json").read_text(encoding="utf-8"))
     assert metrics["warmup_ratio"] == 0.06
