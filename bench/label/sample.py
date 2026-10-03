@@ -17,6 +17,10 @@ import numpy as np
 
 from sieve.types import CorpusRecord, Label
 
+DEV_AUDIT_SEED = 20261002
+DEV_AUDIT_N = 50
+REAL_SOURCES = ("public_repo", "wild_fp")
+
 
 def simple_random(records: list[CorpusRecord], n: int, seed: int) -> list[str]:
     """Draw `n` record ids uniformly without replacement. Reproducible for a seed."""
@@ -50,6 +54,17 @@ def stratified(records: list[CorpusRecord], n: int, seed: int) -> list[str]:
         chosen = rng.choice(len(ids), size=take, replace=False)
         out.extend(ids[int(i)] for i in chosen)
     return out
+
+
+def dev_audit_ids(
+    records: list[CorpusRecord], n: int = DEV_AUDIT_N, seed: int = DEV_AUDIT_SEED
+) -> list[str]:
+    """The dev-50 audit (training plan §4.3): a seeded simple random sample of real dev rows.
+
+    Dev only, so the audit that may stop training never touches a sealed row.
+    """
+    pool = [r for r in records if r.split == "dev" and r.source in REAL_SOURCES]
+    return simple_random(pool, n, seed)
 
 
 def retest(

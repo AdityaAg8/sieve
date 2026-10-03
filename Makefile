@@ -2,7 +2,7 @@ ifeq ($(OS),Windows_NT)
 SHELL := C:/Program Files/Git/usr/bin/bash.exe
 endif
 
-.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence
+.PHONY: help setup lint test e2e schemas up down serve baseline train train-all best-epoch calibrate bench eval-final readme corpus corpus-stats plan-evidence label-dev-audit label-test-id
 
 .DEFAULT_GOAL := help
 
@@ -143,3 +143,11 @@ corpus-stats:  ## corpus statistics report
 plan-evidence:  ## regenerate the training plan's measured numbers (bench/data/external/plan_evidence/)
 	uv run python -m bench.collect.external
 	CUDA_VISIBLE_DEVICES=-1 uv run python -m bench.analysis.plan_evidence all
+
+# Blind human labelling (training plan F4, section 4.2). Both sessions hide the label, the id and
+# the provenance, present rows in a seeded order, and save as you go (`w`); quit with `q`.
+label-dev-audit:  ## blind-label the 50 seeded real dev rows of the dev-50 audit (~1.7 h)
+	uv run python -m bench.label.tui bench/data/corpus.jsonl --blind --dev-audit
+
+label-test-id:  ## blind-label the 104 real test-ID rows into bench/data/holdout_gold.jsonl (~3.5 h)
+	uv run python -m bench.label.holdout_gold

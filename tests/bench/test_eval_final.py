@@ -93,6 +93,9 @@ def test_nothing_else_in_the_repository_opens_the_holdout() -> None:
         "bench/split/split.py",
         # The frozen assignment split.py honours (training plan A4): server names, never rows.
         "bench/data/split_map.json",
+        # Blind human labelling of the real holdout rows (training plan F4): labels only,
+        # imports no model code, scores nothing; its gold labels are report-only.
+        "bench/label/holdout_gold.py",
         # Produces `eval_only` rows (L1's real_poisoned collector).
         "bench/collect/real_poisoned.py",
         # L2's own gate: refuses to score a sealed row.

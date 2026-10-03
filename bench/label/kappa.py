@@ -55,7 +55,8 @@ def _load_intent(path: Path) -> dict[str, Label]:
     for line in path.read_text(encoding="utf-8").splitlines():
         if line.strip():
             entry = json.loads(line)
-            out[entry["id"]] = entry["intended_label"]
+            # First wins (F40): a later line for the same id can only be a resume or retest.
+            out.setdefault(entry["id"], entry["intended_label"])
     return out
 
 

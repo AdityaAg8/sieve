@@ -8,14 +8,21 @@ navigation, which collides on `p`. The seven-letter sub-label set is a mnemonic 
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 from textual.app import App, ComposeResult
 from textual.containers import Vertical
 from textual.widgets import Footer, Header, Input, Static
 
-from bench.label.session import DEFAULT_INTENT_PATH, IncompleteLabel, LabelSession
-from sieve.types import Concealment, Difficulty, Label, SubLabel
+from bench.label.sample import dev_audit_ids
+from bench.label.session import (
+    DEFAULT_INTENT_PATH,
+    DEFAULT_ORDER_SEED,
+    IncompleteLabel,
+    LabelSession,
+)
+from sieve.types import Concealment, CorpusRecord, Difficulty, Label, SubLabel
 
 LABEL_KEYS: dict[str, Label] = {
     "1": "benign",
@@ -132,7 +139,7 @@ class LabelApp(App[None]):
             self._refresh("saved")
 
 
-def main(argv: list[str] | None = None) -> int:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="python -m bench.label.tui",
         description="Label a JSONL corpus by keyboard. Blind mode hides the generator's intent.",
@@ -142,12 +149,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--blind",
         action="store_true",
-        help="hide label, tier, sub-labels and provenance from the pane",
+        help="hide label, tier, sub-labels and provenance; present rows in a seeded order",
     )
     parser.add_argument(
         "--second",
         action="store_true",
-        help="second-annotator pass: write second_label and never touch label",
+        help="second-annotator pass: write second_label and never touch label (implies --blind)",
     )
     parser.add_argument(
         "--intent-path",
@@ -155,15 +162,45 @@ def main(argv: list[str] | None = None) -> int:
         default=DEFAULT_INTENT_PATH,
         help="sidecar for the generator's intent on blind synthetic rows",
     )
+    subset = parser.add_mutually_exclusive_group()
+    subset.add_argument("--ids-file", type=Path, help="label only the ids in this JSON list")
+    subset.add_argument(
+        "--dev-audit",
+        action="store_true",
+        help="label only the dev-50 audit sample, drawn from --split-corpus (training plan §4.3)",
+    )
+    parser.add_argument("--split-corpus", type=Path, default=Path("bench/data/labelled.jsonl"))
+    parser.add_argument("--order-seed", type=int, default=DEFAULT_ORDER_SEED)
     args = parser.parse_args(argv)
-    session = LabelSession(
+    # F42: a second annotator who can see the first one's label is not a second annotator.
+    args.blind = args.blind or args.second
+    return args
+
+
+def build_session(args: argparse.Namespace) -> LabelSession:
+    ids: list[str] | None = None
+    if args.ids_file:
+        ids = list(json.loads(args.ids_file.read_text(encoding="utf-8")))
+    elif args.dev_audit:
+        records = [
+            CorpusRecord.model_validate_json(line)
+            for line in args.split_corpus.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        ids = dev_audit_ids(records)
+    return LabelSession(
         args.corpus,
         labeller=args.labeller,
         blind=args.blind,
         second=args.second,
         intent_path=args.intent_path,
+        ids=ids,
+        order_seed=args.order_seed,
     )
-    LabelApp(session).run()
+
+
+def main(argv: list[str] | None = None) -> int:
+    LabelApp(build_session(parse_args(argv))).run()
     return 0
 
 
