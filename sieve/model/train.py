@@ -381,11 +381,11 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         AutoModelForSequenceClassification,
         AutoTokenizer,
         EarlyStoppingCallback,
-        Trainer,
         set_seed,
     )
 
     from sieve.eval.metrics import macro_f1
+    from sieve.model.weighted_trainer import WeightedTrainer
 
     require_clean_tree(config.profile, allow_dirty=config.allow_dirty)
     started = time.monotonic()
@@ -486,33 +486,12 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
         else None
     )
 
-    class WeightedTrainer(Trainer):
-        def compute_loss(
-            self,
-            model: Any,
-            inputs: dict[str, Any],
-            return_outputs: bool = False,
-            num_items_in_batch: Any = None,
-        ) -> Any:
-            labels = inputs.pop("labels")
-            outputs = model(**inputs)
-            logits = outputs.get("logits")
-            reduction = "sum" if num_items_in_batch is not None else "mean"
-            loss_fct = torch.nn.CrossEntropyLoss(
-                weight=None
-                if weights is None
-                else torch.tensor(weights, device=logits.device, dtype=logits.dtype),
-                reduction=reduction,
-            )
-            loss = loss_fct(logits.view(-1, config.num_labels), labels.view(-1))
-            if num_items_in_batch is not None:
-                loss = loss / num_items_in_batch
-            return (loss, outputs) if return_outputs else loss
-
     has_early = "early_stop" in tokenised
     checkpoints = out_dir / "_checkpoints"
     args = training_arguments(config, checkpoints, has_early=has_early)
     trainer = WeightedTrainer(
+        class_weights=weights,
+        num_labels=config.num_labels,
         model=model,
         args=args,
         train_dataset=tokenised["train"],
@@ -530,7 +509,8 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
     train_output = trainer.train()
     train_seconds = float(train_output.metrics["train_runtime"])
     # Real (unpadded) tokens the optimiser saw: every training row once per epoch run.
-    real_tokens = sum(len(ids) for ids in tokenised["train"]["input_ids"]) * trainer.state.epoch
+    epochs_run = trainer.state.epoch or 0.0
+    real_tokens = sum(len(ids) for ids in tokenised["train"]["input_ids"]) * epochs_run
 
     out_dir.mkdir(parents=True, exist_ok=True)
     trainer.save_model(str(out_dir))
