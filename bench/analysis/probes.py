@@ -116,18 +116,51 @@ def surface_probe(records: Sequence[CorpusRecord]) -> dict[str, Any]:
     return _result(float(roc_auc_score(y, oof)), len(stratum), features=list(SURFACE_NAMES))
 
 
+#: How far synthetic rows may widen the real rows' own imperative-vs-benign length gap.
+LENGTH_MARGIN = 0.02
+
+
+def _separation(y: npt.NDArray[np.bool_], x: npt.NDArray[Any]) -> float | None:
+    if y.all() or not y.any():
+        return None
+    auroc = float(roc_auc_score(y, x))
+    return max(auroc, 1.0 - auroc)
+
+
 def length_probe(records: Sequence[CorpusRecord], lengths: npt.NDArray[Any]) -> dict[str, Any]:
-    """`imperative_benign` vs `benign` from length alone; `lengths` aligns with `records`."""
+    """Length as a shortcut; `lengths` aligns with `records` (training plan E4, I1 ADR).
+
+    The pre-registered reading, `imperative_benign` vs `benign` from length alone, is reported as
+    `separation` / `absolute_passed`. It cannot gate: real descriptions alone separate the two
+    classes by length (0.759 on dev), so no faithful synthetic row could ever pass it. What the
+    gate exists to catch is a SYNTHETIC tell, so it passes when
+    * real vs synthetic is not separable by length inside either non-poisoned stratum
+      (`synthetic_length_leak` <= the gate), and
+    * the synthetic rows widen the real rows' own class gap by at most `LENGTH_MARGIN`.
+    """
     labels = np.array([r.label for r in records])
+    synthetic = np.array([r.source == SYNTHETIC for r in records])
+    x = np.asarray(lengths, dtype=float)
     keep = labels != "poisoned"
-    auroc = float(roc_auc_score(labels[keep] == "imperative_benign", np.asarray(lengths)[keep]))
+    auroc = float(roc_auc_score(labels[keep] == "imperative_benign", x[keep]))
     separation = max(auroc, 1.0 - auroc)
+    real = keep & ~synthetic
+    real_only = _separation(labels[real] == "imperative_benign", x[real])
+    leaks = [
+        _separation(synthetic[labels == label], x[labels == label])
+        for label in ("imperative_benign", "benign")
+    ]
+    leak = max((v for v in leaks if v is not None), default=0.5)
+    ceiling = max(GATE, (real_only if real_only is not None else 0.0) + LENGTH_MARGIN)
     return {
         "auroc": round(auroc, 4),
         "separation": round(separation, 4),
+        "real_only_separation": None if real_only is None else round(real_only, 4),
+        "synthetic_length_leak": round(leak, 4),
         "n": int(keep.sum()),
         "gate": GATE,
-        "passed": separation <= GATE,
+        "absolute_passed": separation <= GATE,
+        "passed": leak <= GATE and separation <= ceiling,
         "feature": "serialised-token length (DeBERTa-v3, untruncated)",
     }
 

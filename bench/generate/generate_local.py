@@ -80,6 +80,14 @@ _CODE = re.compile(
 
 
 RULE_NAMES_FILE = Path(__file__).parent / "scanner_rule_names.json"
+#: Written by the gate's one tightening pass (training plan E4): extra banned n-grams.
+EXTRA_BANNED_FILE = Path(__file__).parent / "lint_banned_extra.json"
+
+
+def _extra_banned() -> list[str]:
+    if not EXTRA_BANNED_FILE.exists():
+        return []
+    return [str(g) for g in json.loads(EXTRA_BANNED_FILE.read_text(encoding="utf-8"))["ngrams"]]
 
 
 def _forbidden_terms() -> frozenset[str]:
@@ -244,6 +252,9 @@ def lint(payload: str, *, split: bool) -> list[str]:
     for name, pattern in _BANNED:
         if re.search(pattern, text, re.IGNORECASE):
             errors.append(f"banned phrase: {name!r}")
+    for gram in _extra_banned():
+        if re.search(rf"\b{re.escape(gram)}\b", text, re.IGNORECASE):
+            errors.append(f"banned phrase (gate tightening): {gram!r}")
     if _CODE.search(text):
         errors.append("code: no inline code or shell commands, tool metadata prose only")
     if _JUSTIFICATION.search(text):
@@ -344,7 +355,14 @@ class Paths:
     prompts: Path
 
 
-def run(client: Client, paths: Paths, *, seed: int, limit: int | None) -> dict[str, Any]:
+def run(
+    client: Client,
+    paths: Paths,
+    *,
+    seed: int,
+    limit: int | None,
+    only_labels: set[str] | None = None,
+) -> dict[str, Any]:
     """The batch driver (training plan E3): every plan row (or the first `limit`), its rendered
     prompt written to `paths.prompts/<id>.md`, the payload file written when all rows ran.
     Deterministic for a deterministic client: a re-run is byte-identical."""
@@ -361,9 +379,22 @@ def run(client: Client, paths: Paths, *, seed: int, limit: int | None) -> dict[s
     log = RawLog(paths.raw_log)
     paths.prompts.mkdir(parents=True, exist_ok=True)
     results: dict[str, dict[str, Any]] = {}
+    if only_labels is not None:
+        # The gate's tightening pass: every other row keeps the payload it already has.
+        for line in paths.out.read_text(encoding="utf-8").splitlines():
+            entry = json.loads(line)
+            kept = entry["payload"] is not None
+            results[f"sb-syn-{entry['plan_index']:04d}"] = {
+                "status": "accepted" if kept else "dropped",
+                "payload": entry["payload"],
+                "reason": entry.get("dropped"),
+                "model": entry["generator_model"],
+            }
     started, fresh = time.perf_counter(), 0
     for i in range(len(plan) if limit is None else min(limit, len(plan))):
         row_id = f"sb-syn-{i:04d}"
+        if only_labels is not None and plan[i]["label"] not in only_labels:
+            continue
         prompt = build_prompt(plan[i], hosts, pool, row_id=row_id, split_of=split_of, seed=seed)
         (paths.prompts / f"{row_id}.md").write_text(prompt, encoding="utf-8", newline="\n")
         model = MODELS[family_of(hosts[plan[i]["host_id"]].server_name)]
@@ -372,8 +403,12 @@ def run(client: Client, paths: Paths, *, seed: int, limit: int | None) -> dict[s
             client, plan[i], row_id, hosts, pool, split_of, log=log, seed=seed
         )
         print(f"{row_id} {results[row_id]['family']:5} {results[row_id]['status']}", flush=True)
+    regenerated = {f"sb-syn-{i:04d}" for i in range(len(plan))
+                   if only_labels is None or plan[i]["label"] in only_labels}  # fmt: skip
     elapsed = time.perf_counter() - started
-    dropped = sorted(k for k, v in results.items() if v["status"] != "accepted")
+    dropped = sorted(
+        k for k, v in results.items() if v["status"] != "accepted" and k in regenerated
+    )
     summary: dict[str, Any] = {"rows": len(results), "dropped": dropped}
     if fresh:
         per_row = elapsed / fresh
@@ -399,6 +434,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--prompts", type=Path, default=Path("bench/data/synthetic/prompts_rendered")
     )
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--only-labels",
+        nargs="+",
+        default=None,
+        help="the gate's tightening pass: regenerate these labels, keep every other payload",
+    )
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--bench", type=int, metavar="N", help="time the first N rows")
     mode.add_argument("--all", action="store_true", help="every model-authored plan row")
@@ -413,7 +454,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         raw_log=ns.raw_log,
         prompts=ns.prompts,
     )
-    summary = run(client, paths, seed=ns.seed, limit=ns.bench)
+    only = set(ns.only_labels) if ns.only_labels else None
+    summary = run(client, paths, seed=ns.seed, limit=ns.bench, only_labels=only)
     print(json.dumps(summary))
     return 0
 

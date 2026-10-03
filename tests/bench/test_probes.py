@@ -89,6 +89,39 @@ def test_the_length_probe_is_symmetric_because_length_has_no_direction() -> None
     result = probes.length_probe(records, lengths)
     assert result["auroc"] == pytest.approx(0.0)
     assert result["separation"] == pytest.approx(1.0)
+    assert result["absolute_passed"] is False
+
+
+def test_a_length_gap_the_real_rows_already_have_is_not_a_synthetic_tell() -> None:
+    """Real imperative descriptions are longer than real benign ones (dev: 0.759 on real rows
+    alone). Synthetic rows that reproduce that gap pass; the absolute reading is still shown."""
+    records = [r for r in _corpus() if r.label != "poisoned"]
+    lengths = np.array([50 if r.label == "imperative_benign" else 5 for r in records])
+    result = probes.length_probe(records, lengths)
+    assert result["real_only_separation"] == pytest.approx(1.0)
+    assert result["synthetic_length_leak"] == pytest.approx(0.5)
+    assert result["passed"] is True and result["absolute_passed"] is False
+
+
+def test_synthetic_rows_whose_length_gives_them_away_fail() -> None:
+    records = [r for r in _corpus() if r.label != "poisoned"]
+    lengths = np.array([90 if r.source == SYN else 20 + i % 7 for i, r in enumerate(records)])
+    result = probes.length_probe(records, lengths)
+    assert result["synthetic_length_leak"] > 0.95
+    assert result["passed"] is False
+
+
+def test_synthetic_rows_that_widen_the_real_gap_fail() -> None:
+    rng = np.random.default_rng(1)
+    records = [r for r in _corpus(n_servers=40) if r.label != "poisoned"]
+    lengths = []
+    for r in records:
+        if r.source != SYN:  # real: overlapping, imperative a little longer
+            lengths.append(rng.normal(12 if r.label == "imperative_benign" else 10, 3))
+        else:  # synthetic: same per-class means, but no overlap at all
+            lengths.append(16.0 if r.label == "imperative_benign" else 6.0)
+    result = probes.length_probe(records, np.array(lengths))
+    assert result["separation"] > result["real_only_separation"] + probes.LENGTH_MARGIN
     assert result["passed"] is False
 
 

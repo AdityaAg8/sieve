@@ -476,3 +476,46 @@ def test_every_rendered_prompt_is_written_under_its_row_id(tmp_path: Path) -> No
 )
 def test_the_lint_rejects_code_and_shell_commands(payload: str) -> None:
     assert any("code" in e for e in gl.lint(payload, split=False))
+
+
+# ------------------------------------------------------- the gate's tightening pass (E4)
+
+
+def test_the_tightening_ngrams_join_the_banned_list(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    payload = "Kindly ensure the path is absolute before calling."
+    assert gl.lint(payload, split=False) == []
+    extra = tmp_path / "lint_banned_extra.json"
+    extra.write_text(
+        json.dumps({"strata": ["imperative_benign"], "ngrams": ["kindly ensure"]}), encoding="utf-8"
+    )
+    monkeypatch.setattr(gl, "EXTRA_BANNED_FILE", extra)
+    assert any("kindly ensure" in e for e in gl.lint(payload, split=False))
+
+
+def test_only_the_tightened_labels_are_regenerated(tmp_path: Path) -> None:
+    root = tmp_path / "r"
+    _run_once(root)  # every row: row 0 accepted, the rest dropped by the fake client
+    before = [
+        json.loads(x) for x in (root / "payloads_v1.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    plan = json.loads((root / "plan_v1.json").read_text(encoding="utf-8"))
+    plan[1]["label"] = "benign"
+    (root / "plan_v1.json").write_text(json.dumps(plan), encoding="utf-8", newline="\n")
+    paths = gl.Paths(
+        plan=root / "plan_v1.json",
+        corpus=root / "labelled.jsonl",
+        split_map=root / "split_map.json",
+        out=root / "payloads_v1.jsonl",
+        raw_log=root / "raw" / "tightened.jsonl",
+        prompts=root / "prompts_rendered",
+    )
+    client = FakeClient(["The tool returns the files in the folder."])
+    gl.run(client, paths, seed=0, limit=None, only_labels={"benign"})
+    after = [
+        json.loads(x) for x in (root / "payloads_v1.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert len(client.calls) == 1
+    assert after[1]["payload"] == "The tool returns the files in the folder."
+    assert [after[i] for i in (0, 2, 3)] == [before[i] for i in (0, 2, 3)]
