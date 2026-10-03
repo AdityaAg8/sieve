@@ -245,6 +245,11 @@ class CorpusRecord(BaseModel):
     split: Split | None = None
     fold: int | None = Field(default=None, ge=0, le=4)  # 5-fold index; only for split == "dev"
 
+    @property
+    def is_synthetic(self) -> bool:
+        """Generated text, whatever the source says: derived, never stored (training plan G5)."""
+        return self.source == "synthetic_mutation" or self.generator_model is not None
+
     def to_tool_record(self) -> ToolRecord:
         return ToolRecord(
             id=self.id,
