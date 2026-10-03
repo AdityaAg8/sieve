@@ -31,7 +31,7 @@ from pydantic import BaseModel, ConfigDict
 
 from sieve.eval.metrics import (
     cluster_bootstrap_ci,
-    macro_f1,
+    macro_f1_present,
     mcnemar_exact,
     paired_bootstrap_diff,
     precision_recall_fpr,
@@ -566,8 +566,6 @@ def evaluate_row(
     n_boot: int,
 ) -> dict[str, Any]:
     records = inputs.records
-    truth = [r.label for r in records]
-    groups = [r.server_name for r in records]
 
     row_seeds = tuple(seeds) if spec.seeded else (0,)
     if spec.seeded and len(row_seeds) < 3:
@@ -583,40 +581,19 @@ def evaluate_row(
             raise MatrixError(f"row {spec.row} needs a judge but no judge factory was supplied")
         judge = judge_factory(spec.judge)
 
-    per_seed: list[Scored] = [
-        score_row(
-            spec,
-            records,
-            inputs,
-            classifier_factory=classifier_factory,
-            seed=seed,
-            n_boot=n_boot,
+    # Training plan D5: every thresholded number is computed per seed, at THAT seed's own
+    # operating point, then reported as the mean across seeds with the sample std (ddof=1) and
+    # the per-seed values. Reading every number off the first seed's thresholds hid the seed
+    # spread of everything except macro-F1.
+    blocks = []
+    for seed in row_seeds:
+        scored = score_row(
+            spec, records, inputs, classifier_factory=classifier_factory, seed=seed, n_boot=n_boot
         )
-        for seed in row_seeds
-    ]
-    macro = [
-        macro_f1(
-            [s if s in scored.head_labels else _collapse(s) for s in truth],
-            scored.predicted,
-            labels=list(scored.head_labels),
-        )
-        for scored in per_seed
-        if scored.predicted is not None
-    ]
+        blocks.append(_seed_block(spec, records, inputs, scored, judge, seed=seed, n_boot=n_boot))
 
-    # Every reported number is from the FIRST seed's operating point; the seed spread lives in
-    # macro_f1_std, which is what "mean +/- std across seeds" means for a thresholded metric.
-    head = per_seed[0]
-    verdicts = pipeline_verdicts(records, head.scores, head.thresholds, judge)
-    confirmed = _confirmed_flags(verdicts)
-    band = np.asarray(head.scores)
-    routing_rate = float(np.mean((band >= head.thresholds.t_low) & (band < head.thresholds.t_high)))
-
-    real = [i for i, r in enumerate(records) if r.source in REAL_SOURCES]
-    baseline_flags = [
-        1.0 if inputs.baseline_rows.get(r.id, {}).get("flagged") else 0.0 for r in records
-    ]
-
+    macro = [b["macro_f1"] for b in blocks if b["macro_f1"] is not None]
+    present = sorted({c for b in blocks for c in b["classes_present"]})
     result: dict[str, Any] = {
         "row": spec.row,
         "name": spec.name,
@@ -627,15 +604,80 @@ def evaluate_row(
         "scanner_features": spec.scanner_features,
         "seeds": list(row_seeds),
         "n": len(records),
-        "t_low": head.thresholds.t_low,
+        **{key: _aggregate([b[key] for b in blocks]) for key in _SEED_KEYS},
+        "macro_f1_mean": float(np.mean(macro)) if macro else None,
+        "macro_f1_std": _sample_std(macro),
+        "macro_f1_per_seed": macro,
+        "classes_present": present,
+        "cost_usd_per_50": (
+            _cost_per_50(float(np.mean([b["routing_rate"] for b in blocks])), inputs.judge_usage)
+            if judge
+            else None
+        ),
+        "p95_ms": _p95_ms(spec, row_seeds),
+        "breakdown_of": spec.breakdown_of,
+        "note": spec.note,
+        "per_seed": blocks,
+    }
+    if spec.classifier == "unicode_hygiene":
+        result["note"] = spec.note or HYGIENE_NOTE
+    return result
+
+
+#: The per-seed keys `evaluate_row` aggregates across seeds.
+_SEED_KEYS: tuple[str, ...] = (
+    "t_low",
+    "t_high",
+    "fpr_stage1_at_t_low",
+    "fpr_pipeline",
+    "oof_recall_at_t_low",
+    "fp_reduction_vs_baseline",
+    "fp_reduction_all_sources",
+    "routing_rate",
+    "per_tier",
+    "per_concealment",
+    "per_source",
+    "minimal_pair_accuracy",
+)
+
+
+def _seed_block(
+    spec: RowSpec,
+    records: Sequence[CorpusRecord],
+    inputs: Inputs,
+    head: Scored,
+    judge: Judge | None,
+    *,
+    seed: int,
+    n_boot: int,
+) -> dict[str, Any]:
+    """Everything thresholded for one seed, at that seed's own thresholds."""
+    truth = [r.label for r in records]
+    groups = [r.server_name for r in records]
+    verdicts = pipeline_verdicts(records, head.scores, head.thresholds, judge)
+    confirmed = _confirmed_flags(verdicts)
+    band = np.asarray(head.scores)
+    routing_rate = float(np.mean((band >= head.thresholds.t_low) & (band < head.thresholds.t_high)))
+    real = [i for i, r in enumerate(records) if r.source in REAL_SOURCES]
+    baseline_flags = [
+        1.0 if inputs.baseline_rows.get(r.id, {}).get("flagged") else 0.0 for r in records
+    ]
+    macro: float | None = None
+    present: list[str] = []
+    if head.predicted is not None:
+        macro, present = macro_f1_present(
+            [s if s in head.head_labels else _collapse(s) for s in truth],
+            head.predicted,
+            labels=list(head.head_labels),
+        )
+    t_low = head.thresholds.t_low
+    block: dict[str, Any] = {
+        "seed": seed,
+        "t_low": t_low,
         "t_high": head.thresholds.t_high,
-        "fpr_stage1_at_t_low": _ci(
-            "fpr", truth, head.scores, groups, head.thresholds.t_low, n_boot
-        ),
+        "fpr_stage1_at_t_low": _ci("fpr", truth, head.scores, groups, t_low, n_boot),
         "fpr_pipeline": _ci("fpr", truth, confirmed, groups, BINARY_DECISION, n_boot),
-        "oof_recall_at_t_low": _ci(
-            "recall", truth, head.scores, groups, head.thresholds.t_low, n_boot
-        ),
+        "oof_recall_at_t_low": _ci("recall", truth, head.scores, groups, t_low, n_boot),
         "fp_reduction_vs_baseline": _fp_reduction(
             [truth[i] for i in real],
             [confirmed[i] for i in real],
@@ -645,32 +687,23 @@ def evaluate_row(
         ),
         "fp_reduction_all_sources": _fp_reduction(truth, confirmed, baseline_flags, groups, n_boot),
         "routing_rate": routing_rate,
-        "macro_f1_mean": float(np.mean(macro)) if macro else None,
-        "macro_f1_std": float(np.std(macro)) if macro else None,
+        "macro_f1": macro,
+        "classes_present": present,
         "per_tier": breakdown(
-            records,
-            truth,
-            head.scores,
-            confirmed,
-            head.thresholds.t_low,
-            lambda r: r.difficulty or "unscored",
+            records, truth, head.scores, confirmed, t_low, lambda r: r.difficulty or "unscored"
         ),
         "per_concealment": breakdown(
-            records, truth, head.scores, confirmed, head.thresholds.t_low, lambda r: r.concealment
+            records, truth, head.scores, confirmed, t_low, lambda r: r.concealment
         ),
         "per_source": breakdown(
             records,
             truth,
             head.scores,
             confirmed,
-            head.thresholds.t_low,
+            t_low,
             lambda r: f"{r.source}/{r.generator_model or 'none'}",
         ),
         "minimal_pair_accuracy": None,
-        "cost_usd_per_50": _cost_per_50(routing_rate, inputs.judge_usage) if judge else None,
-        "p95_ms": _p95_ms(spec, row_seeds),
-        "breakdown_of": spec.breakdown_of,
-        "note": spec.note,
     }
     if spec.minimal_pairs:
         if inputs.minimal_pairs is None:
@@ -683,12 +716,48 @@ def evaluate_row(
                 for r, c in zip(records, confirmed, strict=True)
             }
         )
-        result["minimal_pair_accuracy"] = minimal_pair_accuracy(
+        block["minimal_pair_accuracy"] = minimal_pair_accuracy(
             inputs.minimal_pairs, predicted_by_id
         )
-    if spec.classifier == "unicode_hygiene":
-        result["note"] = spec.note or HYGIENE_NOTE
-    return result
+    return block
+
+
+def _sample_std(values: Sequence[float]) -> float | None:
+    """The sample std across seeds (ddof=1); None for fewer than two values."""
+    return float(np.std(values, ddof=1)) if len(values) >= 2 else None
+
+
+def _aggregate(values: Sequence[Any]) -> Any:
+    """The across-seed summary of one key's per-seed values (all of one shape).
+
+    * a number: the mean;
+    * an interval dict (`point`/`lo`/`hi`): `point` and the bounds averaged over seeds, plus
+      `std` (sample std of the per-seed points) and `per_seed` (the points). `lo`/`hi` are the
+      seeds' cluster-bootstrap intervals averaged: the typical interval of one model, while
+      `std` is the spread between models;
+    * any other dict: aggregated key by key (breakdowns);
+    * None everywhere: None. A McNemar p-value takes the largest (most conservative) seed.
+    """
+    present = [v for v in values if v is not None]
+    if not present:
+        return None
+    first = present[0]
+    if isinstance(first, dict):
+        keys = list(first)
+        out = {k: _aggregate_key(k, [v.get(k) for v in present]) for k in keys}
+        if "point" in first:
+            points = [v["point"] for v in present if v.get("point") is not None]
+            out["std"] = _sample_std(points)
+            out["per_seed"] = points
+        return out
+    return float(np.mean(present))
+
+
+def _aggregate_key(key: str, values: Sequence[Any]) -> Any:
+    numbers = [v for v in values if v is not None]
+    if key == "mcnemar_p" and numbers:
+        return float(max(numbers))
+    return _aggregate(values)
 
 
 def _collapse(label: str) -> str:

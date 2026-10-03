@@ -539,3 +539,14 @@ def _written_sha(results: Path) -> str:
     """The SHA the real `append_log_line` recorded, so the card's gate is exercised for real."""
     line = (results / "test_opened.log").read_text(encoding="utf-8").splitlines()[0]
     return str(json.loads(line)["git_sha"])
+
+
+def test_a_single_seed_spread_is_written_as_undefined_not_zero() -> None:
+    """D5: one seed has no sample std (ddof=1); the card says so instead of crashing."""
+    from sieve.model.push import _mean_std, _selection_table
+
+    assert "± n/a" in (_mean_std({"macro_f1_mean": 0.9, "macro_f1_std": None, "seeds": [0]}) or "")
+    table = _selection_table(
+        {"per_architecture": {"x": {"macro_f1_mean": 0.9, "macro_f1_std": None, "seeds": 1}}}
+    )
+    assert table is not None and "± n/a" in table

@@ -71,11 +71,16 @@ def _interval(block: Mapping[str, Any] | None) -> str | None:
     return f"{block['point']:.4f} (95% CI {block['lo']:.4f}–{block['hi']:.4f})"
 
 
+def _spread(std: float | None) -> str:
+    """A sample std (ddof=1) is undefined for one seed; say so rather than print 0."""
+    return "n/a" if std is None else f"{std:.4f}"
+
+
 def _mean_std(row: Mapping[str, Any]) -> str | None:
     mean, std = row.get("macro_f1_mean"), row.get("macro_f1_std")
     if mean is None:
         return None
-    return f"{mean:.4f} ± {std:.4f} over seeds {row.get('seeds')}"
+    return f"{mean:.4f} ± {_spread(std)} over seeds {row.get('seeds')}"
 
 
 def _table(breakdown: Mapping[str, Mapping[str, float]] | None) -> str | None:
@@ -96,7 +101,7 @@ def _selection_table(selection: Mapping[str, Any]) -> str | None:
     lines = ["| Architecture | Pooled OOF macro-F1 | Seeds | p95 ms |", "|---|---|---|---|"]
     for name, values in per.items():
         lines.append(
-            f"| `{name}` | {values['macro_f1_mean']:.4f} ± {values['macro_f1_std']:.4f} | "
+            f"| `{name}` | {values['macro_f1_mean']:.4f} ± {_spread(values['macro_f1_std'])} | "
             f"{values['seeds']} | {values.get('p95_ms')} |"
         )
     return "\n".join(lines)

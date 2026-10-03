@@ -58,7 +58,8 @@ class Architecture:
 
     @property
     def std(self) -> float:
-        return float(np.std(self.macro_f1_per_seed))
+        # A handful of seeds is a sample of training runs: the sample std (ddof=1, plan D5).
+        return float(np.std(self.macro_f1_per_seed, ddof=1))
 
     def as_dict(self) -> dict[str, Any]:
         return {

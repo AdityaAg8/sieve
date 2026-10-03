@@ -230,3 +230,13 @@ def test_the_losing_architecture_is_reported_in_full(tmp_path: Path) -> None:
     loser = payload["per_architecture"]["modernbert-base"]
     assert len(loser["macro_f1_per_seed"]) == 3
     assert loser["macro_f1_std"] > 0
+
+
+def test_the_seed_spread_is_the_sample_std() -> None:
+    """D5: three seeds are a sample of training runs, so std uses ddof=1."""
+    import numpy as np
+
+    from sieve.model.select import Architecture
+
+    arch = Architecture(name="x", macro_f1_per_seed=[0.80, 0.82, 0.87], p95_ms=None)
+    assert arch.std == pytest.approx(np.std([0.80, 0.82, 0.87], ddof=1))

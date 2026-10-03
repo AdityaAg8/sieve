@@ -99,6 +99,29 @@ def macro_f1(y_true: Sequence[str], y_pred: Sequence[str], labels: Sequence[str]
     return float(np.mean(f1s))
 
 
+def macro_f1_present(
+    y_true: Sequence[str], y_pred: Sequence[str], labels: Sequence[str] = LABELS
+) -> tuple[float, list[str]]:
+    """Macro-F1 over the classes present in `y_true` only, and which classes those were.
+
+    Training plan D5: `macro_f1` averages over every label, so a class absent from a slice
+    entered the mean as F1 = 0 and dragged it down for a reason that is not the model's.
+    """
+    present = [label for label in labels if label in set(y_true)]
+    if not present:
+        return float("nan"), []
+    cm = confusion_matrix(y_true, y_pred, labels)
+    f1s = []
+    for i, label in enumerate(labels):
+        if label not in present:
+            continue
+        tp = cm[i, i]
+        p = _safe_div(tp, cm[:, i].sum())
+        r = _safe_div(tp, cm[i, :].sum())
+        f1s.append(_safe_div(2 * p * r, p + r))
+    return float(np.mean(f1s)), present
+
+
 def average_precision(
     y_true: Sequence[str], y_score: Sequence[float], positive: str = "poisoned"
 ) -> float:

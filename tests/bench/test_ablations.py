@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pytest
 
 from bench.ablations.run import (
@@ -147,7 +148,7 @@ def test_a_matrix_with_a_repeated_row_number_is_rejected(tmp_path: Path) -> None
 def _assert_row_shape(result: dict[str, Any]) -> None:
     assert set(result) >= REQUIRED_KEYS
     for key in ("fpr_stage1_at_t_low", "fpr_pipeline", "oof_recall_at_t_low"):
-        assert set(result[key]) == {"point", "lo", "hi"}
+        assert set(result[key]) == {"point", "lo", "hi", "std", "per_seed"}
         assert result[key]["lo"] <= result[key]["point"] <= result[key]["hi"]
     assert set(result["fp_reduction_vs_baseline"]) >= {"point", "lo", "hi", "mcnemar_p"}
 
@@ -879,3 +880,47 @@ def test_the_cli_refuses_to_run_at_all_with_sieve_rerecord_set(
     monkeypatch.setenv("SIEVE_RERECORD", "1")
     with pytest.raises(MatrixError, match="SIEVE_RERECORD"):
         run_module.main([])
+
+
+# ------------------------------------------------------------------ D5: per-seed statistics
+
+
+def test_every_thresholded_metric_is_computed_at_each_seeds_own_thresholds(
+    inputs: Inputs, artefacts: Path
+) -> None:
+    result = _row(
+        RowSpec(row=4, name="headline", classifier=str(artefacts / "tiny-s*"), judge="none"),
+        inputs,
+    )
+    per_seed = result["per_seed"]
+    assert [b["seed"] for b in per_seed] == list(DEFAULT_SEEDS)
+    for block, seed in zip(per_seed, DEFAULT_SEEDS, strict=True):
+        config = json.loads(
+            (artefacts / f"tiny-s{seed}" / "sieve_config.json").read_text(encoding="utf-8")
+        )
+        assert block["t_low"] == config["t_low"]
+    lows = [b["t_low"] for b in per_seed]
+    assert result["t_low"] == pytest.approx(np.mean(lows))
+    for key in ("fpr_stage1_at_t_low", "fpr_pipeline", "oof_recall_at_t_low"):
+        points = [b[key]["point"] for b in per_seed]
+        assert result[key]["point"] == pytest.approx(np.mean(points)), key
+        assert result[key]["std"] == pytest.approx(np.std(points, ddof=1)), key
+        assert result[key]["per_seed"] == points, key
+
+
+def test_the_seed_spread_is_the_sample_std(inputs: Inputs, artefacts: Path) -> None:
+    result = _row(
+        RowSpec(row=4, name="headline", classifier=str(artefacts / "tiny-s*"), judge="none"),
+        inputs,
+    )
+    macro = result["macro_f1_per_seed"]
+    assert result["macro_f1_std"] == pytest.approx(np.std(macro, ddof=1))
+    assert set(result["classes_present"]) <= {"benign", "imperative_benign", "poisoned"}
+
+
+def test_an_unseeded_row_has_no_spread(inputs: Inputs) -> None:
+    result = _row(RowSpec(row=2, name="tfidf", classifier="tfidf", judge="none"), inputs,
+                  classifier_factory=_fake_classifier_factory)  # fmt: skip
+    assert result["macro_f1_std"] is None
+    assert result["fpr_pipeline"]["std"] is None
+    assert len(result["per_seed"]) == 1

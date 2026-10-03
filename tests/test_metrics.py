@@ -219,3 +219,14 @@ def test_t_high_needs_five_true_positives() -> None:
     s = [0.9, 0.8, 0.7, 0.6] + [0.1] * 10
     assert t_high_for_precision(y, s, target=0.95) > 1.0
     assert t_high_for_precision(y, s, target=0.95, min_tp=4) == pytest.approx(0.6)
+
+
+def test_macro_f1_over_present_classes_names_them() -> None:
+    """D5: an absent class used to enter the mean as F1 = 0."""
+    from sieve.eval.metrics import macro_f1_present
+
+    y = ["benign", "poisoned", "poisoned"]
+    value, present = macro_f1_present(y, y)
+    assert value == pytest.approx(1.0)
+    assert present == ["benign", "poisoned"]
+    assert macro_f1(y, y) == pytest.approx(2 / 3)
