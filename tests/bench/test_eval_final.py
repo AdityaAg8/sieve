@@ -99,6 +99,9 @@ def test_nothing_else_in_the_repository_opens_the_holdout() -> None:
         # The local labellers' report-only votes on test-ID for the F3 audit (training plan F1),
         # read through holdout_gold.test_id_rows; never a training label, threshold or choice.
         "bench/label/ensemble.py",
+        # The report-only test-ID audit (training plan F3): gold labels through holdout_gold,
+        # server names for the cluster CI; it scores labellers, never a model.
+        "bench/label/audit.py",
         # Produces `eval_only` rows (L1's real_poisoned collector).
         "bench/collect/real_poisoned.py",
         # L2's own gate: refuses to score a sealed row.
