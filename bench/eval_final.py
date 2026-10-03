@@ -22,6 +22,7 @@ from typing import Any
 import numpy as np
 
 from bench.ablations.run import dataset_version
+from bench.stats import EVAL_ONLY_SOURCE
 from sieve.eval.metrics import cluster_bootstrap_ci, precision_recall_fpr
 from sieve.protocols import Classifier, Judge, Thresholds
 from sieve.types import CorpusRecord, Verdict
@@ -35,6 +36,17 @@ REAL_SOURCES = frozenset({"public_repo", "wild_fp"})
 SEALED_SPLITS = frozenset({"holdout", "eval_only"})
 DEFAULT_CORPUS = Path("bench/data/labelled.jsonl")
 RELEASE_GATE = {"recall_point": 0.95, "recall_lower_bound": 0.90}
+
+
+def m13_rows[R](rows: Sequence[R]) -> list[R]:
+    """The M13 slice: poisoned rows whose source is `real_poisoned`, and nothing else. A
+    test-OOD negative (G2) or any other row that lands in the eval-only split stays out."""
+    return [
+        r
+        for r in rows
+        if getattr(r, "source", None) == EVAL_ONLY_SOURCE
+        and getattr(r, "label", None) == "poisoned"
+    ]
 
 
 class HoldoutSealed(Exception):  # noqa: N818 - named by the lane brief; it is a refusal
@@ -146,7 +158,8 @@ def evaluate(
     recall = _recall_with_lower_bound(truth, scores, groups, thresholds.t_low, n_boot)
     eval_scores = _scores(classifier, eval_only)
     eval_verdicts = _verdicts(eval_only, eval_scores, thresholds, judge)
-    poisoned = [i for i, r in enumerate(eval_only) if r.label == "poisoned"]
+    m13 = {id(r) for r in m13_rows(eval_only)}
+    poisoned = [i for i, r in enumerate(eval_only) if id(r) in m13]
 
     return {
         "rows_evaluated": len(holdout) + len(eval_only),

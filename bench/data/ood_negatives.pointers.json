@@ -1,0 +1,16 @@
+{
+  "docker": {
+    "url": "https://github.com/docker/mcp-registry",
+    "commit": "49b643ce3fc73e6ee80bb962719b6e2990e3d397",
+    "sha256": "8a05469e5e13e4e668ad2e7b5ae682aa1ed0ef13d638d0f07f8116328462e3a1",
+    "licence": "per upstream; eval-only, not redistributed",
+    "local_dir": "bench/data/external/docker-mcp-registry"
+  },
+  "mcptox_clean": {
+    "url": "https://github.com/zhiqiangwang4/MCPTox-Benchmark",
+    "commit": "f85189f9ad12504c197c7f920ab818a40657b1fa",
+    "sha256": "f9e1788b2efc33e124dc8b7eaa5d5fa1b2187972d2c52fd0b9af2ce531df3ed1",
+    "licence": "none - eval-only, not redistributed",
+    "local_dir": "bench/data/external/MCPTox-Benchmark"
+  }
+}
