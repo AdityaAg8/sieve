@@ -304,6 +304,9 @@ def training_arguments(
         "eval_strategy": "epoch" if has_early else "no",
         "save_strategy": "epoch" if has_early else "no",
         "save_total_limit": 1,
+        # B2: checkpoints exist only to reload the best epoch at the end, and nothing ever
+        # resumes from one, so optimizer and scheduler state (2x the weights) is dead weight.
+        "save_only_model": True,
         "load_best_model_at_end": has_early,
         "metric_for_best_model": "macro_f1",
         "greater_is_better": True,

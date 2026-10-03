@@ -65,3 +65,30 @@ def test_length_grouping_pads_far_less_than_random_batches(tmp_path: Path) -> No
     grouped = _padded_tokens(_tiny_trainer(tmp_path, lengths))
     shuffled = _padded_tokens(_tiny_trainer(tmp_path, lengths, group_by_length=False))
     assert grouped <= 0.6 * shuffled
+
+
+def test_checkpoints_keep_no_optimizer_state(tmp_path: Path) -> None:
+    config = load_profile(CONFIG, "tiny", fold=0, seed=0)
+    args = training_arguments(config, tmp_path / "ckpt", has_early=True)
+    assert args.save_only_model and args.load_best_model_at_end and args.save_total_limit == 1
+
+
+@pytest.mark.slow
+def test_a_run_writes_no_optimizer_state_and_at_most_two_checkpoints(
+    dev_records: list[Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import shutil
+
+    from sieve.model import train
+
+    kept: list[Path] = []
+    monkeypatch.setattr(train.shutil, "rmtree", lambda p, **_: kept.append(Path(p)))
+    corpus = tmp_path / "c.jsonl"
+    corpus.write_text("".join(r.model_dump_json() + "\n" for r in dev_records), encoding="utf-8")
+    out = tmp_path / "run"
+    train.main(["--profile", "tiny", "--fold", "0", "--corpus", str(corpus), "--out", str(out)])
+    checkpoints = [p for p in (out / "_checkpoints").iterdir() if p.is_dir()]
+    assert 1 <= len(checkpoints) <= 2
+    assert not list((out / "_checkpoints").rglob("optimizer.pt"))
+    assert not list((out / "_checkpoints").rglob("scheduler.pt"))
+    shutil.rmtree(out / "_checkpoints")
