@@ -27,6 +27,11 @@ class OodRow:
     poisoned: bool
     provenance: dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def is_synthetic(self) -> bool:
+        """OOD rows are third-party text; `write_rows` refuses one that is not (G5)."""
+        return self.source == "synthetic_mutation"
+
     def tool_record(self) -> ToolRecord:
         return ToolRecord(
             id=self.id, server_name=self.server_name, tool=ToolDefinition(**self.tool)
@@ -46,6 +51,10 @@ def load_rows(path: Path) -> list[OodRow]:
 
 
 def write_rows(path: Path, rows: Iterable[OodRow]) -> Path:
+    rows = list(rows)
+    synthetic = [r.id for r in rows if r.is_synthetic]
+    if synthetic:
+        raise ValueError(f"no test-OOD or val-OOD row may be synthetic: {synthetic[:5]}")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         "".join(json.dumps(asdict(r), ensure_ascii=False, sort_keys=True) + "\n" for r in rows),

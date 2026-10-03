@@ -246,6 +246,42 @@ def group_and_separate(
     return out, report
 
 
+REAL_SOURCES = frozenset({"public_repo", "wild_fp"})
+
+
+class SyntheticLeakError(ValueError):
+    """A sealed view would carry generated text under a real name (training plan G5)."""
+
+
+def sealed_views(records: list[CorpusRecord]) -> dict[str, list[CorpusRecord]]:
+    """The sealed rows under the only names they are ever reported by: `test_id` (the real
+    holdout rows), `holdout_synthetic` (its generated rows, the release gate) and
+    `real_poisoned` (the eval-only slice, M13)."""
+    sealed = [r for r in records if r.split in {"holdout", "eval_only"}]
+    return {
+        "test_id": [r for r in sealed if r.split == "holdout" and r.source in REAL_SOURCES],
+        "holdout_synthetic": [r for r in sealed if r.split == "holdout" and r.is_synthetic],
+        "real_poisoned": [r for r in sealed if r.source == "real_poisoned"],
+    }
+
+
+def check_views(records: list[CorpusRecord]) -> dict[str, int]:
+    """Build-time asserts: test-ID and real_poisoned carry no synthetic row, and every holdout
+    row is reported under exactly one of `test_id` / `holdout_synthetic`."""
+    views = sealed_views(records)
+    for name in ("test_id", "real_poisoned"):
+        leaked = [r.id for r in views[name] if r.is_synthetic]
+        if leaked:
+            raise SyntheticLeakError(f"{name} holds synthetic rows: {leaked[:5]}")
+    named = {r.id for r in views["test_id"]} | {r.id for r in views["holdout_synthetic"]}
+    unnamed = [r.id for r in records if r.split == "holdout" and r.id not in named]
+    if unnamed:
+        raise SyntheticLeakError(
+            f"holdout rows outside test_id and holdout_synthetic: {unnamed[:5]}"
+        )
+    return {name: len(rows) for name, rows in views.items()}
+
+
 def _load(path: Path) -> list[CorpusRecord]:
     return [
         CorpusRecord.model_validate_json(line)
@@ -291,6 +327,7 @@ def main(argv: list[str] | None = None) -> int:
         assigned, report = group_and_separate(assigned, [(a, b, c) for a, b, c in pairs])
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(json.dumps(report, indent=1) + "\n", encoding="utf-8", newline="\n")
+    views = check_views(assigned)
     if args.write_split_map:
         write_split_map(split_map_from(assigned), args.write_split_map)
     args.out.parent.mkdir(parents=True, exist_ok=True)
@@ -298,7 +335,7 @@ def main(argv: list[str] | None = None) -> int:
         "".join(r.model_dump_json() + "\n" for r in assigned), encoding="utf-8", newline="\n"
     )
     counts = collections.Counter(r.split for r in assigned)
-    print(f"wrote {len(assigned)} records: {dict(counts)}")
+    print(f"wrote {len(assigned)} records: {dict(counts)}; sealed views {views}")
     return 0
 
 
