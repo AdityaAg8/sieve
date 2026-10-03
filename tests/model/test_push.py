@@ -258,7 +258,13 @@ def test_the_upload_ignores_folds_checkpoints_and_oof_arrays(
         "huggingface_hub.HfApi.upload_folder", lambda self, **kwargs: seen.update(kwargs)
     )
     main(["--model-dir", str(model_dir), "--repo", "someone/sieve", "--results-dir", str(results)])
-    assert seen["ignore_patterns"] == ["fold*/**", "_checkpoints/**", "*.npy", "oof_ids.json"]
+    assert seen["ignore_patterns"] == ["fold*/**", "_checkpoints/**"]
+    # The pooled OOF arrays travel with the artefact: bench/artefacts.json requires them (H5).
+    from fnmatch import fnmatch
+
+    from bench.artefacts import REQUIRED_FILES
+
+    assert not any(fnmatch(f, pat) for f in REQUIRED_FILES for pat in seen["ignore_patterns"])
 
 
 def test_a_missing_results_file_is_a_build_failure(results: Path, model_dir: Path) -> None:

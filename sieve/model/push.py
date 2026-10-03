@@ -130,8 +130,12 @@ def _headline_row(ablations: Mapping[str, Any], row: int) -> Mapping[str, Any]:
     raise IncompleteCard(f"ablations.json has no row {row}; the headline configuration is §11.5")
 
 
-#: Never uploaded (H6): fold models, checkpoints, OOF arrays and their id lists stay local.
-IGNORE_PATTERNS = ("fold*/**", "_checkpoints/**", "*.npy", "oof_ids.json")
+#: Never uploaded (H6): the five fold models and the checkpoints stay local. The pooled OOF
+#: arrays at the top level ARE uploaded: dev-set logits and record ids, no text, and the
+#: clean-clone reproduction verifies them against `bench/artefacts.json` (H5, M6a). Plan H6 also
+#: listed `*.npy` and `oof_ids.json`; that would have made every pinned manifest unverifiable
+#: (ADR-0009). Nested `fold*/oof_*` files are still excluded by the first pattern.
+IGNORE_PATTERNS = ("fold*/**", "_checkpoints/**")
 
 
 def build_context(
