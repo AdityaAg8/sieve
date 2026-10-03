@@ -17,6 +17,7 @@ Each record keeps the same four headings: Status, Context, Decision, Consequence
 | [ADR-006](0006-scanner-agnostic-model.md) | Scanner-agnostic model by default | proposed |
 | [ADR-007](0007-no-glama-data-licensing-split.md) | No Glama data, and the licensing split | proposed |
 | [ADR-008](0008-dark-only-red-as-signal.md) | Dark-only, red-as-signal design system | proposed |
+| [ADR-009](0009-training-v1-deviations.md) | Training v1 deviations from the PRD (ensemble labels, deferred judge, gates) | proposed |
 
 PRD §27 records the revisit trigger for several of these decisions (queue throughput, ONNX parity,
 judge model, theme, remote scanning). A decision that is revisited gets a new record that
