@@ -30,9 +30,11 @@ import numpy.typing as npt
 log = logging.getLogger("sieve.model.realign_oof")
 
 FOLDS = range(5)
-#: Largest L2 distance between a stored and a re-scored log-probability row. CPU fp32 against
-#: GPU fp32 (DeBERTa) or bf16 autocast (ModernBERT) differs by far less; a wrong row by far more.
-MAX_DISTANCE = 0.25
+#: Largest L2 distance between a stored and a re-scored *probability* row. Rows are matched on
+#: log-probabilities, where they separate best, but accepted on probabilities: bf16 autocast
+#: (ModernBERT) moves a near-certain row's tail log-probability by 0.5 while its probabilities
+#: move by under 0.025 (measured on modernbert-base-s0 fold0); a wrong row moves by far more.
+MAX_DISTANCE = 0.05
 
 FloatArray = npt.NDArray[np.float64]
 
@@ -67,10 +69,12 @@ def match_rows(
     cost = np.linalg.norm(stored[:, None, :] - fresh[None, :, :], axis=2)
     cost[np.asarray(stored_labels)[:, None] != np.asarray(fresh_labels)[None, :]] = 1e9
     rows, cols = linear_sum_assignment(cost)
-    distances = cost[rows, cols]
+    if (cost[rows, cols] >= 1e9).any():
+        raise RealignError("no label-respecting one-to-one match exists")
+    distances = np.linalg.norm(np.exp(stored[rows]) - np.exp(fresh[cols]), axis=1)
     if distances.max() > max_distance:
         raise RealignError(
-            f"a stored row is {distances.max():.4f} from its nearest re-scored row "
+            f"a stored row's probabilities are {distances.max():.4f} from its match "
             f"(limit {max_distance}): these are not the same predictions"
         )
     perm = np.empty(len(rows), dtype=np.int64)

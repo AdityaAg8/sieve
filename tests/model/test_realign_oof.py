@@ -55,3 +55,13 @@ def test_realign_fold_rewrites_only_the_ids_in_stored_row_order(tmp_path: Path) 
     again = realign_fold(fold, [ids[i] for i in perm], labels[perm], lambda: fresh[perm],
                          max_distance=0.05)  # fmt: skip
     assert again["moved"] == 0
+
+
+def test_a_near_certain_row_whose_tail_moved_is_still_its_own_match() -> None:
+    """bf16 moves a confident row's tail log-probability a lot and its probabilities hardly."""
+    fresh = np.array([[20.0, 0.0, -10.0], [0.0, 1.0, 0.0], [0.5, 0.0, 2.0]], dtype=np.float32)
+    stored = fresh.copy()
+    stored[0, 2] = -15.0
+    labels = np.array([0, 1, 2])
+    perm = match_rows(log_softmax(stored), labels, log_softmax(fresh), labels, max_distance=0.05)
+    assert perm.tolist() == [0, 1, 2]
