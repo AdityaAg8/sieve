@@ -205,6 +205,23 @@ def test_the_regeneration_round_is_never_spent_twice(tmp_path: Path) -> None:
     assert len(world.regenerated) == 1
 
 
+def test_a_regeneration_that_failed_half_way_is_retried_on_resume(tmp_path: Path) -> None:
+    """The ids are frozen at round 1; the work is retried until it completes once."""
+    world = World(tmp_path)
+    calls: list[list[str]] = []
+
+    def broken(ids: list[str]) -> None:
+        calls.append(ids)
+        raise RuntimeError("make corpus failed")
+
+    with pytest.raises(RuntimeError):
+        vt.run_vote(world.paths, regenerate=broken, rebuild=world.rebuild)
+    assert world.run() == 0
+    assert world.regenerated == [calls[0]], "retried once, with the same frozen ids"
+    world.run()
+    assert len(world.regenerated) == 1
+
+
 def test_the_agreement_report_carries_kappas_rejection_rate_and_parse_failures(
     tmp_path: Path,
 ) -> None:

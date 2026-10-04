@@ -177,9 +177,15 @@ def run_vote(
     if state["round"] == 0:
         state["regenerated"] = [i for i in round0 if _model_written(by_id[i])]
         state["round"] = 1
+        state["regeneration_done"] = False
         _json(paths.state, state)
-        if state["regenerated"]:
-            regenerate(list(state["regenerated"]))
+    # The round's ids are frozen at round 1, but the regeneration itself (generate, rebuild,
+    # re-check: each resumable from its own raw log) is retried until it completes once. A
+    # failure half way used to be skipped on resume, leaving the re-check log empty (2026-10-04).
+    if state["regenerated"] and not state.get("regeneration_done", True):
+        regenerate(list(state["regenerated"]))
+        state["regeneration_done"] = True
+        _json(paths.state, state)
     recheck = RawLog(paths.recheck_log)
     current = {r.id: r for r in load(paths.corpus) if r.source == SYNTHETIC}
     still = sorted(
