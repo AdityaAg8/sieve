@@ -85,6 +85,10 @@ def export(model_dir: Path, out_dir: Path, *, quantize: bool = True) -> Path:
     if not fp32.exists():  # pragma: no cover - optimum names the graph itself
         raise FileNotFoundError(f"optimum wrote no {FP32_ONNX} into {out_dir}")
 
+    if not quantize:
+        # `infer._onnx_graph` prefers int8: a graph left from an earlier quantised export would be
+        # served instead of the fp32 one this export checks (Z2 review).
+        (out_dir / INT8_ONNX).unlink(missing_ok=True)
     if quantize:
         from onnxruntime.quantization import (  # type: ignore[import-untyped]
             QuantType,
@@ -272,6 +276,11 @@ def main(argv: Sequence[str] | None = None) -> Path:
         json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
     )
     if not report["passed"]:
+        # A refused graph must not stay where `infer._onnx_graph` finds it, or the sealed
+        # evaluation and the server would load it anyway (Z2 review). Both graphs go: the fp32
+        # one beside a refused int8 was never checked either.
+        for name in (INT8_ONNX, FP32_ONNX):
+            (out_dir / name).unlink(missing_ok=True)
         raise ParityError(
             f"{graph}: max |Δp| {report['max_abs_delta']:.4f} > {PARITY_TOLERANCE} on "
             f"{report['n']} dev rows; the export is refused"

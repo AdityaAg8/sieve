@@ -157,6 +157,17 @@ def test_parity_above_tolerance_refuses_the_export(
         json.loads((tmp_path / "r" / ex.PARITY_REPORT).read_text(encoding="utf-8"))["passed"]
         is False
     )
+    # Z2: the refused graph is removed, so nothing can load it.
+    assert not (tmp_path / "onnx" / INT8_ONNX).exists()
+    assert not (tmp_path / "onnx" / FP32_ONNX).exists()
+
+
+@pytest.mark.slow
+def test_an_fp32_export_removes_a_stale_int8_graph(trained_tiny: Path, tmp_path: Path) -> None:
+    export(trained_tiny, tmp_path / "onnx")
+    assert (tmp_path / "onnx" / INT8_ONNX).exists()
+    export(trained_tiny, tmp_path / "onnx", quantize=False)
+    assert not (tmp_path / "onnx" / INT8_ONNX).exists(), "infer would have served the stale int8"
 
 
 def test_parity_counts_verdict_flips_at_each_threshold(
