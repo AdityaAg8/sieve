@@ -41,6 +41,12 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
   beside the ensemble's, but never used to select, threshold or gate anything. The planned
   sealed audit is 104 rows; the rebuilt corpus (2026-10-03) has 105 real test-ID rows, and the
   report states the actual count.
+- **The eval sets were not ensemble-labelled.** Step 5 ran the ensemble on dev and synthetic only
+  (1,773 votes). Test-ID, test-OOD negatives and val-OOD (about 1,500 rows) carry their source
+  labels, and no evaluation code reads an ensemble vote for them (`bench/eval_final.py`,
+  `bench/eval_val_ood.py`, `bench/report_final.py`). On them the ensemble would only estimate
+  label noise, at about 3 GPU hours. That check is deferred to v1.1, and the datasheet's label-noise
+  line covers dev and synthetic only.
 - **`LABELLING_GUIDE.md` is drafted by Claude.** It is headed "Drafted by Claude; owner approval:
   [ ]" and is not authoritative until the owner ticks it (task I2).
 
@@ -125,6 +131,28 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
   the new row 15 (ModernBERT at 1,024 tokens, §6.3) run at one seed and are flagged
   `single_seed`. Rows 4 and 5 name `{primary}` / `{secondary}`, resolved from
   `bench/results/selection.json`.
+- **ModernBERT fine-tunes at lr 8e-5, not 3e-5** (commit `9f3273b`). At the PRD §11.3 rate of
+  3e-5 ModernBERT underfit:
+  - its pooled OOF macro-F1 was 0.609, 0.641 and 0.582 (seeds 0, 1, 2; DeBERTa scored
+    0.890–0.895);
+  - training loss was still 0.59 after 8 epochs, and most best epochs sat at the horizon.
+  A two-fold diagnostic on seed 0 used each fold's early-stopping slice, never OOF rows or a
+  sealed split:
+  - fp32 at 3e-5: no better (0.43, 0.61);
+  - [CLS] pooling instead of the checkpoint's mean pooling, at 5e-5 or 8e-5: no better (best 0.57,
+    0.62);
+  - 8e-5 with mean pooling: about +0.10 on both folds (0.66 and 0.87, against 0.56 and 0.77).
+  A padding check ruled out an attention bug: logits matched padded and unpadded batches to
+  within 2e-6.
+  8e-5 is the ModernBERT authors' own fine-tuning rate. So all three ModernBERT profiles were
+  re-swept at it.
+  - The headline scored 0.716, 0.732 and 0.724 pooled OOF macro-F1.
+  - Row 15 (1,024 tokens, bs 8x2) scored 0.588, down from 0.551 at 3e-5. Its best epochs were
+    [1, 5, 1, 1, 8], so it is unstable at this rate. It is reported as measured, single seed, and
+    was not re-tuned.
+  The 3e-5 artefacts are kept, unpublished, under `models/_superseded_lr3e-5/`. DeBERTa was not
+  re-tuned: its first sweep already peaked inside the horizon.
+  `profile.classifier_pooling` (commit `4126159`) stays available and unused.
 - **MCPTox and Docker are eval-only pointers.** Neither is redistributed. MCPTox has no licence
   (D2; a licence request is drafted in `docs/outreach/mcptox-licence-request.md`). Docker's MIT
   rows are kept as test-OOD negatives under the same pointer-and-hash discipline
