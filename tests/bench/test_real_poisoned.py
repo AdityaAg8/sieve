@@ -336,3 +336,29 @@ def test_the_committed_mcptox_pointer_names_the_pinned_artefact() -> None:
     assert mcptox["sha256"] == "9a321dc4ecf4869883cf2a29ea8189e1f7663720a9c41a3e5ce2323d580e31c1"
     assert mcptox["licence"] == "none – eval-only, not redistributed"
     assert mcptox["labeller"] == "source:mcptox"
+
+
+def test_reconstruct_cli_writes_the_slice_eval_final_reads(tmp_path: Path) -> None:
+    """`make eval-final` needs `bench/data/real_poisoned.jsonl`; the CLI used to only count."""
+    from bench.collect.real_poisoned import main
+    from sieve.types import CorpusRecord
+
+    source = _invariant(redistributable=False)
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    (cache / "invariant_sample.md").write_bytes((DATA / "invariant_sample.md").read_bytes())
+    pointers = tmp_path / "pointers.json"
+    pointers.write_text(
+        json.dumps([{"url": source.url, "sha256": source.sha256, "licence": source.licence,
+                     "extract": {"path": "invariant_sample.md", "json_pointer": ""}}]),
+        encoding="utf-8",
+    )  # fmt: skip
+    out = tmp_path / "real_poisoned.jsonl"
+    assert main(["--reconstruct", "--pointers", str(pointers), "--cache-dir", str(cache),
+                 "--out", str(out)]) == 0  # fmt: skip
+    lines = out.read_text(encoding="utf-8").splitlines()
+    assert {CorpusRecord.model_validate_json(x).tool.name for x in lines} == {
+        "lookup_widget",
+        "list_widgets",
+    }
+    assert out.read_bytes().count(b"\r\n") == 0

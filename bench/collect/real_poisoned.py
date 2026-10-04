@@ -349,7 +349,12 @@ def main(argv: list[str] | None = None) -> int:
             Pointer.model_validate(e) for e in json.loads(args.pointers.read_text(encoding="utf-8"))
         ]
         records = reconstruct(entries, args.cache_dir)
-        print(f"reconstructed {len(records)} eval-only records")
+        # The slice `bench/eval_final.py` opens; gitignored, never committed (SC-3).
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(
+            "".join(r.model_dump_json() + "\n" for r in records), encoding="utf-8", newline="\n"
+        )
+        print(f"reconstructed {len(records)} eval-only records to {args.out}")
         return 0
 
     if args.sources is None:
