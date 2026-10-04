@@ -28,6 +28,18 @@ class WeightedTrainer(Trainer):
         self.num_labels = num_labels
         self._window_weight: torch.Tensor | None = None
 
+    def _get_eval_sampler(self, eval_dataset: Any) -> torch.utils.data.Sampler[int] | None:
+        """Evaluate and predict in dataset order, always (ADR-009).
+
+        transformers 4.57 length-groups evaluation batches too when `group_by_length` is on, so
+        `predict` returned the held-out fold in a shuffled order while `oof_ids.json` was
+        written in dataset order. Training batches stay length-grouped; only order-sensitive
+        passes are sequential, which costs a little padding.
+        """
+        if eval_dataset is None:
+            return None
+        return torch.utils.data.SequentialSampler(eval_dataset)
+
     def _weights(self, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
         if self.class_weights is None:
             return torch.ones(self.num_labels, device=device, dtype=dtype)

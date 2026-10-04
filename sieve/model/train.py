@@ -369,11 +369,27 @@ def _class_weights(labels: Sequence[int], num_labels: int) -> list[float]:
     return [float(w) for w in weights]
 
 
+class OofOrderError(RuntimeError):
+    """`trainer.predict` returned rows in another order than the dataset's (ADR-009)."""
+
+
 def _logits_and_labels(trainer: Any, dataset: Any) -> tuple[npt.NDArray[Any], npt.NDArray[Any]]:
+    """Predictions in dataset order, so row i belongs to `oof_ids.json[i]`.
+
+    transformers 4.57 length-groups prediction batches whenever `group_by_length` is on;
+    `WeightedTrainer` predicts sequentially, and this guard refuses any reordering that
+    slips past it: the returned labels must be the dataset's own, in order.
+    """
     output = trainer.predict(dataset)
-    return np.asarray(output.predictions, dtype=np.float32), np.asarray(
-        output.label_ids, dtype=np.int64
-    )
+    logits = np.asarray(output.predictions, dtype=np.float32)
+    labels = np.asarray(output.label_ids, dtype=np.int64)
+    expected = np.asarray(dataset["labels"], dtype=np.int64)
+    if labels.shape != expected.shape or not np.array_equal(labels, expected):
+        raise OofOrderError(
+            "trainer.predict returned rows out of dataset order; oof_ids.json would not "
+            "describe oof_logits.npy"
+        )
+    return logits, labels
 
 
 def _write_npy(path: Path, array: npt.NDArray[Any]) -> None:
