@@ -74,3 +74,26 @@ def test_the_tolerance_follows_the_precision_the_logits_were_produced_in() -> No
 
     assert tolerance_for("fp32") == 0.05
     assert tolerance_for("bf16") == 0.15
+
+
+def test_a_refused_fold_leaves_every_fold_untouched(tmp_path: Path) -> None:
+    """Two-phase: every fold is matched before any `oof_ids.json` is rewritten (review P2)."""
+    from sieve.model.realign_oof import realign_folds
+
+    fresh, labels = _rows(10, seed=5)
+    ids = [f"r{i}" for i in range(10)]
+    perm = np.random.default_rng(6).permutation(10)
+    dirs = []
+    for k in range(2):
+        fold = tmp_path / f"fold{k}"
+        fold.mkdir()
+        np.save(fold / "oof_logits.npy", fresh[perm])
+        np.save(fold / "oof_labels.npy", labels[perm].astype(np.int64))
+        (fold / "oof_ids.json").write_text(json.dumps(ids), encoding="utf-8")
+        dirs.append(fold)
+    far = fresh + np.float32(5.0) * np.eye(3, dtype=np.float32)[labels]
+    jobs = [(dirs[0], ids, labels, lambda: fresh), (dirs[1], ids, labels, lambda: far)]
+    with pytest.raises(RealignError):
+        realign_folds(jobs, max_distance=0.05)
+    for fold in dirs:
+        assert json.loads((fold / "oof_ids.json").read_text(encoding="utf-8")) == ids

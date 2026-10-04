@@ -90,6 +90,52 @@ def match_rows(
     return perm
 
 
+Job = tuple[Path, Sequence[str], npt.NDArray[Any], Callable[[], npt.NDArray[Any]]]
+
+
+def _aligned_ids(job: Job, max_distance: float) -> list[str]:
+    fold_dir, dataset_ids, dataset_labels, score = job
+    perm = match_rows(
+        log_softmax(np.load(fold_dir / "oof_logits.npy")),
+        np.load(fold_dir / "oof_labels.npy"),
+        log_softmax(score()),
+        np.asarray(dataset_labels),
+        max_distance=max_distance,
+    )
+    return [str(dataset_ids[j]) for j in perm]
+
+
+def _write_ids(path: Path, ids: Sequence[str]) -> None:
+    path.write_text(json.dumps(list(ids), indent=2) + "\n", encoding="utf-8", newline="\n")
+
+
+def realign_folds(
+    jobs: Sequence[Job], *, max_distance: float = MAX_DISTANCE, pooled: Path | None = None
+) -> list[dict[str, Any]]:
+    """Match every fold first, write after: a refusal anywhere leaves every file untouched.
+
+    Each job is (fold_dir, dataset_ids, dataset_labels, score), `score()` returning logits or
+    log-probabilities for `dataset_ids` in that order. `pooled`, when given, is the artefact
+    directory whose `oof_logits.npy` must be the folds concatenated; its `oof_ids.json` is
+    rewritten to match.
+    """
+    aligned = [_aligned_ids(job, max_distance) for job in jobs]
+    if pooled is not None and (pooled / "oof_logits.npy").exists():
+        blocks = [np.load(job[0] / "oof_logits.npy").astype(np.float32) for job in jobs]
+        if not np.array_equal(np.load(pooled / "oof_logits.npy"), np.concatenate(blocks)):
+            raise RealignError(f"{pooled}/oof_logits.npy is not its folds concatenated")
+    reports = []
+    for job, ids in zip(jobs, aligned, strict=True):
+        path = job[0] / "oof_ids.json"
+        before = json.loads(path.read_text(encoding="utf-8"))
+        _write_ids(path, ids)
+        moved = sum(a != b for a, b in zip(before, ids, strict=True))
+        reports.append({"fold_dir": job[0].as_posix(), "rows": len(ids), "moved": moved})
+    if pooled is not None and (pooled / "oof_logits.npy").exists():
+        _write_ids(pooled / "oof_ids.json", [i for ids in aligned for i in ids])
+    return reports
+
+
 def realign_fold(
     fold_dir: Path,
     dataset_ids: Sequence[str],
@@ -98,47 +144,33 @@ def realign_fold(
     *,
     max_distance: float = MAX_DISTANCE,
 ) -> dict[str, Any]:
-    """Rewrite `fold_dir/oof_ids.json` in stored-row order. `score()` returns logits (or
-    log-probabilities) for `dataset_ids`, in that order."""
-    stored = np.load(fold_dir / "oof_logits.npy")
-    stored_labels = np.load(fold_dir / "oof_labels.npy")
-    perm = match_rows(
-        log_softmax(stored),
-        stored_labels,
-        log_softmax(score()),
-        np.asarray(dataset_labels),
-        max_distance=max_distance,
-    )
-    ids = [str(dataset_ids[j]) for j in perm]
-    before = json.loads((fold_dir / "oof_ids.json").read_text(encoding="utf-8"))
-    (fold_dir / "oof_ids.json").write_text(
-        json.dumps(ids, indent=2) + "\n", encoding="utf-8", newline="\n"
-    )
-    moved = sum(a != b for a, b in zip(before, ids, strict=True))
-    return {"fold_dir": fold_dir.as_posix(), "rows": len(ids), "moved": moved}
+    """One fold on its own (`realign_folds` with a single job)."""
+    job: Job = (fold_dir, dataset_ids, dataset_labels, score)
+    return realign_folds([job], max_distance=max_distance)[0]
 
 
-def _committed_findings(sha: str = "HEAD") -> Path:
-    """The YARA findings the scanner-features ablation trained on, as committed."""
+def _findings_at(sha: str) -> dict[str, Any]:
+    """The YARA findings as committed at `sha`: the commit the scanner-features artefact was
+    trained at, so a later `make bench` regenerating `baseline_raw.json` cannot change them."""
+    from sieve.model.data import load_scanner_findings
+
     out = subprocess.run(  # noqa: S603 - fixed argv
         ["git", "show", f"{sha}:bench/results/baseline_raw.json"],  # noqa: S607
         capture_output=True,
         check=True,
         encoding="utf-8",
     ).stdout
-    handle = tempfile.NamedTemporaryFile(  # noqa: SIM115 - outlives the function on purpose
-        "w", suffix=".json", delete=False, encoding="utf-8", newline="\n"
-    )
-    handle.write(out)
-    handle.close()
-    return Path(handle.name)
+    with tempfile.TemporaryDirectory(prefix="sieve-realign-") as work:
+        path = Path(work) / "baseline_raw.json"
+        path.write_text(out, encoding="utf-8", newline="\n")
+        return dict(load_scanner_findings(path))
 
 
 def realign_artefact(
     model_dir: Path, corpus: Path, *, max_distance: float | None = None
 ) -> list[dict[str, Any]]:
     """Every fold of one `models/<family>-s<seed>` artefact, then its pooled ids."""
-    from sieve.model.data import build_splits, load_corpus, load_scanner_findings
+    from sieve.model.data import build_splits, load_corpus
     from sieve.model.infer import TorchClassifier
     from sieve.protocols import Thresholds
 
@@ -149,13 +181,13 @@ def realign_artefact(
     )
     two_class = int(metrics.get("num_labels") or 3) == 2
     findings = (
-        load_scanner_findings(_committed_findings())
+        _findings_at(str(metrics["git_sha"]))
         if "scanner" in str(metrics.get("profile") or "")
         else None
     )
     records = load_corpus(corpus)
     unit = Thresholds(0.5, 0.5, 1.0, 1.0, 1.0, 0.0)  # temperature 1: log-probs, not calibrated
-    reports = []
+    jobs: list[Job] = []
     for k in FOLDS:
         fold_dir = model_dir / f"fold{k}"
         oof = build_splits(records, fold=k, mode=mode, scanner_findings_by_id=findings)["oof"]
@@ -168,23 +200,10 @@ def realign_artefact(
             probs = TorchClassifier(fold_dir, thresholds=unit).predict_proba(texts)
             return np.log(np.clip(probs, 1e-300, None))
 
-        report = realign_fold(fold_dir, list(oof["id"]), labels, score, max_distance=limit)
-        log.info("%s: %d of %d ids moved", fold_dir, report["moved"], report["rows"])
-        reports.append(report)
-
-    pooled: list[str] = []
-    blocks = []
-    for k in FOLDS:
-        fold_dir = model_dir / f"fold{k}"
-        pooled += json.loads((fold_dir / "oof_ids.json").read_text(encoding="utf-8"))
-        blocks.append(np.load(fold_dir / "oof_logits.npy").astype(np.float32))
-    if (model_dir / "oof_logits.npy").exists():
-        root = np.load(model_dir / "oof_logits.npy")
-        if not np.array_equal(root, np.concatenate(blocks)):
-            raise RealignError(f"{model_dir}/oof_logits.npy is not its folds concatenated")
-        (model_dir / "oof_ids.json").write_text(
-            json.dumps(pooled, indent=2) + "\n", encoding="utf-8", newline="\n"
-        )
+        jobs.append((fold_dir, list(oof["id"]), labels, score))
+    reports = realign_folds(jobs, max_distance=limit, pooled=model_dir)
+    for report in reports:
+        log.info("%s: %d of %d ids moved", report["fold_dir"], report["moved"], report["rows"])
     return reports
 
 

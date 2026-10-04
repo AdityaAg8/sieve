@@ -349,7 +349,9 @@ def main(argv: list[str] | None = None) -> int:
             Pointer.model_validate(e) for e in json.loads(args.pointers.read_text(encoding="utf-8"))
         ]
         records = reconstruct(entries, args.cache_dir)
-        # The slice `bench/eval_final.py` opens; gitignored, never committed (SC-3).
+        # The slice `bench/eval_final.py` opens; gitignored, never committed (SC-3). It holds the
+        # pointer rows only: v1 has no redistributable source, and a future one collected into
+        # the same file would need merging here, not overwriting (ADR-009, review P2).
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(
             "".join(r.model_dump_json() + "\n" for r in records), encoding="utf-8", newline="\n"
