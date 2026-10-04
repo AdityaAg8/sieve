@@ -140,8 +140,9 @@ def sweep(
         else:
             log.info("skip the whole-dev model of seed %d: already stopped at epoch %d", seed, stop)
 
+        # curves.json goes into the artefact only: `make bench` publishes PUBLISHED_DIR's copy.
         runner(["sieve.model.calibrate", "--dirs", *map(str, folds), "--corpus", str(corpus),
-                "--out", str(directory), "--results-dir", str(results_dir)])  # fmt: skip
+                "--out", str(directory)])  # fmt: skip
     return seed_dirs
 
 

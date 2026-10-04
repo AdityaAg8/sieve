@@ -202,6 +202,7 @@ def test_selection_json_records_the_rule_verbatim(tmp_path: Path) -> None:
     assert payload["rule"] == RULE
     assert set(payload) == {
         "winner",
+        "published_dir",
         "rule",
         "margin",
         "decided_by",
@@ -240,3 +241,28 @@ def test_the_seed_spread_is_the_sample_std() -> None:
 
     arch = Architecture(name="x", macro_f1_per_seed=[0.80, 0.82, 0.87], p95_ms=None)
     assert arch.std == pytest.approx(np.std([0.80, 0.82, 0.87], ddof=1))
+
+
+def test_the_published_artefact_is_the_winners_median_seed(tmp_path: Path) -> None:
+    """Plan D14: the published model is the median-seed FOLD=all artefact of the winner."""
+    candidates = {
+        "deberta-v3-base": _candidate(tmp_path, "deberta", [0.90, 0.70, 0.80], p95_ms=120.0),
+        "modernbert-base": _candidate(tmp_path, "modernbert", [0.50, 0.50, 0.50], p95_ms=90.0),
+    }
+    payload = select(candidates, expected_ids=IDS).as_dict()
+    assert payload["winner"] == "deberta-v3-base"
+    assert payload["published_dir"].endswith("deberta-s2"), "0.80 is the median of 0.70/0.80/0.90"
+    assert len(payload["per_architecture"]["deberta-v3-base"]["directories"]) == 3
+
+
+def test_print_published_falls_back_before_any_selection(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from sieve.model.select import print_published
+
+    selection = tmp_path / "selection.json"
+    print_published(["--print-published", str(selection), "--fallback", "models/x-s0"])
+    assert capsys.readouterr().out.strip() == "models/x-s0"
+    selection.write_text(json.dumps({"published_dir": "models/y-s2"}), encoding="utf-8")
+    print_published(["--print-published", str(selection), "--fallback", "models/x-s0"])
+    assert capsys.readouterr().out.strip() == "models/y-s2"

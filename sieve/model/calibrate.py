@@ -277,7 +277,14 @@ def main(argv: Sequence[str] | None = None) -> Path:
     parser.add_argument("--dirs", nargs="+", type=Path, required=True)
     parser.add_argument("--corpus", type=Path, required=True)
     parser.add_argument("--out", type=Path, default=None)
-    parser.add_argument("--results-dir", type=Path, default=Path("bench/results"))
+    parser.add_argument(
+        "--results-dir",
+        type=Path,
+        default=None,
+        help="also write curves.json here; by default it is written into the artefact only "
+        "(`make bench` publishes PUBLISHED_DIR's copy), so the last calibration of a sweep no "
+        "longer overwrites the published model's curves (Z2 review)",
+    )
     parser.add_argument("--recall-target", type=float, default=0.98)
     parser.add_argument("--precision-target", type=float, default=0.95)
     parser.add_argument("--n-boot", type=int, default=1000)
@@ -356,15 +363,20 @@ def main(argv: Sequence[str] | None = None) -> Path:
         own = directory / th.CONFIG_FILE
         _write_config(own, {**_read_config(own), **payload})
 
-    th.write_curves(
-        probs,
-        labels,
-        groups,
-        ns.results_dir / "curves.json",
-        n_thresholds=ns.curve_points,
-        n_boot=ns.curve_boot,
-        reliability={"n_bins": ECE_BINS, **reliability},
-    )
+    targets = [written.parent / "curves.json"]
+    if ns.results_dir is not None:
+        targets.append(ns.results_dir / "curves.json")
+    for target in targets:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        th.write_curves(
+            probs,
+            labels,
+            groups,
+            target,
+            n_thresholds=ns.curve_points,
+            n_boot=ns.curve_boot,
+            reliability={"n_bins": ECE_BINS, **reliability},
+        )
     return written
 
 

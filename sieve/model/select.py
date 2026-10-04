@@ -51,6 +51,17 @@ class Architecture:
     name: str
     macro_f1_per_seed: list[float]
     p95_ms: float | None
+    #: The seed artefacts, aligned with `macro_f1_per_seed`.
+    directories: tuple[str, ...] = ()
+
+    @property
+    def median_seed_dir(self) -> str | None:
+        """Plan D14: the published artefact is the median-seed `FOLD=all` model (by pooled OOF
+        macro-F1; the lower middle for an even count)."""
+        if not self.directories:
+            return None
+        order = sorted(range(len(self.directories)), key=lambda i: self.macro_f1_per_seed[i])
+        return self.directories[order[(len(order) - 1) // 2]]
 
     @property
     def mean(self) -> float:
@@ -68,6 +79,7 @@ class Architecture:
             "seeds": len(self.macro_f1_per_seed),
             "macro_f1_per_seed": self.macro_f1_per_seed,
             "p95_ms": self.p95_ms,
+            "directories": list(self.directories),
         }
 
 
@@ -85,6 +97,8 @@ class Selection:
     def as_dict(self) -> dict[str, Any]:
         return {
             "winner": self.winner,
+            # D14: what `make export`, `make push` and the in-process latency use.
+            "published_dir": self.per_architecture[self.winner].median_seed_dir,
             "rule": self.rule,
             "margin": self.margin,
             "decided_by": self.decided_by,
@@ -147,6 +161,7 @@ def select(candidates: Mapping[str, Sequence[Path]], *, expected_ids: Sequence[s
             name=name,
             macro_f1_per_seed=scores,
             p95_ms=float(np.mean(latencies)) if latencies else None,
+            directories=tuple(Path(d).as_posix() for d in directories),
         )
 
     ranked = sorted(architectures.values(), key=lambda a: a.mean, reverse=True)
@@ -199,6 +214,25 @@ def write_selection(selection: Selection, path: Path) -> Path:
     return path
 
 
+def published_dir(selection: Path, fallback: str) -> str:
+    """D14's published artefact from `selection.json`, else `fallback` (no selection yet)."""
+    if not selection.exists():
+        return fallback
+    value = json.loads(selection.read_text(encoding="utf-8")).get("published_dir")
+    return str(value) if value else fallback
+
+
+def print_published(argv: Sequence[str]) -> int:
+    """`--print-published <selection.json> --fallback <dir>`: the Makefile's PUBLISHED_DIR,
+    resolved when the recipe line runs (after `select` in the same `make bench`)."""
+    parser = argparse.ArgumentParser(prog="python -m sieve.model.select --print-published")
+    parser.add_argument("--print-published", type=Path, required=True)
+    parser.add_argument("--fallback", required=True)
+    ns = parser.parse_args(argv)
+    print(published_dir(ns.print_published, ns.fallback))  # noqa: T201 - the Makefile reads it
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> Path:
     parser = argparse.ArgumentParser(prog="python -m sieve.model.select")
     parser.add_argument(
@@ -234,9 +268,15 @@ __all__ = [
     "InsufficientSeeds",
     "Selection",
     "main",
+    "print_published",
+    "published_dir",
     "select",
     "write_selection",
 ]
 
 if __name__ == "__main__":  # pragma: no cover
+    import sys
+
+    if "--print-published" in sys.argv[1:]:
+        raise SystemExit(print_published(sys.argv[1:]))
     main()
