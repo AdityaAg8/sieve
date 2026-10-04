@@ -1,0 +1,43 @@
+{
+  "decided_at": "2026-10-04T10:53:04.313190+00:00",
+  "decided_by": "mean",
+  "git_sha": "363d969c942e032a8d23e666b47ec10e1c3107f0",
+  "margin": 0.1681684108783561,
+  "per_architecture": {
+    "deberta-v3-base": {
+      "directories": [
+        "models/deberta-v3-base-s0",
+        "models/deberta-v3-base-s1",
+        "models/deberta-v3-base-s2"
+      ],
+      "macro_f1_mean": 0.8918246749296262,
+      "macro_f1_per_seed": [
+        0.8952305038170385,
+        0.8904288916761449,
+        0.8898146292956953
+      ],
+      "macro_f1_std": 0.002965481811739493,
+      "p95_ms": null,
+      "seeds": 3
+    },
+    "modernbert-base": {
+      "directories": [
+        "models/modernbert-base-s0",
+        "models/modernbert-base-s1",
+        "models/modernbert-base-s2"
+      ],
+      "macro_f1_mean": 0.7236562640512701,
+      "macro_f1_per_seed": [
+        0.7155684979780893,
+        0.7316889015176188,
+        0.7237113926581022
+      ],
+      "macro_f1_std": 0.00806034316526208,
+      "p95_ms": null,
+      "seeds": 3
+    }
+  },
+  "published_dir": "models/deberta-v3-base-s1",
+  "rule": "The architecture with the higher mean pooled out-of-fold macro-F1 across seeds wins. Ties inside 0.005 break toward the lower p95 latency; a remaining tie breaks toward DeBERTa-v3 as the declared default. Registered before any number existed; there is no override flag.",
+  "winner": "deberta-v3-base"
+}
