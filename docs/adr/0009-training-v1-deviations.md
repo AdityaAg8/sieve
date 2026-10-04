@@ -85,6 +85,12 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
   regenerated 83 disputed synthetic rows once and dropped 50 that stayed disputed (a rejection rate
   of 0.10). After that, every probe still passed, but the pair floor fell to 395, of which 247 are
   poisoned. The run proceeds under the same direction.
+- **Payload survival now covers both headline tokenizers** (commits `b3ef367`, `fea7f0a`). Plan D13
+  trains DeBERTa and ModernBERT at 512 tokens, but survival was only ever checked with DeBERTa's
+  tokenizer. ModernBERT spends more tokens on the same text, and refused four rows at
+  `make gpu-bench` (`sb-syn-0147`, `sb-syn-0274`, `sb-syn-0360`, `sb-syn-0389`; two poisoned, two
+  imperative_benign). The check now requires both tokenizers. Those four payloads are dropped for
+  every model, so both architectures keep one dev set. Minimal pairs: 391.
 - **The 15 review-queue rows train on their Sonnet provisional label.** These are real dev rows
   where one model voted poisoned. The owner's blind review (`make review-queue`) has not happened
   yet; when it does, any change to these labels means retraining before anything is published.
