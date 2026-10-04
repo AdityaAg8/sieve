@@ -249,8 +249,9 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
   `make export` passes `EXPORT_FLAGS=--no-quantize`. The parity figure is now `onnx_parity`, with
   `onnx_graph` naming the graph, and the card prints both. Latency is measured on the fp32 graph,
   so M5 is judged against it.
-  - In-process, one 512-token tool on 2 threads ran at p50 836 ms and p95 2.08 s
-    (`latency.json`), about 10x the provisional 200 ms target.
+  - In-process, one 512-token tool on 2 threads runs at roughly 1 s (`latency.json` holds the
+    current p50/p95; the first run measured p95 2.08 s on a contended machine, the `make bench`
+    after the OOF repair 1.30 s), several times the provisional 200 ms target.
   - M5 is missed, and that is reported.
   - The v1.1 options are shorter serialisation, distillation, and quantisation that keeps the
     attention layers in fp32.
