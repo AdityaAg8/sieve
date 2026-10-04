@@ -81,6 +81,13 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
   pairs that M11 scores are unchanged. The pre-registered rule says "stop and ask the owner"; the
   owner's standing direction (2026-10-03) was to go end to end without stopping, so training
   proceeds. `gate.json` keeps `"passed": false`, and every published number carries this deviation.
+- **The step-5 re-check stopped for the same reason** (2026-10-04, commit `5274a4f`). The vote
+  regenerated 83 disputed synthetic rows once and dropped 50 that stayed disputed (a rejection rate
+  of 0.10). After that, every probe still passed, but the pair floor fell to 395, of which 247 are
+  poisoned. The run proceeds under the same direction.
+- **The 15 review-queue rows train on their Sonnet provisional label.** These are real dev rows
+  where one model voted poisoned. The owner's blind review (`make review-queue`) has not happened
+  yet; when it does, any change to these labels means retraining before anything is published.
 
 - **The length probe gates synthetic tells only** (`bench/analysis/probes.py`, `length_probe`).
   The pre-registered reading is `imperative_benign` vs `benign` from length alone. It is still
