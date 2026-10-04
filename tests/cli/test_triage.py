@@ -128,9 +128,17 @@ def test_ci_alone_is_format_json_and_fail_on_confirmed() -> None:
     )
     via_ci = runner.invoke(app, ["triage", str(TOOLS_27), "--ci", "--no-judge"])
     assert via_ci.exit_code == plain.exit_code == EXIT_FINDINGS
-    # `id`/`scan_id` are a fresh uuid4 per invocation; compare the triage results themselves.
-    ci_results = [item["result"] for item in json.loads(via_ci.stdout)]
-    plain_results = [item["result"] for item in json.loads(plain.stdout)]
+
+    # `id`/`scan_id` are a fresh uuid4 per invocation and `latency_ms` is measured wall time;
+    # compare the triage results themselves.
+    def results(stdout: str) -> list[dict[str, object]]:
+        return [
+            {k: v for k, v in item["result"].items() if k != "latency_ms"}
+            for item in json.loads(stdout)
+        ]
+
+    ci_results = results(via_ci.stdout)
+    plain_results = results(plain.stdout)
     assert ci_results == plain_results
 
 
