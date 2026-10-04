@@ -119,6 +119,9 @@ def tolerance_report(
         lines.append(f"row {number}: committed {float(old):.4f}, regenerated {shown}")
     if bad:
         return 1, [f"FAIL: rows {bad} are outside ±{tolerance} macro-F1 (M6b)", *lines]
+    if all("not compared" in line for line in lines):
+        # Nothing had a number to reproduce: a skip, never a vacuous pass (Z2 review).
+        return ARTEFACT_MISSING, ["SKIP: no requested row has a committed macro-F1", *lines]
     return 0, [f"OK: rows {keep} within ±{tolerance} macro-F1 (M6b)", *lines]
 
 

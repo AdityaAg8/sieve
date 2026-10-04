@@ -221,7 +221,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--extra",
         type=Path,
         nargs="*",
-        default=[Path("bench/data/ood_negatives.jsonl"), Path("bench/data/val_ood.jsonl")],
+        # Where G2 and G3 write them. The old defaults named files that never existed, so the
+        # OOD rows were silently skipped (Z2 review).
+        default=[
+            Path("bench/data/ood/test_ood_negatives.jsonl"),
+            Path("bench/data/ood/val_ood.jsonl"),
+        ],
     )
     parser.add_argument("--ids-file", type=Path, default=None, help="label only these row ids")
     mode = parser.add_mutually_exclusive_group(required=True)

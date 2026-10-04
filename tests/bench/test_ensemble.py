@@ -218,3 +218,14 @@ def test_an_ids_file_restricts_the_rows(tmp_path: Path) -> None:
     ids.write_text(json.dumps(["b"]), encoding="utf-8")
     assert [r.id for r in en.restrict(rows, ids)] == ["b"]
     assert [r.id for r in en.restrict(rows, None)] == ["a", "b"]
+
+
+def test_the_default_extra_paths_are_where_g2_and_g3_write() -> None:
+    """Z2: the old defaults named files that never existed, so OOD rows were skipped."""
+    import inspect
+
+    from bench.label import ensemble
+
+    source = inspect.getsource(ensemble.main)
+    assert "bench/data/ood/test_ood_negatives.jsonl" in source
+    assert "bench/data/ood/val_ood.jsonl" in source

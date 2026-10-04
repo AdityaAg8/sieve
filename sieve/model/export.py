@@ -212,8 +212,11 @@ def parity_texts(corpus: Path, limit: int = 0) -> list[str]:
     from sieve.serialise import serialise
 
     source = corpus if corpus.exists() else Path("fixtures/corpus/mini-50.jsonl")
+    if source != corpus:
+        log.warning("%s is missing; measuring parity on the mini-50 fixture instead", corpus)
     records = load_corpus(source)
-    dev = [r for r in records if r.split == "dev"] or records
+    # Dev rows, else an unsplit corpus (the fixture); never a sealed row (Z2 review).
+    dev = [r for r in records if r.split == "dev"] or [r for r in records if r.split is None]
     texts = [serialise(r.to_tool_record()) for r in dev]
     return texts[:limit] if limit else texts
 

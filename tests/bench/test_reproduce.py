@@ -157,3 +157,10 @@ def test_the_cli_takes_a_tolerance(tmp_path: Path) -> None:
     argv = ["--committed", str(committed), "--regenerated", str(regenerated), "--rows", "4"]
     assert main(argv) == 1, "byte for byte, x differs"
     assert main([*argv, "--tolerance", "0.01"]) == 0
+
+
+def test_tolerance_is_a_skip_when_no_row_has_a_number() -> None:
+    from bench.reproduce import tolerance_report
+
+    code, lines = tolerance_report(_f1_rows(r6=None), _f1_rows(r6=None), [6])
+    assert code == ARTEFACT_MISSING and lines[0].startswith("SKIP")
