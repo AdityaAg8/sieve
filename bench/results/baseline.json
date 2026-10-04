@@ -2,39 +2,39 @@
   {
     "ci": {
       "fpr": [
-        0.2094839111865666,
-        0.29855126404101345
+        0.2062824164119663,
+        0.29523598833583975
       ],
       "recall": [
-        0.5655290764352695,
-        0.6970023510971787
+        0.5768939393939393,
+        0.7117291849653208
       ]
     },
     "confusion": [
       [
-        373,
-        54
+        414,
+        80
       ],
       [
-        227,
-        153
+        157,
+        114
       ],
       [
-        94,
-        161
+        87,
+        158
       ]
     ],
-    "f1": 0.5168539325842697,
+    "f1": 0.5293132328308207,
     "field_misses": {
-      "description": 63,
-      "inputSchema": 39
+      "description": 56,
+      "inputSchema": 37
     },
     "field_misses_approx": {},
-    "fn": 94,
-    "fp": 207,
+    "fn": 87,
+    "fp": 194,
     "fp_causes": {
       "code_execution": {
-        "count": 32,
+        "count": 28,
         "examples": [
           "Enable Tier-2 autonomous proposal generation. Subject to M7 gate on the CLEO side: `cleo memory doctor --assert-clean` must pass before this succeeds. Returns success or E_M7_GATE_FAILED with guidance on cleaning the brain corpus.",
           "Reference library \u2014 retrieve a complete SDK code example (Kotlin + Swift) for a use case. Patterns cover the canonical voice-glasses compositions: voice_qa_assistant (the multi-turn wake+question+LLM+speak flow that motivated the pure-SDK pivot), barge_in_speak (cancel TTS on user interrupt), photo_describe_voice (wake \u2192 photo \u2192 vision LLM \u2192 speak), live_transcription_ui (transcripts into Compose/SwiftUI state), voice_notes (wake \u2192 record \u2192 persist), connection_page_setup (the minimum bootstrap wiring), byok_anthropic (BYOK LLM client integration), agent_test_loop (the agent-driven E2E verification recipe \u2014 handler skeleton + dual-layer assertion against the sim event log, the emulator's Room/SQLite state, and the rendered screen). USE when you're about to write handler code and want the canonical shape to peel from, OR when you want the agent test driver that asserts the handler works end-to-end. DON'T USE for capability discovery (use getPlatformInfo) or per-feature minimal usage (use getCapabilityGuide).",
@@ -42,7 +42,7 @@
         ]
       },
       "credential_harvesting": {
-        "count": 53,
+        "count": 50,
         "examples": [
           "Partially update Jira resources. Returns TOON format by default.\n\n**IMPORTANT - Cost Optimization:** Use `jq` param to filter response fields.\n\n**Output format:** TOON (default) or JSON (`outputFormat: \"json\"`)\n\n**Common operations:**\n\n1. **Update issue fields:** `/rest/api/3/issue/{issueIdOrKey}`\n   body: `{\"fields\": {\"summary\": \"Updated title\"}}` (only updates specified fields)\n\n2. **Update comment:** `/rest/api/3/issue/{issueIdOrKey}/comment/{commentId}`\n   body: `{\"body\": {\"type\": \"doc\", \"version\": 1, \"content\": [{\"type\": \"paragraph\", \"content\": [{\"type\": \"text\", \"text\": \"Updated comment\"}]}]}}`\n\n3. **Update worklog:** `/rest/api/3/issue/{issueIdOrKey}/worklog/{worklogId}`\n   body: `{\"timeSpentSeconds\": 7200}`\n\nNote: PATCH only updates the fields you specify, leaving others unchanged.\n\nAPI reference: https://developer.atlassian.com/cloud/jira/platform/rest/v3/",
           "Read any Jira data. Returns TOON format by default (30-60% fewer tokens than JSON).\n\n**IMPORTANT - Cost Optimization:**\n- ALWAYS use `jq` param to filter response fields. Unfiltered responses are very expensive!\n- Use `maxResults` query param to restrict result count (e.g., `maxResults: \"5\"`)\n- If unsure about available fields, first fetch ONE item with `maxResults: \"1\"` and NO jq filter to explore the schema, then use jq in subsequent calls\n\n**Schema Discovery Pattern:**\n1. First call: `path: \"/rest/api/3/search/jql\", queryParams: {\"maxResults\": \"1\", \"jql\": \"project=PROJ\"}` (no jq) - explore available fields\n2. Then use: `jq: \"issues[*].{key: key, summary: fields.summary, status: fields.status.name}\"` - extract only what you need\n\n**Output format:** TOON (default, token-efficient) or JSON (`outputFormat: \"json\"`)\n\n**Common paths:**\n- `/rest/api/3/project` - list all projects\n- `/rest/api/3/project/{projectKeyOrId}` - get project details\n- `/rest/api/3/search/jql` - search issues with JQL (use `jql` query param). NOTE: `/rest/api/3/search` is deprecated!\n- `/rest/api/3/issue/{issueIdOrKey}` - get issue details\n- `/rest/api/3/issue/{issueIdOrKey}/comment` - list issue comments\n- `/rest/api/3/issue/{issueIdOrKey}/worklog` - list issue worklogs\n- `/rest/api/3/issue/{issueIdOrKey}/transitions` - get available transitions\n- `/rest/api/3/user/search` - search users (use `query` param)\n- `/rest/api/3/status` - list all statuses\n- `/rest/api/3/issuetype` - list issue types\n- `/rest/api/3/priority` - list priorities\n\n**JQ examples:** `issues[*].key`, `issues[0]`, `issues[*].{key: key, summary: fields.summary}`\n\n**Example JQL queries:** `project=PROJ`, `assignee=currentUser()`, `status=\"In Progress\"`, `created >= -7d`\n\nAPI reference: https://developer.atlassian.com/cloud/jira/platform/rest/v3/",
@@ -50,7 +50,7 @@
         ]
       },
       "data_exfiltration": {
-        "count": 12,
+        "count": 11,
         "examples": [
           "Conduct deep, multi-source research on a topic (Sonar Deep Research model). Best for: literature reviews, comprehensive overviews, investigative queries needing many sources. Returns a detailed response with numbered citations. Significantly slower than other tools (30+ seconds). For quick factual questions, use perplexity_ask instead. For logical analysis and reasoning, use perplexity_reason instead.",
           "Answer a question using web-grounded AI (Sonar Pro model). Best for: quick factual questions, summaries, explanations, and general Q&A. Returns a text response with numbered citations. Fastest and cheapest option. Supports filtering by recency (hour/day/week/month/year), domain restrictions, and search context size. For in-depth multi-source research, use perplexity_research instead. For step-by-step reasoning and analysis, use perplexity_reason instead.",
@@ -58,7 +58,7 @@
         ]
       },
       "injection_attack": {
-        "count": 28,
+        "count": 25,
         "examples": [
           "Validate JSON-LD structured data against Schema.org rules and AI-citation best practices. Accepts either a URL (fetched) or a raw JSON string (parsed directly).\n\nRead-only when given `url` (one HTTP GET). Zero network when given `schema_json`. No writes.\n\nDeterministic, rule-based; no LLM. Validates required/recommended properties, @context correctness, sameAs links, and AI-search-friendly patterns.\n\nWhen to use: focused JSON-LD audits, or to validate a schema block you're about to ship. For a full page audit that includes schema + everything else, use `audit_page` instead.\n\nEither `url` or `schema_json` must be provided (not both). If both are provided, `schema_json` wins and no fetch happens.",
           "Find a run by query parameters. Returns the most recent completed run matching the criteria. Can search by ciBuildId (exact match) or by branch/tags. Supports pwLastRun flag for Playwright last run info. Requires projectId.",
@@ -66,7 +66,7 @@
         ]
       },
       "prompt_injection": {
-        "count": 62,
+        "count": 61,
         "examples": [
           "Full AI-SEO audit of a single URL: returns categorized findings (info/warning/error) with severity, fix instructions, and a 0-100 composite score plus per-dimension subscores.\n\nRead-only. Fetches the URL once and runs every sub-audit (schema, robots, technical, sitemap, AI-Overview eligibility) against the response. No writes, no third-party APIs, no auth required, no rate limits beyond polite per-host throttling.\n\nDeterministic, rule-based scoring; no LLM calls. Same URL + same input flags returns the same score.\n\nSupports `render: \"static\" | \"headless\"`. Default `static` (fast, raw HTML only). Use `headless` for React/Vue/Angular SPAs \u2014 adds 3-10s and requires the optional `playwright-core` peer dep plus a one-time `npx playwright install chromium`.\n\nWhen to use: the default entry point for `audit any page`. Use this instead of calling check_technical / audit_schema / check_robots / check_sitemap / score_ai_overview_eligibility individually unless you specifically need only one dimension - this tool composes all of them.",
           "READ-ONLY \u2014 outputs text only, writes no files, makes no network calls, has no side effects. Generates ready-to-paste shell scripts: a git post-commit hook and/or a GitHub Actions step. You must manually copy and install the output. Once the generated scripts are installed, each git commit or CI run will make outbound HTTPS calls to api.cachly.dev to feed learning signals to your brain. No auth required to call this tool \u2014 only an instance_id. Run once per repository.",
@@ -74,7 +74,7 @@
         ]
       },
       "system_manipulation": {
-        "count": 18,
+        "count": 17,
         "examples": [
           "\u7ba1\u7406\u4e91\u5b58\u50a8\u6587\u4ef6\uff0c\u4ec5\u7528\u4e8e COS/Storage \u5bf9\u8c61\uff0c\u4e0d\u7528\u4e8e\u9759\u6001\u7f51\u7ad9\u6258\u7ba1\u3002\u652f\u6301\u4e0a\u4f20\u6587\u4ef6/\u76ee\u5f55\u3001\u4e0b\u8f7d\u6587\u4ef6/\u76ee\u5f55\u3001\u5220\u9664\u6587\u4ef6/\u76ee\u5f55\u7b49\u64cd\u4f5c\u3002\u5220\u9664\u64cd\u4f5c\u9700\u8981\u8bbe\u7f6eforce=true\u8fdb\u884c\u786e\u8ba4\uff0c\u9632\u6b62\u8bef\u5220\u9664\u91cd\u8981\u6587\u4ef6\u3002\u6ce8\u610f\uff1a\u4e0a\u4f20\u540e\u8fd4\u56de\u7684 temporaryUrl \u662f\u4e34\u65f6\u7b7e\u540d\u94fe\u63a5\uff0c1\u5c0f\u65f6\u540e\u8fc7\u671f\uff0c\u4e0d\u8981\u5f53\u4f5c\u6c38\u4e45\u516c\u7f51\u5730\u5740\u5199\u5165\u914d\u7f6e\u6216\u6301\u4e45\u5316\u5b58\u50a8\u3002\u5de5\u5177\u8fd8\u4f1a\u57fa\u4e8e DescribeEnvs \u8fd4\u56de\u7684 Storages[0].CdnDomain \u63a8\u5bfc publicUrl\uff0c\u26a0\ufe0f \u8b66\u544a\uff1apublicUrl \u4ec5\u5728\u5b58\u50a8\u6876 ACL \u4e3a\u516c\u6709\u8bfb\uff08\u6240\u6709\u7528\u6237\u53ef\u8bfb\uff09\u65f6\u624d\u80fd\u88ab\u533f\u540d\u8bbf\u95ee\uff1b\u9ed8\u8ba4\u79c1\u6709\u8bfb\u5199\u5b58\u50a8\u6876\u8fd4\u56de\u7684 publicUrl \u4f1a 403\uff0c\u6b64\u65f6\u8bf7\u7ee7\u7eed\u4f7f\u7528 temporaryUrl \u6216\u5148\u901a\u8fc7\u63a7\u5236\u53f0/SDK \u5c06\u76ee\u6807\u8def\u5f84\u8bbe\u7f6e\u4e3a\u516c\u6709\u8bfb\u3002",
           "Clone a repository from a remote URL or local path. Accepts HTTP(S), SSH, git://, file://, and bare filesystem paths, with optional shallow cloning.",
@@ -82,7 +82,7 @@
         ]
       },
       "tool_poisoning": {
-        "count": 15,
+        "count": 14,
         "examples": [
           "Remove a single trace by id. Cascades to spans; eval_results keep the score history with trace_id NULLed.\n\nSibling tools \u2014 log_trace creates traces, get_traces queries them, evaluate_output / evaluate_with_llm_judge / verify_citations score them. delete_rule handles custom-rule deletion (separate concern); list_rules / deploy_rule manage the custom-rule lifecycle. delete_trace is the DESTRUCTIVE single-row remove for traces; it does NOT touch eval_results (preserved for audit + drift analytics), spans cascade automatically.\n\nBehavior. DESTRUCTIVE \u2014 SQL DELETE scoped to the caller's tenant_id. Cascades: spans belonging to this trace are deleted (FK ON DELETE CASCADE); eval_results that referenced this trace have their trace_id set to NULL (FK ON DELETE SET NULL) so aggregate dashboards + historical scores remain valid even after the trace is gone. Not idempotent: deleting an already-deleted trace returns `deleted: false`. Does not emit an audit log entry in v0.4 \u2014 traces are user-scope data, not policy changes. Rate-limited to 20 req/min on HTTP MCP.\n\nOutput shape. Returns JSON: `{ \"deleted\": boolean, \"trace_id\": string }`. `deleted=true` if a row was removed; `deleted=false` if no trace with that id existed (or it belonged to a different tenant \u2014 cross-tenant deletes silently fail).\n\nUse when a trace was captured in error, contains sensitive data that must be removed for compliance (e.g., a customer exercises GDPR right-to-erasure), or when cleaning up test data. Combine with get_traces to find candidates: query with filters \u2192 review \u2192 delete_trace(id) per target. For bulk time-window deletion, use `deleteTracesOlderThan` via the CLI / retention config \u2014 delete_trace is the single-row surgical path.\n\nDon't use to clean up OLD data in bulk (use retention config with --retention-days). Don't use to PAUSE a trace \u2014 traces are immutable once stored; there's nothing to pause. Don't use to delete eval_results \u2014 eval_results survive their trace's deletion intentionally (for audit + drift analysis); they're pruned only by retention.\n\nParameters. trace_id is the only parameter; must match 32-char lowercase hex (Zod regex). The trace_id you pass is exactly what log_trace returned in its response, or what get_traces returned per row. Format mismatch fails Zod with 400 BEFORE the storage layer is touched. Cross-tenant trace_ids return `deleted: false` silently \u2014 they're invisible to the caller's tenant (prevents enumeration attacks; matches delete_rule's tenant-isolation contract).\n\nError modes. Throws 400 on malformed trace_id (wrong format: not 32-char lowercase hex). Returns `{deleted: false}` when the id doesn't exist in the caller's tenant (not an error \u2014 the trace may simply have been deleted already). Returns 429 on HTTP rate limit. Storage failures propagate as 500.",
           "Identify tokens with the highest price increases over a period.",
@@ -90,14 +90,14 @@
         ]
       }
     },
-    "fpr": 0.25650557620817843,
-    "n": 1062,
+    "fpr": 0.25359477124183005,
+    "n": 1010,
     "per_concealment": {
       "bidi": {
         "fpr": 0.0,
-        "n": 13.0,
+        "n": 12.0,
         "precision": 1.0,
-        "recall": 0.6153846153846154
+        "recall": 0.5833333333333334
       },
       "html_comment": {
         "fpr": 0.0,
@@ -106,22 +106,22 @@
         "recall": 0.65
       },
       "none": {
-        "fpr": 0.25650557620817843,
-        "n": 1003.0,
-        "precision": 0.38392857142857145,
-        "recall": 0.6581632653061225
+        "fpr": 0.25359477124183005,
+        "n": 954.0,
+        "precision": 0.39751552795031053,
+        "recall": 0.6772486772486772
       },
       "whitespace": {
         "fpr": 0.0,
-        "n": 13.0,
+        "n": 12.0,
         "precision": 1.0,
-        "recall": 0.6923076923076923
+        "recall": 0.75
       },
       "zero_width": {
         "fpr": 0.0,
-        "n": 13.0,
+        "n": 12.0,
         "precision": 1.0,
-        "recall": 0.15384615384615385
+        "recall": 0.08333333333333333
       }
     },
     "per_source": {
@@ -132,10 +132,10 @@
         "recall": 0.0
       },
       "synthetic_mutation": {
-        "fpr": 0.2553191489361702,
-        "n": 443.0,
-        "precision": 0.7703349282296651,
-        "recall": 0.6313725490196078
+        "fpr": 0.23972602739726026,
+        "n": 391.0,
+        "precision": 0.8186528497409327,
+        "recall": 0.6448979591836734
       },
       "wild_fp": {
         "fpr": 1.0,
@@ -147,15 +147,15 @@
     "per_sub_label": {
       "command_execution": {
         "fpr": 0.0,
-        "n": 33.0,
+        "n": 29.0,
         "precision": 1.0,
-        "recall": 0.3939393939393939
+        "recall": 0.41379310344827586
       },
       "concealment": {
         "fpr": 0.0,
-        "n": 53.0,
+        "n": 52.0,
         "precision": 1.0,
-        "recall": 0.7924528301886793
+        "recall": 0.8076923076923077
       },
       "exfiltration": {
         "fpr": 0.0,
@@ -165,15 +165,15 @@
       },
       "instruction_override": {
         "fpr": 0.0,
-        "n": 43.0,
+        "n": 42.0,
         "precision": 1.0,
-        "recall": 0.5348837209302325
+        "recall": 0.5238095238095238
       },
       "privilege_escalation": {
         "fpr": 0.0,
-        "n": 30.0,
+        "n": 29.0,
         "precision": 1.0,
-        "recall": 0.7333333333333333
+        "recall": 0.7586206896551724
       },
       "secret_solicitation": {
         "fpr": 0.0,
@@ -183,36 +183,36 @@
       },
       "tool_shadowing": {
         "fpr": 0.0,
-        "n": 40.0,
+        "n": 36.0,
         "precision": 1.0,
-        "recall": 0.4
+        "recall": 0.4166666666666667
       }
     },
     "per_tier": {
       "easy": {
         "fpr": 0.0,
-        "n": 74.0,
+        "n": 71.0,
         "precision": 1.0,
-        "recall": 0.6216216216216216
+        "recall": 0.647887323943662
       },
       "hard": {
         "fpr": 0.0,
-        "n": 76.0,
+        "n": 73.0,
         "precision": 1.0,
-        "recall": 0.7236842105263158
+        "recall": 0.726027397260274
       },
       "medium": {
         "fpr": 0.0,
-        "n": 105.0,
+        "n": 101.0,
         "precision": 1.0,
-        "recall": 0.5714285714285714
+        "recall": 0.5841584158415841
       }
     },
-    "precision": 0.4375,
-    "recall": 0.6313725490196078,
+    "precision": 0.44886363636363635,
+    "recall": 0.6448979591836734,
     "scanner": "cisco_yara",
-    "tn": 600,
-    "tp": 161,
+    "tn": 571,
+    "tp": 158,
     "version": "4.8.0"
   }
 ]

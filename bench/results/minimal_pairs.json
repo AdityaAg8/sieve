@@ -210,13 +210,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-426f282fc4fc",
-    "mutation": "sb-syn-0012",
-    "label": "poisoned",
-    "difficulty": "easy",
-    "concealment": "whitespace"
-  },
-  {
     "host": "cat-6828409acbaf",
     "mutation": "sb-syn-0013",
     "label": "poisoned",
@@ -236,13 +229,6 @@
     "label": "poisoned",
     "difficulty": "medium",
     "concealment": "whitespace"
-  },
-  {
-    "host": "cat-244c2df5766a",
-    "mutation": "sb-syn-0016",
-    "label": "poisoned",
-    "difficulty": "medium",
-    "concealment": "none"
   },
   {
     "host": "cat-0466017b8675",
@@ -308,13 +294,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-c881ce8d224e",
-    "mutation": "sb-syn-0026",
-    "label": "poisoned",
-    "difficulty": "easy",
-    "concealment": "none"
-  },
-  {
     "host": "cat-bc6d66a5c019",
     "mutation": "sb-syn-0028",
     "label": "poisoned",
@@ -361,13 +340,6 @@
     "mutation": "sb-syn-0034",
     "label": "poisoned",
     "difficulty": "easy",
-    "concealment": "none"
-  },
-  {
-    "host": "cat-b1faa70ebf22",
-    "mutation": "sb-syn-0035",
-    "label": "poisoned",
-    "difficulty": "medium",
     "concealment": "none"
   },
   {
@@ -959,13 +931,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-826679c25dd4",
-    "mutation": "sb-syn-0122",
-    "label": "poisoned",
-    "difficulty": "hard",
-    "concealment": "none"
-  },
-  {
     "host": "cat-e30702cfa32d",
     "mutation": "sb-syn-0123",
     "label": "poisoned",
@@ -1132,13 +1097,6 @@
     "label": "poisoned",
     "difficulty": "medium",
     "concealment": "none"
-  },
-  {
-    "host": "cat-34c4adffade2",
-    "mutation": "sb-syn-0147",
-    "label": "poisoned",
-    "difficulty": "hard",
-    "concealment": "bidi"
   },
   {
     "host": "cat-9778c3a26f3e",
@@ -1568,13 +1526,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-7be623e2ed40",
-    "mutation": "sb-syn-0210",
-    "label": "poisoned",
-    "difficulty": "hard",
-    "concealment": "zero_width"
-  },
-  {
     "host": "cat-4ed00415689d",
     "mutation": "sb-syn-0211",
     "label": "poisoned",
@@ -1708,13 +1659,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-2ac8c15b04ed",
-    "mutation": "sb-syn-0230",
-    "label": "poisoned",
-    "difficulty": "medium",
-    "concealment": "none"
-  },
-  {
     "host": "cat-91848be4c202",
     "mutation": "sb-syn-0231",
     "label": "poisoned",
@@ -1775,13 +1719,6 @@
     "mutation": "sb-syn-0239",
     "label": "poisoned",
     "difficulty": "medium",
-    "concealment": "none"
-  },
-  {
-    "host": "cat-55191cc9caa1",
-    "mutation": "sb-syn-0240",
-    "label": "poisoned",
-    "difficulty": "easy",
     "concealment": "none"
   },
   {
@@ -2016,13 +1953,6 @@
     "concealment": "whitespace"
   },
   {
-    "host": "cat-34c4adffade2",
-    "mutation": "sb-syn-0274",
-    "label": "poisoned",
-    "difficulty": "medium",
-    "concealment": "none"
-  },
-  {
     "host": "cat-e7534269783f",
     "mutation": "sb-syn-0275",
     "label": "poisoned",
@@ -2100,13 +2030,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-cd847c18e2fb",
-    "mutation": "sb-syn-0286",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
     "host": "cat-a88220cee26e",
     "mutation": "sb-syn-0287",
     "label": "imperative_benign",
@@ -2123,34 +2046,6 @@
   {
     "host": "cat-4f134f8110bb",
     "mutation": "sb-syn-0290",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-48bd539cc6ea",
-    "mutation": "sb-syn-0293",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-80786bff5e25",
-    "mutation": "sb-syn-0294",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-6ffed8edc972",
-    "mutation": "sb-syn-0296",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-472085191dc7",
-    "mutation": "sb-syn-0297",
     "label": "imperative_benign",
     "difficulty": null,
     "concealment": "none"
@@ -2247,13 +2142,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-cab4a9d18b52",
-    "mutation": "sb-syn-0312",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
     "host": "cat-a1b2031060e5",
     "mutation": "sb-syn-0313",
     "label": "imperative_benign",
@@ -2275,13 +2163,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-46a600ec95b1",
-    "mutation": "sb-syn-0316",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
     "host": "cat-3a7556b61ac1",
     "mutation": "sb-syn-0317",
     "label": "imperative_benign",
@@ -2291,13 +2172,6 @@
   {
     "host": "cat-1932cb8d69c3",
     "mutation": "sb-syn-0318",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-a8ff4051739c",
-    "mutation": "sb-syn-0319",
     "label": "imperative_benign",
     "difficulty": null,
     "concealment": "none"
@@ -2345,20 +2219,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-6910b76d13bf",
-    "mutation": "sb-syn-0327",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-ee7fb8165dd7",
-    "mutation": "sb-syn-0328",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
     "host": "cat-2b39044ae0a4",
     "mutation": "sb-syn-0329",
     "label": "imperative_benign",
@@ -2382,13 +2242,6 @@
   {
     "host": "cat-ae9f8401c8e1",
     "mutation": "sb-syn-0334",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-611fe83c4528",
-    "mutation": "sb-syn-0335",
     "label": "imperative_benign",
     "difficulty": null,
     "concealment": "none"
@@ -2443,13 +2296,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-dd2a159d3e06",
-    "mutation": "sb-syn-0343",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
     "host": "cat-ee32f4eade18",
     "mutation": "sb-syn-0344",
     "label": "imperative_benign",
@@ -2459,41 +2305,6 @@
   {
     "host": "cat-a1b2031060e5",
     "mutation": "sb-syn-0345",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-2c27ac7d5a55",
-    "mutation": "sb-syn-0346",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-344c364dcc79",
-    "mutation": "sb-syn-0347",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-4be988798bc7",
-    "mutation": "sb-syn-0348",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-1b483172acac",
-    "mutation": "sb-syn-0349",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-af8a9003c6c3",
-    "mutation": "sb-syn-0350",
     "label": "imperative_benign",
     "difficulty": null,
     "concealment": "none"
@@ -2520,34 +2331,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-229bfc13765a",
-    "mutation": "sb-syn-0355",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-f0541774bfbf",
-    "mutation": "sb-syn-0356",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-6483ba174e5b",
-    "mutation": "sb-syn-0360",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-a998be0d956d",
-    "mutation": "sb-syn-0361",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
     "host": "cat-e78fac106050",
     "mutation": "sb-syn-0362",
     "label": "imperative_benign",
@@ -2557,20 +2340,6 @@
   {
     "host": "cat-dcdf9783b932",
     "mutation": "sb-syn-0366",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-67e007ed93cd",
-    "mutation": "sb-syn-0368",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-a28b88086474",
-    "mutation": "sb-syn-0369",
     "label": "imperative_benign",
     "difficulty": null,
     "concealment": "none"
@@ -2639,20 +2408,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-31cf3da096de",
-    "mutation": "sb-syn-0381",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-6189b2be1726",
-    "mutation": "sb-syn-0382",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
     "host": "cat-ce03eb55b2c2",
     "mutation": "sb-syn-0383",
     "label": "imperative_benign",
@@ -2667,20 +2422,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-91848be4c202",
-    "mutation": "sb-syn-0385",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-6a7c249e2f6c",
-    "mutation": "sb-syn-0386",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
     "host": "cat-1c4c61245f62",
     "mutation": "sb-syn-0387",
     "label": "imperative_benign",
@@ -2690,27 +2431,6 @@
   {
     "host": "cat-bba542e13527",
     "mutation": "sb-syn-0388",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-c3a265f25c0a",
-    "mutation": "sb-syn-0389",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-344c364dcc79",
-    "mutation": "sb-syn-0390",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-edd53b741887",
-    "mutation": "sb-syn-0391",
     "label": "imperative_benign",
     "difficulty": null,
     "concealment": "none"
@@ -2744,27 +2464,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-1eae732ce4eb",
-    "mutation": "sb-syn-0397",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-1fb878ef266a",
-    "mutation": "sb-syn-0398",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-a32b7286653f",
-    "mutation": "sb-syn-0399",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
     "host": "cat-0049f133bc58",
     "mutation": "sb-syn-0400",
     "label": "imperative_benign",
@@ -2781,20 +2480,6 @@
   {
     "host": "cat-36950f913da9",
     "mutation": "sb-syn-0402",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-bf8c498c97a5",
-    "mutation": "sb-syn-0403",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-84c634175cb3",
-    "mutation": "sb-syn-0404",
     "label": "imperative_benign",
     "difficulty": null,
     "concealment": "none"
@@ -2842,13 +2527,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-8d158adb701e",
-    "mutation": "sb-syn-0411",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
     "host": "cat-8db6d600e1e7",
     "mutation": "sb-syn-0412",
     "label": "imperative_benign",
@@ -2877,13 +2555,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-54c571d5e708",
-    "mutation": "sb-syn-0416",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
     "host": "cat-a310c15a025d",
     "mutation": "sb-syn-0417",
     "label": "imperative_benign",
@@ -2893,20 +2564,6 @@
   {
     "host": "cat-cd847c18e2fb",
     "mutation": "sb-syn-0419",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-84c634175cb3",
-    "mutation": "sb-syn-0420",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-d4d04a999c23",
-    "mutation": "sb-syn-0421",
     "label": "imperative_benign",
     "difficulty": null,
     "concealment": "none"
@@ -2928,13 +2585,6 @@
   {
     "host": "cat-fa9a614e1839",
     "mutation": "sb-syn-0425",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-ac1d6a58502a",
-    "mutation": "sb-syn-0427",
     "label": "imperative_benign",
     "difficulty": null,
     "concealment": "none"
@@ -3003,13 +2653,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-bf197d240d39",
-    "mutation": "sb-syn-0440",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
     "host": "cat-12ad779aabfc",
     "mutation": "sb-syn-0441",
     "label": "imperative_benign",
@@ -3024,29 +2667,8 @@
     "concealment": "none"
   },
   {
-    "host": "cat-bf197d240d39",
-    "mutation": "sb-syn-0443",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
     "host": "cat-3b7db875267e",
     "mutation": "sb-syn-0444",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-647f1c1e679c",
-    "mutation": "sb-syn-0445",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-b8e3321609e4",
-    "mutation": "sb-syn-0446",
     "label": "imperative_benign",
     "difficulty": null,
     "concealment": "none"
@@ -3059,13 +2681,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-6cce0fefd0f9",
-    "mutation": "sb-syn-0448",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
     "host": "cat-0fa91529df69",
     "mutation": "sb-syn-0449",
     "label": "imperative_benign",
@@ -3073,22 +2688,8 @@
     "concealment": "none"
   },
   {
-    "host": "cat-0ed4e91f7ce7",
-    "mutation": "sb-syn-0451",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
     "host": "cat-5113edc3b9a6",
     "mutation": "sb-syn-0454",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-501166005167",
-    "mutation": "sb-syn-0455",
     "label": "imperative_benign",
     "difficulty": null,
     "concealment": "none"
@@ -3103,13 +2704,6 @@
   {
     "host": "cat-1b59191fa809",
     "mutation": "sb-syn-0458",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-c65df55864e8",
-    "mutation": "sb-syn-0459",
     "label": "imperative_benign",
     "difficulty": null,
     "concealment": "none"
@@ -3178,20 +2772,6 @@
     "concealment": "none"
   },
   {
-    "host": "cat-366853c6db9c",
-    "mutation": "sb-syn-0471",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-4a2d0006e1c0",
-    "mutation": "sb-syn-0473",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
     "host": "cat-658d3f567ea9",
     "mutation": "sb-syn-0474",
     "label": "imperative_benign",
@@ -3215,20 +2795,6 @@
   {
     "host": "cat-3de242d1c5b4",
     "mutation": "sb-syn-0477",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-95f2e6210011",
-    "mutation": "sb-syn-0478",
-    "label": "imperative_benign",
-    "difficulty": null,
-    "concealment": "none"
-  },
-  {
-    "host": "cat-fa081d11a65c",
-    "mutation": "sb-syn-0479",
     "label": "imperative_benign",
     "difficulty": null,
     "concealment": "none"

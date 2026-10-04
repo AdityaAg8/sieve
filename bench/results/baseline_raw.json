@@ -42,7 +42,7 @@
   {
     "flagged": false,
     "id": "cat-344c364dcc79",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@aashari/mcp-server-atlassian-confluence",
     "source": "public_repo"
@@ -70,7 +70,7 @@
   {
     "flagged": true,
     "id": "cat-305a7df135db",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "credential_harvesting"
     ],
@@ -154,7 +154,7 @@
   {
     "flagged": false,
     "id": "cat-bbd5bd5844b3",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@ahmetbarut/mcp-database-server",
     "source": "public_repo"
@@ -170,7 +170,7 @@
   {
     "flagged": false,
     "id": "cat-d954e9e4e8bf",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@alchemy/mcp-server",
     "source": "public_repo"
@@ -178,7 +178,7 @@
   {
     "flagged": false,
     "id": "cat-6a922e650b58",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@alchemy/mcp-server",
     "source": "public_repo"
@@ -186,7 +186,7 @@
   {
     "flagged": false,
     "id": "cat-c65df55864e8",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@angelogiacco/elevenlabs-mcp-server",
     "source": "public_repo"
@@ -266,7 +266,7 @@
   {
     "flagged": false,
     "id": "cat-75376cd7208e",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@automatelab/ai-seo-mcp",
     "source": "public_repo"
@@ -274,7 +274,7 @@
   {
     "flagged": false,
     "id": "cat-469749823c42",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@automatelab/ai-seo-mcp",
     "source": "public_repo"
@@ -292,7 +292,7 @@
   {
     "flagged": true,
     "id": "cat-0e1376dad980",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "injection_attack"
     ],
@@ -400,7 +400,7 @@
   {
     "flagged": true,
     "id": "cat-403e2b2fd0a2",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "credential_harvesting"
     ],
@@ -496,7 +496,7 @@
   {
     "flagged": true,
     "id": "cat-a1305c5af09e",
-    "label": "benign",
+    "label": "imperative_benign",
     "rule_ids": [
       "code_execution"
     ],
@@ -644,7 +644,7 @@
   {
     "flagged": false,
     "id": "cat-9cf2246a7521",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@cyanheads/git-mcp-server",
     "source": "public_repo"
@@ -670,7 +670,7 @@
   {
     "flagged": false,
     "id": "cat-229bfc13765a",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@dangahagan/weather-mcp",
     "source": "public_repo"
@@ -1096,7 +1096,7 @@
   {
     "flagged": false,
     "id": "cat-9a2500e94b74",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@heroku/mcp-server",
     "source": "public_repo"
@@ -1112,7 +1112,7 @@
   {
     "flagged": false,
     "id": "cat-87650ced3ca5",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@heroui/react-mcp",
     "source": "public_repo"
@@ -1222,7 +1222,7 @@
   {
     "flagged": false,
     "id": "cat-1d571ed468f3",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@intlayer/mcp",
     "source": "public_repo"
@@ -1275,7 +1275,7 @@
   {
     "flagged": true,
     "id": "cat-4b63f3c64206",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "credential_harvesting"
     ],
@@ -1361,7 +1361,7 @@
   {
     "flagged": false,
     "id": "cat-72c61e80df41",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@john8844/jira-mcp-server",
     "source": "public_repo"
@@ -1491,7 +1491,7 @@
   {
     "flagged": false,
     "id": "cat-34c4adffade2",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@mastra/mcp-docs-server",
     "source": "public_repo"
@@ -1534,7 +1534,7 @@
   {
     "flagged": false,
     "id": "cat-8f2f5a3e9954",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@microsoft/clarity-mcp-server",
     "source": "public_repo"
@@ -1542,7 +1542,7 @@
   {
     "flagged": false,
     "id": "cat-e9a741802881",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@microsoft/devbox-mcp",
     "source": "public_repo"
@@ -1706,7 +1706,7 @@
   {
     "flagged": false,
     "id": "cat-fa081d11a65c",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@mseep/git-mcp-server",
     "source": "public_repo"
@@ -1714,7 +1714,7 @@
   {
     "flagged": false,
     "id": "cat-f9d5d3bcd82c",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@mseep/git-mcp-server",
     "source": "public_repo"
@@ -1898,7 +1898,7 @@
   {
     "flagged": false,
     "id": "cat-ee07e8b3a377",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@notprolands/ast-grep-mcp",
     "source": "public_repo"
@@ -1906,7 +1906,7 @@
   {
     "flagged": true,
     "id": "cat-a84ccdec3a3e",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "prompt_injection"
     ],
@@ -1968,7 +1968,7 @@
   {
     "flagged": true,
     "id": "cat-31cf3da096de",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "code_execution"
     ],
@@ -2040,7 +2040,7 @@
   {
     "flagged": false,
     "id": "cat-6d58454c4327",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@openbnb/mcp-server-airbnb",
     "source": "public_repo"
@@ -2048,7 +2048,7 @@
   {
     "flagged": false,
     "id": "cat-e00820fffa25",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@openbnb/mcp-server-airbnb",
     "source": "public_repo"
@@ -2064,7 +2064,7 @@
   {
     "flagged": false,
     "id": "cat-4f114de1438a",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@openephemeris/mcp-server",
     "source": "public_repo"
@@ -2088,7 +2088,7 @@
   {
     "flagged": false,
     "id": "cat-3af9740e4e3b",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@origintrail-official/dkg-mcp",
     "source": "public_repo"
@@ -2096,7 +2096,7 @@
   {
     "flagged": false,
     "id": "cat-cab4a9d18b52",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@origintrail-official/dkg-mcp",
     "source": "public_repo"
@@ -2104,7 +2104,7 @@
   {
     "flagged": true,
     "id": "cat-ca42ae280001",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "code_execution"
     ],
@@ -2124,7 +2124,7 @@
   {
     "flagged": true,
     "id": "cat-c426e491dd65",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "code_execution"
     ],
@@ -2160,7 +2160,7 @@
   {
     "flagged": true,
     "id": "cat-284b9a5db5eb",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "system_manipulation"
     ],
@@ -2188,7 +2188,7 @@
   {
     "flagged": true,
     "id": "cat-fbb7a83aff3c",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "data_exfiltration"
     ],
@@ -2224,7 +2224,7 @@
   {
     "flagged": false,
     "id": "cat-42083543bc7e",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@poisedhq/dearuser-mcp",
     "source": "public_repo"
@@ -2240,7 +2240,7 @@
   {
     "flagged": true,
     "id": "cat-366853c6db9c",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "prompt_injection"
     ],
@@ -2358,7 +2358,7 @@
   {
     "flagged": true,
     "id": "cat-ae9f8401c8e1",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "credential_harvesting"
     ],
@@ -2446,7 +2446,7 @@
   {
     "flagged": false,
     "id": "cat-231e3c32cc9d",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@seldonframe/mcp",
     "source": "public_repo"
@@ -2816,7 +2816,7 @@
   {
     "flagged": false,
     "id": "cat-198dd3fd9b53",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "@tocharianou/mcp-server-kibana",
     "source": "public_repo"
@@ -3344,7 +3344,7 @@
   {
     "flagged": true,
     "id": "cat-cd458aefa146",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "prompt_injection"
     ],
@@ -3428,7 +3428,7 @@
   {
     "flagged": false,
     "id": "cat-161497ecd9d7",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "clinicaltrialsgov-mcp-server",
     "source": "public_repo"
@@ -3500,7 +3500,7 @@
   {
     "flagged": false,
     "id": "cat-8e808c265291",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "codewikitap",
     "source": "public_repo"
@@ -3540,7 +3540,7 @@
   {
     "flagged": false,
     "id": "cat-8bf004bf4375",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "cogmemai-mcp",
     "source": "public_repo"
@@ -3548,7 +3548,7 @@
   {
     "flagged": false,
     "id": "cat-611fe83c4528",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "dataforseo-mcp-server",
     "source": "public_repo"
@@ -3662,7 +3662,7 @@
   {
     "flagged": true,
     "id": "cat-472085191dc7",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "tool_poisoning"
     ],
@@ -3682,7 +3682,7 @@
   {
     "flagged": true,
     "id": "cat-7544316a82c9",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "credential_harvesting"
     ],
@@ -3708,7 +3708,7 @@
   {
     "flagged": true,
     "id": "cat-e2e799ef2093",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "prompt_injection"
     ],
@@ -3728,7 +3728,7 @@
   {
     "flagged": true,
     "id": "cat-0d30287308d5",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "prompt_injection"
     ],
@@ -3738,7 +3738,7 @@
   {
     "flagged": true,
     "id": "cat-dcee1b91c995",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "prompt_injection"
     ],
@@ -3820,7 +3820,7 @@
   {
     "flagged": true,
     "id": "cat-dfe962d36111",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "tool_poisoning"
     ],
@@ -3860,7 +3860,7 @@
   {
     "flagged": false,
     "id": "cat-4be988798bc7",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "guardvibe",
     "source": "public_repo"
@@ -3916,7 +3916,7 @@
   {
     "flagged": false,
     "id": "cat-e5bfd1a00a11",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "heor-agent-mcp",
     "source": "public_repo"
@@ -3932,7 +3932,7 @@
   {
     "flagged": true,
     "id": "cat-530a3d4bd718",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "prompt_injection"
     ],
@@ -3994,7 +3994,7 @@
   {
     "flagged": true,
     "id": "cat-8d158adb701e",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "credential_harvesting"
     ],
@@ -4102,7 +4102,7 @@
   {
     "flagged": false,
     "id": "cat-484b2e954262",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "kosyak-evm-mcp-server",
     "source": "public_repo"
@@ -4118,7 +4118,7 @@
   {
     "flagged": true,
     "id": "cat-af8a9003c6c3",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "system_manipulation"
     ],
@@ -4128,7 +4128,7 @@
   {
     "flagged": false,
     "id": "cat-63b2afdd85d4",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "langsmith-mcp-server",
     "source": "public_repo"
@@ -4658,7 +4658,7 @@
   {
     "flagged": false,
     "id": "cat-9251f35fca65",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "nexus-agents",
     "source": "public_repo"
@@ -4674,7 +4674,7 @@
   {
     "flagged": true,
     "id": "cat-1deb2fbe7f2b",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "injection_attack"
     ],
@@ -4694,7 +4694,7 @@
   {
     "flagged": false,
     "id": "cat-7c38c629f3d1",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "notebooklm-mcp",
     "source": "public_repo"
@@ -4768,7 +4768,7 @@
   {
     "flagged": false,
     "id": "cat-5051689df4fb",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "ollama-intern-mcp",
     "source": "public_repo"
@@ -4784,7 +4784,7 @@
   {
     "flagged": true,
     "id": "cat-8254e9693e0e",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "credential_harvesting"
     ],
@@ -4842,7 +4842,7 @@
   {
     "flagged": false,
     "id": "cat-361a01d83ef8",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "pretext-pdf-mcp",
     "source": "public_repo"
@@ -4876,7 +4876,7 @@
   {
     "flagged": true,
     "id": "cat-392e4777527e",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "credential_harvesting"
     ],
@@ -5002,7 +5002,7 @@
   {
     "flagged": true,
     "id": "cat-6d0f1fb4495c",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "code_execution",
       "injection_attack"
@@ -5075,7 +5075,7 @@
   {
     "flagged": false,
     "id": "cat-edc20876c662",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "stock-scanner-mcp",
     "source": "public_repo"
@@ -5147,7 +5147,7 @@
   {
     "flagged": false,
     "id": "cat-2f2b97d1e9b9",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [],
     "server_name": "tavily-mcp",
     "source": "public_repo"
@@ -5235,7 +5235,7 @@
   {
     "flagged": true,
     "id": "cat-48b7c77f7ab9",
-    "label": "imperative_benign",
+    "label": "benign",
     "rule_ids": [
       "credential_harvesting"
     ],
@@ -5540,14 +5540,6 @@
   },
   {
     "flagged": false,
-    "id": "sb-syn-0012",
-    "label": "poisoned",
-    "rule_ids": [],
-    "server_name": "@ui5/mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
     "id": "sb-syn-0013",
     "label": "poisoned",
     "rule_ids": [],
@@ -5574,14 +5566,6 @@
       "tool_poisoning"
     ],
     "server_name": "@softeria/ms-365-mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0016",
-    "label": "poisoned",
-    "rule_ids": [],
-    "server_name": "@sap-ux/fiori-mcp-server",
     "source": "synthetic_mutation"
   },
   {
@@ -5672,14 +5656,6 @@
     "source": "synthetic_mutation"
   },
   {
-    "flagged": false,
-    "id": "sb-syn-0026",
-    "label": "poisoned",
-    "rule_ids": [],
-    "server_name": "@hostsmith/mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
     "flagged": true,
     "id": "sb-syn-0028",
     "label": "poisoned",
@@ -5744,16 +5720,6 @@
     "label": "poisoned",
     "rule_ids": [],
     "server_name": "@notcrippledgod/uk-business-intelligence-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": true,
-    "id": "sb-syn-0035",
-    "label": "poisoned",
-    "rule_ids": [
-      "prompt_injection"
-    ],
-    "server_name": "prism-mcp-server",
     "source": "synthetic_mutation"
   },
   {
@@ -6440,14 +6406,6 @@
   },
   {
     "flagged": false,
-    "id": "sb-syn-0122",
-    "label": "poisoned",
-    "rule_ids": [],
-    "server_name": "@aegis-scan/mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
     "id": "sb-syn-0123",
     "label": "poisoned",
     "rule_ids": [],
@@ -6641,16 +6599,6 @@
       "credential_harvesting"
     ],
     "server_name": "npm-search-mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": true,
-    "id": "sb-syn-0147",
-    "label": "poisoned",
-    "rule_ids": [
-      "credential_harvesting"
-    ],
-    "server_name": "@mastra/mcp-docs-server",
     "source": "synthetic_mutation"
   },
   {
@@ -7078,16 +7026,6 @@
     "source": "synthetic_mutation"
   },
   {
-    "flagged": true,
-    "id": "sb-syn-0210",
-    "label": "poisoned",
-    "rule_ids": [
-      "code_execution"
-    ],
-    "server_name": "@extentos/mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
     "flagged": false,
     "id": "sb-syn-0211",
     "label": "poisoned",
@@ -7238,14 +7176,6 @@
     "source": "synthetic_mutation"
   },
   {
-    "flagged": false,
-    "id": "sb-syn-0230",
-    "label": "poisoned",
-    "rule_ids": [],
-    "server_name": "@codacy/codacy-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
     "flagged": true,
     "id": "sb-syn-0232",
     "label": "poisoned",
@@ -7321,14 +7251,6 @@
       "credential_harvesting"
     ],
     "server_name": "@doitintl/doit-mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0240",
-    "label": "poisoned",
-    "rule_ids": [],
-    "server_name": "@driflyte/mcp-server",
     "source": "synthetic_mutation"
   },
   {
@@ -7618,14 +7540,6 @@
     "source": "synthetic_mutation"
   },
   {
-    "flagged": false,
-    "id": "sb-syn-0274",
-    "label": "poisoned",
-    "rule_ids": [],
-    "server_name": "@mastra/mcp-docs-server",
-    "source": "synthetic_mutation"
-  },
-  {
     "flagged": true,
     "id": "sb-syn-0275",
     "label": "poisoned",
@@ -7715,16 +7629,6 @@
     "source": "synthetic_mutation"
   },
   {
-    "flagged": true,
-    "id": "sb-syn-0286",
-    "label": "imperative_benign",
-    "rule_ids": [
-      "code_execution"
-    ],
-    "server_name": "js-reverse-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
     "flagged": false,
     "id": "sb-syn-0287",
     "label": "imperative_benign",
@@ -7748,42 +7652,6 @@
     "label": "imperative_benign",
     "rule_ids": [],
     "server_name": "@jpisnice/shadcn-ui-mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0293",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@nookplot/mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0294",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "agent-passport-system-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": true,
-    "id": "sb-syn-0296",
-    "label": "imperative_benign",
-    "rule_ids": [
-      "injection_attack"
-    ],
-    "server_name": "mcp-server-code-runner",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": true,
-    "id": "sb-syn-0297",
-    "label": "imperative_benign",
-    "rule_ids": [
-      "tool_poisoning"
-    ],
-    "server_name": "figma-console-mcp",
     "source": "synthetic_mutation"
   },
   {
@@ -7890,14 +7758,6 @@
   },
   {
     "flagged": false,
-    "id": "sb-syn-0312",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@origintrail-official/dkg-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
     "id": "sb-syn-0313",
     "label": "imperative_benign",
     "rule_ids": [],
@@ -7921,16 +7781,6 @@
     "source": "synthetic_mutation"
   },
   {
-    "flagged": true,
-    "id": "sb-syn-0316",
-    "label": "imperative_benign",
-    "rule_ids": [
-      "injection_attack"
-    ],
-    "server_name": "@unclick/mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
     "flagged": false,
     "id": "sb-syn-0317",
     "label": "imperative_benign",
@@ -7944,14 +7794,6 @@
     "label": "imperative_benign",
     "rule_ids": [],
     "server_name": "fetcher-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0319",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@railway/mcp-server",
     "source": "synthetic_mutation"
   },
   {
@@ -7997,14 +7839,6 @@
     "source": "synthetic_mutation"
   },
   {
-    "flagged": false,
-    "id": "sb-syn-0327",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@ryanmarc/youtube-summarizer-mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
     "flagged": true,
     "id": "sb-syn-0331",
     "label": "imperative_benign",
@@ -8030,14 +7864,6 @@
       "credential_harvesting"
     ],
     "server_name": "@respira/wordpress-mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0335",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "dataforseo-mcp-server",
     "source": "synthetic_mutation"
   },
   {
@@ -8106,50 +7932,6 @@
   },
   {
     "flagged": true,
-    "id": "sb-syn-0346",
-    "label": "imperative_benign",
-    "rule_ids": [
-      "credential_harvesting"
-    ],
-    "server_name": "figma-console-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0347",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@aashari/mcp-server-atlassian-confluence",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0348",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "guardvibe",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0349",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "ollama-intern-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": true,
-    "id": "sb-syn-0350",
-    "label": "imperative_benign",
-    "rule_ids": [
-      "system_manipulation"
-    ],
-    "server_name": "kosyak-evm-mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": true,
     "id": "sb-syn-0352",
     "label": "imperative_benign",
     "rule_ids": [
@@ -8168,53 +7950,10 @@
   },
   {
     "flagged": false,
-    "id": "sb-syn-0355",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@dangahagan/weather-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0356",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@fre4x/arxiv",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0360",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@siemens/element-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0361",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@onesub/mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
     "id": "sb-syn-0366",
     "label": "imperative_benign",
     "rule_ids": [],
     "server_name": "@chakra-ui/react-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": true,
-    "id": "sb-syn-0369",
-    "label": "imperative_benign",
-    "rule_ids": [
-      "code_execution",
-      "injection_attack"
-    ],
-    "server_name": "@mastra/mcp-docs-server",
     "source": "synthetic_mutation"
   },
   {
@@ -8302,26 +8041,6 @@
     "source": "synthetic_mutation"
   },
   {
-    "flagged": true,
-    "id": "sb-syn-0381",
-    "label": "imperative_benign",
-    "rule_ids": [
-      "code_execution"
-    ],
-    "server_name": "@ohah/react-native-mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": true,
-    "id": "sb-syn-0382",
-    "label": "imperative_benign",
-    "rule_ids": [
-      "credential_harvesting"
-    ],
-    "server_name": "@cachly-dev/mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
     "flagged": false,
     "id": "sb-syn-0384",
     "label": "imperative_benign",
@@ -8331,44 +8050,10 @@
   },
   {
     "flagged": false,
-    "id": "sb-syn-0386",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "n8n-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
     "id": "sb-syn-0387",
     "label": "imperative_benign",
     "rule_ids": [],
     "server_name": "@onesub/mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": true,
-    "id": "sb-syn-0389",
-    "label": "imperative_benign",
-    "rule_ids": [
-      "code_execution"
-    ],
-    "server_name": "@origintrail-official/dkg-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0390",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@aashari/mcp-server-atlassian-confluence",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0391",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@ui5/mcp-server",
     "source": "synthetic_mutation"
   },
   {
@@ -8407,30 +8092,6 @@
   },
   {
     "flagged": false,
-    "id": "sb-syn-0397",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@currents/mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0398",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@ohah/react-native-mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0399",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@poisedhq/dearuser-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
     "id": "sb-syn-0400",
     "label": "imperative_benign",
     "rule_ids": [],
@@ -8443,14 +8104,6 @@
     "label": "imperative_benign",
     "rule_ids": [],
     "server_name": "clinicaltrialsgov-mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0403",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@codacy/codacy-mcp",
     "source": "synthetic_mutation"
   },
   {
@@ -8497,16 +8150,6 @@
   },
   {
     "flagged": true,
-    "id": "sb-syn-0411",
-    "label": "imperative_benign",
-    "rule_ids": [
-      "credential_harvesting"
-    ],
-    "server_name": "hostinger-api-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": true,
     "id": "sb-syn-0412",
     "label": "imperative_benign",
     "rule_ids": [
@@ -8539,16 +8182,6 @@
     "label": "imperative_benign",
     "rule_ids": [],
     "server_name": "@hostsmith/mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": true,
-    "id": "sb-syn-0416",
-    "label": "imperative_benign",
-    "rule_ids": [
-      "data_exfiltration"
-    ],
-    "server_name": "prism-mcp-server",
     "source": "synthetic_mutation"
   },
   {
@@ -8593,14 +8226,6 @@
     "label": "imperative_benign",
     "rule_ids": [],
     "server_name": "@nordsym/apiclaw",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0427",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@mapbox/mcp-server",
     "source": "synthetic_mutation"
   },
   {
@@ -8669,22 +8294,6 @@
   },
   {
     "flagged": false,
-    "id": "sb-syn-0445",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "graphlit-mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0446",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@structured-world/gitlab-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
     "id": "sb-syn-0447",
     "label": "imperative_benign",
     "rule_ids": [],
@@ -8693,34 +8302,10 @@
   },
   {
     "flagged": false,
-    "id": "sb-syn-0448",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "lsp-mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0451",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "spartanode-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
     "id": "sb-syn-0454",
     "label": "imperative_benign",
     "rule_ids": [],
     "server_name": "mcp-searxng",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0455",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@arabold/docs-mcp-server",
     "source": "synthetic_mutation"
   },
   {
@@ -8737,14 +8322,6 @@
     "label": "imperative_benign",
     "rule_ids": [],
     "server_name": "@mcp-apps/kusto-mcp-server",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0459",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@angelogiacco/elevenlabs-mcp-server",
     "source": "synthetic_mutation"
   },
   {
@@ -8812,24 +8389,6 @@
     "source": "synthetic_mutation"
   },
   {
-    "flagged": true,
-    "id": "sb-syn-0471",
-    "label": "imperative_benign",
-    "rule_ids": [
-      "prompt_injection"
-    ],
-    "server_name": "@poisedhq/dearuser-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0473",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "n8n-mcp",
-    "source": "synthetic_mutation"
-  },
-  {
     "flagged": false,
     "id": "sb-syn-0474",
     "label": "imperative_benign",
@@ -8864,14 +8423,6 @@
       "injection_attack"
     ],
     "server_name": "@sveltejs/mcp",
-    "source": "synthetic_mutation"
-  },
-  {
-    "flagged": false,
-    "id": "sb-syn-0479",
-    "label": "imperative_benign",
-    "rule_ids": [],
-    "server_name": "@mseep/git-mcp-server",
     "source": "synthetic_mutation"
   },
   {
