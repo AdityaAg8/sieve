@@ -108,7 +108,23 @@ def headline_row(ablations: dict[str, Any]) -> dict[str, Any]:
         and str(row.get("classifier", "")).startswith("models/")
         and row.get("mode") == "full"
         and not row.get("breakdown_of")
+        and row.get("status") != "deferred"
     ]
+    judge_deferred = any(
+        row.get("judge") == HEADLINE_JUDGE and row.get("status") == "deferred" for row in rows
+    )
+    if not candidates and judge_deferred:
+        # D8: the judge is deferred, so the shipped pipeline is Stage 1 alone. The headline is
+        # that encoder's own full-serialisation row, and `_reduction_line` says so.
+        candidates = [
+            row
+            for row in rows
+            if row.get("judge") == "none"
+            and str(row.get("classifier", "")).startswith("models/")
+            and row.get("mode") == "full"
+            and not row.get("breakdown_of")
+            and not row.get("single_seed")
+        ]
     if not candidates:
         raise Refused(
             "no ablation row runs the classifier with the shipped judge "
@@ -137,12 +153,21 @@ def _fpr_line(holdout: dict[str, Any]) -> str:
             "holdout.json carries no `fpr_pipeline_real` point estimate: the real subset of the "
             "holdout was empty, so M1 is unmeasured and the README cannot state it"
         )
-    return (
+    line = (
         f"**M1 · `FPR_pipeline` on the real subset:** {pct(interval['point'])} "
         f"(95% cluster-bootstrap CI {pct(interval['lo'])} to {pct(interval['hi'])}), "
         f"over {int(holdout['n_holdout'])} sealed holdout rows at the frozen thresholds "
         f"T_low = {ratio(holdout['t_low'])}, T_high = {ratio(holdout['t_high'])}."
     )
+    review = holdout.get("fpr_stage1_real") or {}
+    if review.get("point") is not None:
+        # `FPR_pipeline` counts auto-confirmed false alarms. The share a human must look at is
+        # the price of the recall, and it is printed beside it rather than left implicit.
+        line += (
+            f" At T_low, Stage 1 sends {pct(review['point'])} of the real non-poisoned tools to "
+            f"review (95% CI {pct(review['lo'])} to {pct(review['hi'])})."
+        )
+    return line
 
 
 def _relative(reduction: dict[str, Any]) -> str:
@@ -185,7 +210,12 @@ def _reduction_line(row: dict[str, Any], baseline: Any) -> str:
         f"**M2 · False positives vs {baseline_name(baseline)}, real subset:** "
         f"{_relative(reduction)}, {_recall_comparison(reduction)}; "
         f"{points(reduction['absolute'])} of absolute `FPR` difference; {_tests(reduction)}. "
-        f"From ablations row {row['row']}, {row['name']}."
+        f"From ablations row {row['row']}, {row['name']}"
+        + (
+            "; Stage 1 alone, because the judge is deferred to v1.1 (D8)."
+            if row.get("judge") == "none"
+            else "."
+        )
     )
 
 

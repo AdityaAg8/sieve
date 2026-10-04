@@ -360,6 +360,10 @@ def test_the_generated_block_carries_the_four_headline_numbers(results: Path, re
     assert rn.pct(holdout["fpr_pipeline_real"]["point"]) in lines[0]
     assert rn.pct(holdout["fpr_pipeline_real"]["lo"]) in lines[0]
     assert rn.pct(holdout["fpr_pipeline_real"]["hi"]) in lines[0]
+    # The review cost sits beside M1: with no judge, FPR_pipeline counts auto-confirmed false
+    # alarms only, and the share routed to a human is the price of the recall (ADR-009).
+    review = holdout["fpr_stage1_real"]
+    assert f"sends {rn.pct(review['point'])} of the real non-poisoned tools to review" in lines[0]
 
     reduction = row["fp_reduction_vs_baseline"]
     if reduction["point"] is not None:
@@ -517,6 +521,33 @@ def test_an_ablations_file_with_no_full_pipeline_row_is_refused(
 
     assert _run(partial, readme) != 0
     assert DEFAULT_JUDGE in capsys.readouterr().err
+
+
+def test_a_deferred_judge_row_falls_back_to_the_stage_1_headline_and_says_so(
+    results: Path, readme: Path, tmp_path: Path
+) -> None:
+    """D8 defers the judge: its rows are emitted `status: deferred` with no numbers, so the
+    headline is the Stage-1 row of the same encoder, and the block must say which it is."""
+    deferred = tmp_path / "deferred"
+    deferred.mkdir()
+    for path in results.glob("*.json"):
+        (deferred / path.name).write_bytes(path.read_bytes())
+    payload = json.loads((deferred / "ablations.json").read_text(encoding="utf-8"))
+    stage1 = [r for r in payload["rows"] if r["judge"] == "none"
+              and str(r.get("classifier", "")).startswith("models/") and r.get("mode") == "full"
+              and not r.get("breakdown_of")]  # fmt: skip
+    assert stage1, "the fixture matrix has a Stage-1 encoder row"
+    payload["rows"] = [
+        {"row": r["row"], "name": r["name"], "judge": r["judge"], "classifier": r["classifier"],
+         "status": "deferred"} if r["judge"] == DEFAULT_JUDGE else r
+        for r in payload["rows"]
+    ]  # fmt: skip
+    (deferred / "ablations.json").write_text(
+        json.dumps(payload, indent=2), encoding="utf-8", newline="\n"
+    )
+    assert rn.headline_row(payload)["row"] == min(r["row"] for r in stage1)
+    assert _run(deferred, readme) == 0
+    assert "judge is deferred" in _block(readme.read_text(encoding="utf-8"))
 
 
 def test_the_committed_results_directory_cannot_produce_a_readme_today(
