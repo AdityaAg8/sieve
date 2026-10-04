@@ -136,3 +136,18 @@ def test_report_final_refuses_an_edited_preregistration(tmp_path: Path) -> None:
                       encoding="utf-8")  # fmt: skip
     with pytest.raises(rf.PreregistrationError, match="hashes to"):
         rf.main(["--results-dir", str(tmp_path), "--preregistration", str(edited)])
+
+
+def test_the_headline_defaults_to_the_published_artefact_in_selection_json(tmp_path: Path) -> None:
+    """D14 pre-registers the headline as `selection.json`'s published artefact, so
+    `make eval-final`/`make bench` need no hand-passed --headline when several models ran."""
+    model_dir = tmp_path / "models" / "deberta-s1"
+    model_dir.mkdir(parents=True)
+    (model_dir / "sieve_config.json").write_text(
+        json.dumps({"model_version": "deberta@s1"}), encoding="utf-8"
+    )
+    (tmp_path / "selection.json").write_text(
+        json.dumps({"published_dir": model_dir.as_posix()}), encoding="utf-8"
+    )
+    assert rf.published_headline(tmp_path) == "deberta@s1"
+    assert rf.published_headline(tmp_path / "nowhere") is None

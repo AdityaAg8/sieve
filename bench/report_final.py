@@ -448,6 +448,19 @@ def build_report(
     }
 
 
+def published_headline(results_dir: Path) -> str | None:
+    """The pre-registered headline (D14): `selection.json`'s published artefact's version."""
+    selection = results_dir / "selection.json"
+    if not selection.exists():
+        return None
+    published = json.loads(selection.read_text(encoding="utf-8")).get("published_dir")
+    config = Path(str(published)) / "sieve_config.json" if published else None
+    if config is None or not config.exists():
+        return None
+    version = json.loads(config.read_text(encoding="utf-8")).get("model_version")
+    return str(version) if version else None
+
+
 def _read_jsonl(path: Path) -> list[Row]:
     return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
 
@@ -465,7 +478,7 @@ def main(argv: Sequence[str] | None = None) -> Path:
     rows = _read_jsonl(ns.results_dir / ROWS_FILE)
     headline = ns.headline or (predictions[0]["model"] if predictions else None)
     if ns.headline is None and len({p["model"] for p in predictions}) > 1:
-        headline = None
+        headline = published_headline(ns.results_dir)
     log_line, entry = _log_entry(ns.results_dir / LOG_FILE, headline or predictions[0]["model"])
     report = build_report(
         predictions,
