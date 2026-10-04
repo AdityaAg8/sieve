@@ -230,6 +230,11 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
   `make export` passes `EXPORT_FLAGS=--no-quantize`. The parity figure is now `onnx_parity`, with
   `onnx_graph` naming the graph, and the card prints both. Latency is measured on the fp32 graph,
   so M5 is judged against it.
+  - In-process, one 512-token tool on 2 threads ran at p50 836 ms and p95 2.08 s
+    (`latency.json`), about 10x the provisional 200 ms target.
+  - M5 is missed, and that is reported.
+  - The v1.1 options are shorter serialisation, distillation, and quantisation that keeps the
+    attention layers in fp32.
 - **Tools whose names break MCP's name rule are excluded and reported**
   (commits `4216e1f`, `5011db7`).
   - Ingest rejects any tool whose name fails `TOOL_NAME_RE`, so such a tool never reaches
