@@ -1,0 +1,54 @@
+{
+  "auroc": 0.6685,
+  "n": 380,
+  "gate": 0.7,
+  "rows": "dev",
+  "imperative": {
+    "auroc": 0.6685,
+    "n": 380,
+    "gate": 0.7,
+    "passed": true,
+    "stratum": "imperative_benign"
+  },
+  "benign": {
+    "auroc": 0.5433,
+    "n": 427,
+    "gate": 0.7,
+    "passed": true,
+    "stratum": "benign"
+  },
+  "surface": {
+    "auroc": 0.5896,
+    "n": 380,
+    "gate": 0.7,
+    "passed": true,
+    "features": [
+      "log_len",
+      "newlines",
+      "caps_ratio",
+      "sentences",
+      "non_ascii",
+      "backticks"
+    ]
+  },
+  "length": {
+    "auroc": 0.747,
+    "separation": 0.747,
+    "real_only_separation": 0.7572,
+    "synthetic_length_leak": 0.544,
+    "n": 807,
+    "gate": 0.7,
+    "absolute_passed": false,
+    "passed": true,
+    "feature": "serialised-token length (DeBERTa-v3, untruncated)"
+  },
+  "transfer": {
+    "auroc": 0.5138,
+    "n": 497,
+    "gate": 0.7,
+    "passed": true,
+    "versus": "real imperative_benign",
+    "auroc_vs_all_real": 0.7266
+  },
+  "passed": true
+}
