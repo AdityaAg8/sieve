@@ -115,29 +115,58 @@ export function Hero() {
   );
 }
 
-/** A skeleton shaped like the sieve, not a spinner (PRD §14.7). */
+/**
+ * A skeleton shaped like the sieve, not a spinner (PRD §14.7).
+ *
+ * It mirrors `Sieve`'s boxes class for class: the same wrappers, gaps and fixed heights, with
+ * each bar sitting inside the same typographic line box the real text will fill (invisible text
+ * holds the box where a bar alone would be shorter). The hero's left column is centred against
+ * this panel, so any height difference here moves the headline when the data arrives, and
+ * Lighthouse's cumulative-layout-shift budget is 0.01.
+ */
 function SieveSkeleton() {
+  const bar = "bg-bg-2 inline-block h-3 rounded-1 align-middle";
   return (
-    <div aria-hidden="true" className="flex flex-col gap-5">
+    <div aria-hidden="true" className="m-0 flex flex-col gap-5">
       <div className="panel-head">
-        <div className="bg-bg-2 h-3 w-36 rounded-1" />
-        <div className="bg-bg-2 h-3 w-28 rounded-1" />
+        <p className="t-eyebrow">
+          <span className={`${bar} w-36`} />
+        </p>
+        <p className="t-ui whitespace-nowrap">
+          <span className={`${bar} w-28`} />
+          <span className="t-num invisible text-[15px] font-semibold">0</span>
+        </p>
       </div>
       <div className="relative">
-        <div className="h-12 sm:h-16" />
+        <div className="h-10 sm:h-14" />
         <div className="bg-line-1 h-px w-full" />
       </div>
-      {[0, 1, 2].map((tray) => (
-        <div key={tray} className="flex flex-col gap-2">
-          <div className="bg-bg-2 h-3 w-24 rounded-1" />
-          <div className="border-line-1 flex h-[6.5rem] flex-wrap content-start gap-1.5 border-t pt-2">
-            {[0, 1, 2].map((chip) => (
-              <div key={chip} className="bg-bg-2 h-6 w-28 rounded-1" />
-            ))}
+      <div className="flex flex-col gap-4">
+        {[0, 1, 2].map((tray) => (
+          <div key={tray} className="flex flex-col gap-2">
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="t-eyebrow">
+                <span className={`${bar} w-24`} />
+              </p>
+              <span className="t-ui t-num invisible">0</span>
+            </div>
+            <div className="border-line-1 flex h-[6.5rem] flex-wrap content-start items-start gap-1.5 border-t pt-2">
+              {[0, 1, 2].map((chip) => (
+                <div key={chip} className="bg-bg-2 h-6 w-28 rounded-1" />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
-      <div className="border-line-1 h-10 border-t" />
+        ))}
+      </div>
+      <div className="border-line-1 flex flex-wrap items-center justify-between gap-3 border-t pt-3">
+        <p className="t-ui relative font-normal">
+          <span className="invisible">
+            Every tile is a real tool from the sample; nothing here is typed in.
+          </span>
+          <span className={`${bar} absolute top-1/2 left-0 w-64 -translate-y-1/2`} />
+        </p>
+        <span className="btn btn-quiet btn-sm t-ui invisible">Replay the pass</span>
+      </div>
     </div>
   );
 }

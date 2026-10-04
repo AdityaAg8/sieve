@@ -170,8 +170,13 @@ def test_self_scan_gates_the_sarif_upload_and_the_comment_on_a_non_fork_pr() -> 
     doc = yaml.safe_load(SELF_SCAN_YML.read_text(encoding="utf-8"))
     action_step = next(s for s in doc["jobs"]["sieve"]["steps"] if s.get("uses") == "./action")
     gate = "${{ github.event.pull_request.head.repo.fork == false }}"
-    assert action_step["with"]["upload-sarif"] == gate
     assert action_step["with"]["comment"] == gate
+    # Code Scanning on a private repository needs GitHub Advanced Security, so the upload is
+    # also gated on the repository being public; the fork gate stays part of it.
+    public = "github.event.repository.private == false"
+    assert action_step["with"]["upload-sarif"] == (
+        "${{ github.event.pull_request.head.repo.fork == false && " + public + " }}"
+    )
 
 
 def test_self_scan_workflow_parses_and_uses_the_local_action() -> None:

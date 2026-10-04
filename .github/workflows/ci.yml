@@ -230,4 +230,6 @@ jobs:
           path: |
             web/.lighthouseci
             ${{ runner.temp }}/api.log
+          # `.lighthouseci` is a dot-directory, which upload-artifact v4.4+ skips by default.
+          include-hidden-files: true
           retention-days: 7
