@@ -6,6 +6,11 @@ Proposed — drafted from PRD §7.2, §11.7 and §27 by an agent in Phase 3, aga
 `sieve/model/export.py` and `sieve/model/infer.py` as built. No latency has been measured on this
 machine. The human finalises this ADR's text.
 
+**Amended by ADR-009 (2026-10-04).** The revisit trigger below fired on the v1 artefact. Dynamic
+int8 failed parity at max |Δp| 0.77, and per-channel MatMul-only int8 at 0.92. The fp32 ONNX graph
+matched PyTorch to within 1.4e-6, so v1 serves fp32 ONNX (`make export` passes `--no-quantize`).
+The parity figure is now `onnx_parity`, with `onnx_graph` naming the graph it measured.
+
 ## Decision drivers
 
 - Stage 1 runs on every tool of every scan, on CPU, on a small cloud instance (2 vCPU).

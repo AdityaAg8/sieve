@@ -95,7 +95,10 @@ def results(tmp_path: Path) -> Path:
     )
     dump("curves.json", {"recall_vs_threshold": [], "fpr_vs_recall": []})
     dump("latency.json", {"mode": "in_process", "p50_ms": 61.0, "p95_ms": 120.0, "n": 1000})
-    dump("export_parity.json", {"max_abs_delta": 0.004, "n": 600, "passed": True})
+    dump(
+        "export_parity.json",
+        {"max_abs_delta": 0.004, "n": 600, "passed": True, "graph": "model.onnx"},
+    )
     (directory / "test_opened.log").write_text(
         json.dumps({"git_sha": SHA, "utc": "2026-09-12T00:00:00Z", "rows_evaluated": 120,
                     "reason": "v0.1.0 release"}) + "\n",
@@ -131,7 +134,8 @@ def model_dir(tmp_path: Path) -> Path:
                 "routing_rate": 0.21,
                 "val_recall_at_t_low": 0.99,
                 "val_precision_at_t_high": 0.96,
-                "onnx_int8_parity": 0.004,
+                "onnx_parity": 0.004,
+                "onnx_graph": "model.onnx",
                 "p50_ms": 61.0,
                 "p95_ms": 120.0,
             },
@@ -200,6 +204,13 @@ def test_every_slot_is_filled_from_the_result_files(results: Path, model_dir: Pa
     assert EMPTY not in text
     assert "{{" not in text
     assert path.read_bytes().count(b"\r\n") == 0
+
+
+def test_the_card_names_the_graph_its_parity_is_about(results: Path, model_dir: Path) -> None:
+    """ADR-009: the served graph is fp32 ONNX, so the card must not say int8."""
+    text = render_card(build_context(model_dir, results, sha=SHA))
+    assert "ONNX parity (model.onnx" in text
+    assert "int8" not in text.split("### Serving")[1].split("##")[0]
 
 
 def test_the_card_carries_both_fpr_definitions_with_intervals(
@@ -557,7 +568,9 @@ def written_model_dir(dev_records_for_writers: list[Any], tmp_path: Path) -> Pat
     )
     payload.update(_crossfit_payload())
     # What `export.main` appends.
-    payload.update({"onnx_int8_parity": 0.004, "p50_ms": 61.0, "p95_ms": 120.0})
+    payload.update(
+        {"onnx_parity": 0.004, "onnx_graph": "model.onnx", "p50_ms": 61.0, "p95_ms": 120.0}
+    )
     (directory / "sieve_config.json").write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
     )

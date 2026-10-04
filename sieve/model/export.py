@@ -1,8 +1,9 @@
 """ONNX export, dynamic int8 quantisation, parity against PyTorch, and CPU latency.
 
-Serving is CPU-only, so the published artefact is the quantised graph. Quantisation is a
-behaviour change, not a packaging step: `parity` measures what it cost and the number goes into
-`sieve_config.json` beside the thresholds, so nobody has to take it on trust (PRD §11.7).
+Serving is CPU-only. Quantisation is a behaviour change, not a packaging step: `parity` measures
+what it cost and the number goes into `sieve_config.json` beside the thresholds, so nobody has to
+take it on trust (PRD §11.7). On DeBERTa-v3 dynamic int8 failed parity (max |Δp| 0.77, ADR-009),
+so `make export` passes `--no-quantize` and the fp32 graph is what ships.
 """
 
 from __future__ import annotations
@@ -291,7 +292,9 @@ def main(argv: Sequence[str] | None = None) -> Path:
             f"{graph}: max |Δp| {report['max_abs_delta']:.4f} > {PARITY_TOLERANCE} on "
             f"{report['n']} dev rows; the export is refused"
         )
-    measured: dict[str, Any] = {"onnx_int8_parity": report["max_abs_delta"]}
+    # Graph-neutral: `--no-quantize` publishes the fp32 graph (ADR-009), and the number has to
+    # say which graph it measured.
+    measured: dict[str, Any] = {"onnx_parity": report["max_abs_delta"], "onnx_graph": graph.name}
     if ns.latency:
         measured.update(bench_latency(graph, texts[0], n=ns.latency_n, threads=ns.threads))
 

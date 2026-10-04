@@ -121,7 +121,7 @@ Task 11.6 fills the three in, with slots, once they exist.
 
 | | |
 |---|---|
-| ONNX int8 parity (max abs delta p vs PyTorch) | {{onnx_int8_parity}} |
+| ONNX parity ({{onnx_graph}}, max abs delta p vs PyTorch) | {{onnx_parity}} |
 | p50 / p95 latency, one tool, 2 vCPU | {{p50_ms}} / {{p95_ms}} |
 
 ## Holdout log line

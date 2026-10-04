@@ -103,7 +103,8 @@ def test_cli_appends_parity_and_latency_to_the_artefact(trained_tiny: Path, tmp_
     main([str(trained_tiny), "--out", str(out), "--latency", "--latency-n", "5",
           "--results-dir", str(tmp_path / "results")])  # fmt: skip
     config = json.loads((out / "sieve_config.json").read_text(encoding="utf-8"))
-    assert config["onnx_int8_parity"] <= 0.01
+    assert config["onnx_parity"] <= 0.01
+    assert config["onnx_graph"] == "model.int8.onnx"
     assert config["p50_ms"] > 0
     assert config["p95_ms"] >= config["p50_ms"]
     # The CLI adds keys; it must not quietly fill in an operating point.
@@ -114,7 +115,8 @@ def test_cli_appends_parity_and_latency_to_the_artefact(trained_tiny: Path, tmp_
     source = json.loads((trained_tiny / "sieve_config.json").read_text(encoding="utf-8"))
     assert source["p95_ms"] == config["p95_ms"]
     assert source["p50_ms"] == config["p50_ms"]
-    assert source["onnx_int8_parity"] == config["onnx_int8_parity"]
+    assert source["onnx_parity"] == config["onnx_parity"]
+    assert source["onnx_graph"] == config["onnx_graph"]
     # ...without losing what training wrote there.
     assert source["model_version"] == config["model_version"]
     assert source["training_command"].startswith("python -m sieve.model.train")
@@ -187,3 +189,18 @@ def test_parity_counts_verdict_flips_at_each_threshold(
     report = ex.parity_report(tmp_path, tmp_path / "g.onnx", ["a", "b", "c"])
     assert (report["flips_t_low"], report["flips_t_high"]) == (1, 1)
     assert report["max_abs_delta"] == pytest.approx(0.02)
+
+
+@pytest.mark.slow
+def test_cli_no_quantize_publishes_and_names_the_fp32_graph(
+    trained_tiny: Path, tmp_path: Path
+) -> None:
+    """ADR-009: int8 failed parity on DeBERTa-v3, so the fp32 graph is what ships."""
+    out = tmp_path / "onnx"
+    main([str(trained_tiny), "--out", str(out), "--no-quantize",
+          "--results-dir", str(tmp_path / "results")])  # fmt: skip
+    assert (out / FP32_ONNX).exists() and not (out / INT8_ONNX).exists()
+    config = json.loads((out / "sieve_config.json").read_text(encoding="utf-8"))
+    assert config["onnx_graph"] == FP32_ONNX
+    assert config["onnx_parity"] <= 1e-3
+    assert "onnx_int8_parity" not in config
