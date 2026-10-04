@@ -35,6 +35,7 @@ function queuedSummary(id: string): ScanSummary {
   return {
     ...sampleSummary,
     id,
+    expires_at: liveExpiry(),
     status: "queued",
     scanner_flagged: 0,
     confirmed: 0,
@@ -45,8 +46,15 @@ function queuedSummary(id: string): ScanSummary {
   };
 }
 
+/** Seven days from now: the fixture's own `expires_at` (2026-09-18) is a fixed date, so every
+ * mocked scan rendered "expired" once the calendar passed it. A real API returns a live scan
+ * with a future expiry; tests that need an expired one override it (`sieve.mock.scan`). */
+function liveExpiry(): string {
+  return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+}
+
 function completedSummary(id: string): ScanSummary {
-  const base = { ...sampleSummary, id, status: "complete" as const };
+  const base = { ...sampleSummary, id, status: "complete" as const, expires_at: liveExpiry() };
   // A clean scan still read every tool; the scanner simply flagged nothing in any of them.
   return cleanScan()
     ? { ...base, scanner_flagged: 0, confirmed: 0, needs_review: 0, dismissed: 0, judge_calls: 0 }
