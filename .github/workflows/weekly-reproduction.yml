@@ -19,10 +19,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PYTHONUTF8: "1"
-      # Outside the checkout on purpose: the script clones the checkout, and an artefact tree
-      # sitting inside it would travel into the clone by a route this gate is not testing.
-      ARTEFACTS: ${{ runner.temp }}/artefacts
     steps:
+      # Outside the checkout on purpose: the script clones the checkout, and an artefact tree
+      # sitting inside it would travel into the clone by a route this gate is not testing. Set
+      # through `$GITHUB_ENV` because a job's `env:` cannot read the `runner` context.
+      - run: echo "ARTEFACTS=$RUNNER_TEMP/artefacts" >> "$GITHUB_ENV"
       # Full history: the script clones this checkout, and a clone of a shallow repository is a
       # different object than a clone of the repository.
       - uses: actions/checkout@v4

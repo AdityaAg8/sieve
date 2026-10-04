@@ -18,9 +18,10 @@ jobs:
     env:
       DATABASE_URL: postgresql+psycopg://sieve:sieve@localhost:5432/sieve
       PYTHONUTF8: "1"
-      # Cached between runs; see the `hub cache` step below.
-      HF_HOME: ${{ runner.temp }}/hf
     steps:
+      # Cached between runs; see the `hub cache` step below. Set here, not in the job's `env:`,
+      # because GitHub does not expose the `runner` context there and rejects the whole file.
+      - run: echo "HF_HOME=$RUNNER_TEMP/hf" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       # `enable-cache` caches uv's own download/build cache, keyed on the lockfile. Without it
       # this job re-downloads the whole `model` extra on every push.
@@ -82,8 +83,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PYTHONUTF8: "1"
-      HF_HOME: ${{ runner.temp }}/hf
     steps:
+      - run: echo "HF_HOME=$RUNNER_TEMP/hf" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
         with: { enable-cache: true, cache-dependency-glob: "uv.lock" }
