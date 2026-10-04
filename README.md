@@ -19,20 +19,17 @@ Sieve does not scan and it does not detect. It takes the findings a scanner alre
 decides which of them a human should actually look at, and says why.
 
 <!-- numbers:start -->
+**M1 · `FPR_pipeline` on the real subset:** 0.0% (95% cluster-bootstrap CI 0.0% to 0.0%), over 169 sealed holdout rows at the frozen thresholds T_low = 0.018, T_high = 0.273. At T_low, Stage 1 sends 35.2% of the real non-poisoned tools to review (95% CI 21.7% to 49.1%).
 
-**M1 · `FPR_pipeline` on the real subset:** —
+**M2 · False positives vs cisco_yara 4.8.0, real subset:** 97.1% fewer false positives (95% cluster-bootstrap CI 93.3% to 99.6%), at pipeline recall 0.941 vs the baseline's 0.645 over all development sources (not lower; the real subset holds no poisoned row); 24.9 points of absolute `FPR` difference; McNemar on non-poisoned rows: exact p < 0.0001, server-clustered p < 0.0001. From ablations row 4, Primary encoder, full serialisation (pre-registered headline); Stage 1 alone, because the judge is deferred to v1.1 (D8).
 
-**M2 · False-positive reduction vs the scanner baseline, real subset:** —
+**Holdout poisoned recall:** 1.000 (95% cluster-bootstrap lower bound 1.000); the release gate is 0.950 point and 0.900 lower bound, and this run passes it.
 
-**Holdout poisoned recall:** —
+**M13 · `real_poisoned` recall:** 1.000 at Stage 1 (not dismissed at T_low) and 0.495 auto-confirmed by the pipeline, 0.505 going to human review, over 483 rows collected from the wild. This is the generalisation number, reported whatever it is.
 
-**M13 · `real_poisoned` recall:** —
+*Every figure above is written by `make readme` from `bench/results/` and none of it is typed by hand: dataset `labelled.jsonl@51caf0707f46`; 1000 bootstrap resamples; encoder `deberta-v3-base` (`selection.json`); 200 threshold points in `curves.json`; holdout opened once for "v1 release".*
 
-*These four numbers are written by `make readme` from `bench/results/`, never by hand. They stay
-`—` until `make bench` has produced the ablation matrix and `make eval-final REASON="..."` has
-opened the sealed holdout once (PRD §11.6). No model has been trained yet, so `make readme`
-currently refuses to run and says which file is missing.*
-
+*Reported second and labelled, per M2: including the synthetic rows the same row shows 93.8% fewer false positives (95% cluster-bootstrap CI 88.8% to 97.3%), at pipeline recall 0.941 vs the baseline's 0.645 (not lower); 23.8 points absolute; McNemar on non-poisoned rows: exact p < 0.0001, server-clustered p < 0.0001. The real-subset figure on line 2 is the headline; this one is easier and says less.*
 <!-- numbers:end -->
 
 <!-- human: rewrite - a 10-second GIF of the sieve belongs here (PRD §17.1). Nothing has been
@@ -56,6 +53,22 @@ readable again.
 ## Results
 
 <!-- results:start -->
+| Row | Configuration | Macro-F1 (3 classes) | Poisoned recall at T_low | Real non-poisoned sent to review | Routed overall | Minimal-pair accuracy |
+|---:|---|---:|---:|---:|---:|---:|
+| 1 | Cisco YARA baseline alone | n/a | 0.645 | 25.4% | 0.0% | n/a |
+| 2 | TF-IDF + logistic regression | 0.793 (1 seed) | 0.996 | 39.9% | 35.3% | 0.808 |
+| 3 | Primary encoder, description-only serialisation | 0.786 (1 seed) | 0.996 | 97.5% | 83.0% | n/a |
+| 4 | Primary encoder, full serialisation (pre-registered headline) | 0.892 ± 0.003 | 0.996 | 31.1% | 23.7% | 0.916 |
+| 5 | Secondary encoder, full serialisation, 512 | 0.724 ± 0.008 | 0.996 | 76.9% | 70.0% | n/a |
+| 6 | Classifier + judge, Haiku 4.5 | deferred to v1.1 (D8) | | | | |
+| 7 | Classifier + judge, Sonnet 5 | deferred to v1.1 (D8) | | | | |
+| 8 | Judge alone on every row | deferred to v1.1 (D8) | | | | |
+| 9 | Full serialisation + scanner features | 0.906 (1 seed) | 0.996 | 64.7% | 48.8% | n/a |
+| 12 | Two-class head, identical data, folds and seeds | 0.959 (2 classes, 1 seed) | 0.996 | 77.6% | 59.2% | 0.918 |
+| 13 | Unicode-hygiene detector alone | n/a | 0.229 | 0.4% | 0.0% | n/a |
+| 15 | ModernBERT-base at 1,024 tokens | 0.588 (1 seed) | 0.996 | 79.5% | 76.8% | n/a |
+
+*Written by `make readme` from `bench/results/ablations.json`: pooled out-of-fold predictions over 1010 development rows, mean ± sample std over three seeds unless marked. Rows 1 and 13 are rules, not classifiers, so they have no macro-F1.*
 <!-- results:end -->
 
 ## How v1 was built
