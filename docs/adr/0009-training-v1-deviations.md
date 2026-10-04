@@ -220,6 +220,12 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
     where rows within 0.02 in probability are interchangeable for every metric. It must also lie
     within an absolute probability cap: 0.05 for fp32 artefacts, and 0.25 for bf16 ModernBERT,
     whose CPU re-score drifted up to 0.168 against medians near 1e-4.
+  - bf16 drift can leave a row genuinely ambiguous: `modernbert-base-s2` fold 0, row 136, matched
+    at 0.2012 against a rival at 0.1930. bf16 artefacts may therefore leave up to 2% of a fold's
+    rows ambiguous. Those rows keep the exact assignment as a best guess and are named in the
+    repair's report. Both candidates share the row's label, so only the per-tier breakdowns and
+    error analysis of ModernBERT rows (5 and 15) can be affected; the headline is DeBERTa, fp32,
+    with no budget.
   - The DeBERTa artefacts were matched under the 0.05 cap before the identity test existed. Their
     fp32 CPU-against-GPU drift is about 1e-5, so ambiguity is practically impossible there.
   - **What changed.** Only `oof_ids.json` was rewritten. The logits and labels are
