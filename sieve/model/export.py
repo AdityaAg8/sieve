@@ -234,7 +234,10 @@ def bench_latency(onnx_path: Path, text: str, *, n: int = 50, threads: int = 2) 
     )
     tokenizer = AutoTokenizer.from_pretrained(str(onnx_path.parent))  # type: ignore[no-untyped-call]
     wanted = {i.name for i in session.get_inputs()}
-    encoded = tokenizer([text], truncation=True, max_length=DEFAULT_MAX_LENGTH, return_tensors="np")
+    # The artefact's own length (a 1,024-token model is timed at 1,024), not the default.
+    encoded = tokenizer(
+        [text], truncation=True, max_length=_max_length(onnx_path.parent), return_tensors="np"
+    )
     feed = {k: v.astype(np.int64) for k, v in encoded.items() if k in wanted}
 
     session.run(None, feed)  # warm the first allocation out of the sample

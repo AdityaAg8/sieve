@@ -213,17 +213,31 @@ def scanner_smoke(yara: YaraRunner, corpus: Path) -> None:
         raise PreflightError(f"the YARA scanner returned {flags!r} for one dev row")
 
 
+@dataclass(frozen=True)
+class _Row:
+    """Just the fields `m13_rows` and the count read, from a raw JSONL line."""
+
+    id: str
+    source: str | None
+    label: str | None
+
+    @classmethod
+    def of(cls, raw: Sequence[Mapping[str, Any]]) -> list[_Row]:
+        return [cls(str(r["id"]), r.get("source"), r.get("label")) for r in raw]
+
+
 def count_sealed(inputs: SealedInputs) -> int:
     """How many sealed rows the run is about to score, counted before any is read."""
     dropped = _dropped(inputs)
     corpus = sum(1 for r in _load_corpus(inputs.corpus) if r.split == "holdout")
-    lines = (
-        json.loads(x)["id"]
-        for path in (inputs.real_poisoned, inputs.ood)
-        for x in path.read_text(encoding="utf-8").splitlines()
-        if x.strip()
-    )
-    return corpus + sum(1 for i in lines if i not in dropped)
+
+    def rows(path: Path) -> list[dict[str, Any]]:
+        return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
+
+    # Only the M13 slice of real_poisoned is scored (Z2 review: every line used to count).
+    poisoned = [r for r in m13_rows(_Row.of(rows(inputs.real_poisoned))) if r.id not in dropped]
+    ood = [r for r in rows(inputs.ood) if r["id"] not in dropped]
+    return corpus + len(poisoned) + len(ood)
 
 
 def load_sealed(inputs: SealedInputs, *, yara: YaraRunner = _scan) -> list[SealedRow]:
