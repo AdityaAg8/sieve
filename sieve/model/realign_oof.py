@@ -35,9 +35,14 @@ FOLDS = range(5)
 #: (ModernBERT) moves a near-certain row's tail log-probability by 0.5 while its probabilities
 #: move by under 0.025 (measured on modernbert-base-s0 fold0); a wrong row moves by far more.
 MAX_DISTANCE = 0.05
-#: Logits produced under bf16 autocast drift further against an fp32 CPU re-score: up to 0.104
-#: in probability on modernbert-base-s2 fold0 (median 0.00016, 4 of 212 rows above 0.05).
-BF16_MAX_DISTANCE = 0.15
+#: Logits produced under bf16 autocast drift further against an fp32 CPU re-score (0.104 on
+#: modernbert-base-s2 fold0, 0.168 on s0; medians near 1e-4). With the identity test below
+#: carrying the proof, this is only a cap on what counts as the same prediction at all.
+BF16_MAX_DISTANCE = 0.25
+#: Two fresh rows closer than this in probability are interchangeable for every metric.
+TIE = 0.02
+#: A match must be this much nearer (log-probability L2) than any distinguishable rival.
+RATIO = 0.8
 
 FloatArray = npt.NDArray[np.float64]
 
@@ -79,12 +84,25 @@ def match_rows(
     rows, cols = linear_sum_assignment(cost)
     if (cost[rows, cols] >= 1e9).any():
         raise RealignError("no label-respecting one-to-one match exists")
-    distances = np.linalg.norm(np.exp(stored[rows]) - np.exp(fresh[cols]), axis=1)
+    fresh_p = np.exp(fresh)
+    distances = np.linalg.norm(np.exp(stored[rows]) - fresh_p[cols], axis=1)
     if distances.max() > max_distance:
         raise RealignError(
             f"a stored row's probabilities are {distances.max():.4f} from its match "
             f"(limit {max_distance}): these are not the same predictions"
         )
+    # Identity, not just closeness: every match must beat, by RATIO, the nearest same-label
+    # fresh row that is *distinguishable* from it. Rows within TIE of each other in probability
+    # are interchangeable: swapping them moves no threshold decision, so no metric.
+    for i, j in zip(rows, cols, strict=True):
+        rivals = np.flatnonzero(
+            (cost[i] < 1e9) & (np.linalg.norm(fresh_p - fresh_p[j], axis=1) > TIE)
+        )
+        if len(rivals) and cost[i, j] > RATIO * cost[i, rivals].min():
+            raise RealignError(
+                f"stored row {i} is ambiguous: its match is {cost[i, j]:.4f} away and a "
+                f"distinguishable row of the same label {cost[i, rivals].min():.4f}"
+            )
     perm = np.empty(len(rows), dtype=np.int64)
     perm[rows] = cols
     return perm

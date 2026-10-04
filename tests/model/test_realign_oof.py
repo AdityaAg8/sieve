@@ -73,7 +73,7 @@ def test_the_tolerance_follows_the_precision_the_logits_were_produced_in() -> No
     from sieve.model.realign_oof import tolerance_for
 
     assert tolerance_for("fp32") == 0.05
-    assert tolerance_for("bf16") == 0.15
+    assert tolerance_for("bf16") == 0.25
 
 
 def test_a_refused_fold_leaves_every_fold_untouched(tmp_path: Path) -> None:
@@ -97,3 +97,30 @@ def test_a_refused_fold_leaves_every_fold_untouched(tmp_path: Path) -> None:
         realign_folds(jobs, max_distance=0.05)
     for fold in dirs:
         assert json.loads((fold / "oof_ids.json").read_text(encoding="utf-8")) == ids
+
+
+def test_an_ambiguous_match_between_distinguishable_rows_is_refused() -> None:
+    """Identity, not drift: a stored row equally close to two different fresh rows of its label
+    cannot be placed, however small its distance (review: drift alone is not evidence)."""
+    from sieve.model.realign_oof import RealignError
+
+    fresh = np.log(np.array([[0.70, 0.20, 0.10], [0.60, 0.30, 0.10]], dtype=np.float64))
+    stored = np.log(np.array([[0.65, 0.25, 0.10], [0.65, 0.25, 0.10]], dtype=np.float64))
+    labels = np.array([0, 0])
+    with pytest.raises(RealignError, match="ambiguous"):
+        match_rows(stored, labels, fresh, labels, max_distance=0.25)
+
+
+def test_a_tie_between_practically_identical_rows_is_accepted() -> None:
+    """Two confident rows of one label with the same probabilities: either assignment changes
+    no metric, so the tie is not a refusal."""
+    fresh = np.log(np.array([[0.99, 0.005, 0.005], [0.99, 0.006, 0.004]], dtype=np.float64))
+    labels = np.array([0, 0])
+    perm = match_rows(fresh[::-1].copy(), labels, fresh, labels, max_distance=0.05)
+    assert sorted(perm.tolist()) == [0, 1]
+
+
+def test_bf16_artefacts_get_the_wider_cap() -> None:
+    from sieve.model.realign_oof import tolerance_for
+
+    assert tolerance_for("bf16") == 0.25
