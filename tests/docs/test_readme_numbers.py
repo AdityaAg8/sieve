@@ -337,6 +337,9 @@ def test_the_committed_readme_keeps_its_quickstart() -> None:
 def test_the_committed_readme_states_no_measured_percentage_of_its_own() -> None:
     text = README.read_text(encoding="utf-8")
     outside = text.replace(_block(text), "")
+    if rn.RESULTS_START in outside:  # generated too
+        head, _, rest = outside.partition(rn.RESULTS_START)
+        outside = head + rest.partition(rn.RESULTS_END)[2]
     for line in outside.splitlines():
         if PERCENT.search(line):
             assert any(word in line.lower() for word in PERCENT_IS_ALLOWED), (
@@ -436,7 +439,15 @@ def test_the_rest_of_the_readme_is_untouched(results: Path, readme: Path) -> Non
     assert _run(results, readme) == 0
     after = readme.read_text(encoding="utf-8")
     assert before.partition(rn.MARK_START)[0] == after.partition(rn.MARK_START)[0]
-    assert before.partition(rn.MARK_END)[2] == after.partition(rn.MARK_END)[2]
+
+    def outside_results(text: str) -> str:
+        if rn.RESULTS_START not in text:
+            return text
+        head, _, rest = text.partition(rn.RESULTS_START)
+        return head + rest.partition(rn.RESULTS_END)[2]
+
+    tail_before = outside_results(before.partition(rn.MARK_END)[2])
+    assert tail_before == outside_results(after.partition(rn.MARK_END)[2])
 
 
 def test_the_readme_is_written_utf8_with_lf_newlines(results: Path, readme: Path) -> None:
@@ -521,6 +532,35 @@ def test_an_ablations_file_with_no_full_pipeline_row_is_refused(
 
     assert _run(partial, readme) != 0
     assert DEFAULT_JUDGE in capsys.readouterr().err
+
+
+def _results_block(text: str) -> str:
+    start = text.index(rn.RESULTS_START) + len(rn.RESULTS_START)
+    return text[start : text.index(rn.RESULTS_END)]
+
+
+def test_the_results_table_lists_every_scored_row_from_ablations_json(
+    results: Path, readme: Path
+) -> None:
+    assert _run(results, readme) == 0
+    table = _results_block(readme.read_text(encoding="utf-8"))
+    rows = json.loads((results / "ablations.json").read_text(encoding="utf-8"))["rows"]
+    for row in rows:
+        if row.get("breakdown_of"):
+            continue
+        assert f"| {row['row']} | {row['name']} |" in table
+        if row.get("macro_f1_mean") is not None:
+            assert f"{row['macro_f1_mean']:.3f}" in table
+    assert "—" not in table
+
+
+def test_a_readme_without_the_results_markers_keeps_working(results: Path, readme: Path) -> None:
+    text = readme.read_text(encoding="utf-8")
+    head, _, rest = text.partition(rn.RESULTS_START)
+    stripped = head + rest.partition(rn.RESULTS_END)[2]
+    readme.write_text(stripped, encoding="utf-8", newline="\n")
+    assert _run(results, readme) == 0
+    assert rn.RESULTS_START not in readme.read_text(encoding="utf-8")
 
 
 def test_a_deferred_judge_row_falls_back_to_the_stage_1_headline_and_says_so(

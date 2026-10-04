@@ -333,6 +333,73 @@ def render_block(results_dir: Path) -> str:
     return "\n" + "\n\n".join(lines) + "\n"
 
 
+#: The README's second generated block: every scored ablation row, side by side.
+RESULTS_START = "<!-- results:start -->"
+RESULTS_END = "<!-- results:end -->"
+
+
+def _cell(value: Any, formatter: Any) -> str:
+    return "n/a" if value is None else str(formatter(value))
+
+
+def _f1(row: dict[str, Any]) -> str:
+    mean, std = row.get("macro_f1_mean"), row.get("macro_f1_std")
+    if mean is None:
+        return "n/a"
+    if std is None:
+        return f"{mean:.3f} (1 seed)"
+    return f"{mean:.3f} ± {std:.3f}"
+
+
+def _point(row: dict[str, Any], key: str) -> Any:
+    value = row.get(key)
+    return value.get("point") if isinstance(value, dict) else value
+
+
+def render_results(results_dir: Path) -> str:
+    """The ablation matrix as one table, from `ablations.json` only; breakdown rows are left to
+    the file (they slice row 4, they do not compete with it)."""
+    ablations = _read(results_dir, "ablations.json", required=True, hint=": run `make bench`")
+    lines = [
+        "",
+        "| Row | Configuration | Macro-F1 (3 classes) | Poisoned recall at T_low | Real "
+        "non-poisoned sent to review | Routed overall | Minimal-pair accuracy |",
+        "|---:|---|---:|---:|---:|---:|---:|",
+    ]
+    for row in sorted(ablations.get("rows") or [], key=lambda r: r.get("row", 0)):
+        if row.get("breakdown_of"):
+            continue
+        head = f"| {row['row']} | {row['name']} |"
+        if row.get("status") == "deferred":
+            lines.append(f"{head} deferred to v1.1 (D8) | | | | |")
+            continue
+        lines.append(
+            f"{head} {_f1(row)} | {_cell(_point(row, 'oof_recall_at_t_low'), ratio)} | "
+            f"{_cell(_point(row, 'fpr_stage1_at_t_low'), pct)} | "
+            f"{_cell(row.get('routing_rate'), pct)} | "
+            f"{_cell(row.get('minimal_pair_accuracy'), ratio)} |"
+        )
+    lines += [
+        "",
+        f"*Written by `make readme` from `bench/results/ablations.json`: pooled out-of-fold "
+        f"predictions over {int(_required(ablations, 'n_records', 'ablations.json'))} "
+        "development rows, "
+        "mean ± sample std over three seeds unless marked. Rows 1 and 13 are rules, not "
+        "classifiers, so they have no macro-F1.*",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def replace_results(text: str, block: str) -> str:
+    """Fill the results block when the README has one; a README without it is left alone."""
+    if RESULTS_START not in text or RESULTS_END not in text:
+        return text
+    head, _, rest = text.partition(RESULTS_START)
+    _, _, tail = rest.partition(RESULTS_END)
+    return head + RESULTS_START + block + RESULTS_END + tail
+
+
 def replace_block(text: str, block: str) -> str:
     if MARK_START not in text or MARK_END not in text:
         raise Refused(
@@ -377,7 +444,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     readme = Path(ns.readme)
     text = readme.read_text(encoding="utf-8")
     try:
-        updated = replace_block(text, block)
+        updated = replace_results(replace_block(text, block), render_results(ns.results_dir))
     except Refused as refusal:
         print(f"make readme: {refusal}", file=sys.stderr)
         return 2

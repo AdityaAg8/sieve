@@ -53,6 +53,11 @@ false positives were exactly that kind of dependency instruction.
 An alert list nobody trusts is an alert list nobody reads. Sieve is the layer that makes it
 readable again.
 
+## Results
+
+<!-- results:start -->
+<!-- results:end -->
+
 ## How it works
 
 Stage 1 is a fine-tuned encoder that classifies each tool definition into three classes.
