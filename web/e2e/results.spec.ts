@@ -1,20 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-import {
-  EXPECTED,
-  WIDTHS,
-  expectNoHorizontalScroll,
-  mockOverride,
-} from "./helpers";
+import { EXPECTED, WIDTHS, expectNoHorizontalScroll, mockOverride } from "./helpers";
 
 const RESULTS = `/scan/${EXPECTED.scanId}`;
 const JUDGE_OFF_NOTICE =
   "The judge is disabled on this deployment; band findings are reported as needs review.";
 
 test.describe("results screen", () => {
-  test("fills in as the mocked stream arrives and settles on the real counts", async ({
-    page,
-  }) => {
+  test("fills in as the mocked stream arrives and settles on the real counts", async ({ page }) => {
     await page.goto(RESULTS);
 
     await expect(page.getByTestId("verdict-bar-count-confirmed")).toHaveText(
@@ -36,12 +29,8 @@ test.describe("results screen", () => {
 
   test("groups confirmed first", async ({ page }) => {
     await page.goto(RESULTS);
-    await expect(page.getByTestId("group-count-confirmed")).toHaveText(
-      String(EXPECTED.confirmed),
-    );
-    const headings = await page
-      .getByRole("heading", { level: 2 })
-      .allTextContents();
+    await expect(page.getByTestId("group-count-confirmed")).toHaveText(String(EXPECTED.confirmed));
+    const headings = await page.getByRole("heading", { level: 2 }).allTextContents();
     const order = headings.filter((h) =>
       /Confirmed|Needs review|Dismissed/.test(h),
     );
@@ -76,26 +65,18 @@ test.describe("results screen", () => {
     await page.goto(RESULTS);
     await expect(page.getByTestId("group-count-confirmed")).toBeVisible();
     await page.keyboard.press("?");
-    await expect(
-      page.getByRole("dialog", { name: "Keyboard map" }),
-    ).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Keyboard map" })).toBeVisible();
   });
 
-  test("the palette opens with the meta key and filters to a tool", async ({
-    page,
-  }) => {
+  test("the palette opens with the meta key and filters to a tool", async ({ page }) => {
     await page.goto(RESULTS);
     // Findings stream in, so wait for every one: on a slow runner the first confirmed group can
     // render before `weather/set_location` has arrived, and the search would then find nothing.
-    await expect(page.getByTestId("group-count-confirmed")).toHaveText(
-      String(EXPECTED.confirmed),
-    );
+    await expect(page.getByTestId("group-count-confirmed")).toHaveText(String(EXPECTED.confirmed));
     await expect(page.getByTestId("group-count-needs_review")).toHaveText(
       String(EXPECTED.needsReview),
     );
-    await expect(page.getByTestId("group-count-dismissed")).toHaveText(
-      String(EXPECTED.dismissed),
-    );
+    await expect(page.getByTestId("group-count-dismissed")).toHaveText(String(EXPECTED.dismissed));
 
     await page.keyboard.press("ControlOrMeta+k");
     const input = page.getByPlaceholder("Search tools, or type a command");
@@ -106,9 +87,7 @@ test.describe("results screen", () => {
     await expect(option).toBeVisible();
     await option.click();
 
-    await expect(
-      page.getByRole("dialog", { name: "Finding weather/set_location" }),
-    ).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Finding weather/set_location" })).toBeVisible();
   });
 
   test("e exports a SARIF 2.1.0 document", async ({ page }) => {
@@ -126,22 +105,14 @@ test.describe("results screen", () => {
     expect(Array.isArray(sarif.runs)).toBe(true);
   });
 
-  test("a dismissal states its class and its computed probability", async ({
-    page,
-  }) => {
+  test("a dismissal states its class and its computed probability", async ({ page }) => {
     await page.goto(RESULTS);
     await expect(page.getByTestId("group-count-dismissed")).toBeVisible();
     await expect(
-      page
-        .getByText(/^Dismissed — descriptive documentation \(p = 0\.\d{2}\)$/)
-        .first(),
+      page.getByText(/^Dismissed — descriptive documentation \(p = 0\.\d{2}\)$/).first(),
     ).toBeVisible();
     await expect(
-      page
-        .getByText(
-          /^Dismissed — legitimate imperative instruction \(p = 0\.\d{2}\)$/,
-        )
-        .first(),
+      page.getByText(/^Dismissed — legitimate imperative instruction \(p = 0\.\d{2}\)$/).first(),
     ).toBeVisible();
   });
 
@@ -153,9 +124,7 @@ test.describe("results screen", () => {
     await expect(page.getByText(JUDGE_OFF_NOTICE)).toBeVisible();
   });
 
-  test("the judge-off notice is absent when the judge is enabled", async ({
-    page,
-  }) => {
+  test("the judge-off notice is absent when the judge is enabled", async ({ page }) => {
     await mockOverride(page, "models", { judge_enabled: true });
     await page.goto(RESULTS);
     await expect(page.getByTestId("group-count-confirmed")).toBeVisible();
@@ -166,9 +135,7 @@ test.describe("results screen", () => {
     page,
   }) => {
     await page.goto(RESULTS);
-    await expect(page.getByTestId("group-count-dismissed")).toHaveText(
-      String(EXPECTED.dismissed),
-    );
+    await expect(page.getByTestId("group-count-dismissed")).toHaveText(String(EXPECTED.dismissed));
 
     await page.keyboard.press("j");
     await page.keyboard.press("Enter");
@@ -193,25 +160,17 @@ test.describe("results screen", () => {
     await page.waitForTimeout(500);
     expect(downloads, "`e` fired a download with the drawer open").toBe(0);
     await expect(drawer).toHaveAttribute("aria-label", opened ?? "");
-    await expect(page.getByTestId("group-count-confirmed")).toHaveText(
-      String(EXPECTED.confirmed),
-    );
-    await expect(page.getByTestId("group-count-dismissed")).toHaveText(
-      String(EXPECTED.dismissed),
-    );
+    await expect(page.getByTestId("group-count-confirmed")).toHaveText(String(EXPECTED.confirmed));
+    await expect(page.getByTestId("group-count-dismissed")).toHaveText(String(EXPECTED.dismissed));
 
     // Closing hands the keyboard back.
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog", { name: /^Finding / })).toHaveCount(
-      0,
-    );
+    await expect(page.getByRole("dialog", { name: /^Finding / })).toHaveCount(0);
     await page.keyboard.press("2");
     await expect(page.getByTestId("group-count-confirmed")).toHaveCount(0);
   });
 
-  test("exactly one live region exists, from first paint through completion", async ({
-    page,
-  }) => {
+  test("exactly one live region exists, from first paint through completion", async ({ page }) => {
     await page.route("**/api/v1/scans/*/events", async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 300));
       await route.continue();
@@ -225,9 +184,7 @@ test.describe("results screen", () => {
     await expect(live).toHaveCount(1);
     await expect(live).toHaveAttribute("data-testid", "stream-status");
 
-    await expect(page.getByTestId("group-count-dismissed")).toHaveText(
-      String(EXPECTED.dismissed),
-    );
+    await expect(page.getByTestId("group-count-dismissed")).toHaveText(String(EXPECTED.dismissed));
     await expect(live).toHaveCount(1);
   });
 
