@@ -27,8 +27,12 @@ PREDICTION_KEYS = {"set", "id", "model", "family", "seed", "fold", "p", "probs",
 #: Every file allowed to mention a sealed split at all. Plain substrings, so
 #: `rec.split == "holdout"`, `in {"holdout", "eval_only"}` and a bare `eval_only`
 #: all match; the earlier exact-spacing pattern matched none of them and passed vacuously.
+#: `bench/results/` is excluded: it holds the opening's committed *outputs* (scores, row
+#: metadata, the report), which name the sealed sets because they describe them. This grep
+#: polices code and prose that could read a sealed row, not the record that one was read.
 GIT_GREP_SEALED = [
     "git", "grep", "-l", "-e", "holdout", "-e", "eval_only", "--", "sieve", "bench",
+    ":(exclude)bench/results",
 ]  # fmt: skip
 
 
