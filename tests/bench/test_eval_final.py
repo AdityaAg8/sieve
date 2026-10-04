@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 
 from bench import eval_final as ef
-from bench.collect.ood_rows import OodRow, write_rows
+from bench.collect.ood_rows import OodRow, load_rows, write_rows
 from bench.collect.real_poisoned import MCPTOX_RATIONALE
 from bench.eval_final import SEALED_MESSAGE, HoldoutSealed
 from sieve.model.data import load_corpus
@@ -369,6 +369,25 @@ def test_the_predictions_cover_every_sealed_set_once_per_model(world: World) -> 
     assert all(r["cluster"].startswith("Template-1|") for r in rp)
     assert all(r["yara"] is True for r in rp)
     assert not any("description" in r or "text" in r for r in described)  # no sealed text
+
+
+@pytest.mark.usefixtures("unsealed")
+def test_an_ood_row_with_a_spec_invalid_tool_name_is_excluded_and_reported(world: World) -> None:
+    """MCP tool names must match TOOL_NAME_RE, and Sieve's ingest rejects any other. Such a row
+    never reaches Stage 1, so the opening must neither crash on it after the log line is written
+    (a crash would burn the one-shot seal) nor score it silently (ADR-009)."""
+    rows = load_rows(world.inputs.ood) + [
+        OodRow("ood-docker-0009", "docker", "srv9",
+               {"name": "Has Spaces", "description": "Lists files.", "inputSchema": {}}, False)
+    ]  # fmt: skip
+    write_rows(world.inputs.ood, rows)
+    predictions, described = world.run()
+    ids = {json.loads(x)["id"] for x in described.read_text(encoding="utf-8").splitlines()}
+    assert "ood-docker-0009" not in ids
+    (entry,) = world.log_lines()
+    assert entry["rows_evaluated"] == 9 + 3 + 3  # the invalid row is not counted as evaluated
+    excluded = json.loads((world.results / ef.EXCLUDED_FILE).read_text(encoding="utf-8"))
+    assert excluded == {"invalid_tool_name": ["ood-docker-0009"]}
 
 
 @pytest.mark.usefixtures("unsealed")

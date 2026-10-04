@@ -28,7 +28,7 @@ import numpy as np
 from bench import eval_final as ef
 from bench import report_final as rf
 from bench.ablations.run import dataset_version
-from bench.collect.ood_rows import OodRow, load_rows
+from bench.collect.ood_rows import OodRow, load_rows, split_spec_valid
 from sieve.eval.metrics import auroc
 from sieve.protocols import Classifier, Thresholds
 from sieve.serialise import serialise
@@ -50,12 +50,17 @@ def _fold_loader(fold_dir: Path, thresholds: Thresholds) -> Classifier:
     return TorchClassifier(fold_dir, thresholds=thresholds)
 
 
-def load_val(path: Path = VAL_ROWS, dedup: Path = DEDUP) -> list[OodRow]:
+def load_val_checked(path: Path = VAL_ROWS, dedup: Path = DEDUP) -> tuple[list[OodRow], list[str]]:
+    """(the scorable val-OOD rows, the ids ingest would reject for a spec-invalid tool)."""
     dropped: set[str] = set()
     if dedup.exists():
         report = json.loads(dedup.read_text(encoding="utf-8"))
         dropped = {i for entry in report["sets"].values() for i in entry.get("dropped", [])}
-    return [r for r in load_rows(path) if r.id not in dropped]
+    return split_spec_valid(r for r in load_rows(path) if r.id not in dropped)
+
+
+def load_val(path: Path = VAL_ROWS, dedup: Path = DEDUP) -> list[OodRow]:
+    return load_val_checked(path, dedup)[0]
 
 
 def _summary(rows: Sequence[OodRow], p: np.ndarray, t_low: float) -> dict[str, Any]:
@@ -195,7 +200,9 @@ def main(argv: Sequence[str] | None = None) -> Path:
         print(f"dry run green: {path}")
         return path
     models = ef.preflight_models(model_dirs, ns.corpus, ns.out.parent)
-    report = score_val(models, load_val())
+    rows, excluded = load_val_checked()
+    report = score_val(models, rows)
+    report["excluded_invalid_tool_name"] = excluded
     ns.out.write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
     )

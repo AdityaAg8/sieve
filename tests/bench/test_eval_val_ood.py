@@ -138,3 +138,19 @@ def test_the_dry_run_passes_on_cpu_with_the_tiny_artefact(
     assert report["n_holdout"] == fold0 and report["dry_run"]["in_sample"] == []
     assert report["headline_model"].startswith("tiny-s0-f0@")
     assert not (tmp_path / "test_opened.log").exists()
+
+
+def test_load_val_excludes_and_names_spec_invalid_tool_names(tmp_path: Path) -> None:
+    """A zero-width character in a tool name fails MCP's name rule: ingest rejects the tool, so
+    val-OOD keeps it out of scoring and reports its id instead of crashing (ADR-009)."""
+    from bench.collect.ood_rows import write_rows
+
+    rows = [
+        OodRow("v0", "mtp", "s0", {"name": "ok", "description": "x", "inputSchema": {}}, False),
+        OodRow("v1", "mtp", "s1", {"name": "read_file\u200b", "description": "x",
+                                    "inputSchema": {}}, True),
+    ]  # fmt: skip
+    path = write_rows(tmp_path / "val.jsonl", rows)
+    kept, excluded = ev.load_val_checked(path, tmp_path / "missing-dedup.json")
+    assert [r.id for r in kept] == ["v0"]
+    assert excluded == ["v1"]

@@ -14,6 +14,8 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from pydantic import ValidationError
+
 from sieve.serialise import serialise
 from sieve.types import ToolDefinition, ToolRecord
 
@@ -31,6 +33,19 @@ class OodRow:
     def is_synthetic(self) -> bool:
         """OOD rows are third-party text; `write_rows` refuses one that is not (G5)."""
         return self.source == "synthetic_mutation"
+
+    @property
+    def spec_valid(self) -> bool:
+        """Whether the tool passes `ToolDefinition`, e.g. MCP's name rule (`TOOL_NAME_RE`).
+
+        Sieve's ingest rejects any other tool, so it never reaches Stage 1. Upstream sets carry a
+        few: a zero-width character appended to a name is itself an attack technique.
+        """
+        try:
+            ToolDefinition(**self.tool)
+        except ValidationError:
+            return False
+        return True
 
     def tool_record(self) -> ToolRecord:
         return ToolRecord(
@@ -50,6 +65,22 @@ def load_rows(path: Path) -> list[OodRow]:
     ]
 
 
+def split_spec_valid(rows: Iterable[OodRow]) -> tuple[list[OodRow], list[str]]:
+    """(the rows a scorer can score, the ids of those ingest would reject).
+
+    Scorers keep the second group out of every metric and report it by id: never a crash
+    halfway through a one-shot opening, and never a silent drop (ADR-009).
+    """
+    kept: list[OodRow] = []
+    excluded: list[str] = []
+    for row in rows:
+        if row.spec_valid:
+            kept.append(row)
+        else:
+            excluded.append(row.id)
+    return kept, excluded
+
+
 def write_rows(path: Path, rows: Iterable[OodRow]) -> Path:
     rows = list(rows)
     synthetic = [r.id for r in rows if r.is_synthetic]
@@ -64,4 +95,4 @@ def write_rows(path: Path, rows: Iterable[OodRow]) -> Path:
     return path
 
 
-__all__ = ["OodRow", "load_rows", "write_rows"]
+__all__ = ["OodRow", "load_rows", "split_spec_valid", "write_rows"]

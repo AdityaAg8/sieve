@@ -40,7 +40,7 @@ from typing import Any
 import numpy as np
 
 from bench.ablations.run import dataset_version, pipeline_verdicts
-from bench.collect.ood_rows import OodRow, load_rows
+from bench.collect.ood_rows import OodRow, load_rows, split_spec_valid
 from bench.stats import EVAL_ONLY_SOURCE
 from sieve.protocols import Classifier
 from sieve.serialise import serialise
@@ -53,6 +53,8 @@ LOG_PATH = Path("bench/results/test_opened.log")
 RESULTS_DIR = Path("bench/results")
 PREDICTIONS_FILE = "holdout_predictions.jsonl"
 ROWS_FILE = "holdout_rows.jsonl"
+#: Test-OOD ids ingest would reject (a spec-invalid tool name), kept out of every metric.
+EXCLUDED_FILE = "holdout_excluded.json"
 REAL_SOURCES = frozenset({"public_repo", "wild_fp"})
 SEALED_SPLITS = frozenset({"holdout", "eval_only"})
 DEFAULT_CORPUS = Path("bench/data/labelled.jsonl")
@@ -236,8 +238,14 @@ def count_sealed(inputs: SealedInputs) -> int:
 
     # Only the M13 slice of real_poisoned is scored (Z2 review: every line used to count).
     poisoned = [r for r in m13_rows(_Row.of(rows(inputs.real_poisoned))) if r.id not in dropped]
-    ood = [r for r in rows(inputs.ood) if r["id"] not in dropped]
+    ood, _ = split_spec_valid(r for r in load_rows(inputs.ood) if r.id not in dropped)
     return corpus + len(poisoned) + len(ood)
+
+
+def excluded_ood(inputs: SealedInputs) -> list[str]:
+    """Ids of the test-OOD rows ingest would reject (a spec-invalid tool); never scored."""
+    dropped = _dropped(inputs)
+    return split_spec_valid(r for r in load_rows(inputs.ood) if r.id not in dropped)[1]
 
 
 def load_sealed(inputs: SealedInputs, *, yara: YaraRunner = _scan) -> list[SealedRow]:
@@ -262,7 +270,7 @@ def load_sealed(inputs: SealedInputs, *, yara: YaraRunner = _scan) -> list[Seale
         for r in sorted(m13_rows(poisoned), key=lambda r: r.id)
     ]
     sidecar = json.loads(inputs.ood_yara.read_text(encoding="utf-8"))
-    ood = [r for r in load_rows(inputs.ood) if r.id not in dropped]
+    ood, _ = split_spec_valid(r for r in load_rows(inputs.ood) if r.id not in dropped)
     for name in ("docker", "mcptox_clean"):
         out += [
             _sealed_ood(r, sidecar) for r in sorted(ood, key=lambda r: r.id) if r.source == name
@@ -533,7 +541,18 @@ def run(
     described = write_jsonl_atomic(
         results_dir / ROWS_FILE, row_entries(rows, unk_flags(rows, models))
     )
-    log.info("scored %d sealed rows with %d model(s)", len(rows), len(models))
+    excluded = excluded_ood(inputs)
+    (results_dir / EXCLUDED_FILE).write_text(
+        json.dumps({"invalid_tool_name": excluded}, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    log.info(
+        "scored %d sealed rows with %d model(s); %d excluded for a spec-invalid tool",
+        len(rows),
+        len(models),
+        len(excluded),
+    )
     return predictions, described
 
 
