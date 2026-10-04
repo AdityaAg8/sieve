@@ -63,6 +63,9 @@ bench/data/_reproduce/
 # no licence, so its text is never committed (SC-3, D2).
 bench/data/real_poisoned.jsonl
 bench/data/artefact_cache/
+# The out-of-fold error list embeds each row's serialised text, synthetic payloads included.
+# The corpus is never committed, so neither is this; `make bench` rebuilds it locally.
+bench/results/errors.md
 bench/results/corpus_stats.json
 bench/results/dedup_dropped.json
 fixtures/scanner/.tools-only.json
