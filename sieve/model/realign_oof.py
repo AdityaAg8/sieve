@@ -43,6 +43,11 @@ BF16_MAX_DISTANCE = 0.25
 TIE = 0.02
 #: A match must be this much nearer (log-probability L2) than any distinguishable rival.
 RATIO = 0.8
+#: bf16 drift can leave a few rows genuinely ambiguous between two same-label predictions
+#: (modernbert-base-s2 fold0 row 136: 0.2012 against 0.1930). Up to this share of a fold's rows
+#: keep the exact assignment as their best guess and are named in the report; more refuses.
+#: fp32 artefacts get no budget.
+BF16_AMBIGUOUS_SHARE = 0.02
 
 FloatArray = npt.NDArray[np.float64]
 
@@ -64,6 +69,11 @@ def tolerance_for(precision: str) -> float:
     return BF16_MAX_DISTANCE if precision == "bf16" else MAX_DISTANCE
 
 
+def ambiguity_budget_for(precision: str, rows: int) -> int:
+    """How many rows of a `rows`-row fold may stay ambiguous for logits made in `precision`."""
+    return int(BF16_AMBIGUOUS_SHARE * rows) if precision == "bf16" else 0
+
+
 def match_rows(
     stored: FloatArray,
     stored_labels: npt.NDArray[Any],
@@ -71,8 +81,10 @@ def match_rows(
     fresh_labels: npt.NDArray[Any],
     *,
     max_distance: float = MAX_DISTANCE,
-) -> npt.NDArray[np.int64]:
-    """`perm` with stored row i == fresh row perm[i]; label-respecting, exact assignment."""
+    max_ambiguous: int = 0,
+) -> tuple[npt.NDArray[np.int64], list[int]]:
+    """(`perm`, ambiguous stored rows) with stored row i == fresh row perm[i]; label-respecting,
+    exact assignment. Refuses past `max_ambiguous` rows that fail the identity test."""
     from scipy.optimize import linear_sum_assignment  # type: ignore[import-untyped]
 
     if stored.shape != fresh.shape:
@@ -94,33 +106,43 @@ def match_rows(
     # Identity, not just closeness: every match must beat, by RATIO, the nearest same-label
     # fresh row that is *distinguishable* from it. Rows within TIE of each other in probability
     # are interchangeable: swapping them moves no threshold decision, so no metric.
+    ambiguous: list[int] = []
+    first = ""
     for i, j in zip(rows, cols, strict=True):
         rivals = np.flatnonzero(
             (cost[i] < 1e9) & (np.linalg.norm(fresh_p - fresh_p[j], axis=1) > TIE)
         )
         if len(rivals) and cost[i, j] > RATIO * cost[i, rivals].min():
-            raise RealignError(
-                f"stored row {i} is ambiguous: its match is {cost[i, j]:.4f} away and a "
+            ambiguous.append(int(i))
+            first = first or (
+                f"stored row {i}: its match is {cost[i, j]:.4f} away and a "
                 f"distinguishable row of the same label {cost[i, rivals].min():.4f}"
             )
+    if len(ambiguous) > max_ambiguous:
+        raise RealignError(
+            f"{len(ambiguous)} stored rows are ambiguous (budget {max_ambiguous}); first, {first}"
+        )
     perm = np.empty(len(rows), dtype=np.int64)
     perm[rows] = cols
-    return perm
+    return perm, ambiguous
 
 
 Job = tuple[Path, Sequence[str], npt.NDArray[Any], Callable[[], npt.NDArray[Any]]]
 
 
-def _aligned_ids(job: Job, max_distance: float) -> list[str]:
+def _aligned_ids(job: Job, max_distance: float, max_ambiguous: int) -> tuple[list[str], list[str]]:
+    """The ids in stored-row order, and those of them placed by best guess."""
     fold_dir, dataset_ids, dataset_labels, score = job
-    perm = match_rows(
+    perm, ambiguous = match_rows(
         log_softmax(np.load(fold_dir / "oof_logits.npy")),
         np.load(fold_dir / "oof_labels.npy"),
         log_softmax(score()),
         np.asarray(dataset_labels),
         max_distance=max_distance,
+        max_ambiguous=max_ambiguous,
     )
-    return [str(dataset_ids[j]) for j in perm]
+    ids = [str(dataset_ids[j]) for j in perm]
+    return ids, [ids[i] for i in ambiguous]
 
 
 def _write_ids(path: Path, ids: Sequence[str]) -> None:
@@ -128,27 +150,39 @@ def _write_ids(path: Path, ids: Sequence[str]) -> None:
 
 
 def realign_folds(
-    jobs: Sequence[Job], *, max_distance: float = MAX_DISTANCE, pooled: Path | None = None
+    jobs: Sequence[Job],
+    *,
+    max_distance: float = MAX_DISTANCE,
+    max_ambiguous: int = 0,
+    pooled: Path | None = None,
 ) -> list[dict[str, Any]]:
     """Match every fold first, write after: a refusal anywhere leaves every file untouched.
 
     Each job is (fold_dir, dataset_ids, dataset_labels, score), `score()` returning logits or
     log-probabilities for `dataset_ids` in that order. `pooled`, when given, is the artefact
     directory whose `oof_logits.npy` must be the folds concatenated; its `oof_ids.json` is
-    rewritten to match.
+    rewritten to match. `max_ambiguous` is per fold.
     """
-    aligned = [_aligned_ids(job, max_distance) for job in jobs]
+    matched = [_aligned_ids(job, max_distance, max_ambiguous) for job in jobs]
+    aligned = [ids for ids, _ in matched]
     if pooled is not None and (pooled / "oof_logits.npy").exists():
         blocks = [np.load(job[0] / "oof_logits.npy").astype(np.float32) for job in jobs]
         if not np.array_equal(np.load(pooled / "oof_logits.npy"), np.concatenate(blocks)):
             raise RealignError(f"{pooled}/oof_logits.npy is not its folds concatenated")
     reports = []
-    for job, ids in zip(jobs, aligned, strict=True):
+    for job, (ids, ambiguous) in zip(jobs, matched, strict=True):
         path = job[0] / "oof_ids.json"
         before = json.loads(path.read_text(encoding="utf-8"))
         _write_ids(path, ids)
         moved = sum(a != b for a, b in zip(before, ids, strict=True))
-        reports.append({"fold_dir": job[0].as_posix(), "rows": len(ids), "moved": moved})
+        reports.append(
+            {
+                "fold_dir": job[0].as_posix(),
+                "rows": len(ids),
+                "moved": moved,
+                "ambiguous": ambiguous,
+            }
+        )
     if pooled is not None and (pooled / "oof_logits.npy").exists():
         _write_ids(pooled / "oof_ids.json", [i for ids in aligned for i in ids])
     return reports
@@ -161,10 +195,11 @@ def realign_fold(
     score: Callable[[], npt.NDArray[Any]],
     *,
     max_distance: float = MAX_DISTANCE,
+    max_ambiguous: int = 0,
 ) -> dict[str, Any]:
     """One fold on its own (`realign_folds` with a single job)."""
     job: Job = (fold_dir, dataset_ids, dataset_labels, score)
-    return realign_folds([job], max_distance=max_distance)[0]
+    return realign_folds([job], max_distance=max_distance, max_ambiguous=max_ambiguous)[0]
 
 
 def _findings_at(sha: str) -> dict[str, Any]:
@@ -193,7 +228,8 @@ def realign_artefact(
     from sieve.protocols import Thresholds
 
     metrics = json.loads((model_dir / "fold0" / "metrics.json").read_text(encoding="utf-8"))
-    limit = max_distance if max_distance is not None else tolerance_for(metrics.get("precision"))
+    precision = str(metrics.get("precision"))
+    limit = max_distance if max_distance is not None else tolerance_for(precision)
     mode: Literal["full", "description_only"] = (
         "description_only" if metrics.get("mode") == "description_only" else "full"
     )
@@ -219,9 +255,16 @@ def realign_artefact(
             return np.log(np.clip(probs, 1e-300, None))
 
         jobs.append((fold_dir, list(oof["id"]), labels, score))
-    reports = realign_folds(jobs, max_distance=limit, pooled=model_dir)
+    budget = ambiguity_budget_for(precision, min(len(job[1]) for job in jobs))
+    reports = realign_folds(jobs, max_distance=limit, max_ambiguous=budget, pooled=model_dir)
     for report in reports:
-        log.info("%s: %d of %d ids moved", report["fold_dir"], report["moved"], report["rows"])
+        log.info(
+            "%s: %d of %d ids moved, %d placed by best guess",
+            report["fold_dir"],
+            report["moved"],
+            report["rows"],
+            len(report["ambiguous"]),
+        )
     return reports
 
 
