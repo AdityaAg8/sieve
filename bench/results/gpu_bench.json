@@ -1,0 +1,86 @@
+{
+  "measured_at": "2026-10-04T06:39:22+00:00",
+  "git_sha": "59c1ed38e82e6f779236eca230cef38207733c5f",
+  "warmup_steps": 10,
+  "timed_steps": 50,
+  "peak_limit_gib": 11.0,
+  "rule": "per architecture, the lowest s/epoch whose peak max_memory_allocated <= 11.0 GiB",
+  "gpu_at_start": {
+    "memory_used_mib": 1144,
+    "memory_total_mib": 12282
+  },
+  "variants": {
+    "deberta": {
+      "seconds_per_step": 0.678294105999994,
+      "seconds_per_step_sd": 0.41602768116803124,
+      "steps_per_epoch": 45,
+      "seconds_per_epoch": 30.52323476999973,
+      "peak_gib": 4.825124263763428,
+      "train_rows": 713,
+      "family": "deberta-v3-base",
+      "role": "candidate"
+    },
+    "deberta-nockpt": {
+      "seconds_per_step": 0.7194648919999963,
+      "seconds_per_step_sd": 0.47925411890870906,
+      "steps_per_epoch": 45,
+      "seconds_per_epoch": 32.375920139999835,
+      "peak_gib": 10.553178787231445,
+      "train_rows": 713,
+      "family": "deberta-v3-base",
+      "role": "candidate"
+    },
+    "modernbert": {
+      "seconds_per_step": 0.1937468319999971,
+      "seconds_per_step_sd": 0.09277748344879455,
+      "steps_per_epoch": 45,
+      "seconds_per_epoch": 8.71860743999987,
+      "peak_gib": 6.86276912689209,
+      "train_rows": 713,
+      "family": "modernbert-base",
+      "role": "candidate"
+    },
+    "modernbert-acc": {
+      "seconds_per_step": 0.21428345599999374,
+      "seconds_per_step_sd": 0.07619563802832754,
+      "steps_per_epoch": 45,
+      "seconds_per_epoch": 9.642755519999719,
+      "peak_gib": 4.977503776550293,
+      "train_rows": 713,
+      "family": "modernbert-base",
+      "role": "candidate"
+    },
+    "modernbert-1024": {
+      "seconds_per_step": 0.26421057200001086,
+      "seconds_per_step_sd": 0.16465412337943844,
+      "steps_per_epoch": 45,
+      "seconds_per_epoch": 11.889475740000488,
+      "peak_gib": 7.593355178833008,
+      "train_rows": 713,
+      "family": "modernbert-base-1024",
+      "role": "ablation"
+    }
+  },
+  "choice": {
+    "deberta-v3-base": "deberta",
+    "modernbert-base": "modernbert"
+  },
+  "nondeterminism": {
+    "deberta-v3-base": {
+      "profile": "deberta",
+      "macro_f1_a": 0.7017104170982521,
+      "macro_f1_b": 0.7017104170982521,
+      "delta_macro_f1": 0.0,
+      "max_abs_logit_diff": 0.0008341670036315918,
+      "identical_logits": false
+    },
+    "modernbert-base": {
+      "profile": "modernbert",
+      "macro_f1_a": 0.4874640311755365,
+      "macro_f1_b": 0.5271964609316705,
+      "delta_macro_f1": 0.039732429756134,
+      "max_abs_logit_diff": 1.20703125,
+      "identical_logits": false
+    }
+  }
+}
