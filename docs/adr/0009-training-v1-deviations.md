@@ -215,9 +215,13 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
     `_logits_and_labels` refuses any reordering.
   - **The repair.** `sieve.model.realign_oof` re-scored each fold's held-out rows with that
     fold's saved model, on the CPU, in dataset order. It matched every stored row to the fresh row
-    with the same label by exact assignment on log-probabilities, and accepted the match only
-    within a probability distance of 0.05 (fp32 artefacts) or 0.15 (bf16 ModernBERT: its worst
-    measured drift was 0.104, median 0.00016).
+    with the same label by exact assignment on log-probabilities. A match counts only on
+    **identity**: it must beat, by a factor of 0.8, every distinguishable same-label rival,
+    where rows within 0.02 in probability are interchangeable for every metric. It must also lie
+    within an absolute probability cap: 0.05 for fp32 artefacts, and 0.25 for bf16 ModernBERT,
+    whose CPU re-score drifted up to 0.168 against medians near 1e-4.
+  - The DeBERTa artefacts were matched under the 0.05 cap before the identity test existed. Their
+    fp32 CPU-against-GPU drift is about 1e-5, so ambiguity is practically impossible there.
   - **What changed.** Only `oof_ids.json` was rewritten. The logits and labels are
     byte-identical, so calibration and the thresholds the sealed opening used did not move.
   - **The check.** After the repair, every artefact's labels agree with the corpus by id, and
