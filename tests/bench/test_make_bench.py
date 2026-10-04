@@ -22,12 +22,12 @@ pytestmark = pytest.mark.skipif(MAKE is None, reason="make is not installed")
 BENCH_STEPS = (
     "bench.baseline.run",
     "bench.split.pairs",
+    "sieve.model.select --candidate",  # before the ablations: rows 4/5 read it (Z2 review)
     "bench.ablations.run",
     "bench.analysis.errors",
     "bench.report_final",
     "bench.latency --in-process",
     "bench.demo",
-    "sieve.model.select",
 )
 
 
@@ -56,7 +56,10 @@ def test_make_n_bench_lists_every_step_in_order_and_no_server() -> None:
     assert positions == sorted(positions)
     assert "--base-url" not in text, "bench must not need a running server (C7)"
     assert "judge_agreement" not in text, "the judge is deferred (D8)"
-    assert "demo --model-id models/deberta-v3-base-s0 --final" in text
+    # D14: the published artefact is selection.json's median seed, resolved when the line runs.
+    assert "demo --model-id $(uv run python -m sieve.model.select --print-published" in text
+    assert "--fallback models/deberta-v3-base-s0) --final" in text
+    assert "curves.json" in text
 
 
 def test_every_bench_step_honours_results_dir() -> None:
@@ -74,7 +77,8 @@ def test_push_is_a_dry_run_unless_confirmed() -> None:
 
 def test_select_export_and_reproduce_check_targets_exist() -> None:
     assert "sieve.model.select --candidate deberta-v3-base=" in _dry("select")
-    assert "sieve.model.export models/deberta-v3-base-s0" in _dry("export")
+    assert "sieve.model.export $(uv run python -m sieve.model.select" in _dry("export")
+    assert "sieve.model.export elsewhere/x" in _dry("export", "PUBLISHED_DIR=elsewhere/x")
     text = _dry("reproduce-check")
     assert "--out bench/data/_reproduce/ablations.json" in text
     assert "--tolerance 0.01" in text
