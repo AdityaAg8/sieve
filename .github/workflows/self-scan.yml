@@ -18,6 +18,8 @@ jobs:
           # A fork PR's GITHUB_TOKEN is read-only whatever `permissions:` above asks for, so
           # both writes would fail the job on every outside contribution. Gated rather than
           # moved to `pull_request_target`, which would run the fork's own code with a writable
-          # token -- the injection shape this action's C1 fix exists to close.
-          upload-sarif: ${{ github.event.pull_request.head.repo.fork == false }}
+          # token -- the injection shape this action's C1 fix exists to close. Code Scanning on a
+          # private repository needs GitHub Advanced Security, which this one does not have, so
+          # the upload runs only once the repository is public; the verdicts still gate the job.
+          upload-sarif: ${{ github.event.pull_request.head.repo.fork == false && github.event.repository.private == false }}
           comment: ${{ github.event.pull_request.head.repo.fork == false }}

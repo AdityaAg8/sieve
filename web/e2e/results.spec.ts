@@ -70,7 +70,13 @@ test.describe("results screen", () => {
 
   test("the palette opens with the meta key and filters to a tool", async ({ page }) => {
     await page.goto(RESULTS);
-    await expect(page.getByTestId("group-count-confirmed")).toBeVisible();
+    // Findings stream in, so wait for every one: on a slow runner the first confirmed group can
+    // render before `weather/set_location` has arrived, and the search would then find nothing.
+    await expect(page.getByTestId("group-count-confirmed")).toHaveText(String(EXPECTED.confirmed));
+    await expect(page.getByTestId("group-count-needs_review")).toHaveText(
+      String(EXPECTED.needsReview),
+    );
+    await expect(page.getByTestId("group-count-dismissed")).toHaveText(String(EXPECTED.dismissed));
 
     await page.keyboard.press("ControlOrMeta+k");
     const input = page.getByPlaceholder("Search tools, or type a command");

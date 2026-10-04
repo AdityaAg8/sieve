@@ -22,7 +22,10 @@ jobs:
       # Cached between runs; see the `hub cache` step below. Set here, not in the job's `env:`,
       # because GitHub does not expose the `runner` context there and rejects the whole file.
       - run: echo "HF_HOME=$RUNNER_TEMP/hf" >> "$GITHUB_ENV"
+      # Full history: tests/docs/test_adr_0009.py checks that every commit ADR-009 cites exists,
+      # which a depth-1 checkout cannot answer.
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
       # `enable-cache` caches uv's own download/build cache, keyed on the lockfile. Without it
       # this job re-downloads the whole `model` extra on every push.
       - uses: astral-sh/setup-uv@v5
@@ -207,6 +210,11 @@ jobs:
           NEXT_PUBLIC_API_BASE: http://127.0.0.1:8000
           NEXT_PUBLIC_DEMO_SCAN_ID: 00000000-0000-0000-0000-000000005eed
         run: npm run build
+      # Ubuntu 24.04 runners restrict unprivileged user namespaces through AppArmor, so Chrome
+      # exits with "No usable sandbox!". Lift that on this throwaway runner rather than passing
+      # `--no-sandbox`, so the page is measured in the browser configuration users run.
+      - name: allow Chrome's sandbox
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - name: measure
         working-directory: web
         run: |
