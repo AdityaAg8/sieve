@@ -65,3 +65,12 @@ def test_a_near_certain_row_whose_tail_moved_is_still_its_own_match() -> None:
     labels = np.array([0, 1, 2])
     perm = match_rows(log_softmax(stored), labels, log_softmax(fresh), labels, max_distance=0.05)
     assert perm.tolist() == [0, 1, 2]
+
+
+def test_the_tolerance_follows_the_precision_the_logits_were_produced_in() -> None:
+    """bf16 autocast (ModernBERT) drifts up to ~0.10 in probability against an fp32 re-score
+    (measured on modernbert-base-s2 fold0); fp32 artefacts stay held to 0.05."""
+    from sieve.model.realign_oof import tolerance_for
+
+    assert tolerance_for("fp32") == 0.05
+    assert tolerance_for("bf16") == 0.15

@@ -35,6 +35,9 @@ FOLDS = range(5)
 #: (ModernBERT) moves a near-certain row's tail log-probability by 0.5 while its probabilities
 #: move by under 0.025 (measured on modernbert-base-s0 fold0); a wrong row moves by far more.
 MAX_DISTANCE = 0.05
+#: Logits produced under bf16 autocast drift further against an fp32 CPU re-score: up to 0.104
+#: in probability on modernbert-base-s2 fold0 (median 0.00016, 4 of 212 rows above 0.05).
+BF16_MAX_DISTANCE = 0.15
 
 FloatArray = npt.NDArray[np.float64]
 
@@ -49,6 +52,11 @@ def log_softmax(logits: npt.NDArray[Any]) -> FloatArray:
     return np.asarray(
         shifted - np.log(np.exp(shifted).sum(axis=1, keepdims=True)), dtype=np.float64
     )
+
+
+def tolerance_for(precision: str) -> float:
+    """The acceptance limit for logits produced in `precision` (`metrics.json`)."""
+    return BF16_MAX_DISTANCE if precision == "bf16" else MAX_DISTANCE
 
 
 def match_rows(
@@ -127,7 +135,7 @@ def _committed_findings(sha: str = "HEAD") -> Path:
 
 
 def realign_artefact(
-    model_dir: Path, corpus: Path, *, max_distance: float = MAX_DISTANCE
+    model_dir: Path, corpus: Path, *, max_distance: float | None = None
 ) -> list[dict[str, Any]]:
     """Every fold of one `models/<family>-s<seed>` artefact, then its pooled ids."""
     from sieve.model.data import build_splits, load_corpus, load_scanner_findings
@@ -135,6 +143,7 @@ def realign_artefact(
     from sieve.protocols import Thresholds
 
     metrics = json.loads((model_dir / "fold0" / "metrics.json").read_text(encoding="utf-8"))
+    limit = max_distance if max_distance is not None else tolerance_for(metrics.get("precision"))
     mode: Literal["full", "description_only"] = (
         "description_only" if metrics.get("mode") == "description_only" else "full"
     )
@@ -159,7 +168,7 @@ def realign_artefact(
             probs = TorchClassifier(fold_dir, thresholds=unit).predict_proba(texts)
             return np.log(np.clip(probs, 1e-300, None))
 
-        report = realign_fold(fold_dir, list(oof["id"]), labels, score, max_distance=max_distance)
+        report = realign_fold(fold_dir, list(oof["id"]), labels, score, max_distance=limit)
         log.info("%s: %d of %d ids moved", fold_dir, report["moved"], report["rows"])
         reports.append(report)
 
@@ -183,9 +192,12 @@ def main(argv: Sequence[str] | None = None) -> list[dict[str, Any]]:
     parser = argparse.ArgumentParser(prog="python -m sieve.model.realign_oof")
     parser.add_argument("model_dirs", type=Path, nargs="+")
     parser.add_argument("--corpus", type=Path, default=Path("bench/data/labelled.jsonl"))
-    parser.add_argument("--max-distance", type=float, default=MAX_DISTANCE)
+    parser.add_argument("--max-distance", type=float, default=None)
     ns = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO)
+    import torch
+
+    torch.set_num_threads(8)  # the machine is shared with a GPU trainer's data loading
     out = []
     for model_dir in ns.model_dirs:
         out += realign_artefact(model_dir, ns.corpus, max_distance=ns.max_distance)
