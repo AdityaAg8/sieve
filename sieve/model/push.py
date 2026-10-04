@@ -45,8 +45,12 @@ def read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def holdout_log_line(results_dir: Path, sha: str) -> str:
-    """The `test_opened.log` entry for `sha`, verbatim. Raises when there is none."""
+def holdout_log_line(results_dir: Path, sha: str, model_version: str | None = None) -> str:
+    """The `test_opened.log` entry for `sha`, or the one that scored `model_version`, verbatim.
+
+    Matching on the model too (Z2 review): committing the log and `holdout.json` after the
+    opening moves HEAD, so a SHA-only match refused every later push of the very model that was
+    opened. `model_version` carries the training commit, so it is the stronger key anyway."""
     path = results_dir / "test_opened.log"
     if not path.exists():
         raise HoldoutLogMissing(
@@ -57,7 +61,9 @@ def holdout_log_line(results_dir: Path, sha: str) -> str:
         if not line.strip():
             continue
         entry = json.loads(line)
-        if str(entry.get("git_sha")) == sha:
+        if str(entry.get("git_sha")) == sha or (
+            model_version is not None and model_version in (entry.get("models") or [])
+        ):
             return line
     raise HoldoutLogMissing(
         f"{path} has no line for git SHA {sha}; a model card that quotes holdout numbers "
@@ -156,6 +162,13 @@ def build_context(
     export_parity = read_json(results_dir / "export_parity.json")
     config = read_json(model_dir / "sieve_config.json")
     row = _headline_row(ablations, headline_row)
+    # Z2 review: the card quotes holdout.json, so the artefact must be the one it reports on.
+    headline = holdout.get("headline_model")
+    if headline is not None and headline != config.get("model_version"):
+        raise IncompleteCard(
+            f"holdout.json reports on {headline}, but {model_dir} is {config.get('model_version')};"
+            " push the pre-registered headline artefact (PUBLISHED_DIR=...)"
+        )
 
     spread = config.get("t_low_spread") or []
     return {
@@ -197,7 +210,7 @@ def build_context(
         "onnx_int8_parity": export_parity.get("max_abs_delta"),
         "p50_ms": latency.get("p50_ms"),
         "p95_ms": latency.get("p95_ms"),
-        "holdout_log_line": holdout_log_line(results_dir, sha),
+        "holdout_log_line": holdout_log_line(results_dir, sha, config.get("model_version")),
         "limitations": _limitations(holdout.get("limitations"), limitations),
     }
 

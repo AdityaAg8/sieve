@@ -161,6 +161,29 @@ def test_the_log_line_is_carried_verbatim(results: Path) -> None:
     assert json.loads(line)["reason"] == "v0.1.0 release"
 
 
+def test_the_log_line_matches_the_model_after_head_moved(results: Path) -> None:
+    """Z2: committing the log moves HEAD; the opened model still finds its line."""
+    log = results / "test_opened.log"
+    entry = json.loads(log.read_text(encoding="utf-8").splitlines()[0])
+    log.write_text(
+        json.dumps({**entry, "models": ["deberta-v3-base-s0@abc"]}) + "\n", encoding="utf-8"
+    )
+    line = holdout_log_line(results, "f" * 40, "deberta-v3-base-s0@abc")
+    assert json.loads(line)["models"] == ["deberta-v3-base-s0@abc"]
+    with pytest.raises(HoldoutLogMissing):
+        holdout_log_line(results, "f" * 40, "deberta-v3-base-s1@abc")
+
+
+def test_the_card_refuses_an_artefact_the_holdout_did_not_report_on(
+    results: Path, model_dir: Path
+) -> None:
+    path = results / "holdout.json"
+    holdout = json.loads(path.read_text(encoding="utf-8"))
+    path.write_text(json.dumps({**holdout, "headline_model": "someone-else@0"}), encoding="utf-8")
+    with pytest.raises(IncompleteCard, match="reports on someone-else@0"):
+        build_context(model_dir, results, sha=SHA)
+
+
 def test_build_context_fails_when_the_log_line_is_absent(results: Path, model_dir: Path) -> None:
     (results / "test_opened.log").unlink()
     with pytest.raises(HoldoutLogMissing):
@@ -509,7 +532,9 @@ def written_model_dir(dev_records_for_writers: list[Any], tmp_path: Path) -> Pat
     directory.mkdir(parents=True, exist_ok=True)
     config = load_profile(Path("bench/train.yaml"), "deberta", fold="all", seed=1, epochs=4)
     payload: dict[str, Any] = {
-        "model_version": config.model_version(),
+        # The artefact the rendered holdout.json reports on (report_fixture.SeededFake seed 0):
+        # the card refuses an artefact the sealed report is not about (Z2 review).
+        "model_version": "deberta@s0",
         "base_model": config.base_model,
         "training_command": config.training_command(
             Path("bench/data/labelled.jsonl"), Path("models/deberta-v3-base-final")
