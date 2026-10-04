@@ -1,0 +1,10 @@
+{
+  "flips_t_high": 0,
+  "flips_t_low": 0,
+  "graph": "model.onnx",
+  "max_abs_delta": 6.672820315190009e-06,
+  "model_version": "deberta-v3-base-s1@0900e7e",
+  "n": 1010,
+  "passed": true,
+  "tolerance": 0.01
+}
