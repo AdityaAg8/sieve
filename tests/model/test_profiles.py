@@ -102,3 +102,39 @@ def test_the_published_training_command_reloads_the_same_config(
     monkeypatch.setattr("sieve.model.train.run", lambda c, corpus, out: seen.setdefault("c", c))
     main(shlex.split(command)[3:])  # drop "python -m sieve.model.train"
     assert seen["c"] == config
+
+
+def test_classifier_pooling_reaches_the_model_only_when_a_profile_sets_it(tmp_path: Path) -> None:
+    """ModernBERT ships mean pooling; a profile may pick [CLS] pooling (ADR-009)."""
+    from sieve.model.train import model_kwargs
+
+    plain = load_profile(CONFIG, "deberta", fold=0, seed=0)
+    assert plain.classifier_pooling is None
+    assert "classifier_pooling" not in model_kwargs(plain)
+
+    config = tmp_path / "train.yaml"
+    config.write_text(
+        "profiles:\n"
+        "  mb-cls:\n"
+        "    base_model: answerdotai/ModernBERT-base\n"
+        "    lr: 8.0e-5\n"
+        "    epochs: 8\n"
+        "    patience: 2\n"
+        "    precision: bf16\n"
+        "    class_weights: true\n"
+        "    max_length: 512\n"
+        "    batch_size: 16\n"
+        "    classifier_pooling: cls\n",
+        encoding="utf-8",
+    )
+    pooled = load_profile(config, "mb-cls", fold=0, seed=0)
+    assert pooled.classifier_pooling == "cls"
+    kwargs = model_kwargs(pooled)
+    assert kwargs["classifier_pooling"] == "cls"
+    assert kwargs["num_labels"] == 3
+
+    config.write_text(
+        config.read_text(encoding="utf-8").replace(": cls", ": max"), encoding="utf-8"
+    )
+    with pytest.raises(ValueError):
+        load_profile(config, "mb-cls", fold=0, seed=0)

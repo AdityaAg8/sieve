@@ -79,6 +79,9 @@ class TrainConfig(BaseModel):
     num_labels: int = Field(default=3, ge=2, le=3)
     class_weights: bool
     gradient_checkpointing: bool = False
+    # ModernBERT's head mean-pools every token by default; "cls" pools the first token, which
+    # its global-attention layers see whole (ADR-009). None keeps the checkpoint's own choice.
+    classifier_pooling: Literal["cls", "mean"] | None = None
     scanner_features: bool = False
     # Record-id-keyed YARA findings (`baseline_raw.json`) that `--scanner-features` renders.
     findings: Path | None = None
@@ -237,6 +240,18 @@ def load_profile(
         stop_after_epochs=stop_after,
         max_steps=max_steps,
     )
+
+
+def model_kwargs(config: TrainConfig) -> dict[str, Any]:
+    """The head's config overrides for `from_pretrained`; saved into the artefact's config.json."""
+    kwargs: dict[str, Any] = {
+        "num_labels": config.num_labels,
+        "id2label": config.id2label(),
+        "label2id": {v: k for k, v in config.id2label().items()},
+    }
+    if config.classifier_pooling is not None:
+        kwargs["classifier_pooling"] = config.classifier_pooling
+    return kwargs
 
 
 def default_corpus(config_path: Path) -> Path:
@@ -514,11 +529,7 @@ def run(config: TrainConfig, corpus_path: Path, out_dir: Path) -> Path:
     }
 
     model = AutoModelForSequenceClassification.from_pretrained(
-        config.base_model,
-        revision=config.revision,
-        num_labels=config.num_labels,
-        id2label=config.id2label(),
-        label2id={v: k for k, v in config.id2label().items()},
+        config.base_model, revision=config.revision, **model_kwargs(config)
     )
     init_marker_rows(model, tokenizer, trained_rows=trained_rows)
 
