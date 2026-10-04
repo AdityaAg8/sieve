@@ -647,3 +647,22 @@ def test_the_generator_never_writes_into_bench_results(results: Path, readme: Pa
     before = sorted(p.name for p in committed.iterdir())
     assert _run(results, readme) == 0
     assert sorted(p.name for p in committed.iterdir()) == before
+
+
+def test_a_deferred_judge_headline_follows_the_selection_winner() -> None:
+    """Review P3: with the judge deferred, the Stage-1 headline is the selected architecture's
+    row, not whichever encoder row is listed first."""
+    rows = [
+        {"row": 4, "judge": "none", "classifier": "models/deberta-v3-base-s*", "mode": "full"},
+        {"row": 5, "judge": "none", "classifier": "models/modernbert-base-s*", "mode": "full"},
+        {"row": 6, "judge": DEFAULT_JUDGE, "status": "deferred"},
+    ]
+    payload = {"rows": rows}
+    assert rn.headline_row(payload)["row"] == 4
+    assert rn.headline_row(payload, "modernbert-base")["row"] == 5
+    assert rn.headline_row(payload, "deberta-v3-base")["row"] == 4
+
+
+def test_a_readme_with_one_results_marker_is_refused() -> None:
+    with pytest.raises(rn.Refused, match="one of the two results markers"):
+        rn.replace_results(f"intro\n{rn.RESULTS_START}\nrest\n", "table")

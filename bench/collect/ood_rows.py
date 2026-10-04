@@ -43,7 +43,7 @@ class OodRow:
         """
         try:
             ToolDefinition(**self.tool)
-        except ValidationError:
+        except (ValidationError, TypeError):
             return False
         return True
 

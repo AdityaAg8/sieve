@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import subprocess
 import tempfile
 from collections.abc import Callable, Sequence
@@ -39,15 +40,19 @@ MAX_DISTANCE = 0.05
 #: modernbert-base-s2 fold0, 0.168 on s0; medians near 1e-4). With the identity test below
 #: carrying the proof, this is only a cap on what counts as the same prediction at all.
 BF16_MAX_DISTANCE = 0.25
-#: Two fresh rows closer than this in probability are interchangeable for every metric.
+#: Two same-label fresh rows closer than this in probability are interchangeable: a swap moves no
+#: count-based metric in any slice unless a threshold falls between them, and moves a continuous
+#: per-slice metric (AUROC, ECE) by at most this much per swapped row. It can move a row between
+#: per-tier or per-source slices, so the guarantee is approximate, not exact.
 TIE = 0.02
 #: A match must be this much nearer (log-probability L2) than any distinguishable rival.
 RATIO = 0.8
 #: bf16 drift can leave a few rows genuinely ambiguous between two same-label predictions
 #: (modernbert-base-s2 fold0 row 136: 0.2012 against 0.1930). Up to this share of a fold's rows
-#: keep the exact assignment as their best guess and are named in the report; more refuses.
-#: fp32 artefacts get no budget.
+#: keep the exact assignment as their best guess, are named in the report and in
+#: `AMBIGUOUS_FILE` beside the fold's ids; more refuses. fp32 artefacts get no budget.
 BF16_AMBIGUOUS_SHARE = 0.02
+AMBIGUOUS_FILE = "oof_ids_ambiguous.json"
 
 FloatArray = npt.NDArray[np.float64]
 
@@ -105,7 +110,7 @@ def match_rows(
         )
     # Identity, not just closeness: every match must beat, by RATIO, the nearest same-label
     # fresh row that is *distinguishable* from it. Rows within TIE of each other in probability
-    # are interchangeable: swapping them moves no threshold decision, so no metric.
+    # are interchangeable (see TIE).
     ambiguous: list[int] = []
     first = ""
     for i, j in zip(rows, cols, strict=True):
@@ -146,7 +151,22 @@ def _aligned_ids(job: Job, max_distance: float, max_ambiguous: int) -> tuple[lis
 
 
 def _write_ids(path: Path, ids: Sequence[str]) -> None:
-    path.write_text(json.dumps(list(ids), indent=2) + "\n", encoding="utf-8", newline="\n")
+    """Write through a sibling temp file and `os.replace`, so a crash never leaves half a file."""
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(list(ids), indent=2) + "\n", encoding="utf-8", newline="\n")
+    os.replace(tmp, path)
+
+
+def _stored_ids(fold_dir: Path, rows: int) -> list[str]:
+    """The fold's current ids, refused unless they are a list of `rows` strings."""
+    path = fold_dir / "oof_ids.json"
+    try:
+        before = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RealignError(f"{path} cannot be read: {exc}") from exc
+    if not isinstance(before, list) or len(before) != rows:
+        raise RealignError(f"{path} does not hold {rows} ids")
+    return [str(i) for i in before]
 
 
 def realign_folds(
@@ -161,19 +181,32 @@ def realign_folds(
     Each job is (fold_dir, dataset_ids, dataset_labels, score), `score()` returning logits or
     log-probabilities for `dataset_ids` in that order. `pooled`, when given, is the artefact
     directory whose `oof_logits.npy` must be the folds concatenated; its `oof_ids.json` is
-    rewritten to match. `max_ambiguous` is per fold.
+    rewritten to match. `max_ambiguous` is per fold. Every read and check happens before the
+    first write; each file is replaced atomically, the pooled one last.
     """
     matched = [_aligned_ids(job, max_distance, max_ambiguous) for job in jobs]
     aligned = [ids for ids, _ in matched]
-    if pooled is not None and (pooled / "oof_logits.npy").exists():
+    befores = [_stored_ids(job[0], len(ids)) for job, ids in zip(jobs, aligned, strict=True)]
+    write_pooled = pooled is not None and (pooled / "oof_logits.npy").exists()
+    if pooled is not None and not write_pooled:
+        log.warning("%s has no pooled oof_logits.npy; only the folds are rewritten", pooled)
+    if write_pooled:
+        assert pooled is not None
         blocks = [np.load(job[0] / "oof_logits.npy").astype(np.float32) for job in jobs]
         if not np.array_equal(np.load(pooled / "oof_logits.npy"), np.concatenate(blocks)):
             raise RealignError(f"{pooled}/oof_logits.npy is not its folds concatenated")
+        if (pooled / "oof_labels.npy").exists():
+            labels = np.concatenate([np.load(job[0] / "oof_labels.npy") for job in jobs])
+            if not np.array_equal(np.load(pooled / "oof_labels.npy"), labels):
+                raise RealignError(f"{pooled}/oof_labels.npy is not its folds concatenated")
     reports = []
-    for job, (ids, ambiguous) in zip(jobs, matched, strict=True):
-        path = job[0] / "oof_ids.json"
-        before = json.loads(path.read_text(encoding="utf-8"))
-        _write_ids(path, ids)
+    for job, (ids, ambiguous), before in zip(jobs, matched, befores, strict=True):
+        _write_ids(job[0] / "oof_ids.json", ids)
+        marker = job[0] / AMBIGUOUS_FILE
+        if ambiguous:
+            _write_ids(marker, ambiguous)
+        elif marker.exists():
+            marker.unlink()
         moved = sum(a != b for a, b in zip(before, ids, strict=True))
         reports.append(
             {
@@ -183,7 +216,8 @@ def realign_folds(
                 "ambiguous": ambiguous,
             }
         )
-    if pooled is not None and (pooled / "oof_logits.npy").exists():
+    if write_pooled:
+        assert pooled is not None
         _write_ids(pooled / "oof_ids.json", [i for ids in aligned for i in ids])
     return reports
 

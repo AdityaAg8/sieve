@@ -94,7 +94,7 @@ def _read(directory: Path, name: str, *, required: bool, hint: str = "") -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def headline_row(ablations: dict[str, Any]) -> dict[str, Any]:
+def headline_row(ablations: dict[str, Any], winner: str | None = None) -> dict[str, Any]:
     """The full-pipeline ablation row: an encoder artefact, full serialisation, the real judge.
 
     Chosen by what the row *is* rather than by its number, so renumbering `bench/ablations.yaml`
@@ -125,6 +125,13 @@ def headline_row(ablations: dict[str, Any]) -> dict[str, Any]:
             and not row.get("breakdown_of")
             and not row.get("single_seed")
         ]
+        # The pre-registered selection's winner, when known, not whichever row is listed first.
+        chosen = [
+            row
+            for row in candidates
+            if winner and str(row.get("classifier", "")).startswith(f"models/{winner}-s")
+        ]
+        candidates = chosen or candidates
     if not candidates:
         raise Refused(
             "no ablation row runs the classifier with the shipped judge "
@@ -321,7 +328,7 @@ def render_block(results_dir: Path) -> str:
     curves = _read(results_dir, "curves.json", required=False)
     selection = _read(results_dir, "selection.json", required=False)
 
-    row = headline_row(ablations)
+    row = headline_row(ablations, (selection or {}).get("winner"))
     lines = [
         _fpr_line(holdout),
         _reduction_line(row, baseline),
@@ -393,8 +400,10 @@ def render_results(results_dir: Path) -> str:
 
 def replace_results(text: str, block: str) -> str:
     """Fill the results block when the README has one; a README without it is left alone."""
-    if RESULTS_START not in text or RESULTS_END not in text:
+    if RESULTS_START not in text and RESULTS_END not in text:
         return text
+    if RESULTS_START not in text or RESULTS_END not in text:
+        raise Refused("the README has only one of the two results markers; restore the pair")
     head, _, rest = text.partition(RESULTS_START)
     _, _, tail = rest.partition(RESULTS_END)
     return head + RESULTS_START + block + RESULTS_END + tail

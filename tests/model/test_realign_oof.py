@@ -142,3 +142,27 @@ def test_a_bf16_budget_admits_and_names_a_few_ambiguous_rows(tmp_path: Path) -> 
     with pytest.raises(RealignError, match="ambiguous"):
         realign_fold(fold, ["a", "b"], np.array([0, 0]), lambda: fresh, max_distance=0.25,
                      max_ambiguous=1)  # fmt: skip
+    marker = json.loads((fold / "oof_ids_ambiguous.json").read_text(encoding="utf-8"))
+    assert sorted(marker) == ["a", "b"], "best-guess rows are persisted beside the ids"
+
+
+def test_an_unreadable_later_fold_leaves_the_earlier_folds_untouched(tmp_path: Path) -> None:
+    """Every fold's current ids are read and checked before the first write (review P1)."""
+    from sieve.model.realign_oof import realign_folds
+
+    fresh, labels = _rows(10, seed=5)
+    ids = [f"r{i}" for i in range(10)]
+    perm = np.random.default_rng(6).permutation(10)
+    dirs = []
+    for k in range(2):
+        fold = tmp_path / f"fold{k}"
+        fold.mkdir()
+        np.save(fold / "oof_logits.npy", fresh[perm])
+        np.save(fold / "oof_labels.npy", labels[perm].astype(np.int64))
+        (fold / "oof_ids.json").write_text(json.dumps(ids if k == 0 else ids[:3]), encoding="utf-8")
+        dirs.append(fold)
+    jobs = [(d, ids, labels, lambda: fresh) for d in dirs]
+    with pytest.raises(RealignError, match="does not hold 10 ids"):
+        realign_folds(jobs, max_distance=0.05)
+    assert json.loads((dirs[0] / "oof_ids.json").read_text(encoding="utf-8")) == ids
+    assert not list(tmp_path.rglob("*.tmp"))

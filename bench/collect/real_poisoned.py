@@ -349,6 +349,8 @@ def main(argv: list[str] | None = None) -> int:
             Pointer.model_validate(e) for e in json.loads(args.pointers.read_text(encoding="utf-8"))
         ]
         records = reconstruct(entries, args.cache_dir)
+        if not records:
+            raise NoArtefactRows(f"{args.pointers} reconstructed to no rows; nothing written")
         # The slice `bench/eval_final.py` opens; gitignored, never committed (SC-3). It holds the
         # pointer rows only: v1 has no redistributable source, and a future one collected into
         # the same file would need merging here, not overwriting (ADR-009, review P2).

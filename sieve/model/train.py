@@ -378,7 +378,9 @@ def _logits_and_labels(trainer: Any, dataset: Any) -> tuple[npt.NDArray[Any], np
 
     transformers 4.57 length-groups prediction batches whenever `group_by_length` is on;
     `WeightedTrainer` predicts sequentially, and this guard refuses any reordering that
-    slips past it: the returned labels must be the dataset's own, in order.
+    slips past it: the returned labels must be the dataset's own, in order. It is a label-order
+    check, so a permutation within runs of one label would pass; the sequential sampler is the
+    fix, this is the alarm.
     """
     output = trainer.predict(dataset)
     logits = np.asarray(output.predictions, dtype=np.float32)

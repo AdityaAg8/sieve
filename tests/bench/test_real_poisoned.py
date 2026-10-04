@@ -362,3 +362,16 @@ def test_reconstruct_cli_writes_the_slice_eval_final_reads(tmp_path: Path) -> No
         "list_widgets",
     }
     assert out.read_bytes().count(b"\r\n") == 0
+
+
+def test_reconstruct_refuses_to_write_an_empty_slice(tmp_path: Path) -> None:
+    """Review P3: an empty pointer list must not leave eval-final an empty slice to open."""
+    from bench.collect.real_poisoned import NoArtefactRows, main
+
+    pointers = tmp_path / "pointers.json"
+    pointers.write_text("[]", encoding="utf-8")
+    out = tmp_path / "real_poisoned.jsonl"
+    with pytest.raises(NoArtefactRows):
+        main(["--reconstruct", "--pointers", str(pointers), "--cache-dir", str(tmp_path),
+              "--out", str(out)])  # fmt: skip
+    assert not out.exists()
