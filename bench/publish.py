@@ -216,11 +216,32 @@ def _leakage(leakage: dict[str, Any], stats: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def opening_lines(path: Path = DEFAULT_TEST_OPENED_LOG) -> list[str]:
-    """`test_opened.log`'s lines: one per opening of the sealed splits (eval_final, H2)."""
+def opening_lines(path: Path = DEFAULT_TEST_OPENED_LOG, version: str | None = None) -> list[str]:
+    """`test_opened.log`'s lines: one per opening of the sealed splits (eval_final, H2).
+
+    With `version`, only the openings of THAT dataset version. An opening of an earlier corpus
+    says nothing about a regenerated one's holdout, which must stay sealed (Z2 review)."""
     if not path.exists():
         return []
-    return [x for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
+    lines = [x for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
+    if version is None:
+        return lines
+    return [x for x in lines if _line_version(x) == version]
+
+
+def _dataset_version(corpus: Path) -> str:
+    """The same `<name>@<hash>` `bench.eval_final` logs an opening under."""
+    from bench.ablations.run import dataset_version
+
+    return dataset_version(corpus)
+
+
+def _line_version(line: str) -> str | None:
+    try:
+        entry = json.loads(line)
+    except json.JSONDecodeError:
+        return None
+    return entry.get("dataset_version") if isinstance(entry, dict) else None
 
 
 def build_card(
@@ -323,7 +344,7 @@ def main(argv: list[str] | None = None) -> int:
         stats=_read_json(args.stats),
         agreement=_read_json(args.agreement),
         leakage=_read_json(args.leakage),
-        opened=opening_lines(args.test_opened_log),
+        opened=opening_lines(args.test_opened_log, _dataset_version(args.corpus)),
     )
     print(f"built {folder} with {len(records)} records")
     if args.dry_run:

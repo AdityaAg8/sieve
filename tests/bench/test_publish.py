@@ -53,22 +53,31 @@ def _split(records: list[CorpusRecord]) -> list[CorpusRecord]:
     return out
 
 
-def _opened(tmp_path: Path) -> Path:
+def _opened(tmp_path: Path, corpus: Path, version: str | None = None) -> Path:
+    """An opening of `corpus`'s own dataset version, as eval_final logs it."""
+    from bench.ablations.run import dataset_version
+
     log = tmp_path / "test_opened.log"
-    log.write_text('{"reason": "v1 release", "rows_evaluated": 9}\n', encoding="utf-8")
+    entry = {
+        "reason": "v1 release",
+        "rows_evaluated": 9,
+        "dataset_version": version or dataset_version(corpus),
+    }
+    log.write_text(json.dumps(entry) + "\n", encoding="utf-8")
     return log
 
 
 def _run(tmp_path: Path, records: list[CorpusRecord], *extra: str) -> tuple[int, Path]:
     """A run AFTER an opening: the sealed splits may be published."""
     hub = tmp_path / "hub"
+    corpus = _corpus(tmp_path, records)
     if "--test-opened-log" not in extra:
-        extra = (*extra, "--test-opened-log", str(_opened(tmp_path)))
+        extra = (*extra, "--test-opened-log", str(_opened(tmp_path, corpus)))
     code = publish.main(
         [
             "--dry-run",
             "--corpus",
-            str(_corpus(tmp_path, records)),
+            str(corpus),
             "--stats",
             str(_stats(tmp_path)),
             "--out",
@@ -111,6 +120,17 @@ def test_before_an_opening_the_sealed_splits_are_never_written(
     assert code == 0
     assert {p.name for p in hub.iterdir()} == {"README.md", "dev.jsonl", "NOTICE"}
     assert "withheld" in (hub / "README.md").read_text(encoding="utf-8")
+
+
+def test_an_opening_of_another_dataset_version_keeps_the_splits_sealed(
+    tmp_path: Path, mini_records: list[CorpusRecord]
+) -> None:
+    """Z2: v1 opened, corpus regenerated -> the new holdout is not public yet."""
+    corpus = _corpus(tmp_path, _split(mini_records))
+    stale = _opened(tmp_path, corpus, version="labelled.jsonl@000000000000")
+    code, hub = _run(tmp_path, _split(mini_records), "--test-opened-log", str(stale))
+    assert code == 0
+    assert {p.name for p in hub.iterdir()} == {"README.md", "dev.jsonl", "NOTICE"}
 
 
 def test_the_card_quotes_the_opening_log(tmp_path: Path, mini_records: list[CorpusRecord]) -> None:
