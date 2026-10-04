@@ -100,7 +100,10 @@ def test_a_missing_file_leaves_its_key_out(results: Path, tmp_path: Path) -> Non
 
 
 def test_no_results_at_all_is_provisional(tmp_path: Path) -> None:
-    shutil.copy(Path("bench/results/demo.json"), tmp_path / "demo.json")
+    # A provisional demo of its own: the committed one is `--final` once `make bench` has run.
+    demo = json.loads(Path("bench/results/demo.json").read_text(encoding="utf-8"))
+    demo["meta"]["provisional"] = True
+    (tmp_path / "demo.json").write_text(json.dumps(demo), encoding="utf-8")
     summary = bench.summary(tmp_path)
     assert summary.provisional is True
     assert "ablations" not in summary.tables and "holdout" not in summary.tables
@@ -123,3 +126,17 @@ def test_the_web_fixture_has_the_shape_the_producers_write(results: Path) -> Non
     committed = json.loads(bench_fixture.WEB_FIXTURE.read_text(encoding="utf-8"))
     fresh = bench_fixture.summary_body(results)
     assert _keys(committed) == _keys(fresh)
+
+
+def test_the_real_summary_is_written_from_bench_results_beside_the_fixture(
+    results: Path, tmp_path: Path
+) -> None:
+    """`--real` serves the measured v1 results to the benchmark screenshots, never the fixture
+    the unit and e2e assertions pin (training plan §13 step 14)."""
+    from tests.api import bench_fixture
+
+    out = tmp_path / "bench-summary.v1.json"
+    bench_fixture.main(["--real", "--results-dir", str(results), "--out", str(out)])
+    body = json.loads(out.read_text(encoding="utf-8"))
+    assert body["provisional"] is False
+    assert body == json.loads(json.dumps(bench_fixture.real_body(results)))

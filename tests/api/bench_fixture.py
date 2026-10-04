@@ -168,15 +168,40 @@ def summary_body(directory: Path) -> dict[str, Any]:
     return body
 
 
-def main() -> Path:
-    with results_dir() as directory:
-        body = summary_body(directory)
-    WEB_FIXTURE.parent.mkdir(parents=True, exist_ok=True)
-    WEB_FIXTURE.write_text(
+#: The measured v1 summary, served only to the benchmark screenshots (training plan §13 step 14).
+#: The unit and e2e assertions keep pinning `WEB_FIXTURE`, whose numbers never move.
+WEB_REAL = WEB_FIXTURE.with_name("bench-summary.v1.json")
+
+
+def real_body(directory: Path = REPO / "bench" / "results") -> dict[str, Any]:
+    """`GET /bench/summary` over the committed `bench/results/`, exactly as the API serves it."""
+    from sieve.api.routes import bench
+
+    body: dict[str, Any] = bench.summary(directory).model_dump(mode="json")
+    return body
+
+
+def main(argv: list[str] | None = None) -> Path:
+    import argparse
+
+    parser = argparse.ArgumentParser(prog="python -m tests.api.bench_fixture")
+    parser.add_argument("--real", action="store_true", help="the measured bench/results/")
+    parser.add_argument("--results-dir", type=Path, default=REPO / "bench" / "results")
+    parser.add_argument("--out", type=Path, default=None)
+    ns = parser.parse_args(argv)
+    if ns.real:
+        body = real_body(ns.results_dir)
+        out = ns.out or WEB_REAL
+    else:
+        with results_dir() as directory:
+            body = summary_body(directory)
+        out = ns.out or WEB_FIXTURE
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(
         json.dumps(body, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
     )
-    print(f"wrote {WEB_FIXTURE.relative_to(REPO)}")
-    return WEB_FIXTURE
+    print(f"wrote {out}")
+    return Path(out)
 
 
 if __name__ == "__main__":  # pragma: no cover
