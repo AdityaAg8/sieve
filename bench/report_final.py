@@ -52,6 +52,8 @@ RESULTS_DIR = Path("bench/results")
 PREDICTIONS_FILE = "holdout_predictions.jsonl"
 ROWS_FILE = "holdout_rows.jsonl"
 REPORT_FILE = "holdout.json"
+#: Written by eval_final: test-OOD ids ingest would reject, kept out of every metric (ADR-009).
+EXCLUDED_FILE = "holdout_excluded.json"
 LOG_FILE = "test_opened.log"
 PREREGISTRATION = Path("bench/PREREGISTRATION.md")
 PREREGISTRATION_HASH = Path("bench/PREREGISTRATION.sha256")
@@ -473,6 +475,12 @@ def main(argv: Sequence[str] | None = None) -> Path:
         preregistration_sha256=sha,
         log_line=log_line,
         log_entry=entry,
+    )
+    excluded = ns.results_dir / EXCLUDED_FILE
+    report["excluded_invalid_tool_name"] = (
+        json.loads(excluded.read_text(encoding="utf-8"))["invalid_tool_name"]
+        if excluded.exists()
+        else []
     )
     path = ns.results_dir / REPORT_FILE
     path.write_text(

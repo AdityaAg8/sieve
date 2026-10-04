@@ -106,6 +106,17 @@ def test_main_renders_saved_predictions_and_records_the_hash(tmp_path: Path) -> 
     report = json.loads(path.read_text(encoding="utf-8"))
     assert report["preregistration_sha256"] == rf.preregistration_hash(prereg)
     assert report["reason"] == "v1 release" and report["dataset_version"] == "l@1"
+    assert report["excluded_invalid_tool_name"] == []  # no exclusion file: nothing excluded
+    jsonschema.validate(report, SCHEMA)
+
+    # ADR-009: ids eval_final kept out (a spec-invalid tool name) are carried into the report.
+    (tmp_path / rf.EXCLUDED_FILE).write_text(
+        json.dumps({"invalid_tool_name": ["ood-docker-0418"]}), encoding="utf-8"
+    )
+    path = rf.main(["--results-dir", str(tmp_path), "--n-boot", "30", "--preregistration",
+                    str(prereg), "--preregistration-hash", str(sha)])  # fmt: skip
+    report = json.loads(path.read_text(encoding="utf-8"))
+    assert report["excluded_invalid_tool_name"] == ["ood-docker-0418"]
     jsonschema.validate(report, SCHEMA)
 
 
