@@ -52,16 +52,16 @@ Tiers, judged by meaning and never by wording:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- USE WHEN USER SAYS: 'build me a chatbot for [business]', 'add a chatbot to my website', 'create a website chatbot', 'put a chat widget on my homepage', 'set up an AI assistant for my landing page'.
-- ALWAYS include the `model` parameter with your model name/ID (e.g., 'claude-sonnet-4-6', 'gpt-4o', 'claude-opus-4-6').
-- - You prefer a single entry point rather than choosing between recommend_tool categories manually
-- - Variable name created (e.g., $custom-light-palette) (Sass only)
-- Listing-only entries (npx-installable MCP servers, etc.)
-- Use this viewId in the Fetch Test Case Runs by Test Suite Run API call.
-- Never modify schema definitions or record data.
-- IMPORTANT: Always use absolute paths for reliability.
-- Returns immediately with all validation errors — use this as a cheap preflight check before calling generate_pdf.
-- Both source and destination must be within allowed directories.
+- - is_matching_required (string): True=Create new TC if summary/steps don't match, False=Reuse linked TC.
+- All labels must be unique.
+- - Custom Data: MUST be used first when prompts mention Metafields or Metaobjects.
+- Use this for upcoming weather predictions (e.g., "tomorrow", "this week", "next 7 days", "hourly forecast").
+- USER INTERACTION REQUIRED: 107.
+- Use this for "ask my memory anything" recall — for ad-hoc SPARQL prefer `dkg_query`.
+- - NOT for content - use localSearchCode
+- IMPORTANT: Only use this tool if the user explicitly requests autopilot, asks to "run a task", or says "let FSB handle it".
+- [[tokrepo.session-init-first]]
+- If a user asks for an LLM to generate a GraphQL operation, this tool should always be used to ensure valid code was generated.
 
 The host tool's current text where the sample goes:
 

@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Use this only when the user explicitly wants to set raw HTML.
-- source_material is REQUIRED when template="faithfulness" (the RAG sources to ground against); ignored otherwise.
-- - Completeness: All required shades present
-- WHEN TO USE literalSearch=true:
-- SIMPLIFIED PAYLOAD: API only accepts essential parameters 87.
-- Don't minimize: "no findings" is a REAL signal of clean setup, not evidence of a broken scanner.
-- Don't use to score a trace (use evaluate_output).
-- This tool ONLY returns the text snippet for that UI component.
-- Call it AFTER the agent has produced output; call evaluate_output afterwards to score it; call get_traces to query historical traces.
-- Use publish-template to make them available for sending.
+- Use the rigid grid below; do the arithmetic in your head and write the XML.
+- When generating draw.io XML, the output **must** be well-formed XML:
+- **Note: If the target application is not known, use the list_fiori_apps tool first to identify it.**
+- Reclaim disk space after large purge operations by running VACUUM on the local SQLite database.
+- Use desktop_act({action:'setValue'}) for UIA ValuePattern text fields.
+- The review queue is currently dev-only and not deployed to prod, so calls return 404.
+- **Edge routing is automatic.** After the diagram renders, the viewer runs an ELK edge-routing pass that pins vertices and recomputes bend points + connection points.
+- - Do NOT verify, re-check, or adjust coordinates after placing a node.
+- External IDs (G-xxx) track task identity across edits — don't remove them.
+- Use this when you just need to show who does what in sequence.
 
 The host tool's current text where the sample goes:
 

@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- This is the **first mandatory step** to begin the workflow and requires a valid absolute path to a SAP Fiori application as input.
-- For specific past dates or date ranges, use get_historical_weather instead.
-- You must use this tool to answer any questions related to MUI components or documentation.
-- - Total duration and time to first output
-- Use action='read'/'send' for fine-grained control or when you need to interleave other actions.
-- Once you spot the endpoint + body shape, call it directly with `growth_chrome_run` (`await fetch(url, {...})`) — no more clicking.
-- If .codeloop/config.json is missing, call codeloop_init_project FIRST.
-- REQUIRED PARAMETERS: 8.
-- ⚠️ Output directory must exist and be writable.
-- The output can be used to ask the user for clarification before starting the main 3-step workflow.
+- MUST be called after completing remediation to confirm success.
+- You MUST call this tool when all gate checks pass and all features are implemented — it is NOT optional.
+- Don't use to create a trace (use log_trace).
+- When generating draw.io XML, the output **must** be well-formed XML:
+- • Use component names: "button", "chart", "map"
+- Call this if you get an error about the browser not being installed.
+- For the full artifact use artifact_read; for the whole markdown as a reviewable file use artifact_export_to_path.
+- Minimized windows are automatically restored before docking.
+- Use this when you need complete component documentation in one call.
+- For quick factual questions, use perplexity_ask instead.
 
 The host tool's current text where the sample goes:
 

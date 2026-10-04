@@ -52,16 +52,16 @@ Tiers, judged by meaning and never by wording:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- - DO NOT include contrastOverrides in your input - OMIT THIS FIELD ENTIRELY
-- Do NOT vary lane heights.
-- Get active weather alerts, watches, warnings, and advisories for a location (US only).
-- provider is auto-detected from the model name; override only for ambiguous IDs.
-- FIRST-USE BOOTSTRAP: If `.codeloop/config.json` does not yet exist in this
-- Use this to check your scene before creating it with dsp_create_scene.
-- Only gray inverts, never primary/secondary/etc.
-- Don't use to delete eval_results — eval_results survive their trace's deletion intentionally (for audit + drift analysis); they're pruned only by retention.
-- `domain` MUST be one of the domains returned by `list_domains` for this user - never invent or assume one.
-- must appear at the top before any other statements.
+- Call once per source — multiple sources require multiple calls.
+- Values are write-only and injected as process.env variables in functions.
+- Do not store secrets, API keys, passwords, one-time codes, or private credentials.
+- - Do NOT base64-embed, data-URI, or otherwise inline binary content (images, PDFs, video, fonts, zips) into HTML/CSS/JSON or any other deployed file.
+- If a user asks for an LLM to generate a GraphQL operation, this tool should always be used to ensure valid code was generated.
+- For specific past dates or date ranges, use get_historical_weather instead.
+- After this returns "ready_for_review", you MUST call codeloop_generate_dev_report to produce
+- Use clinicaltrials_search_studies first to find studies with results.
+- - create_theme: Does not support custom palettes; use this tool + manual theme assembly
+- To get the tcrId, call the Execution/Fetch Testcase Run ID tool and use data[<index>].tcRunID from the response.
 
 The host tool's current text where the sample goes:
 

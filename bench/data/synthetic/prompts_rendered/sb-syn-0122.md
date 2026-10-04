@@ -52,16 +52,16 @@ Tiers, judged by meaning and never by wording:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Use with selector and hookIndex.
-- Don't use to VALIDATE JSON schemas directly (use your language's JSON Schema validator — Iris's `json_schema` custom rule type is for output-shape assertions, not arbitrary validation).
-- - Explicit mode requires 14 shades required: 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, A100, A200, A400, A700
-- Purpose: Decorate a window: pin (always-on-top), unpin, or dock (move + resize + optional pin).
-- CRITICAL: User MUST upload a valid result file before calling this tool 2.
-- - Do NOT write out lists of node positions as planning text.
-- Use interact_with_process() to send commands
-- Fill slots by asking the user targeted questions (never invent answers), then call growth_create_sequence_draft.
-- If you cannot find what you need after 3 calls, use the best result you have.
-- - ALWAYS use `jq` param to filter response fields.
+- KEY PRINCIPLE: If the request involves the running Next.js application (whether to investigate OR modify it), query the runtime FIRST to understand current state before proceeding.
+- IMPORTANT: You MUST first read the `nextjs-docs://llms-index` MCP resource to get the correct path.
+- Before running this, make sure to analyze the users query, as well as the output from list-sections (which should be called first).
+- **Always include `html=1` in the style** when the `value` attribute contains any HTML tags (`<b>`, `<br>`, `<font>`, `<i>`, `<u>`, `<hr>`, `<p>`, `<table>`, etc.).
+- **DEPRECATED — prefer `nookplot_store_knowledge_item`.** This tool routes through a 24h review queue (`POST /v1/me/captures`) before items enter the public KG.
+- NOTE: To get the tsrunID - Call API 'Execution/Fetch Executions' From the response, get value of following attribute -> data[<index>].tsRunID
+- After calling this tool, you must edit or add files to integrate the snippet into the codebase."
+- For PDF, Excel, Word, archives, databases, and other binary formats, use process tools with appropriate libraries or command-line utilities.
+- `domain` MUST be one of the domains returned by `list_domains` for this user - never invent or assume one.
+- For forecast data, use get_forecast instead.
 
 The host tool's current text where the sample goes:
 

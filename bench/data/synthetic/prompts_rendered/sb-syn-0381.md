@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- For partial updates, prefer PATCH.
-- Many catalog entries store only the upstream BASE URL (e.g.
-- Use `list_mpp32_services` first to find a slug.
-- Related: type_text (type new text after clearing), get_dom_snapshot (find input selectors).
-- Use this tool to help users migrate their Otter project to a newer version.
-- Step 4: Call this tool with file data and configuration 104.
-- You MUST output the full report as your response text — do NOT summarize, shorten, or add commentary around it.
-- When the user picks "Take all": call this tool once per id, in order.
-- After detection, use the platform value with:
-- Point estimates should be interpreted as approximate — not submission-ready.
+- must contain shades of ONE COLOR ONLY.
+- - Always pass workspacePath (from your system parameters).
+- call deploy_finalize with { siteId, versionId, completions: [...]
+- READ-ONLY — outputs text only, writes no files, makes no network calls, has no side effects.
+- Use this when the user wants to see which specific resources are affected by an optimization insight.
+- - Storefront GraphQL API: Use for custom storefronts requiring direct GraphQL queries/mutations for data fetching and cart operations.
+- - **Match the language of labels to the user's language** — if the user writes in German, French, Japanese, etc., all diagram labels, titles, and annotations should be in that same language.
+- For richer layouts or styled code blocks, use generate_pdf instead.
+- Multi-part in Python - **prefer this over dd for files > ~50 MB** (parallel PUTs, no temp files, cleaner error handling):
+- Use page and pageSize to paginate results.
 
 The host tool's current text where the sample goes:
 

@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- - Only file + entityType → Auto-generated test suite, 'No Platform', test cases auto-linked 71.
-- Use this tool to help users migrate their Otter project to a newer version.
-- Pass tab_id only when this agent owns multiple tabs; auto-resolves otherwise.
-- Only available for studies where hasResults is true.
-- For a single-URL audit, use audit_page.
-- Use this to understand where changes should be made and what currently exists.
-- - get_mesh_info: One-call mesh QA: bounds + material slots + skeleton + LOD/vertex counts.
-- Step 2: Call this tool 9 times (once for each tsRunID) 27.
-- - Do NOT enumerate columns ("customer lane columns 0-10, web app 1-7").
-- Listing-only entries (npx-installable MCP servers, etc.)
+- Call this tool with `{ siteId, files: [{ fileName, fileSize }] }`.
+- USAGE: These are ECB policy rates, not real-time market rates — they only change at Governing Council meetings (roughly every 6 weeks).
+- Call 2: tsrunID='2739236' -> returns 54 tcRunIDs 29.
+- Call it AFTER the agent has produced output; call evaluate_output afterwards to score it; call get_traces to query historical traces.
+- Consume-only: first retrieve evidence with literature_search, then pass only cited facts across 4 HEOR dimensions — disease burden, treatment landscape, QoL impact, economic burden.
+- Single-call context for AI agents — use this to understand the site's visual language before building pages.
+- **IMPORTANT - Cost Optimization:**
+- Returns meshKind, boundsOrigin, boundsExtent, heightM, lodCount, vertexCount, skeletonPath (skeletal only), materialSlots:[{index, slotName, materialPath, isDefaultFallback}], materialCount (#431)
+- Re-check it to get clarifications and more accurate API often, but do not search if completely unrelated or you just searched the exact same.
+- Use this when experiencing errors or to proactively verify service availability before making weather data requests.
 
 The host tool's current text where the sample goes:
 

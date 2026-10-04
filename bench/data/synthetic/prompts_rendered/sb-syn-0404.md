@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Remember: ALWAYS wrap the entire search expression in double quotes!
-- Subjects and predicates are ALWAYS URIs (no spaces).
-- For single-file analysis, use analyze_dataflow instead.
-- Unless the user explicitly asks for relative paths, use absolute paths.
-- - The response includes ranked candidates with match explanations and ready-to-use continuation templates.
-- For logical analysis and reasoning, use perplexity_reason instead.
-- - Windows services and processes use different commands (Get-Process vs ps)
-- IMPORTANT: Objects that exist in multiple namespaces require the 'force' parameter to be deleted.
-- This is the ONLY correct tool for analyzing local files (CSV, JSON, logs, etc.).
-- - fileName (string) *required*: Original filename with extension (.json, .xml, or .zip)
+- - create_component_theme: Use the discovered tokens to create a custom theme
+- // ↑ Only provide shades - contrast colors are AUTO-GENERATED
+- Use Metafields and Metaobjects to model and store custom data for your app.
+- Use this tool to help users migrate their Otter project to a newer version.
+- - If there are 9 executions, you must fetch tcRunIDs for all 9, not just 2 22.
+- - If unsure about available fields, first fetch ONE item with `limit: "1"` and NO jq filter to explore the schema, then use jq in subsequent calls
+- - "Add a loading state" → Check current component structure and routes first
+- Optionally returns only code blocks.
+- - Folders created automatically if they don't exist 35.
+- Use clinicaltrials_search_studies first to find studies with results.
 
 The host tool's current text where the sample goes:
 

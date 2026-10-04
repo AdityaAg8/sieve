@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Prefer click_element (UIA) for native apps, prefer browser_click for Chrome.
-- - Only file + entityType → Auto-generated test suite, 'No Platform', test cases auto-linked 71.
-- - When you then call create_component_theme with a child name, it automatically
-- Use this on long-running steps when you want a durable save point before continuing later.
-- Note: PATCH only updates the fields you specify, leaving others unchanged.
-- When Python is unavailable, prefer Node.js over shell for calculations.
-- You MUST use a functionalityId from this tool's output to request details to the functionality in 'get_functionality_details' (Step 2).
-- Variables use triple-brace syntax in HTML: {{{VAR_NAME}}}.
-- If you cannot find what you need after 3 calls, use the best result you have.
-- Use when user asks for: design system tokens, variables, color/spacing values, theme data, or code exports.
+- The selected domain must be in `active` status; if it isn't, surface the problem to the user instead of attempting creation.
+- For partial updates, prefer PATCH.
+- **IMPORTANT - Cost Optimization:** Use `jq` param to extract only needed fields from response
+- Best called after `deep_storage_purge` removes many entries — SQLite reclaims page allocations only when explicitly vacuumed, so the file size stays the same until you call this tool.
+- Tethered seats should treat this as the primary receipt path after each accepted subscription chat human turn and after each assistant reply when the client can call tools.
+- Prefer: Use windowTitle to auto-focus before injection.
+- When generating diagrams, you generally do not need to specify dark-mode colors — the automatic inversion handles most cases.
+- - localViewStructure: After structure discovery
+- Listing-only entries (npx-installable MCP servers, etc.)
+- After creation, deploy content with `deploy_files` (small inline text) or `deploy_create_upload` + `deploy_finalize` (binaries / files > ~1 MB, uploaded directly to S3).
 
 The host tool's current text where the sample goes:
 

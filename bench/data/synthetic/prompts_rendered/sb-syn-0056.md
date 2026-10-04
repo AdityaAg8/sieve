@@ -52,16 +52,16 @@ Tiers, judged by meaning and never by wording:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- USE searchType="content" WHEN:
-- dep and arr are optional and should only be provided when the exact airports are known.
-- - Ensure required dependencies: cycleID requires releaseID and projectID 98.
-- - Only provide contrastOverrides if you have a specific accessibility audit
-- For batches of 3+ scene-referenced non-world assets use bulk_rename instead.
-- NEVER use this tool if you have written the component to a file in the user project.
-- Both source and destination must be within allowed directories.
-- - Do NOT compute x/y coordinates in prose.
-- "Use this tool when the user requests to re-design/refine/improve current UI component with /ui or /21 commands,
-- You MUST output the full report as your response text — do NOT summarize, shorten, or add commentary around it.
+- Details: action='pin' makes window always-on-top until unpin/duration_ms.
+- In this case I would expect you to call learn_shopify_api three times with the following arguments:
+- Bash bundle-and-deploy template (the agent should adapt fileNames and the cleanup prompt):
+- AUTOMATION HIERARCHY (TestNG/JUnit only): 19.
+- cost_usd + token_usage are ONLY consulted when eval_type="cost" (ignored otherwise).
+- Use with selector and hookIndex.
+- Use type_text for Korean/Unicode.
+- If the report exceeds the size cap, `change_report.truncated:true` and `change_report_hint` are set; call read_page for the full state.
+- Point estimates should be interpreted as approximate — not submission-ready.
+- Zero friction: one tool call and you're done.
 
 The host tool's current text where the sample goes:
 

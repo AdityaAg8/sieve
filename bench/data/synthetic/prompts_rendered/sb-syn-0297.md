@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Returns meshKind, boundsOrigin, boundsExtent, heightM, lodCount, vertexCount, skeletonPath (skeletal only), materialSlots:[{index, slotName, materialPath, isDefaultFallback}], materialCount (#431)
-- Read-only operation.
-- Do NOT stop and report partial progress.
-- Each call mints a fresh rule_id; not idempotent (deploying twice creates two rules).
-- After creation, deploy content with `deploy_files` (small inline text) or `deploy_create_upload` + `deploy_finalize` (binaries / files > ~1 MB, uploaded directly to S3).
-- Use read_process_output() to get responses
-- After calling this tool, you must edit or add files to integrate the snippet into the codebase."
-- - localFindFiles: After narrowing by metadata
-- Do NOT paraphrase; run it verbatim.
-- **Edge routing is automatic.** After the diagram renders, the viewer runs an ELK edge-routing pass that pins vertices and recomputes bend points + connection points.
+- Confidence: lesson starts at 1.0, decays after 5d (→0.7) and 10d (→0.5) without recall.
+- Use one of those versions if the user provides a version in their query.
+- Fall back to the primitive tools (configure_llm_provider + create_agent + publish_agent) only when you need a custom flow (e.g.
+- IMPORTANT: HeroUI v3 uses Tailwind CSS v4 - ensure compatibility.
+- - Do NOT debate flat-lanes vs nested-pools, horizontal vs vertical orientation, one vs multiple variations.
+- - Only set the primary tokens in the parent component's theme; all children inherit automatically
+- - When combining Sass output from multiple tools into one file, all @use rules
+- Not idempotent: each call mints a fresh trace_id, so resubmitting the same payload creates a duplicate trace.
+- - Explicit mode requires 14 shades required: 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, A100, A200, A400, A700
+- Maximum 15 loop iterations before escalation.
 
 The host tool's current text where the sample goes:
 

@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Unless the user explicitly asks for relative paths, use absolute paths.
-- Bash bundle-and-deploy template (the agent should adapt fileNames and the cleanup prompt):
-- To read the full email body, use get-mail-message with the specific message id.
-- MouseClickNotDelivered is reserved-only (false-positive risk is too high to emit a typed code), so degradation is expressed via the 'unverifiable' status, not a separate error.
-- `partition` passed to this tool MUST match the partition of the selected domain.
-- Call this tool again with the 'port' parameter set to the user-provided port
-- USE when wiring a new BYOK provider or graduating from simulator to real hardware.
-- Before using this tool, you MUST double-check with the user that they want to remove this contact property.
-- Use the value in the previous response to get the next page when more results are available.
-- For PDF, Excel, Word, archives, databases, and other binary formats, use process tools with appropriate libraries or command-line utilities.
+- The fileWorker auto-extracts a single-zip upload after promotion, so subdirectories are preserved end-to-end and you avoid one PUT round-trip per file.
+- IMPORTANT: You MUST first read the `nextjs-docs://llms-index` MCP resource to get the correct path.
+- - NOT for content - use localSearchCode
+- **Content options after creating:**
+- For past weather, use get_historical_weather.
+- **IMPORTANT - Cost Optimization:**
+- **Never** route around the failure by base64-inlining the file into another deploy, recompressing, or falling back to `deploy_files`.
+- - Using this tool with the wrong organization name (if you are not sure, use the codacy_list_organizations tool to validate the organization name)
+- Use when you want to understand a specific decision, task, file, or PR end-to-end.
+- Use this for upcoming weather predictions (e.g., "tomorrow", "this week", "next 7 days", "hourly forecast").
 
 The host tool's current text where the sample goes:
 

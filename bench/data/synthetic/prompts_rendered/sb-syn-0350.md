@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Use Metafields and Metaobjects to model and store custom data for your app.
-- Surface the exact sandbox configuration below and wait for the user to confirm before retrying.
-- NEVER use this tool if you have written the component to a file in the user project.
-- // ↑ Only provide shades - contrast colors are AUTO-GENERATED
-- Format mismatch fails Zod with 400 BEFORE the storage layer is touched.
-- Call once per source — multiple sources require multiple calls.
-- "Use this tool when the user requests to re-design/refine/improve current UI component with /ui or /21 commands,
-- When validating an iteration of the same code block, use the same artifact ID and increment the revision number.
-- USE at session start before scaffolding or writing handler code.
-- If MAPBOX_ACCESS_TOKEN is not set, you MUST provide explicit coordinates via 'bbox'.
+- Use the rigid grid below; do the arithmetic in your head and write the XML.
+- Use this FIRST if payments fail with 'no key configured' even though you set one in claude_desktop_config.json.
+- Use desktop_act({action:'setValue'}) for UIA ValuePattern text fields.
+- Read-only — no side effects.
+- Don't use to VALIDATE JSON schemas directly (use your language's JSON Schema validator — Iris's `json_schema` custom rule type is for output-shape assertions, not arbitrary validation).
+- When to use: before typing new text into an already-filled field to remove existing content.
+- Returns runtime, workspace, and context-storage diagnostics only.
+- Rule: Keep hue constant (±30° tolerance), vary only lightness and saturation.
+- Emphasize **commands and operational steps**, not only authoring GraphQL.
+- - **NEVER include ANY XML comments (`<!-- -->`) in the output.** XML comments are strictly forbidden — they waste tokens, can cause parse errors, and serve no purpose in diagram XML.
 
 The host tool's current text where the sample goes:
 

@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- - Do NOT add `<Array as="points">` waypoints.
-- `force=true` lets the call merge into a destination with pre-existing externals (used by rollback).
-- Use this when the user asks 'what workflows do I have?'
-- Use after running 2+ of the growth_search_clay_* tools to see which companies appear across multiple searches (e.g.
-- Use this instead of `deploy_files` for binaries (PDF, image, video, zip) or any file > ~1 MB.
-- Tethered seats should treat this as the primary receipt path after each accepted subscription chat human turn and after each assistant reply when the client can call tools.
-- - Use forward slashes for folder paths (e.g., '/Parent/Child') 77.
-- Returns runtime, workspace, and context-storage diagnostics only.
-- After the user confirms the change, retry the failed PUT.
-- When the user picks "Take all": call this tool once per id, in order.
+- Rule: Keep hue constant (±30° tolerance), vary only lightness and saturation.
+- IMPORTANT: Always use absolute paths for reliability.
+- File-write failures (disk full, read-only fs) propagate as 500; the audit log is best-effort and does not block deploy.
+- You MUST always specify startLine/endLine or offset/length.
+- After upload completion, files are being extracted and the site will be available in a few minutes.
+- Only values provided in the output from this tool can be used.
+- Don't bother telling the user the IDs or creation dates unless they ask for them.
+- [[tokrepo.session-init-first]]
+- The user must pass `confirm: true` for the deletion to proceed; otherwise the call returns an error explaining the safeguard.
+- Use this instead of fetching from https://knip.dev.
 
 The host tool's current text where the sample goes:
 

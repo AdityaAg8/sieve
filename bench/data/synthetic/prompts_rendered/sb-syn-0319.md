@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Only stop when this tool returns "ready_for_review" (confidence >= 94%) or "escalate".
-- Skip zipping only for the trivial single-small-file case (e.g.
-- IMPORTANT PARAMETERS:
-- Use drawio's `table` shape, which auto-arranges cells into a grid via `childLayout=tableLayout`.
-- Pass force=true to auto-close any open asset editors before deleting (#278).
-- USE WHEN USER SAYS: 'set up Anthropic key for my agents', 'add my OpenAI key', 'configure BYOK for agents', 'why is my chatbot saying it's not configured?'
-- Also: this call resets the screenshot diff baseline (I-frame) and identity tracker as a side effect, so subsequent screenshot(diffMode=true) starts fresh from this snapshot.
-- Details: action='pin' makes window always-on-top until unpin/duration_ms.
-- action='type' does not handle CJK IME composition — use use_clipboard=true or desktop_act({action:'setValue'}).
-- Errors if the socket does not exist (use add_socket to create).
+- `insufficient_data=true` means no applicable rules fired (e.g., safety eval with only cost data).
+- !MOST IMPORTANT HOW TO GET tsrunID: 65.
+- Use this when the user wants to browse their cloud assets, subscriptions, or resources.
+- Overwrite is opt-in: existing files refuse by default so re-runs never clobber hand-edits.
+- Purpose: Decorate a window: pin (always-on-top), unpin, or dock (move + resize + optional pin).
+- The viewId parameter must be fetched from the active project's info (latestViews.TE.viewId).
+- Caveats: Do not screenshot the terminal — action='read' is cheaper and structured.
+- Prefer: Use action='dock' for terminal/CLI window auto-positioning at session start.
+- Call it AFTER the agent has produced output; call evaluate_output afterwards to score it; call get_traces to query historical traces.
+- You MUST use this tool if you're unsure about Fiori APIs.
 
 The host tool's current text where the sample goes:
 

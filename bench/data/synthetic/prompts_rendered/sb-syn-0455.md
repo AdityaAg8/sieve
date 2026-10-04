@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Never blocks on the agent — returns within ~50ms for typical payloads.
-- | **Elbow** | `edgeStyle=elbowEdgeStyle;elbow=vertical;` | Rarely needed — `orthogonalEdgeStyle` handles almost all cases; use this only for simple 1-bend linear flows |
-- - NEVER attempt to update all 1000+ in a single operation 38.
-- For currency conversion use get_euro_exchange; these rates are not applicable for forex calculations.
-- Always use this instead of raw product URLs when sharing links.
-- * 2: <testcase> = Test Case only 26.
-- This is where the AI most often flattens hierarchy that should be nested.
-- When generating draw.io XML, the output **must** be well-formed XML:
-- Read-only when given `url` (one HTTP GET).
-- MANDATORY: Use this API for ANY Hydrogen storefront question - do NOT use Storefront GraphQL when 'Hydrogen' is mentioned.
+- You do not need to request this.
+- The selected domain must be in `active` status; if it isn't, surface the problem to the user instead of attempting creation.
+- Deploying overwrites existing content; confirm overwrite with the user first.
+- - Does NOT scan source code repositories — only your agent config files (~/.claude/, memory, skills, hooks)
+- - Only set the primary tokens in the parent component's theme; all children inherit automatically
+- Use action='pin' alone when you only need always-on-top without moving or resizing.
+- Never mutate or import data; use records.batch for write operations.
+- - baseUrl (string): The base URL for the QMetry instance (must be a valid URL) (default: "https://testmanagement.qmetry.com")
+- Reference: https://learn.microsoft.com/en-us/graph/search-query-parameter IMPORTANT: Always use $select to limit returned fields and reduce response size.
+- 💡 TIP: CRITICAL: When searching emails, the $search parameter value MUST be wrapped in double quotes.
 
 The host tool's current text where the sample goes:
 

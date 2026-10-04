@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Don't use to create a trace (use log_trace).
-- PREREQUISITE: Page must be loaded with browser_fetch_webpage first.
-- - Action: User must specify platform explicitly in subsequent tool calls
-- FIRST-RUN setup BEFORE create_agent.
-- lspCallHierarchy -> trace call flow
-- Call this AFTER completing any non-trivial task (deploy, debug, fix, architecture decision).
-- Keyword Difficulty stands for the relative difficulty of ranking in the first top-10 organic results for the related keyword.
-- Common after FBX import when SOCKET_* empties land with scale=(100,100,100) (#412).
-- Best called after `deep_storage_purge` removes many entries — SQLite reclaims page allocations only when explicitly vacuumed, so the file size stays the same until you call this tool.
-- Will process in batches of 20 to ensure reliability and performance.'
+- action='sequence' runs ordered steps in one keyboard lock — use for Alt+letter, letter mnemonic chains where intermediate tool calls would close the menu.
+- USE THIS as the default for natural-language 'create a chatbot' requests.
+- MUST be called after completing remediation to confirm success.
+- dep and arr are optional and should only be provided when the exact airports are known.
+- Use when you want to understand a specific decision, task, file, or PR end-to-end.
+- For current weather, use get_current_conditions.
+- Do not pass your own artifact ID to this tool, the tool will generate one for you..
+- Use `light-dark()` only when the automatic inverse color is unsatisfactory.
+- 🚨 MANDATORY FIRST STEP: This tool MUST be called before any other Shopify tools.
+- If you need a contact property ID, you MUST use this tool to get all available properties and then ask the user to select the one they want.
 
 The host tool's current text where the sample goes:
 

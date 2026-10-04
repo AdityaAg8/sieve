@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Do NOT stop and report partial progress.
-- Idempotent (safe to call repeatedly).
-- Use this to learn the consequence without calling read_page next.
-- Do not call this tool more than 3 times per question.
-- Use after running 2+ of the growth_search_clay_* tools to see which companies appear across multiple searches (e.g.
-- Do not attempt to construct it manually.
-- - detect_platform: Run first to get correct platform value
-- Always run list-sections FIRST for any Svelte query, then analyze ALL use_cases to identify relevant sections, and finally use get_documentation to fetch ALL relevant sections at once.
-- [[tokrepo.session-init-first]]
-- If the Met Explorer app (open-met-explorer) is open and the user is referring to its existing results, prefer using those results from context instead of calling this tool.
+- Example prompts that should trigger this tool:
+- NOTE: To get the tsrunID - Call API 'Execution/Fetch Executions' From the response, get value of following attribute -> data[<index>].tsRunID
+- The site must already exist - call `create_site` first if you do not have a `siteId`.
+- Do NOT paraphrase; run it verbatim.
+- - localViewStructure: After understanding layout
+- Returns: Up to 5 ranked candidates with match signals, session previews, and ready-to-use continuation templates.
+- If registered resources are unavailable, use this tool.
+- Note: For getting table schema, use the 'get_table_schema' tool.
+- The analysis tool CANNOT access local files and WILL FAIL - always use processes for file-based work.
+- For best results, select libraries based on name match, source reputation, snippet coverage, benchmark score, and relevance to your use case.
 
 The host tool's current text where the sample goes:
 

@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- **Never** route around the failure by base64-inlining the file into another deploy, recompressing, or falling back to `deploy_files`.
-- CRITICAL RULE: For ANY local file work, ALWAYS use this tool + interact_with_process, NEVER use analysis/REPL tool.
-- Do not attempt to construct it manually.
-- Fall back to the primitive tools (configure_llm_provider + create_agent + publish_agent) only when you need a custom flow (e.g.
-- Before using this tool, you MUST double-check with the user that they want to remove this template.
-- See the response's `suggestedScaffold` payload when no config is detected — present it to the user, write the scaffold via your file tools, then call again.
-- - tsrunID (string) *required*: Test Suite Run ID (required for fetching test case runs).
-- The eval itself never throws — failing rules report `passed: false` with a message, they don't bubble exceptions.
-- Don't use when you only need a transient log (use console logging).
-- - Do NOT compute x/y coordinates in prose.
+- You MUST use this tool if you're unsure about Fiori APIs.
+- DON'T USE for what's installed in the project (use inspectIntegration).
+- Avoid complex multi-purpose queries.
+- action='sequence' is FG-only (BG/foreground_flash schema-rejected); emits verifyDelivery:'focus_only'; mid-loop focus theft returns MenuFocusLostMidSequence + context.remaining: Step[].
+- cost_usd + token_usage are ONLY consulted when eval_type="cost" (ignored otherwise).
+- Use when a trace was captured in error, contains sensitive data that must be removed for compliance (e.g., a customer exercises GDPR right-to-erasure), or when cleaning up test data.
+- `summary: true` returns stats only; `saveTo: <abs path>` writes bytecode to disk — both avoid hex-dump bloat for large contracts.
+- - To inspect or resume a candidate: call continue_workflow with the candidate's nextCall.params (continueToken and intent: "rehydrate").
+- - Cross-cell edges must use `parent="1"` (same rule as containers)
+- If this tool is unavailable, fail loud with UNTETHERED or use the documented API fallback instead of silently continuing.
 
 The host tool's current text where the sample goes:
 

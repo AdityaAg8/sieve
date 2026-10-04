@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- - Check file size before upload (must be ≤30 MB) 96.
-- For quick factual questions, use perplexity_ask instead.
-- Keyword Difficulty stands for the relative difficulty of ranking in the first top-10 organic results for the related keyword.
-- If .codeloop/config.json is missing, call codeloop_init_project FIRST.
-- Default `static` (fast, raw HTML only).
-- After a collab/health/security report runs, the result text contains a "Three things to fix" menu with up to 3 recommendation_ids plus "Take all of them" and "Skip for now" options.
-- - Always use unique `id` values for each `mxCell`
-- Purpose: Decorate a window: pin (always-on-top), unpin, or dock (move + resize + optional pin).
-- Introspect the GraphQL schema, use this tool before doing a query to get the schema information if you do not have it available as a resource already.
-- - configuring-project-files: READ FIRST for unused files or false positives.
+- Reference: https://learn.microsoft.com/en-us/graph/search-query-parameter IMPORTANT: Always use $select to limit returned fields and reduce response size.
+- Never blocks on the agent — returns within ~50ms for typical payloads.
+- - workspacePath (required)
+- Call once per source — multiple sources require multiple calls.
+- If `deniedDomains` lists a matching host, remove it first - deny takes precedence.
+- **Destructive - only call after explicit user confirmation.** The site URL becomes unreachable immediately and the content cannot be recovered.
+- - detect_platform: Run first to get correct platform value
+- - "Add a loading state" → Check current component structure and routes first
+- - The response includes ranked candidates with match explanations and ready-to-use continuation templates.
+- The right first call for any new task — primes the agent on what primitives are available before writing handler code.
 
 The host tool's current text where the sample goes:
 

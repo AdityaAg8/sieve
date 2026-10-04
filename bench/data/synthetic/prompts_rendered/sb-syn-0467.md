@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Always search first to leverage the comprehensive ix and ix-react documentation before offering any Angular guidance.
-- - NOT for content - use localSearchCode
-- Don't use to EDIT an existing rule — this call only creates; edits require a dedicated flow (coming in v0.5).
-- You MUST provide the exact parameter information obtained from get_functionality_details (Step 2).
-- USE when wiring a new BYOK provider or graduating from simulator to real hardware.
-- Call `deploy_finalize` only after the user confirms each PUT returned 200 with an ETag (they will need to share the ETags back for multi-part uploads).
-- Use this for upcoming weather predictions (e.g., "tomorrow", "this week", "next 7 days", "hourly forecast").
-- ALWAYS USE FOR: Local file analysis, CSV processing, data exploration, system commands
-- Returns completion={reason, elapsedMs} first-class plus outputIntegrity:'ok'|'baseline_lost' so callers can detect when scrollback could not be anchored to the pre-send buffer.
-- Never expose credentials or auth state, write data, or modify configuration.
+- External IDs (G-xxx) track task identity across edits — don't remove them.
+- 🚨 MANDATORY FIRST STEP: This tool MUST be called before any other Shopify tools.
+- - Use multiple internal components that each need their own theme
+- Unless the user explicitly asks for relative paths, use absolute paths.
+- Start here for installation and first run
+- ZERO-ARG USAGE: With a tokens.config.json at your project root, just call the tool with no args — it picks up source dir, output formats, modes, prefix, etc.
+- Diagnostic metadata — do not surface these values to the user unless they ask about performance or troubleshooting.
+- - Always use unique `id` values for each `mxCell`
+- Show the proposal to the user first, then apply it with update_paragraph only after clear confirmation.
+- Purpose: Decorate a window: pin (always-on-top), unpin, or dock (move + resize + optional pin).
 
 The host tool's current text where the sample goes:
 

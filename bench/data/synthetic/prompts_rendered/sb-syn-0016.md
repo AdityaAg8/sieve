@@ -52,16 +52,16 @@ Tiers, judged by meaning and never by wording:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Finds clusters of memories sharing the same subject (3+ memories required), then uses AI to synthesize each cluster into 1-2 comprehensive facts.
-- Call read_resource to load reference data:
-- If .codeloop/config.json is missing, call codeloop_init_project FIRST.
-- FIRST-USE BOOTSTRAP: If `.codeloop/config.json` does not yet exist in this
-- If the report exceeds the size cap, `change_report.truncated:true` and `change_report_hint` are set; call read_page for the full state.
-- Do not store secrets, API keys, passwords, one-time codes, or private credentials.
-- If the user declined, do not call this tool — the token will expire automatically.
-- IMPORTANT: Only use this tool if the user explicitly requests autopilot, asks to "run a task", or says "let FSB handle it".
-- Runs a fresh audit and compares against the before snapshot.
-- - **✅ Primary Tokens — USE THESE**: Use ONLY these tokens for the initial theme
+- **Do NOT** in your reasoning:
+- Deploying overwrites existing content; confirm overwrite with the user first.
+- Read-only: never mutates storage, never calls external services.
+- Fall back to the primitive tools (configure_llm_provider + create_agent + publish_agent) only when you need a custom flow (e.g.
+- Do NOT paraphrase; run it verbatim.
+- Node.js: Always use ES import syntax (import x from 'y'), not require().
+- Pass tab_id only when this agent owns multiple tabs; auto-resolves otherwise.
+- Prefer: action='run' for command execution + result.
+- - If you're on Next.js 15 or earlier, use the 'upgrade-nextjs-16' MCP prompt to upgrade first
+- The analysis tool CANNOT access local files and WILL FAIL - always use processes for file-based work.
 
 The host tool's current text where the sample goes:
 

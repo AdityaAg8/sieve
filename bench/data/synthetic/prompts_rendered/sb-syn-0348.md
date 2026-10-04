@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- USER FILE UPLOAD REQUIRED: Ask user to provide file in chat - system will convert to base64 3.
-- Each call mints a fresh rule_id; not idempotent (deploying twice creates two rules).
-- Prefer: Use action='dock' for terminal/CLI window auto-positioning at session start.
-- Step 2: Call this tool 9 times (once for each tsRunID) 27.
-- Use recommendation_id from the latest report's menu.
-- Use this when the user wants to collaborate on or refine the template in the editor.
-- Use this to learn the consequence without calling read_page next.
-- - testsuiteOwner: User must have Test Suite module rights 84.
-- Names must be lowercase letters, digits, and hyphens, and must not start with `_`.
-- For more complex usage, please use YAML by `find_code_by_rule`.
+- All labels must be unique.
+- Will process in batches of 20 to ensure reliability and performance.'
+- The fileWorker auto-extracts a single-zip upload after promotion, so subdirectories are preserved end-to-end and you avoid one PUT round-trip per file.
+- Use it to learn about nx, its configuration and options instead of assuming knowledge about it.
+- You MUST call this tool when all gate checks pass and all features are implemented — it is NOT optional.
+- Use this FIRST if payments fail with 'no key configured' even though you set one in claude_desktop_config.json.
+- Re-check it to get clarifications and more accurate API often, but do not search if completely unrelated or you just searched the exact same.
+- If `deniedDomains` lists a matching host, remove it first - deny takes precedence.
+- Values are write-only and injected as process.env variables in functions.
+- Reclaim disk space after large purge operations by running VACUUM on the local SQLite database.
 
 The host tool's current text where the sample goes:
 

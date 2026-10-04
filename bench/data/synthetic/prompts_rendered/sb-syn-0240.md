@@ -52,16 +52,16 @@ Tiers, judged by meaning and never by wording:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- 🔄 MULTIPLE API SUPPORT: You MUST call this tool multiple times in the same conversation when you need to learn about different Shopify APIs.
-- Use the value in the previous response to get the next page when more results are available.
-- - Do NOT re-derive drawio mechanics (`horizontal=0`, `startSize=110`, nested-lane coordinates).
-- - First row = phase headers; first cell of every other row = actor label
-- Optionally returns only code blocks.
-- source_material is REQUIRED when template="faithfulness" (the RAG sources to ground against); ignored otherwise.
-- The user must pass `confirm: true` for the deletion to proceed; otherwise the call returns an error explaining the safeguard.
-- Fill slots by asking the user targeted questions (never invent answers), then call growth_create_sequence_draft.
-- Pass force=true to auto-close any open asset editors before deleting (#278).
-- Use this for "ask my memory anything" recall — for ad-hoc SPARQL prefer `dkg_query`.
+- **IMPORTANT - Cost Optimization:** Use `jq` param to filter response fields.
+- expected is REQUIRED when eval_type="relevance" (used as the comparison target for keyword overlap + topic consistency); ignored for other eval_types.
+- After detection, use the platform value with:
+- definition.type and definition.config must match (e.g., regex_match needs config.pattern; cost_threshold needs config.max_usd; min_length needs config.min).
+- This is the **first mandatory step** to begin the workflow and requires a valid absolute path to a SAP Fiori application as input.
+- ALWAYS include the `model` parameter with your model name/ID (e.g., 'claude-sonnet-4-6', 'gpt-4o', 'claude-opus-4-6').
+- action='read' reads current text via UIA TextPattern (falls back to OCR); use sinceMarker for incremental diff.
+- Ask the user before switching.
+- **When to use cross-functional tables vs flat swimlanes:**
+- • Use component names: "button", "chart", "map"
 
 The host tool's current text where the sample goes:
 

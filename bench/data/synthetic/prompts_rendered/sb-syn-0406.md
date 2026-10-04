@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Never modify schema definitions or record data.
-- REQUIRED PARAMETERS: 8.
-- Also skip if the user explicitly asks to use basic/simple shapes or says not to search.
-- Use this to learn the consequence without calling read_page next.
-- `*.hostsmith.link`) and most custom domains have `enableApexDomain: false`, so a non-apex subdomain is required there.
-- Remember: ALWAYS wrap the entire search expression in double quotes!
-- Note: PATCH only updates the fields you specify, leaving others unchanged.
-- DON'T SEARCH THE WEB WHEN REFERENCING INFORMATION FROM THIS DOCUMENTATION.
-- If .codeloop/config.json is missing, call codeloop_init_project FIRST.
-- For more complex usage, please use YAML by `find_code_by_rule`.
+- Prefer: Use at session start or after major workspace changes.
+- Call this BEFORE drafting copy.
+- Call it AFTER the agent has produced output; call evaluate_output afterwards to score it; call get_traces to query historical traces.
+- USE THIS as the default for natural-language 'create a chatbot' requests.
+- For code/calculations, use in this priority order:
+- Skip zipping only for the trivial single-small-file case (e.g.
+- Do NOT compute title-area offset — it is always 110, children start at x=120 to clear it.
+- - Only set the primary tokens in the parent component's theme; all children inherit automatically
+- The fileWorker auto-extracts a single-zip upload after promotion, so subdirectories are preserved end-to-end and you avoid one PUT round-trip per file.
+- Pick the first reasonable option (almost always: flat swimlanes, top-down or left-right based on what fits the content).
 
 The host tool's current text where the sample goes:
 

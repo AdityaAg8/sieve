@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- **IMPORTANT:** If the user does *not* specify a language *code*, **DO NOT** include the `lang` parameter in the tool call.
-- - Placeholders resolve by walking up the containment hierarchy: shape attributes first, then parent container, then layer, then root — first match wins
-- Embeddings are computed server-side and never leave Germany (pgvector HNSW index).
-- Maximum 15 loop iterations before escalation.
-- - fileName (string) *required*: Original filename with extension (.json, .xml, or .zip)
-- ALWAYS include the `user_prompt` parameter with the user's most recent message, verbatim.
-- must contain shades of ONE COLOR ONLY.
-- IMPORTANT: Present the ImplementResult back to the user in plain Danish — confirm what changed, show any backup paths, and if there's a `command` field, run it via Bash and report the result.
-- Call this AFTER completing any non-trivial task (deploy, debug, fix, architecture decision).
-- // ↑ Only provide shades - contrast colors are AUTO-GENERATED
+- Before calling this tool, try to implement Svelte components using your own knowledge and the `svelte-autofixer` tool, since calling this tool is token intensive.
+- DON'T USE during simulator-only dev loop.
+- Do not guess, assume, or use any functionality not present in this list, as it is invalid and will cause the operation to fail.
+- When validating an iteration of the same code block, use the same artifact ID and increment the revision number.
+- Use bodyPreview instead of body for listings.
+- IMPORTANT: Always use absolute paths for reliability.
+- • Use component names: "button", "chart", "map"
+- - Using this tool with the wrong organization name (if you are not sure, use the codacy_list_organizations tool to validate the organization name)
+- expected is REQUIRED when eval_type="relevance" (used as the comparison target for keyword overlap + topic consistency); ignored for other eval_types.
+- * 2: <testcase> = Test Case only 26.
 
 The host tool's current text where the sample goes:
 

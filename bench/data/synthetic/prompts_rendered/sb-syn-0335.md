@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- For any other subdomain, the domain must have `enableSubdomains: true`; shared hosting domains (e.g.
-- - create_theme: Does not support custom palettes; use this tool + manual theme assembly
-- Step 2: Call this tool 9 times (once for each tsRunID) 27.
-- - Basic components: Use simple names like "avatar", "badge", "card"
-- - If there are 9 executions, you must fetch tcRunIDs for all 9, not just 2 22.
-- Do not summarize, translate, or paraphrase.
-- Use screenshot only when visual layout check is needed or text tools cannot verify the state.
-- A metric (edge-vertex intersections) compares before vs.
-- **Anti-patterns - never do these to bypass a blocked or unavailable upload path:**
-- REQUIRED WORKFLOW FOR LOCAL FILES:
+- Remember: ALWAYS wrap the entire search expression in double quotes!
+- body: `{"fields": {"summary": "Updated title"}}` (only updates specified fields)
+- After upload completion, files are being extracted and the site will be available in a few minutes.
+- cost_usd + token_usage are ONLY consulted when eval_type="cost" (ignored otherwise).
+- Also: this call resets the screenshot diff baseline (I-frame) and identity tracker as a side effect, so subsequent screenshot(diffMode=true) starts fresh from this snapshot.
+- Don't use to EDIT an existing rule — this call only creates; edits require a dedicated flow (coming in v0.5).
+- Optionally returns only code blocks.
+- Minimized windows are automatically restored before docking.
+- If `deniedDomains` lists a matching host, remove it first - deny takes precedence.
+- - Do NOT verify, re-check, or adjust coordinates after placing a node.
 
 The host tool's current text where the sample goes:
 

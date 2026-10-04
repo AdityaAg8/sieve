@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- trace_id is the only parameter; must match 32-char lowercase hex (Zod regex).
-- Don't use to delete eval_results — eval_results survive their trace's deletion intentionally (for audit + drift analysis); they're pruned only by retention.
-- Call it AFTER the agent has produced output; call evaluate_output afterwards to score it; call get_traces to query historical traces.
-- For architecture diagrams or any diagram with nested elements, use draw.io's proper parent-child containment — do **not** just place shapes on top of larger shapes.
-- The user must pass `confirm: true` for the deletion to proceed; otherwise the call returns an error explaining the safeguard.
-- **Anti-patterns - never do these to bypass a blocked or unavailable upload path:**
-- • Use component names: "button", "chart", "map"
-- MERGE STRATEGY: Default `strategy: "merge"` only writes tokens that actually changed in Figma since the last sync.
-- **Default response is COMPACT** — capability names and categories only — keeping the typical first-call cost ~2KB.
-- Use this tool to compare runtime mode, workspace configuration, and context storage state across deployments.
+- Much faster than render_diagram — use this to check syntax before rendering.
+- "Use this tool when the user requests to re-design/refine/improve current UI component with /ui or /21 commands,
+- Call this if you get an error about the browser not being installed.
+- Once you spot the endpoint + body shape, call it directly with `growth_chrome_run` (`await fetch(url, {...})`) — no more clicking.
+- action='sequence' runs ordered steps in one keyboard lock — use for Alt+letter, letter mnemonic chains where intermediate tool calls would close the menu.
+- USE searchType="content" WHEN:
+- Returns: Up to 5 ranked candidates with match signals, session previews, and ready-to-use continuation templates.
+- Get the most recent weather observation for a location (US only).
+- USE to learn how primitives compose into a real flow, or to read up on a specific feature (permissions, toggles, connection lifecycle).
+- Use BEFORE any claim about approval status, pediatric indication, or regulatory restrictions.
 
 The host tool's current text where the sample goes:
 

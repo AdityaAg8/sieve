@@ -52,16 +52,16 @@ Tiers, judged by meaning and never by wording:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Use get_more_search_results to get results as they
-- Always run list-sections FIRST for any Svelte query, then analyze ALL use_cases to identify relevant sections, and finally use get_documentation to fetch ALL relevant sections at once.
-- Deterministic, in-process scoring — same inputs always produce the same result.
-- | **Elbow** | `edgeStyle=elbowEdgeStyle;elbow=vertical;` | Rarely needed — `orthogonalEdgeStyle` handles almost all cases; use this only for simple 1-bend linear flows |
-- Only stop when this tool returns "ready_for_review" (confidence >= 94%) or "escalate".
+- NEVER USE ANALYSIS TOOL FOR: Local file access (analysis tool is browser-only and WILL FAIL)
+- Do not add extra waypoints or complex routing to avoid a parent container when connecting to shapes inside it.
 - [CodeLoop] You MUST call codeloop_verify after every code change.
-- Use the rigid grid below; do the arithmetic in your head and write the XML.
-- Use this when you just need to show who does what in sequence.
-- World assets are rejected (status=rejected_world); use rename_asset which handles WP externals atomically (#409).
-- The user must pass `confirm: true` for the deletion to proceed; otherwise the call returns an error explaining the safeguard.
+- See the response's `suggestedScaffold` payload when no config is detected — present it to the user, write the scaffold via your file tools, then call again.
+- The instructions provided by this tool MUST be followed to ensure that the project setup and code is correctly converted.
+- WRONG example (DO NOT DO THIS):
+- (SkeletalMesh only, default 'root'), relativeLocation?, relativeRotation?, relativeScale?, onConflict?
+- Both source and destination must be within allowed directories.
+- Ask the user before switching.
+- For quick factual questions, use perplexity_ask instead.
 
 The host tool's current text where the sample goes:
 

@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- - Folders created automatically if they don't exist 35.
-- Use this viewId in the Fetch Test Case Runs by Test Suite Run API call.
-- Zero friction: one tool call and you're done.
-- Don't use to score a trace (use evaluate_output).
-- verify_citations is a SPECIALIZED form of LLM judging that focuses on citation grounding only.
-- Never combine `fontStyle` with HTML tags for the same effect — this is redundant and causes visible raw tags if `html=1` is missing.
-- - is_matching_required (string): True=Create new TC if summary/steps don't match, False=Reuse linked TC.
-- - After checkpointing, continue by calling continue_workflow with nextCall.params.continueToken.
-- Writes are additive (set-merge); callers that want replace semantics should call `dkg_assertion_discard` first or mint a unique assertion name per snapshot.
-- **DEPRECATED — prefer `nookplot_store_knowledge_item`.** This tool routes through a 24h review queue (`POST /v1/me/captures`) before items enter the public KG.
+- - visibleOnly (boolean): Whether to only include releases that are marked as visible in the dashboard (default: false)
+- - **Match the language of labels to the user's language** — if the user writes in German, French, Japanese, etc., all diagram labels, titles, and annotations should be in that same language.
+- - Do NOT base64-embed, data-URI, or otherwise inline binary content (images, PDFs, video, fonts, zips) into HTML/CSS/JSON or any other deployed file.
+- Read-only: never mutates storage, never calls external services.
+- Use when the user wants to publish or host new content and no suitable site already exists.
+- 💡 TIP: CRITICAL: When searching emails, the $search parameter value MUST be wrapped in double quotes.
+- - Use layers when the diagram has distinct conceptual groupings that viewers may want to toggle independently
+- "Use this tool when the user wants to see component, get inspiration, or /21st fetch data and previews from 21st.dev.
+- Shade 50 = ALWAYS lightest, shade 900 = ALWAYS darkest.
+- For quick factual questions, use perplexity_ask instead.
 
 The host tool's current text where the sample goes:
 

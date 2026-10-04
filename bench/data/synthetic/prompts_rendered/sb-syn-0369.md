@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- If a corporate HTTP proxy is in play, ensure `CONNECT` to those hostnames is permitted, or set `NO_PROXY` for direct routing.
-- Reclaim disk space after large purge operations by running VACUUM on the local SQLite database.
-- - literalSearch: Use exact string matching instead of regex (default: false)
-- DON'T USE for capability discovery (use getPlatformInfo) or per-feature minimal usage (use getCapabilityGuide).
-- - Do NOT add `<Array as="points">` waypoints.
-- Date must be in YYYY-MM-DD format.
-- - baseUrl (string): The base URL for the QMetry instance (must be a valid URL) (default: "https://testmanagement.qmetry.com")
-- - Do NOT base64-embed, data-URI, or otherwise inline binary content (images, PDFs, video, fonts, zips) into HTML/CSS/JSON or any other deployed file.
-- Read-only: never mutates storage, never calls external services.
-- Only set `postLayout` when the user explicitly wants a canonical layout, or when you know vertex placement is significantly off.
+- Call API 'Execution/Fetch Executions' (FETCH_EXECUTIONS_BY_TESTSUITE) to get ALL available executions 66.
+- Use the value in the previous response to get the next page when more results are available.
+- MERGE STRATEGY: Default `strategy: "merge"` only writes tokens that actually changed in Figma since the last sync.
+- Pick the most suitable URL from the above list, and use that as the "urlList" argument for this tool's execution, to get the docs content.
+- If you need a contact property ID, you MUST use this tool to get all available properties and then ask the user to select the one they want.
+- - Do NOT set `exitX` / `exitY` / `entryX` / `entryY` connection-point overrides unless you have specific geometric intent.
+- Emphasize **commands and operational steps**, not only authoring GraphQL.
+- The agent should ALWAYS ask the user up front which mix they want before fetching the template — default to `mix` unless they say otherwise.
+- Related: navigate (go to a different URL), wait_for_stable (wait for page to settle after refresh).
+- - Use layers when the diagram has distinct conceptual groupings that viewers may want to toggle independently
 
 The host tool's current text where the sample goes:
 

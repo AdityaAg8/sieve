@@ -52,16 +52,16 @@ Tiers, judged by meaning and never by wording:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Also skip if the user explicitly asks to use basic/simple shapes or says not to search.
-- - Use these for bulk status updates or other operations 17.
-- CRITICAL: After starting recording, you MUST use the codeloop_interact tool to actively interact with
-- **IMPORTANT - Cost Optimization:**
-- * 2: <testcase> = Test Case only 26.
-- (SkeletalMesh only, default 'root'), relativeLocation?, relativeRotation?, relativeScale?, onConflict?
-- If you do not know your model name, use 'none'.
-- After a successful implementation, the recommendation's status is marked "implemented" so Dear User won't suggest it again.
-- Don't use as a live event stream — it's a query, not a subscription; poll with exponential backoff or use the dashboard's SSE endpoint for real-time.
-- Use this when the user wants to see which specific resources are affected by an optimization insight.
+- For partial updates, prefer PATCH.
+- Tethered seats should treat this as the primary receipt path after each accepted subscription chat human turn and after each assistant reply when the client can call tools.
+- The output can be used to ask the user for clarification before starting the main 3-step workflow.
+- Do NOT nest lanes inside a pool.
+- When generating draw.io XML, the output **must** be well-formed XML:
+- - is_matching_required (string): True=Create new TC if summary/steps don't match, False=Reuse linked TC.
+- - create_palette: Use for simpler cases with mid-range luminance colors
+- Never write "Actually, let me think of something else…" or pitch alternatives.
+- For currency conversion use get_euro_exchange; these rates are not applicable for forex calculations.
+- To get the tcrId, call the Execution/Fetch Testcase Run ID tool and use data[<index>].tcRunID from the response.
 
 The host tool's current text where the sample goes:
 

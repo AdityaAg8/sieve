@@ -52,16 +52,16 @@ Tiers, judged by meaning and never by wording:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Use dashes for qualifiers, e.g.
-- `summary` only included when `include_summary: true`.
-- Use swap_get_positions for SWAP/FUTURES-only queries.
-- CRITICAL RULE: For ANY local file work, ALWAYS use this tool + interact_with_process, NEVER use analysis/REPL tool.
-- - Child sub-components: Use names like "list-item", "card-header", "accordion-header",
-- For batches of 3+ scene-referenced non-world assets use bulk_rename instead.
-- Call it AFTER the agent has produced output; call evaluate_output afterwards to score it; call get_traces to query historical traces.
-- After the user confirms the change, retry the failed PUT.
-- DON'T USE for capability discovery (use getPlatformInfo) or per-feature minimal usage (use getCapabilityGuide).
-- DON'T confuse with: list_blocks (chat widgets are NOT a block type — agents are a separate primitive); send_conversation_turn (that's for inbound SMS/email auto-reply, NOT a website widget).
+- - Email is only attached when opt_in_followup=true AND an email is provided.
+- definition.type and definition.config must match (e.g., regex_match needs config.pattern; cost_threshold needs config.max_usd; min_length needs config.min).
+- Operators get keys from console.anthropic.com (recommended for v1.26.x — best tool-use support) or platform.openai.com.
+- This tool MUST be called once to retrieve Integration Cards guidelines before working on any Integration Card related task or creating an Integration Card.
+- [CodeLoop] You MUST call codeloop_verify after every code change.
+- Surface the exact sandbox configuration below and wait for the user to confirm before retrying.
+- PREREQUISITE: Page must be loaded with browser_fetch_webpage first.
+- Use when a developer asks to build an app, build a theme, create a dev store, set up a partner account, scaffold a project, or get started developing for Shopify.
+- When to use: when page content may be stale, after errors, or to reset page state.
+- Use this before deploy, then declare the key with secrets.require.
 
 The host tool's current text where the sample goes:
 

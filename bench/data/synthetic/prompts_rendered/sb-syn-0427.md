@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Before using this tool, you MUST double-check with the user that they want to remove this contact property.
-- CRITICAL: After starting recording, you MUST use the codeloop_interact tool to actively interact with
-- Refuses if any package is dirty - save first.
-- • Use component names: "button", "chart", "map"
-- IMPORTANT: This tool is designed for reading small code regions (e.g.
-- - Always pass workspacePath (from your system parameters).
-- If .codeloop/config.json is missing, call codeloop_init_project FIRST.
-- Use screenshot only when visual layout check is needed or text tools cannot verify the state.
-- NOTE: To get the tsrunID - Call API 'Execution/Fetch Executions' From the response, get value of following attribute -> data[<index>].tsRunID
+- - baseUrl (string): The base URL for the QMetry instance (must be a valid URL) (default: "https://testmanagement.qmetry.com")
+- Use this to check your scene before creating it with dsp_create_scene.
+- - Do NOT debate flat-lanes vs nested-pools, horizontal vs vertical orientation, one vs multiple variations.
+- Use records.discover_attributes for grouped schema discovery.
+- Use page and pageSize to paginate results.
+- IMPORTANT: If this tool returns "continue_fixing", you MUST immediately loop back to
+- End-of-workflow shortcut after bulk import/edit.
+- **Note: If the target application is not known, use the list_fiori_apps tool first to identify it.**
 - Remember: ALWAYS wrap the entire search expression in double quotes!
+- WHEN TO USE literalSearch=true:
 
 The host tool's current text where the sample goes:
 

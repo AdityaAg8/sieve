@@ -52,16 +52,16 @@ Tiers, judged by meaning and never by wording:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- - Do NOT add `<Array as="points">` waypoints.
-- // ↑ Only provide shades - contrast colors are AUTO-GENERATED
-- - visibleOnly (boolean): Whether to only include releases that are marked as visible in the dashboard (default: false)
-- * 2: <test-method> = Test Case only 22.
 - You MUST call this tool when all gate checks pass and all features are implemented — it is NOT optional.
-- Either `url` or `schema_json` must be provided (not both).
-- Read-only: never mutates storage, never calls external services.
-- Examples: validate configuration before deploy; run an existing query via CLI; list products; missing `shopify store execute`.
-- Do not store secrets, API keys, passwords, one-time codes, or private credentials.
-- Every XML diagram rendered in the viewer automatically runs an ELK (Eclipse Layout Kernel) edge-routing pass **after** the initial render:
+- workspace, call `codeloop_init_project` BEFORE calling this tool.
+- Fulfills GDPR Article 20 (Right to Data Portability) and the 'local-first' portability promise.
+- Read-only operation.
+- Do not pass your own artifact ID to this tool, the tool will generate one for you..
+- Pass force=true to auto-close any open asset editors before deleting (#278).
+- **Destructive - only call after explicit user confirmation.** The site URL becomes unreachable immediately and the content cannot be recovered.
+- - configuring-project-files: READ FIRST for unused files or false positives.
+- Use this viewId in the Fetch Test Case Runs by Test Suite Run API call.
+- Do not guess the language or use parts of the user query as the language code.
 
 The host tool's current text where the sample goes:
 

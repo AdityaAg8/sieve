@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- - Only set the primary tokens in the parent component's theme; all children inherit automatically
-- GRAY COLOR (the ONLY color that inverts):
-- * 2: <test-method> = Test Case only 22.
-- !MOST IMPORTANT HOW TO GET viewId: 70.
-- When generating diagrams, you generally do not need to specify dark-mode colors — the automatic inversion handles most cases.
-- **Use this first ONLY if the target application's name or path is not already known.**
-- Call once per session if you need to know which path is active; the result is stable for the lifetime of the server process.
-- IMPORTANT: If this tool returns "continue_fixing", you MUST immediately loop back to
-- - Do NOT base64-embed, data-URI, or otherwise inline binary content (images, PDFs, video, fonts, zips) into HTML/CSS/JSON or any other deployed file.
-- - Use `jq` param to extract only needed fields from response
+- - issueIds (array) *required*: ID of issues to be linked to Testcase Run
+- The patches are non-removable by design (no `stop` action) — they're cheap shims that the page will never notice.
+- If you need a contact property ID, you MUST use this tool to get all available properties and then ask the user to select the one they want.
+- This is the **first mandatory step** to begin the workflow and requires a valid absolute path to a SAP Fiori application as input.
+- Tethered seats should treat this as the primary receipt path after each accepted subscription chat human turn and after each assistant reply when the client can call tools.
+- After making changes, you should always run the linter again to verify that no new problems have been introduced.
+- (SkeletalMesh only, default 'root'), relativeLocation?, relativeRotation?, relativeScale?, onConflict?
+- "Use this tool when the user requests to re-design/refine/improve current UI component with /ui or /21 commands,
+- Use this for targeted editorial passes like clarity, pacing, tension, dialogue, voice, show-dont-tell, or redundancy cleanup.
+- Use screenshot only when visual layout check is needed or text tools cannot verify the state.
 
 The host tool's current text where the sample goes:
 

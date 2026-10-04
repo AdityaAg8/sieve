@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- The analysis tool CANNOT access local files and WILL FAIL - always use processes for file-based work.
-- When generating draw.io XML, the output **must** be well-formed XML:
-- What you generate is what the viewer starts with; the ELK pass is the only correction.
-- The review queue is currently dev-only and not deployed to prod, so calls return 404.
-- `summary: true` returns stats only; `saveTo: <abs path>` writes bytecode to disk — both avoid hex-dump bloat for large contracts.
-- - Using this tool with the wrong organization name (if you are not sure, use the codacy_list_organizations tool to validate the organization name)
-- - **Decide whether to search for shapes** — before generating a diagram, decide if it needs domain-specific shapes from draw.io's extended libraries.
-- Ready to use in any CSS file.
-- IMPORTANT — quad shape: each quad has subject/predicate/object/graph.
-- Use `list_mpp32_services` first to find a slug.
+- USE WHEN USER SAYS: 'build me a chatbot for [business]', 'add a chatbot to my website', 'create a website chatbot', 'put a chat widget on my homepage', 'set up an AI assistant for my landing page'.
+- - workspacePath (required)
+- - create_palette: Use for simpler cases with mid-range luminance colors
+- - tsrunID (string) *required*: Test Suite Run ID (required for fetching test case runs).
+- - issueIds (array) *required*: ID of issues to be linked to Testcase Run
+- - detect_platform: Run first to get correct platform value
+- Read-only — no side effects.
+- Do not pass your own artifact ID to this tool, the tool will generate one for you.
+- For overall scoring of one page, use score_citation_worthiness.
+- If the report exceeds the size cap, `change_report.truncated:true` and `change_report_hint` are set; call read_page for the full state.
 
 The host tool's current text where the sample goes:
 

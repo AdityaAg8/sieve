@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Use when you need historical data: investigating a past failure, computing quality trends, comparing agents, or feeding an analytics job.
-- - Flat swimlanes — one-dimensional (actors only, or phases only).
-- Don't use on very large outputs (>8K tokens) without raising max_cost_usd — the pre-check will refuse the call.
-- Never modify schema definitions or record data.
-- call deploy_finalize with { siteId, versionId, completions: [...]
-- CRITICAL: Always resolve and use the correct test execution viewId for the current project when calling this tool.
-- - Do NOT verify, re-check, or adjust coordinates after placing a node.
-- Use with selector and hookIndex.
-- - Do NOT debate flat-lanes vs nested-pools, horizontal vs vertical orientation, one vs multiple variations.
-- - Use userAlias (username) not display name 82.
+- - Respects Dear User's local-first guarantee — this is the one place data leaves the machine.
+- - checkpointToken (required)
+- **IMPORTANT - Cost Optimization:** Use `jq` param to filter response fields.
+- - Always use unique `id` values for each `mxCell`
+- - To inspect or resume a candidate: call continue_workflow with the candidate's nextCall.params (continueToken and intent: "rehydrate").
+- Time ranges should be explicitly specified when possible.
+- NOTE: To get the tsrunID - Call API 'Execution/Fetch Executions' From the response, get value of following attribute -> data[<index>].tsRunID
+- - entityType (enum) *required*: Format of result file: TESTNG, CUCUMBER, JUNIT, HPUFT, QAF, or ROBOT
+- - The response includes ranked candidates with match explanations and ready-to-use continuation templates.
+- **Never** route around the failure by base64-inlining the file into another deploy, recompressing, or falling back to `deploy_files`.
 
 The host tool's current text where the sample goes:
 

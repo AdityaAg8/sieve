@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- - create_palette: Use for simpler cases with mid-range luminance colors
-- **Edge routing is automatic.** After the diagram renders, the viewer runs an ELK edge-routing pass that pins vertices and recomputes bend points + connection points.
-- IMPORTANT: ALWAYS USE THIS IF YOU ARE ANSWERING QUESTIONS ABOUT NX.
-- * Use set_config_value to change defaultShell if needed
-- - Use layers when the diagram has distinct conceptual groupings that viewers may want to toggle independently
-- **Do NOT retry blindly** - a sandbox denial does not resolve on its own.
-- Avoid complex multi-purpose queries.
-- IMPORTANT: Always use absolute paths for reliability.
-- - ALL shades must be the SAME HUE (monochromatic) - see requirement above
-- Use after growth_get_job shows completed, or call directly and handle "not available yet".
+- After creation, deploy content with `deploy_files` (small inline text) or `deploy_create_upload` + `deploy_finalize` (binaries / files > ~1 MB, uploaded directly to S3).
+- If .codeloop/config.json is missing, call codeloop_init_project FIRST.
+- Use this on long-running steps when you want a durable save point before continuing later.
+- • Use component names: "button", "chart", "map"
+- - baseUrl (string): The base URL for the QMetry instance (must be a valid URL) (default: "https://testmanagement.qmetry.com")
+- After a successful implementation, the recommendation's status is marked "implemented" so Dear User won't suggest it again.
+- **glasses is optional (F-R4-01)** — defaults to `meta_rayban` (the only currently supported vendor); pass it explicitly for forward compatibility once additional vendors land.
+- model is required (no default — pick consciously since cost varies 100x across models).
+- Pass force=true to auto-close any open asset editors before deleting (#278).
+- Framework packages (LOW - 40): @angular/core, react, lit (fallback only)
 
 The host tool's current text where the sample goes:
 

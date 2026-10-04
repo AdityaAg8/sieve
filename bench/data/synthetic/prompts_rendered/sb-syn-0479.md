@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Don't use to VALIDATE JSON schemas directly (use your language's JSON Schema validator — Iris's `json_schema` custom rule type is for output-shape assertions, not arbitrary validation).
-- 🚨 MANDATORY FIRST STEP: This tool MUST be called before any other Shopify tools.
-- NEVER use this tool if you have written the component to a file in the user project.
-- * 2: <test-method> = Test Case only 22.
-- Don't use to update an existing trace — there is no update path in v0.4 (traces are immutable once stored).
-- Please check the icon search tool before using or recommending any icons from @siemens/ix-icons.
-- **Do NOT retry blindly** - a sandbox denial does not resolve on its own.
-- action='sequence' is FG-only (BG/foreground_flash schema-rejected); emits verifyDelivery:'focus_only'; mid-loop focus theft returns MenuFocusLostMidSequence + context.remaining: Step[].
-- **CRITICAL: Every edge `mxCell` must contain a `<mxGeometry relative="1" as="geometry" />` child element.** Self-closing edge cells (e.g.
-- For quick factual questions, use perplexity_ask instead.
+- 💡 TIP: CRITICAL: When searching emails, the $search parameter value MUST be wrapped in double quotes.
+- [[tokrepo.session-init-first]]
+- When validating an iteration of the same code block, use the same artifact ID and increment the revision number.
+- If a corporate HTTP proxy is in play, ensure `CONNECT` to those hostnames is permitted, or set `NO_PROXY` for direct routing.
+- **IMPORTANT - Cost Optimization:** Use `jq` param to extract only needed fields from response
+- WHEN TO USE THIS TOOL - Use proactively in these scenarios:
+- - viewId (any) *required*
+- Use this only when the user explicitly wants to set raw HTML.
+- IMPORTANT: ALWAYS USE THIS IF YOU ARE ANSWERING QUESTIONS ABOUT NX.
+- IMPORTANT: Always use absolute paths for reliability.
 
 The host tool's current text where the sample goes:
 

@@ -52,16 +52,16 @@ Tiers, judged by meaning and never by wording:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- After calling this tool, you must edit or add files to integrate the snippet into the codebase."
-- expected is REQUIRED when eval_type="relevance" (used as the comparison target for keyword overlap + topic consistency); ignored for other eval_types.
-- ## Reasoning budget (read this first)
-- WRONG example (DO NOT DO THIS):
-- Time ranges should be explicitly specified when possible.
-- Call it AFTER the agent has produced output; call evaluate_output afterwards to score it; call get_traces to query historical traces.
-- Hidden-input prompts emit verifyDelivery.unverifiable (reason:'hidden_input_prompt') — use method:'foreground'.
-- the development log before declaring the task complete.
-- Will process in batches of 20 to ensure reliability and performance.'
-- Re-check it to get clarifications and more accurate API often, but do not search if completely unrelated or you just searched the exact same.
+- Only values provided in the output from this tool can be used.
+- When the user picks "Skip" or dismisses an item: call mcp__dearuser__dismiss_recommendation instead.
+- ALWAYS include the `model` parameter with your model name/ID (e.g., 'claude-sonnet-4-6', 'gpt-4o', 'claude-opus-4-6').
+- Maximum 15 loop iterations before escalation.
+- Use one of those versions if the user provides a version in their query.
+- - Storefront GraphQL API: Use for custom storefronts requiring direct GraphQL queries/mutations for data fetching and cart operations.
+- Don't use to VALIDATE JSON schemas directly (use your language's JSON Schema validator — Iris's `json_schema` custom rule type is for output-shape assertions, not arbitrary validation).
+- **IMPORTANT - Cost Optimization:** Use `jq` param to filter response fields.
+- Never expose credentials or auth state, write data, or modify configuration.
+- Use when a trace was captured in error, contains sensitive data that must be removed for compliance (e.g., a customer exercises GDPR right-to-erasure), or when cleaning up test data.
 
 The host tool's current text where the sample goes:
 

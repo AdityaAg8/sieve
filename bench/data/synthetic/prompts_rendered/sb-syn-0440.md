@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- agent_name is required; everything else is optional.
-- cost_usd + token_usage are ONLY consulted when eval_type="cost" (ignored otherwise).
-- DON'T USE for what's installed in the project (use inspectIntegration).
-- - Explicit mode requires 10 shades required: 50, 100, 200, 300, 400, 500, 600, 700, 800, 900
-- For a single-URL audit, use audit_page.
-- For architecture diagrams or any diagram with nested elements, use draw.io's proper parent-child containment — do **not** just place shapes on top of larger shapes.
-- Finds clusters of memories sharing the same subject (3+ memories required), then uses AI to synthesize each cluster into 1-2 comprehensive facts.
-- Before running this, make sure to analyze the users query, as well as the output from list-sections (which should be called first).
-- Use it to learn about nx, its configuration and options instead of assuming knowledge about it.
-- Confidence: lesson starts at 1.0, decays after 5d (→0.7) and 10d (→0.5) without recall.
+- DON'T USE for the platform capability list (use getPlatformInfo), call-shape per feature (use getCapabilityGuide), or project-installed state (use inspectIntegration).
+- Don't bother telling the user the IDs or creation dates unless they ask for them.
+- Note: The query *must* not contain any administrative commands or control commands.
+- - If unsure about available fields, first fetch ONE item with `limit: "1"` and NO jq filter to explore the schema, then use jq in subsequent calls
+- Don't use to update an existing trace — there is no update path in v0.4 (traces are immutable once stored).
+- - Total duration and time to first output
+- ⚠️ EXPERIMENTAL / orientation-only.
+- Reference: https://learn.microsoft.com/en-us/graph/search-query-parameter IMPORTANT: Always use $select to limit returned fields and reduce response size.
+- then first fetch issue by issue key to get issue id.
+- IMPORTANT: Present the ImplementResult back to the user in plain Danish — confirm what changed, show any backup paths, and if there's a `command` field, run it via Bash and report the result.
 
 The host tool's current text where the sample goes:
 

@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- For architecture diagrams or any diagram with nested elements, use draw.io's proper parent-child containment — do **not** just place shapes on top of larger shapes.
-- - NOT for content - use localSearchCode
-- Use when a developer asks to build an app, build a theme, create a dev store, set up a partner account, scaffold a project, or get started developing for Shopify.
-- - Respects Dear User's local-first guarantee — this is the one place data leaves the machine.
-- Use when the user wants to **understand, design, or generate** the operation itself—even before deciding how to run it.
-- For UI projects: do NOT call this without BOTH screenshot AND video evidence.
-- interactions always hit the app window, NOT the IDE, even on single-monitor setups.
-- - automationHierarchy (enum): TestNG/JUnit hierarchy: 1=Test Case-Test Step, 2=Test Case only, 3=Test Suite-Test Case.
-- Use clinicaltrials_search_studies first to find studies with results.
-- If .codeloop/config.json is missing, call codeloop_init_project FIRST.
+- - Do NOT write out lists of node positions as planning text.
+- - Use the checkpointToken from the most recent start_workflow or continue_workflow response.
+- cost_usd + token_usage are ONLY consulted when eval_type="cost" (ignored otherwise).
+- MERGE STRATEGY: Default `strategy: "merge"` only writes tokens that actually changed in Figma since the last sync.
+- Use `light-dark()` only when the automatic inverse color is unsatisfactory.
+- DON'T SEARCH THE WEB WHEN REFERENCING INFORMATION FROM THIS DOCUMENTATION.
+- Returns meshKind, boundsOrigin, boundsExtent, heightM, lodCount, vertexCount, skeletonPath (skeletal only), materialSlots:[{index, slotName, materialPath, isDefaultFallback}], materialCount (#431)
+- Refuses if any package is dirty - save first.
+- The patches are non-removable by design (no `stop` action) — they're cheap shims that the page will never notice.
+- You MUST output the full report as your response text — do NOT summarize, shorten, or add commentary around it.
 
 The host tool's current text where the sample goes:
 

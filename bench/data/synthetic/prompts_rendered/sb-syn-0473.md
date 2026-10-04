@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Don't think about centers, gaps, or overlap — ELK handles routing between rough positions.
-- Ensure you're running Next.js 16 or later (use the 'upgrade-nextjs-16' prompt to upgrade)
-- GRAY COLOR (the ONLY color that inverts):
-- — pick one concrete scenario on your first impulse and commit.
-- Then use: `jq: "issues[*].{key: key, summary: fields.summary, status: fields.status.name}"` - extract only what you need
-- Point estimates should be interpreted as approximate — not submission-ready.
-- Use at session_end to capture everything you did, even if you forgot to call learn_from_attempts.
-- IMPORTANT: You MUST first read the `nextjs-docs://llms-index` MCP resource to get the correct path.
-- Deduplicate @use lines
-- When to use: before typing new text into an already-filled field to remove existing content.
+- Each call mints a fresh rule_id; not idempotent (deploying twice creates two rules).
+- For diagrams with **nested groupings** — VPC → Availability Zone → EC2 instance, Datacenter → Rack → Server, Region → Environment → Service — use nested swimlanes.
+- After upload completion, files are being extracted and the site will be available in a few minutes.
+- **IMPORTANT - Cost Optimization:** Use `jq` param to filter response fields.
+- source_material is REQUIRED when template="faithfulness" (the RAG sources to ground against); ignored otherwise.
+- - Cross-cell edges must use `parent="1"` (same rule as containers)
+- Use the fields parameter to reduce payload size — full study records are ~70KB each.
+- Only gray inverts for dark themes.
+- Do not attempt to construct it manually.
+- Call this tool to get the current Otter version from the user's `package.json`
 
 The host tool's current text where the sample goes:
 

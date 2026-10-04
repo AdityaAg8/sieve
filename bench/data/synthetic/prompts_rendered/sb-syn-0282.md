@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- - create_theme: Does not support custom palettes; use this tool + manual theme assembly
-- Avoid complex multi-purpose queries.
-- Keyword Difficulty stands for the relative difficulty of ranking in the first top-10 organic results for the related keyword.
-- - Do NOT re-derive drawio mechanics (`horizontal=0`, `startSize=110`, nested-lane coordinates).
-- - The response includes ranked candidates with match explanations and ready-to-use continuation templates.
-- Please check the icon search tool before using or recommending any icons from @simpl/element-icons.
-- Inspect local files after a task and return an agent handoff packaging plan with quality_gate, package_manifest, SBOM-lite, and provenance.
-- CRITICAL: tsrunID and viewId parameters are REQUIRED 62.
-- - localViewStructure: After understanding layout
-- IMPORTANT: Objects that exist in multiple namespaces require the 'force' parameter to be deleted.
+- Use after running 2+ of the growth_search_clay_* tools to see which companies appear across multiple searches (e.g.
+- If .codeloop/config.json is missing, call codeloop_init_project FIRST.
+- USE at session start before scaffolding or writing handler code.
+- - NOT for content - use localSearchCode
+- You must provide a list of absolute file paths to the files you want to lint.
+- - Windows services and processes use different commands (Get-Process vs ps)
+- - All related themes should be scoped under the parent component's selector
+- Never expose credentials or auth state, write data, or modify configuration.
+- You MUST provide the exact parameter information obtained from get_functionality_details (Step 2).
+- Don't bother telling the user the IDs or creation dates unless they ask for them.
 
 The host tool's current text where the sample goes:
 

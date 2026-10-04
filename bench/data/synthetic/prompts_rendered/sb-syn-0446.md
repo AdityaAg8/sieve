@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Details: action='pin' makes window always-on-top until unpin/duration_ms.
-- Use screenshot only when visual layout check is needed or text tools cannot verify the state.
-- Never combine `fontStyle` with HTML tags for the same effect — this is redundant and causes visible raw tags if `html=1` is missing.
-- IMPORTANT: Always use absolute paths for reliability.
-- 💡 TIP: CRITICAL: When searching emails, the $search parameter value MUST be wrapped in double quotes.
-- Before using this tool, you MUST double-check with the user that they want to remove this contact property.
-- — pick one concrete scenario on your first impulse and commit.
-- AUTOMATION HIERARCHY (TestNG/JUnit only): 19.
-- For richer layouts or styled code blocks, use generate_pdf instead.
-- Both source and destination must be within allowed directories.
+- !MOST IMPORTANT HOW TO GET viewId: 70.
+- ## Reasoning budget (read this first)
+- Use this when the user asks 'what workflows do I have?'
+- Call 1: tsrunID='2739237' -> returns 54 tcRunIDs 28.
+- NOT for Web Components - if the prompt mentions HTML tags like <shopify-store>, <shopify-cart>, use storefront-web-components instead.
+- Call this tool with that exact path
+- - Action: User must specify platform explicitly in subsequent tool calls
+- The selected domain must be in `active` status; if it isn't, surface the problem to the user instead of attempting creation.
+- Read-only — no side effects.
+- - Do NOT re-derive drawio mechanics (`horizontal=0`, `startSize=110`, nested-lane coordinates).
 
 The host tool's current text where the sample goes:
 

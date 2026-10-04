@@ -52,16 +52,16 @@ Tiers, judged by meaning and never by wording:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Use one of those versions if the user provides a version in their query.
-- For quick factual questions, use perplexity_ask instead.
-- Use it to learn about nx, its configuration and options instead of assuming knowledge about it.
-- action='sequence' is FG-only (BG/foreground_flash schema-rejected); emits verifyDelivery:'focus_only'; mid-loop focus theft returns MenuFocusLostMidSequence + context.remaining: Step[].
-- **glasses is optional (F-R4-01)** — defaults to `meta_rayban` (the only currently supported vendor); pass it explicitly for forward compatibility once additional vendors land.
-- MERGE STRATEGY: Default `strategy: "merge"` only writes tokens that actually changed in Figma since the last sync.
-- - localViewStructure: After structure discovery
-- NEVER INVERT: Chromatic colors always go 50=lightest → 900=darkest.
-- Auto-creates the wallet on first use (~/.agentcash/wallet.json).
-- No writes, no third-party APIs, no auth required, no rate limits beyond polite per-host throttling.
+- DON'T USE during simulator-only dev loop.
+- ALWAYS include the `model` parameter with your model name/ID (e.g., 'claude-sonnet-4-6', 'gpt-4o', 'claude-opus-4-6').
+- include_summary returns dashboard-style aggregates in the SAME response (saves a round-trip; use true for dashboard ingest, false for analytics queries that don't need them).
+- This tool generates a conversationId that is REQUIRED for all subsequent tool calls.
+- dep and arr are optional and should only be provided when the exact airports are known.
+- You must provide a list of absolute file paths to the files you want to lint.
+- • Use component names: "button", "chart", "map"
+- **Always include `html=1` in the style** when the `value` attribute contains any HTML tags (`<b>`, `<br>`, `<font>`, `<i>`, `<u>`, `<hr>`, `<p>`, `<table>`, etc.).
+- Call bootstrap_scan first, then pass the scan results here.
+- - Custom Data: MUST be used first when prompts mention Metafields or Metaobjects.
 
 The host tool's current text where the sample goes:
 

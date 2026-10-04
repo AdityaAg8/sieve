@@ -1,14 +1,5 @@
 [
  {
-  "a": "cat-ae9f8401c8e1",
-  "b": "cat-24722857374e",
-  "labels": [
-   "imperative_benign",
-   "benign"
-  ],
-  "cosine": 0.9271
- },
- {
   "a": "cat-24722857374e",
   "b": "sb-syn-0334",
   "labels": [

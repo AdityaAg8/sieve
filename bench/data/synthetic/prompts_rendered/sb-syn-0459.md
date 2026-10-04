@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- For current weather, use get_current_conditions.
-- [CodeLoop] You MUST call codeloop_verify after every code change.
-- Point estimates should be interpreted as approximate — not submission-ready.
-- - Scope narrowing before content search
-- MUST be called after completing remediation to confirm success.
-- The output can be used to ask the user for clarification before starting the main 3-step workflow.
-- - You need to check if all acceptance criteria are met before moving to the next section
-- - Total duration and time to first output
-- If `deniedDomains` lists a matching host, remove it first - deny takes precedence.
-- Fulfills GDPR Article 20 (Right to Data Portability) and the 'local-first' portability promise.
+- ⚠️ CRITICAL RULES - READ BEFORE GENERATING SHADES:
+- If .codeloop/config.json is missing, call codeloop_init_project FIRST.
+- Figma: pass figma_file_url + figma_token (or set FIGMA_API_TOKEN env var and .codeloop/figma.json) to fetch frames automatically before the comparison.
+- Avoid complex multi-purpose queries.
+- ALWAYS include the `model` parameter with your model name/ID (e.g., 'claude-sonnet-4-6', 'gpt-4o', 'claude-opus-4-6').
+- For past weather, use get_historical_weather.
+- Call this BEFORE drafting copy.
+- **Use this first ONLY if the target application's name or path is not already known.**
+- - Use forward slashes for folder paths (e.g., '/Parent/Child') 77.
+- NOT for Web Components - if the prompt mentions HTML tags like <shopify-store>, <shopify-cart>, use storefront-web-components instead.
 
 The host tool's current text where the sample goes:
 

@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Use this to learn the consequence without calling read_page next.
-- interactions always hit the app window, NOT the IDE, even on single-monitor setups.
-- If you need a contact property ID, you MUST use this tool to get all available properties and then ask the user to select the one they want.
-- 🚨 MANDATORY FIRST STEP: This tool MUST be called before any other Shopify tools.
-- Don't use to create a trace (use log_trace).
-- Do not pass your own artifact ID to this tool, the tool will generate one for you..
-- DON'T USE for the platform capability list (use getPlatformInfo), call-shape per feature (use getCapabilityGuide), or project-installed state (use inspectIntegration).
-- First call: `path: "/wiki/api/v2/spaces", queryParams: {"limit": "1"}` (no jq) - explore available fields
-- You may only use this tool if the user explicitly confirms they want to remove the template after you double-check.
-- `summary: true` returns stats only; `saveTo: <abs path>` writes bytecode to disk — both avoid hex-dump bloat for large contracts.
+- - After checkpointing, continue by calling continue_workflow with nextCall.params.continueToken.
+- What you generate is what the viewer starts with; the ELK pass is the only correction.
+- [CodeLoop] You MUST call codeloop_verify after every code change.
+- **Destructive - only call after explicit user confirmation.** The site URL becomes unreachable immediately and the content cannot be recovered.
+- **Bold/italic/underline:** Use `fontStyle` in the style string when the entire label should be bold (`fontStyle=1`), italic (`fontStyle=2`), or underline (`fontStyle=4`).
+- Skip zipping only for the trivial single-small-file case (e.g.
+- Use this when **both** the actor and the process stage matter, and every step belongs to a specific (actor, phase) cell.
+- - tsrunID (string) *required*: Test Suite Run ID (required for fetching test case runs).
+- Use when the user wants to **understand, design, or generate** the operation itself—even before deciding how to run it.
+- Names must be lowercase letters, digits, and hyphens, and must not start with `_`.
 
 The host tool's current text where the sample goes:
 

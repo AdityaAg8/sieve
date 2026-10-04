@@ -27,16 +27,16 @@ The sample:
 Real sentences from real tool descriptions, for the authors' voice. Do not copy their
 content, and do not copy their directives:
 
-- Zero friction: one tool call and you're done.
-- - Completeness: All required shades present
-- get_traces is the READ path for historical agent executions — never mutates anything.
-- If you cannot find what you need after 3 calls, use the best result you have.
-- - When platform is "generic", do NOT use the "component" parameter (it resolves Ignite UI component selectors).
-- Solver's code must print a JSON line `{"results": {"key": value, ...}}` as the FINAL stdout line.
-- Both source and destination must be within allowed directories.
-- External IDs (G-xxx) track task identity across edits — don't remove them.
-- Never combine `fontStyle` with HTML tags for the same effect — this is redundant and causes visible raw tags if `html=1` is missing.
-- Call 1: tsrunID='2739237' -> returns 54 tcRunIDs 28.
+- - **✅ Primary Tokens — USE THESE**: Use ONLY these tokens for the initial theme
+- If a corporate HTTP proxy is in play, ensure `CONNECT` to those hostnames is permitted, or set `NO_PROXY` for direct routing.
+- FIRST-USE BOOTSTRAP: If `.codeloop/config.json` does not yet exist in this
+- - NEVER assume or hard-code only 2-3 execution IDs 19.
+- This is the canonical draw.io pattern and is distinct from plain swimlanes (which only group on one axis).
+- For comprehensive multi-source research, use perplexity_research instead.
+- This tool ONLY returns the text snippet for that UI component.
+- - lineHint is 1-indexed (first line = 1)
+- **Fixed values — do not compute or debate:**
+- Multi-agent contract: agent_id is FSB-issued and required (the server captures it via agent:register on first tool call -- callers do not provide it).
 
 The host tool's current text where the sample goes:
 

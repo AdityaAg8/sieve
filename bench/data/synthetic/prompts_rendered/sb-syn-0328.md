@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- • Use component names: "button", "chart", "map"
-- IMPORTANT: Be concise with your answers.
-- Each call mints a fresh rule_id; not idempotent (deploying twice creates two rules).
-- - Check file size before upload (must be ≤30 MB) 96.
-- For currency conversion use get_euro_exchange; these rates are not applicable for forex calculations.
-- **Rigid grid — use for every XML diagram:**
-- Rule: Keep hue constant (±30° tolerance), vary only lightness and saturation.
-- Before using this tool, you MUST double-check with the user that they want to remove this contact property.
-- - When combining Sass output from multiple tools into one file, all @use rules
-- `summary: true` returns stats only; `saveTo: <abs path>` writes bytecode to disk — both avoid hex-dump bloat for large contracts.
+- Use this when the user wants to see which specific resources are affected by an optimization insight.
+- ✅  USE THIS TOOL FOR: 'Is [city] good for me?', 'What planets affect me in Tokyo?', 'What ACG lines run through Paris for my chart?', 'Which cities are under my Jupiter line?'
+- - If unsure about available fields, first fetch ONE item with `maxResults: "1"` and NO jq filter to explore the schema, then use jq in subsequent calls
+- Deduplicate @use lines
+- Use ESM (`export`); bundle's default `package.json` has `"type": "module"`.
+- Example: primary blue → all shades must be blue (#E3F2FD light → #0D47A1 dark).
+- #    Only run `rm -rf "$TMP"` after explicit confirmation; otherwise leave it for them to inspect.
+- IMPORTANT — Presenting results:
+- Use after `list_sites` to inspect a single site, or after `deploy_files` / `deploy_finalize` to confirm the site is live and grab the URL to share with the user.
+- lspCallHierarchy -> trace call flow
 
 The host tool's current text where the sample goes:
 

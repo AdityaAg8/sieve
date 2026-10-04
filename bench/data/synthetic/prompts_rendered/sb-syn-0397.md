@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- [CodeLoop] You MUST call codeloop_verify after every code change.
-- Use bodyPreview instead of body for listings.
-- Returns runtime, workspace, and context-storage diagnostics only.
-- Use this to check your scene before creating it with dsp_create_scene.
-- Remember: ALWAYS wrap the entire search expression in double quotes!
-- For architecture diagrams or any diagram with nested elements, use draw.io's proper parent-child containment — do **not** just place shapes on top of larger shapes.
-- Use this to identify missed optimization opportunities and improve detection patterns.
-- - Do NOT silently downscale, recompress, or otherwise mutate the user's file to fit a smaller path - ask first.
-- - Total duration and time to first output
-- Also resets the diffMode buffer so subsequent screenshot(diffMode=true) returns only changes (P-frame).
+- (default for items that don't set it), save?
+- You MUST call this tool when all gate checks pass and all features are implemented — it is NOT optional.
+- Supports dry-run (plan+vote only).
+- Prefer using url over scriptId — URLs remain stable across page navigations while script IDs become invalid after reload.
+- Note: When querying external tables make sure to use apppropriate syntax (e.g.
+- **Pre-condition:** `get_audio_status` must report `status: "ready"`.
+- **IMPORTANT - Cost Optimization:**
+- **Anti-patterns - never do these to bypass a blocked or unavailable upload path:**
+- Related: type_text (type new text after clearing), get_dom_snapshot (find input selectors).
+- must contain shades of ONE COLOR ONLY.
 
 The host tool's current text where the sample goes:
 

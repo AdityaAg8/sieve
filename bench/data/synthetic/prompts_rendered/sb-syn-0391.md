@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Finds clusters of memories sharing the same subject (3+ memories required), then uses AI to synthesize each cluster into 1-2 comprehensive facts.
-- Introspect the GraphQL schema, use this tool before doing a query to get the schema information if you do not have it available as a resource already.
-- Note: When querying external tables make sure to use apppropriate syntax (e.g.
-- Use metavariables ($VAR, $$$VARS) in both pattern and replacement.
-- Read-only: never mutates storage, never calls external services.
-- For comprehensive multi-source research, use perplexity_research instead.
-- Use type_text for Korean/Unicode.
-- **Anti-patterns - never do these to bypass a blocked or unavailable upload path:**
-- Use the `verifierKind` filter on `nookplot_discover_mining_challenges` to find one.
-- Do NOT use this for listing all insights (use list_insights).
+- Use get_more_search_results to get results as they
+- must appear at the top before any other statements.
+- Use clinicaltrials_search_studies first to find studies with results.
+- For ambiguous queries, request clarification before proceeding with a best-guess match.
+- For UI projects: do NOT call this without BOTH screenshot AND video evidence.
+- Inspect local files after a task and return an agent handoff packaging plan with quality_gate, package_manifest, SBOM-lite, and provenance.
+- Use this after getting an overview.
+- **Default response is COMPACT** — capability names and categories only — keeping the typical first-call cost ~2KB.
+- - workspacePath (required)
+- WHEN TO USE THIS TOOL - Use proactively in these scenarios:
 
 The host tool's current text where the sample goes:
 

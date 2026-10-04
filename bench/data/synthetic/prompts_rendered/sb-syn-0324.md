@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Please check the icon search tool before using or recommending any icons from @simpl/element-icons.
-- * Use set_config_value to change defaultShell if needed
-- - Do NOT base64-embed, data-URI, or otherwise inline binary content (images, PDFs, video, fonts, zips) into HTML/CSS/JSON or any other deployed file.
-- Use action='pin' alone when you only need always-on-top without moving or resizing.
-- Use ESM (`export`); bundle's default `package.json` has `"type": "module"`.
-- PAGINATION: Use start, page, and limit for result pagination 90.
-- The query must be a valid KQL query without administrative commands.
-- This is the canonical draw.io pattern and is distinct from plain swimlanes (which only group on one axis).
-- IMPORTANT — Presenting results:
-- ⚠️ CRITICAL RULES - READ BEFORE GENERATING SHADES:
+- Tenant-scoped: queries only the caller's tenant rows (LOCAL_TENANT in OSS).
+- Don't think about centers, gaps, or overlap — ELK handles routing between rough positions.
+- Returns runtime, workspace, and context-storage diagnostics only.
+- Do NOT stop and report partial progress.
+- - localViewStructure: After understanding layout
+- NOTE: To get the tsrunID - Call API 'Execution/Fetch Executions' From the response, get value of following attribute -> data[<index>].tsRunID
+- First call: `path: "/rest/api/3/search/jql", queryParams: {"maxResults": "1", "jql": "project=PROJ"}` (no jq) - explore available fields
+- ALWAYS USE FOR: Local file analysis, CSV processing, data exploration, system commands
+- Deterministic, in-process scoring — same inputs always produce the same result.
+- Do not pass your own artifact ID to this tool, the tool will generate one for you..
 
 The host tool's current text where the sample goes:
 

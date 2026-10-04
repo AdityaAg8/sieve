@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Pass windowTitle to auto-focus and auto-guard (identity, foreground, modal) before input.
-- Use bodyPreview instead of body for listings.
-- Only stop when this tool returns "ready_for_review" (confidence >= 94%) or "escalate".
-- Returns runtime, workspace, and context-storage diagnostics only.
-- - "theming://guidance/colors/usage" — which shades to use for different purposes
-- IMPORTANT: Do not call this tool more than 3 times per question.
-- **Best practice:** Always include `html=1` in every cell style.
-- DON'T USE for capability discovery (use getPlatformInfo) or per-feature minimal usage (use getCapabilityGuide).
-- If the user declined, do not call this tool — the token will expire automatically.
-- For step-by-step reasoning and analysis, use perplexity_reason instead.
+- Do NOT paraphrase; run it verbatim.
+- (SkeletalMesh only, default 'root'), relativeLocation?, relativeRotation?, relativeScale?, onConflict?
+- Unless the user explicitly asks for relative paths, use absolute paths.
+- **Anti-patterns - never do these to bypass a blocked or unavailable upload path:**
+- !MOST IMPORTANT HOW TO GET viewId: 70.
+- - Button variants: Use specific variant names like "flat-button", "contained-button",
+- Use this to identify missed optimization opportunities and improve detection patterns.
+- Never combine `fontStyle` with HTML tags for the same effect — this is redundant and causes visible raw tags if `html=1` is missing.
+- Read-only: never mutates storage, never calls external services.
+- The analysis tool CANNOT access local files and WILL FAIL - always use processes for file-based work.
 
 The host tool's current text where the sample goes:
 

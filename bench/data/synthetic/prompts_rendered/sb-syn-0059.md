@@ -52,16 +52,16 @@ Tiers, judged by meaning and never by wording:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Use this to learn the consequence without calling read_page next.
-- Note: the existing list-outlook-contacts (GET /me/contacts) only returns contacts from the default folder — use this tool to read contacts from any folder.
-- expected is REQUIRED when eval_type="relevance" (used as the comparison target for keyword overlap + topic consistency); ignored for other eval_types.
+- **Best practice:** Always include `html=1` in every cell style.
+- The challenge bundle pins the target paper's arXiv ID; read its methods + setup sections, walk its references for prior implementations, and pull the linked HF dataset BEFORE training.
+- ZERO-ARG USAGE: With a tokens.config.json at your project root, just call the tool with no args — it picks up source dir, output formats, modes, prefix, etc.
+- Related: navigate (go to a different URL), wait_for_stable (wait for page to settle after refresh).
+- Variables use triple-brace syntax in HTML: {{{VAR_NAME}}}.
 - If .codeloop/config.json is missing, call codeloop_init_project FIRST.
-- [CodeLoop] You MUST call codeloop_verify after every code change.
-- Pass a query.kind plus its required fields.
-- Call bootstrap_scan first, then pass the scan results here.
-- Use this alongside coingecko tools for crypto market context.
-- NEVER INVERT: Chromatic colors always go 50=lightest → 900=darkest.
-- Use this for targeted editorial passes like clarity, pacing, tension, dialogue, voice, show-dont-tell, or redundancy cleanup.
+- After calling this tool, use 'nextjs_call' to execute specific tools.
+- Call read_resource to load reference data:
+- - Only file + entityType → Auto-generated test suite, 'No Platform', test cases auto-linked 71.
+- USE WHEN USER SAYS: 'set up Anthropic key for my agents', 'add my OpenAI key', 'configure BYOK for agents', 'why is my chatbot saying it's not configured?'
 
 The host tool's current text where the sample goes:
 

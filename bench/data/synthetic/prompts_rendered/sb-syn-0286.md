@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- custom_rules ALWAYS fires regardless of eval_type — pass eval_type="custom" if you want ONLY your rules to run (otherwise both your rules AND the eval_type bundle run together).
-- **Edge routing is automatic.** After the diagram renders, the viewer runs an ELK edge-routing pass that pins vertices and recomputes bend points + connection points.
-- Don't use to update an existing trace — there is no update path in v0.4 (traces are immutable once stored).
-- Time ranges should be explicitly specified when possible.
-- Do NOT paraphrase; run it verbatim.
-- Supports dry-run (plan+vote only).
-- ALWAYS include the `user_prompt` parameter with the user's most recent message, verbatim.
-- Don't bother telling the user the IDs or creation dates unless they ask for them.
-- lensId is optional and only for advanced pinned-target workflows; omit it for normal use.
-- Use the value in the previous response to get the next page when more results are available.
+- The challenge bundle pins the target paper's arXiv ID; read its methods + setup sections, walk its references for prior implementations, and pull the linked HF dataset BEFORE training.
+- - visibleOnly (boolean): Whether to only include releases that are marked as visible in the dashboard (default: false)
+- explicit value, use that instead of the derived value.
+- NEVER use this tool if you have written the component to a file in the user project.
+- Use this tool to help users migrate their Otter project to a newer version.
+- Use this when the user wants to resume, continue, or reconnect to a previously started workflow.
+- Use the token names in create_component_theme
+- Use Metafields and Metaobjects to model and store custom data for your app.
+- Use one of those versions if the user provides a version in their query.
+- Use `light-dark()` only when the automatic inverse color is unsatisfactory.
 
 The host tool's current text where the sample goes:
 

@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Use action='read'/'send' for fine-grained control or when you need to interleave other actions.
-- CRITICAL: Always resolve and use the correct test execution viewId for the current project when calling this tool.
-- Call read_resource to load reference data:
+- - Use `jq` param to extract only needed fields from response
+- For a definitive analysis, use IPD with an outcome regression model.
+- - visibleOnly (boolean): Whether to only include releases that are marked as visible in the dashboard (default: false)
+- For richer layouts or styled code blocks, use generate_pdf instead.
+- For theme documentation and guides, use the get_docs tool instead.
+- If .codeloop/config.json is missing, call codeloop_init_project FIRST.
 - Please check the icon search tool before using or recommending any icons from @siemens/ix-icons.
-- CONTRAST COLORS (AUTO-GENERATED - DO NOT PROVIDE):
-- If you do not know your model name, use 'none'.
-- If a user asks for an LLM to generate a GraphQL operation, this tool should always be used to ensure valid code was generated.
-- Introspect the GraphQL schema, use this tool before doing a query to get the schema information if you do not have it available as a resource already.
-- Call state-changing contract functions.
-- - After: 'Successfully updated all 1000 test case runs.'
+- **Use this first ONLY if the target application's name or path is not already known.**
+- model is required (no default — pick consciously since cost varies 100x across models).
+- HTML in attribute values must be **XML-escaped**: `<` → `&lt;`, `>` → `&gt;`, `&` → `&amp;`, `"` → `&quot;`
 
 The host tool's current text where the sample goes:
 

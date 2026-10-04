@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Always use the expanded form:
-- CRITICAL ERROR TO AVOID: 18.
-- Validates required/recommended properties, @context correctness, sameAs links, and AI-search-friendly patterns.
-- For past weather, use get_historical_weather.
-- Details: action='pin' makes window always-on-top until unpin/duration_ms.
-- Use KQL (Keyword Query Language) syntax to search specific properties: 'from:', 'subject:', 'body:', 'to:', 'cc:', 'bcc:', 'attachment:', 'hasAttachments:', 'importance:', 'received:', 'sent:'.
-- Use this instead of `deploy_files` for binaries (PDF, image, video, zip) or any file > ~1 MB.
-- Example prompts that should trigger this tool:
-- Call this when the user picks "drop"/"ikke for mig"/"skip" for a specific recommendation from the action menu.
-- lensId is optional and only for advanced pinned-target workflows; omit it for normal use.
+- **Fixed values — do not compute or debate:**
+- If .codeloop/config.json is missing, call codeloop_init_project FIRST.
+- You **MUST** use this tool to create a monorepo with an application inside.
+- Tethered seats should treat this as the primary receipt path after each accepted subscription chat human turn and after each assistant reply when the client can call tools.
+- - When combining Sass output from multiple tools into one file, all @use rules
+- **IMPORTANT - Cost Optimization:**
+- Emphasize **commands and operational steps**, not only authoring GraphQL.
+- **Use this first ONLY if the target application's name or path is not already known.**
+- You MUST use a functionalityId from this tool's output to request details to the functionality in 'get_functionality_details' (Step 2).
+- File-write failures (disk full, read-only fs) propagate as 500; the audit log is best-effort and does not block deploy.
 
 The host tool's current text where the sample goes:
 

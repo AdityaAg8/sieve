@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Always run list-sections FIRST for any Svelte query, then analyze ALL use_cases to identify relevant sections, and finally use get_documentation to fetch ALL relevant sections at once.
-- - Use the checkpointToken from the most recent start_workflow or continue_workflow response.
-- Prefer text-based tools first: query_selector/assert_text for native UI, webview_evaluate_script for WebView DOM.
-- - Use these for bulk status updates or other operations 17.
-- **Edge routing is automatic.** After the diagram renders, the viewer runs an ELK edge-routing pass that pins vertices and recomputes bend points + connection points.
-- - Custom Data: MUST be used first when prompts mention Metafields or Metaobjects.
-- - Do NOT set `exitX` / `exitY` / `entryX` / `entryY` connection-point overrides unless you have specific geometric intent.
-- | **Elbow** | `edgeStyle=elbowEdgeStyle;elbow=vertical;` | Rarely needed — `orthogonalEdgeStyle` handles almost all cases; use this only for simple 1-bend linear flows |
-- - Scope narrowing before content search
-- • Use component names: "button", "chart", "map"
+- Use this tool for requests like:
+- Use this when the user wants to browse their cloud assets, subscriptions, or resources.
+- The parameter title should be set to true if you want to search for objects by title.
+- - ALWAYS use `jq` param to filter response fields.
+- DON'T USE for the platform capability list (use getPlatformInfo), call-shape per feature (use getCapabilityGuide), or project-installed state (use inspectIntegration).
+- Re-check it to get clarifications and more accurate API often, but do not search if completely unrelated or you just searched the exact same.
+- Each call mints a fresh rule_id; not idempotent (deploying twice creates two rules).
+- Use this to learn the consequence without calling read_page next.
+- External IDs (G-xxx) track task identity across edits — don't remove them.
+- Use this when **both** the actor and the process stage matter, and every step belongs to a specific (actor, phase) cell.
 
 The host tool's current text where the sample goes:
 

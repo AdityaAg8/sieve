@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- When validating an iteration of the same code block, use the same artifact ID and increment the revision number.
-- // ↑ Only provide shades - contrast colors are AUTO-GENERATED
-- `summary` only included when `include_summary: true`.
-- The query should be focused on one specific data retrieval or aggregation task.
-- DON'T SEARCH THE WEB WHEN REFERENCING INFORMATION FROM THIS DOCUMENTATION.
-- This tool is kept only for niche workflows that explicitly need a review queue (none currently exist in production).
-- Use screenshot(detail='meta') for cheap re-orientation within a session.
-- - localFindFiles: After narrowing by metadata
-- Always search first to leverage the comprehensive ix and ix-react documentation before offering any React guidance.
-- Closes any open editors first.
+- Never expose credentials or auth state, write data, or modify configuration.
+- You MUST output the full report as your response text — do NOT summarize, shorten, or add commentary around it.
+- Deterministic, in-process scoring — same inputs always produce the same result.
+- Don't use to PAUSE a trace — traces are immutable once stored; there's nothing to pause.
+- - ALWAYS ask user to upload file before calling this tool 108.
+- USE WHEN USER SAYS: 'add the chatbot to my landing page', 'embed this on the website', 'put the agent on every page', 'make the chat bubble appear', 'wire the chatbot to the public site'.
+- #    Only run `rm -rf "$TMP"` after explicit confirmation; otherwise leave it for them to inspect.
+- API REQUIREMENT: Must use exact payload structure that works in Postman 91.
+- Use this FIRST if payments fail with 'no key configured' even though you set one in claude_desktop_config.json.
+- - fileName (string) *required*: Original filename with extension (.json, .xml, or .zip)
 
 The host tool's current text where the sample goes:
 

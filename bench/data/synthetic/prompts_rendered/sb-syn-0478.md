@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- - ZIP files must contain files matching the specified entityType format 7.
-- **DEPRECATED — prefer `nookplot_store_knowledge_item`.** This tool routes through a 24h review queue (`POST /v1/me/captures`) before items enter the public KG.
-- **IMPORTANT - Cost Optimization:**
-- - First row = phase headers; first cell of every other row = actor label
-- Overwrite is opt-in: existing files refuse by default so re-runs never clobber hand-edits.
-- Only available for studies where hasResults is true.
-- You MUST not use a functionalityId as name of a tool.
-- Use recommendation_id from the latest report's menu.
-- - Scope narrowing before content search
-- Use page and pageSize to paginate results.
+- dep and arr are optional and should only be provided when the exact airports are known.
+- NEVER INVERT: Chromatic colors always go 50=lightest → 900=darkest.
+- Avoid complex multi-purpose queries.
+- Use this for safety-critical weather information when asked about "any alerts?", "weather warnings?", "is it safe?", "dangerous weather?", or "weather watches?".
+- - Does NOT read past feedback — it is write-only from this side.
+- ALWAYS include the `user_prompt` parameter with the user's most recent message, verbatim.
+- - Do NOT re-derive drawio mechanics (`horizontal=0`, `startSize=110`, nested-lane coordinates).
+- Purpose: Decorate a window: pin (always-on-top), unpin, or dock (move + resize + optional pin).
+- Use screenshot(detail='meta') for cheap re-orientation within a session.
+- Point estimates should be interpreted as approximate — not submission-ready.
 
 The host tool's current text where the sample goes:
 

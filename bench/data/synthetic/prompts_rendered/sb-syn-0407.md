@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- You should carefully analyze the use_cases field to determine which sections are relevant for the user's query.
-- You may only use this tool if the user explicitly confirms they want to remove the API key after you double-check.
-- Both issueIds and tcrId are required.
-- To serve the bare apex, pass `subdomain: "www"` - only valid when the domain has `enableApexDomain: true` (typically custom domains the user owns).
-- - DO NOT include contrastOverrides in your input - OMIT THIS FIELD ENTIRELY
-- Deduplicate @use lines
-- DON'T confuse with: list_blocks (chat widgets are NOT a block type — agents are a separate primitive); send_conversation_turn (that's for inbound SMS/email auto-reply, NOT a website widget).
-- Prefer text-based tools first: query_selector/assert_text for native UI, webview_evaluate_script for WebView DOM.
-- Use when the user wants to publish or host new content and no suitable site already exists.
-- For PDF, Excel, Word, archives, databases, and other binary formats, use process tools with appropriate libraries or command-line utilities.
+- !MOST IMPORTANT HOW TO GET viewId: 70.
+- Don't use to create a trace (use log_trace).
+- - DO NOT confuse these rules.
+- For best results, select libraries based on name match, source reputation, snippet coverage, benchmark score, and relevance to your use case.
+- Use this after finding a project key/ID via `jira_list_projects` to get its full details.
+- IMPORTANT: Be concise with your answers.
+- interactions always hit the app window, NOT the IDE, even on single-monitor setups.
+- explicit value, use that instead of the derived value.
+- NOT for Web Components - if the prompt mentions HTML tags like <shopify-store>, <shopify-cart>, use storefront-web-components instead.
+- USE at session start before scaffolding or writing handler code.
 
 The host tool's current text where the sample goes:
 

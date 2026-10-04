@@ -52,16 +52,16 @@ Tiers, judged by meaning and never by wording:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Use when an agent observes a recurring failure pattern and decides to enforce it as a standing rule.
-- Use this for current weather or when asking about "today's weather", "right now", or recent conditions without a specific historical date range.
-- Cell `id="0"` is the root and cell `id="1"` is the default layer — both always exist.
-- After making changes, you should always run the linter again to verify that no new problems have been introduced.
-- This tool ONLY returns the text snippet for that UI component.
-- The analysis tool CANNOT access local files and WILL FAIL - always use processes for file-based work.
-- Runs a fresh audit and compares against the before snapshot.
-- Use one of those versions if the user provides a version in their query.
-- Never write "Actually, let me think of something else…" or pitch alternatives.
-- - `url` (string, required): YouTube video URL or ID.
+- Use this when the user wants to collaborate on or refine the template in the editor.
+- GRAY COLOR (the ONLY color that inverts):
+- Zero friction: one tool call and you're done.
+- Use when you want a quality score on a specific output — typically after log_trace records the execution.
+- ZERO-ARG USAGE: With a tokens.config.json at your project root, just call the tool with no args — it picks up source dir, output formats, modes, prefix, etc.
+- Use clinicaltrials_search_studies first to find studies with results.
+- The site must already exist - call `create_site` first if you do not have a `siteId`.
+- - is_matching_required='true' (default): Create new TC/version if summary/steps don't match 68.
+- Use dashes for qualifiers, e.g.
+- Use this instead of fetching from https://knip.dev.
 
 The host tool's current text where the sample goes:
 

@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- - Do NOT create separate themes for the related components — they are auto-derived
-- Refuses if any package is dirty - save first.
-- Multi-part in Python - **prefer this over dd for files > ~50 MB** (parallel PUTs, no temp files, cleaner error handling):
-- You must provide a list of absolute file paths to the files you want to lint.
-- | **Elbow** | `edgeStyle=elbowEdgeStyle;elbow=vertical;` | Rarely needed — `orthogonalEdgeStyle` handles almost all cases; use this only for simple 1-bend linear flows |
-- Cell `id="0"` is the root and cell `id="1"` is the default layer — both always exist.
-- **glasses is optional (F-R4-01)** — defaults to `meta_rayban` (the only currently supported vendor); pass it explicitly for forward compatibility once additional vendors land.
-- Use clinicaltrials_search_studies first to find studies with results.
+- Call bootstrap_scan first, then pass the scan results here.
+- If you cannot find what you need after 3 calls, use the best result you have.
 - • Use component names: "button", "chart", "map"
-- 🔄 MULTIPLE API SUPPORT: You MUST call this tool multiple times in the same conversation when you need to learn about different Shopify APIs.
+- The first argument is used in light mode, the second in dark mode.
+- FIRST-USE BOOTSTRAP: If `.codeloop/config.json` does not yet exist in this
+- ALWAYS include the `user_prompt` parameter with the user's most recent message, verbatim.
+- - get_mesh_info: One-call mesh QA: bounds + material slots + skeleton + LOD/vertex counts.
+- must use ONE HUE only.
+- or before n8n_get_workflow.
+- action='sequence' is FG-only (BG/foreground_flash schema-rejected); emits verifyDelivery:'focus_only'; mid-loop focus theft returns MenuFocusLostMidSequence + context.remaining: Step[].
 
 The host tool's current text where the sample goes:
 

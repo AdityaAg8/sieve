@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Use this instead of `deploy_files` for binaries (PDF, image, video, zip) or any file > ~1 MB.
-- After a collab/health/security report runs, the result text contains a "Three things to fix" menu with up to 3 recommendation_ids plus "Take all of them" and "Skip for now" options.
-- - lineHint is 1-indexed (first line = 1)
-- KEY PRINCIPLE: If the request involves the running Next.js application (whether to investigate OR modify it), query the runtime FIRST to understand current state before proceeding.
-- The absolute file paths should be in the correct format for your operating system (e.g., forward slashes on Unix-like systems, backslashes on Windows).
-- [CodeLoop] You MUST call codeloop_verify after every code change.
-- Use when you need historical data: investigating a past failure, computing quality trends, comparing agents, or feeding an analytics job.
-- call also brings the app to front automatically before performing the interaction.
-- - Only provide contrastOverrides if you have a specific accessibility audit
-- If registered resources are unavailable, use this tool.
+- - Folders created automatically if they don't exist 35.
+- - DO NOT include contrastOverrides in your input - OMIT THIS FIELD ENTIRELY
+- Avoid complex multi-purpose queries.
+- PAGINATION: Use start, page, and limit for result pagination 90.
+- For more complex usage, please use YAML by `find_code_by_rule`.
+- The XML should be valid draw.io/mxGraph XML format.
+- Prefer text-based tools first: query_selector/assert_text for native UI, webview_evaluate_script for WebView DOM.
+- Then use: `jq: "issues[*].{key: key, summary: fields.summary, status: fields.status.name}"` - extract only what you need
+- - baseUrl (string): The base URL for the QMetry instance (must be a valid URL) (default: "https://testmanagement.qmetry.com")
+- Example prompts that should trigger this tool:
 
 The host tool's current text where the sample goes:
 

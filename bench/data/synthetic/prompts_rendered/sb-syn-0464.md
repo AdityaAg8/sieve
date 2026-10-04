@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- `summary` only included when `include_summary: true`.
-- Call this when the user picks "drop"/"ikke for mig"/"skip" for a specific recommendation from the action menu.
-- Use the fields parameter to reduce payload size — full study records are ~70KB each.
-- Submit the answer string only — no units, no extra words.
-- The agent MUST then write the report to docs/DEVELOPMENT_LOG.md and present it to the developer.
-- Pass windowTitle to auto-focus and auto-guard (identity, foreground, modal) before input.
-- Available topics (use these IDs):
-- You MUST output the full report as your response text — do NOT summarize, shorten, or add commentary around it.
-- ROUND-TRIP SAFETY: Figma variable IDs are preserved in DTCG `$extensions["figma-console-mcp"]` so renames on either side don't create duplicates.
-- - First row = phase headers; first cell of every other row = actor label
+- Use this to learn the consequence without calling read_page next.
+- Returns: Up to 5 ranked candidates with match signals, session previews, and ready-to-use continuation templates.
+- Pass a query.kind plus its required fields.
+- - Do NOT narrate "building the diagram / finalizing the XML / now let me…".
+- Use this when the user wants to see which specific resources are affected by an optimization insight.
+- Supports dry-run (plan+vote only).
+- This tool MUST be called once to retrieve UI5 guidelines before working on any UI5 (SAPUI5/OpenUI5) related task or project or creating a UI5 project.
+- Always use the expanded form:
+- Operators get keys from console.anthropic.com (recommended for v1.26.x — best tool-use support) or platform.openai.com.
+- If .codeloop/config.json is missing, call codeloop_init_project FIRST.
 
 The host tool's current text where the sample goes:
 

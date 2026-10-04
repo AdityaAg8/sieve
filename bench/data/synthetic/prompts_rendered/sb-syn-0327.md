@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- - fileName (string) *required*: Original filename with extension (.json, .xml, or .zip)
-- - detect_platform: Run first to get correct platform value
-- Use when: you need to see more content below the fold, bring an element into view before clicking, scroll to a specific section, or navigate long pages.
-- must use ONE HUE only.
-- **Fixed values — do not compute or debate:**
-- [[tokrepo.session-init-first]]
-- Figma: pass figma_file_url + figma_token (or set FIGMA_API_TOKEN env var and .codeloop/figma.json) to fetch frames automatically before the comparison.
-- PREREQUISITE: Page must be loaded with browser_fetch_webpage first.
-- Do NOT nest lanes inside a pool.
-- - **✅ Primary Tokens — USE THESE**: Use ONLY these tokens for the initial theme
+- Each call mints a fresh rule_id; not idempotent (deploying twice creates two rules).
+- - All related themes should be scoped under the parent component's selector
+- 💡 TIP: CRITICAL: When searching emails, the $search parameter value MUST be wrapped in double quotes.
+- - Child cells set `parent="<container_id>"` and use coordinates **relative to their parent** (origin 0,0 is the parent's top-left, below the title).
+- Agent must already be in status='test' or status='live' (call publish_agent first if it's still draft).
+- If you need a contact property ID, you MUST use this tool to get all available properties and then ask the user to select the one they want.
+- Framework packages (LOW - 40): @angular/core, react, lit (fallback only)
+- Do not guess the language or use parts of the user query as the language code.
+- Do not pass your own artifact ID to this tool, the tool will generate one for you.
+- - ALWAYS use `jq` param to filter response fields.
 
 The host tool's current text where the sample goes:
 

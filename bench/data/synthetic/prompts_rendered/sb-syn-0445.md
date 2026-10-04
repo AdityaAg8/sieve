@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- See the response's `suggestedScaffold` payload when no config is detected — present it to the user, write the scaffold via your file tools, then call again.
-- - Child nodes inside a lane: `parent="<lane_id>"`, `x = 120 + col*180`, `y = 45` (always 45), size 140×60 (or 140×80 for diamonds)
-- - create_palette: Use for simpler cases with mid-range luminance colors
-- This is read-only and never publishes automatically; use tokrepo_push only after human confirmation with explicit reviewed files.
-- `partition` passed to this tool MUST match the partition of the selected domain.
-- USE searchType="content" WHEN:
-- If MAPBOX_ACCESS_TOKEN is not set, you MUST provide explicit coordinates via 'bbox'.
-- Use before get_page or find_chunks.
-- This is the first step for any Otter repository.
-- - Do NOT narrate "building the diagram / finalizing the XML / now let me…".
+- For any other subdomain, the domain must have `enableSubdomains: true`; shared hosting domains (e.g.
+- Operators get keys from console.anthropic.com (recommended for v1.26.x — best tool-use support) or platform.openai.com.
+- IMPORTANT — quad shape: each quad has subject/predicate/object/graph.
+- - Explicit mode requires 14 shades required: 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, A100, A200, A400, A700
+- [CodeLoop] You MUST call codeloop_verify after every code change.
+- PAGINATION: Use start, page, and limit for result pagination 90.
+- Use literal search when searching for code patterns with special characters:
+- Use this when the user wants to browse their cloud assets, subscriptions, or resources.
+- GRAY COLOR (the ONLY color that inverts):
+- Use after `list_sites` to inspect a single site, or after `deploy_files` / `deploy_finalize` to confirm the site is live and grab the URL to share with the user.
 
 The host tool's current text where the sample goes:
 

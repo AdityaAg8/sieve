@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- For overall scoring of one page, use score_citation_worthiness.
-- If .codeloop/config.json is missing, call codeloop_init_project FIRST.
-- Use KQL (Keyword Query Language) syntax to search specific properties: 'from:', 'subject:', 'body:', 'to:', 'cc:', 'bcc:', 'attachment:', 'hasAttachments:', 'importance:', 'received:', 'sent:'.
-- - Custom Data: MUST be used first when prompts mention Metafields or Metaobjects.
-- Use after growth_get_job shows completed, or call directly and handle "not available yet".
-- - Using this tool with the wrong organization name (if you are not sure, use the codacy_list_organizations tool to validate the organization name)
-- Re-check it to get clarifications and more accurate API often, but do not search if completely unrelated or you just searched the exact same.
-- Pass tab_id only when this agent owns multiple tabs; auto-resolves otherwise.
-- - Do NOT base64-embed, data-URI, or otherwise inline binary content (images, PDFs, video, fonts, zips) into HTML/CSS/JSON or any other deployed file.
-- Maximum 15 loop iterations before escalation.
+- Use metavariables ($VAR, $$$VARS) in both pattern and replacement.
+- - Use the checkpointToken from the most recent start_workflow or continue_workflow response.
+- Do not add extra waypoints or complex routing to avoid a parent container when connecting to shapes inside it.
+- For logical analysis and reasoning, use perplexity_reason instead.
+- - ALWAYS use `jq` param to filter response fields.
+- Read-only — no side effects.
+- - `url` (string, required): YouTube video URL or ID.
+- - Summary of which colors use shades() vs explicit values
+- - To inspect or resume a candidate: call continue_workflow with the candidate's nextCall.params (continueToken and intent: "rehydrate").
+- **Rigid grid — use for every XML diagram:**
 
 The host tool's current text where the sample goes:
 

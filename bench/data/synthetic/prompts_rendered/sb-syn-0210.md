@@ -52,16 +52,16 @@ Tiers, judged by meaning and never by wording:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- - Do NOT add `<Array as="points">` waypoints.
-- Read the challenge detail first.
-- Writes are additive (set-merge); callers that want replace semantics should call `dkg_assertion_discard` first or mint a unique assertion name per snapshot.
-- When to use: before typing new text into an already-filled field to remove existing content.
-- Always install latest tag, not alpha unless requested.
-- Use ESM (`export`); bundle's default `package.json` has `"type": "module"`.
-- IMPORTANT: Always use absolute paths for reliability.
-- PAGINATION: Use start, page, and limit for result pagination 90.
-- If a user asks for an LLM to generate a GraphQL operation, this tool should always be used to ensure valid code was generated.
-- The query must be a valid KQL query without administrative commands.
+- STEP 1: First call FETCH_EXECUTIONS_BY_TESTSUITE tool with the test suite ID (tsID, not entityKey) 8.
+- - baseUrl (string): The base URL for the QMetry instance (must be a valid URL) (default: "https://testmanagement.qmetry.com")
+- - After: 'Successfully updated all 1000 test case runs.'
+- Call this tool again with the target version to get migration instructions
+- - Respects Dear User's local-first guarantee — this is the one place data leaves the machine.
+- Avoid complex multi-purpose queries.
+- - Only set the primary tokens in the parent component's theme; all children inherit automatically
+- Errors if the socket does not exist (use add_socket to create).
+- SIMPLIFIED PAYLOAD: API only accepts essential parameters 87.
+- Caveats: Thumbnails are scaled, not 1:1 — use screenshot(dotByDot=true, windowTitle=X) for pixel-accurate coords on a specific window after snapshot.
 
 The host tool's current text where the sample goes:
 

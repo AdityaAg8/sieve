@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Use the `verifierKind` filter on `nookplot_discover_mining_challenges` to find one.
-- - NEVER attempt to update all 1000+ in a single operation 38.
-- **Bold/italic/underline:** Use `fontStyle` in the style string when the entire label should be bold (`fontStyle=1`), italic (`fontStyle=2`), or underline (`fontStyle=4`).
-- The guidelines provided by this tool MUST be followed to ensure best practices and avoid common pitfalls in UI5 development.
-- Optionally returns only code blocks.
-- Fill slots by asking the user targeted questions (never invent answers), then call growth_create_sequence_draft.
-- Use interact_with_process() to send commands
-- - Before: 'Processing 1000 test runs in 50 batches of 20...'
-- This tool MUST be called once before converting a UI5 (SAPUI5/OpenUI5) project from JavaScript to TypeScript.
-- For current weather, use get_current_conditions.
+- Zero friction: one tool call and you're done.
+- For Shopify Functions, use this to validate the input GraphQL queries (run.graphql).
+- MERGE STRATEGY: Default `strategy: "merge"` only writes tokens that actually changed in Figma since the last sync.
+- Common after FBX import when SOCKET_* empties land with scale=(100,100,100) (#412).
+- **Pre-condition:** `get_audio_status` must report `status: "ready"`.
+- You must use this tool to answer any questions related to MUI components or documentation.
+- For AI-generated answers with citations, use perplexity_ask instead.
+- provider is auto-detected from the model name; override only for ambiguous IDs.
+- The viewId parameter must be fetched from the active project's info (latestViews.TE.viewId).
+- **CRITICAL: Every edge `mxCell` must contain a `<mxGeometry relative="1" as="geometry" />` child element.** Self-closing edge cells (e.g.
 
 The host tool's current text where the sample goes:
 

@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- action='unpin' removes always-on-top.
-- Writes are additive (set-merge); callers that want replace semantics should call `dkg_assertion_discard` first or mint a unique assertion name per snapshot.
-- You MUST not use a functionalityId as name of a tool.
-- Call this tool again with the target version to get migration instructions
-- Overwrite is opt-in: existing files refuse by default so re-runs never clobber hand-edits.
-- - Action: User must specify platform explicitly in subsequent tool calls
-- **IMPORTANT:** If the user does *not* specify a language *code*, **DO NOT** include the `lang` parameter in the tool call.
-- Show the proposal to the user first, then apply it with update_paragraph only after clear confirmation.
-- - tsrunID (string) *required*: Test Suite Run ID (required for fetching test case runs).
-- CRITICAL: After starting recording, you MUST use the codeloop_interact tool to actively interact with
+- token_usage and cost_usd are summary fields — if you ALSO pass spans with per-tool-call costs, the summary fields are treated as authoritative (no auto-aggregation).
+- [CodeLoop] You MUST call codeloop_verify after every code change.
+- No writes, no third-party APIs, no auth required, no rate limits beyond polite per-host throttling.
+- If you cannot find what you need after 3 calls, use the best result you have.
+- SIMPLIFIED PAYLOAD: API only accepts essential parameters 87.
+- Pass tab_id only when this agent owns multiple tabs; auto-resolves otherwise.
+- Use the Get Release tool to get more details on a specific release, including the builds it contains 2.
+- Call 2: tsrunID='2739236' -> returns 54 tcRunIDs 29.
+- - Use automationHierarchy wisely to control test case/suite structure
+- - Check file size before upload (must be ≤30 MB) 96.
 
 The host tool's current text where the sample goes:
 

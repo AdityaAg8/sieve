@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- - Does NOT send anything automatically — the agent must have called this tool with an explicit message from the user.
-- Many catalog entries store only the upstream BASE URL (e.g.
-- **Anti-patterns - never do these to bypass a blocked or unavailable upload path:**
-- For past weather, use get_historical_weather.
-- DON'T USE during simulator-only dev loop.
-- - Edges between cells in **different** containers must have `parent="1"` (not a container) — otherwise they render inside the container and get clipped.
-- - Use the checkpointToken from the most recent start_workflow or continue_workflow response.
-- Call this tool again with the 'port' parameter set to the user-provided port
-- or "use Desktop Commander to ..."
-- Use the dashboard's preview endpoint (POST /api/v1/rules/custom/preview) for dry-run validation against sample output.
+- Use this instead of `deploy_files` for binaries (PDF, image, video, zip) or any file > ~1 MB.
+- Re-check it to get clarifications and more accurate API often, but do not search if completely unrelated or you just searched the exact same.
+- Don't use to create a trace (use log_trace).
+- Note: For getting table schema, use the 'get_table_schema' tool.
+- Do not attempt to construct it manually.
+- Please check the icon search tool before using or recommending any icons from @siemens/ix-icons.
+- If `deniedDomains` lists a matching host, remove it first - deny takes precedence.
+- NOT for Web Components - if the prompt mentions HTML tags like <shopify-store>, <shopify-cart>, use storefront-web-components instead.
+- Use this for targeted editorial passes like clarity, pacing, tension, dialogue, voice, show-dont-tell, or redundancy cleanup.
+- Writes are additive (set-merge); callers that want replace semantics should call `dkg_assertion_discard` first or mint a unique assertion name per snapshot.
 
 The host tool's current text where the sample goes:
 

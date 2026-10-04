@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- **When to use cross-functional tables vs flat swimlanes:**
-- You may only use this tool if the user explicitly confirms they want to remove the template after you double-check.
-- This tool MUST be called once to retrieve Integration Cards guidelines before working on any Integration Card related task or creating an Integration Card.
-- The output can be used to ask the user for clarification before starting the main 3-step workflow.
-- - Only file + entityType → Auto-generated test suite, 'No Platform', test cases auto-linked 71.
-- - NEVER skip Step 1 - always discover ALL executions first 20.
-- Use `light-dark()` only when the automatic inverse color is unsatisfactory.
-- Pass tab_id only when this agent owns multiple tabs; auto-resolves otherwise.
-- Use when an agent observes a recurring failure pattern and decides to enforce it as a standing rule.
-- Both source and destination must be within allowed directories.
+- - entityType (enum) *required*: Format of result file: TESTNG, CUCUMBER, JUNIT, HPUFT, QAF, or ROBOT
+- **Edge routing is automatic.** After the diagram renders, the viewer runs an ELK edge-routing pass that pins vertices and recomputes bend points + connection points.
+- - Missing required shades in explicit mode
+- [IMPORTANT] If auto-discovery returns no servers:
+- You may only use this tool if the user explicitly confirms they want to remove the API key after you double-check.
+- Start here for installation and first run
+- PREREQUISITE: Page must be loaded with browser_fetch_webpage first.
+- To get the issueIds, call the Fetch issues linked with testcases tool and use data[<index>].defectID from the response.
+- When to use: before typing new text into an already-filled field to remove existing content.
+- - Respects Dear User's local-first guarantee — this is the one place data leaves the machine.
 
 The host tool's current text where the sample goes:
 

@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Pass force=true to auto-close any open asset editors before deleting (#278).
-- Writes are additive (set-merge); callers that want replace semantics should call `dkg_assertion_discard` first or mint a unique assertion name per snapshot.
-- Use this instead of fetching from https://knip.dev.
-- The review queue is currently dev-only and not deployed to prod, so calls return 404.
-- The flight number must include the airline code, for example MU2157 or CZ3969.
-- Time ranges should be explicitly specified when possible.
-- Pass the before audit hash or let it re-run.
-- - testcaseOwner: User must have Test Case module rights 83.
-- - issueIds (array) *required*: ID of issues to be linked to Testcase Run
-- - **Decide whether to search for shapes** — before generating a diagram, decide if it needs domain-specific shapes from draw.io's extended libraries.
+- You MUST use a functionalityId from this tool's output to request details to the functionality in 'get_functionality_details' (Step 2).
+- Examples: validate configuration before deploy; run an existing query via CLI; list products; missing `shopify store execute`.
+- Rule: Keep hue constant (±30° tolerance), vary only lightness and saturation.
+- IMPORTANT: Always use absolute paths for reliability.
+- CRITICAL: Always resolve and use the correct test execution viewId for the current project when calling this tool.
+- - Only set the primary tokens in the parent component's theme; all children inherit automatically
+- Shade 50 = ALWAYS lightest, shade 900 = ALWAYS darkest.
+- Call codeloop_stop_recording when done.
+- - Use the checkpointToken from the most recent start_workflow or continue_workflow response.
+- - Placeholders resolve by walking up the containment hierarchy: shape attributes first, then parent container, then layer, then root — first match wins
 
 The host tool's current text where the sample goes:
 

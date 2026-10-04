@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- dep and arr are optional and should only be provided when the exact airports are known.
-- When generating diagrams, you generally do not need to specify dark-mode colors — the automatic inversion handles most cases.
-- IMPORTANT: Always use absolute paths for reliability.
-- If you do not know your model name, use 'none'.
-- You MUST use this tool if you're unsure about CAP APIs for CDS, Node.js or Java.
-- Call this tool again with the 'port' parameter set to the user-provided port
-- source_material is REQUIRED when template="faithfulness" (the RAG sources to ground against); ignored otherwise.
-- If .codeloop/config.json is missing, call codeloop_init_project FIRST.
-- Time ranges should be explicitly specified when possible.
-- - literalSearch: Use exact string matching instead of regex (default: false)
+- Reviews App Store requirements and surfaces likely issues before you submit for official review.
+- You must manually copy and install the output.
+- Emphasize **commands and operational steps**, not only authoring GraphQL.
+- Read-only when given `url` (one HTTP GET).
+- Process running (use read_process_output)
+- The challenge bundle pins the target paper's arXiv ID; read its methods + setup sections, walk its references for prior implementations, and pull the linked HF dataset BEFORE training.
+- Use this when the user wants to see which specific resources are affected by an optimization insight.
+- `*.hostsmith.link`) and most custom domains have `enableApexDomain: false`, so a non-apex subdomain is required there.
+- must contain shades of ONE COLOR ONLY.
+- Never mutate or import data; use records.batch for write operations.
 
 The host tool's current text where the sample goes:
 

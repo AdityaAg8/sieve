@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- All labels must be unique.
-- Use this to discover valid status names and IDs needed for filtering issues (e.g., in `jira_ls_issues`).
-- - Do NOT silently downscale, recompress, or otherwise mutate the user's file to fit a smaller path - ask first.
-- IMPORTANT: Present the ImplementResult back to the user in plain Danish — confirm what changed, show any backup paths, and if there's a `command` field, run it via Bash and report the result.
-- When to use: when page content may be stale, after errors, or to reset page state.
-- - Basic components: Use simple names like "avatar", "badge", "card"
-- After making changes, you should always run the linter again to verify that no new problems have been introduced.
-- Always install latest tag, not alpha unless requested.
-- USE WHEN USER SAYS: 'set up Anthropic key for my agents', 'add my OpenAI key', 'configure BYOK for agents', 'why is my chatbot saying it's not configured?'
-- Use dashes for qualifiers, e.g.
+- When validating an iteration of the same code block, use the same artifact ID and increment the revision number.
+- Zero friction: one tool call and you're done.
+- - Edges between cells in **different** containers must have `parent="1"` (not a container) — otherwise they render inside the container and get clipped.
+- agent_name is required; everything else is optional.
+- !MOST IMPORTANT HOW TO GET viewId: 70.
+- Related: type_text (type new text after clearing), get_dom_snapshot (find input selectors).
+- USE WHEN USER SAYS: 'add the chatbot to my landing page', 'embed this on the website', 'put the agent on every page', 'make the chat bubble appear', 'wire the chatbot to the public site'.
+- **IMPORTANT - Cost Optimization:**
+- Prefer text-based tools first: query_selector/assert_text for native UI, webview_evaluate_script for WebView DOM.
+- - The label must use `html=1` style when using HTML formatting with placeholders
 
 The host tool's current text where the sample goes:
 

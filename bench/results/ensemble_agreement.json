@@ -1,0 +1,32 @@
+{
+  "pairwise_kappa": {
+    "sonnet~qwen": {
+      "kappa": 0.6973,
+      "n": 619
+    },
+    "sonnet~gemma": {
+      "kappa": 0.5514,
+      "n": 619
+    },
+    "qwen~gemma": {
+      "kappa": 0.7395,
+      "n": 619
+    }
+  },
+  "synthetic": {
+    "checker_agreement_round0": 0.8355,
+    "regenerated": 83,
+    "dropped": 50,
+    "rejection_rate": 0.1,
+    "human_disputed": [
+      "sb-hum-0005",
+      "sb-hum-0010",
+      "sb-hum-0014"
+    ]
+  },
+  "review_queue": 15,
+  "parse_failures": {
+    "qwen3.8:27b-2.88bpw-text": 0,
+    "gemma4:26b-a4b-it-qat": 0
+  }
+}

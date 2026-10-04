@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Use dry_run=true to preview without making changes.
-- IMPORTANT: Objects that exist in multiple namespaces require the 'force' parameter to be deleted.
-- Listing-only entries (npx-installable MCP servers, etc.)
-- **Anti-patterns - never do these to bypass a blocked or unavailable upload path:**
-- Use interact_with_process() to send commands
-- All labels must be unique.
-- Call this if you get an error about the browser not being installed.
-- action='read' reads current text via UIA TextPattern (falls back to OCR); use sinceMarker for incremental diff.
-- Do not guess the language or use parts of the user query as the language code.
-- You can also use keywords from the user query to find relevant documentation, but prioritize paths.
+- PREREQUISITE: Page must be loaded with browser_fetch_webpage first.
+- - Do NOT write out lists of node positions as planning text.
+- For a definitive analysis, use IPD with an outcome regression model.
+- Before calling this tool, try to implement Svelte components using your own knowledge and the `svelte-autofixer` tool, since calling this tool is token intensive.
+- - detect_platform: Run first to get correct platform value
+- You must provide a list of absolute file paths to the files you want to lint.
+- Do NOT use this for listing all insights (use list_insights).
+- Pick the first reasonable option (almost always: flat swimlanes, top-down or left-right based on what fits the content).
+- The query should be focused on one specific data retrieval or aggregation task.
+- - "Add a loading state" → Check current component structure and routes first
 
 The host tool's current text where the sample goes:
 

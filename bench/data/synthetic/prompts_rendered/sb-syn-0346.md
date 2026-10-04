@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- - Use these for bulk status updates or other operations 17.
-- - Do NOT create separate themes for the related components — they are auto-derived
-- - Use automationHierarchy wisely to control test case/suite structure
-- - localViewStructure: After structure discovery
-- - Action: User must specify platform explicitly in subsequent tool calls
-- Use this for current weather or when asking about "today's weather", "right now", or recent conditions without a specific historical date range.
-- Multi-agent contract: agent_id is FSB-issued and required (the server captures it via agent:register on first tool call -- callers do not provide it).
-- **CRITICAL: Every edge `mxCell` must contain a `<mxGeometry relative="1" as="geometry" />` child element.** Self-closing edge cells (e.g.
-- - Folders created automatically if they don't exist 35.
-- - DO NOT include contrastOverrides in your input - OMIT THIS FIELD ENTIRELY
+- - Missing required shades in explicit mode
+- verify_citations is a SPECIALIZED form of LLM judging that focuses on citation grounding only.
+- IMPORTANT — quad shape: each quad has subject/predicate/object/graph.
+- For PDF, Excel, Word, archives, databases, and other binary formats, use process tools with appropriate libraries or command-line utilities.
+- Use this FIRST if payments fail with 'no key configured' even though you set one in claude_desktop_config.json.
+- The analysis tool CANNOT access local files and WILL FAIL - always use processes for file-based work.
+- For in-depth multi-source research, use perplexity_research instead.
+- Use this tool to analyze the quality of a repository using Codacy command line.
+- Idempotent (safe to call repeatedly).
+- IMPORTANT: Objects that exist in multiple namespaces require the 'force' parameter to be deleted.
 
 The host tool's current text where the sample goes:
 

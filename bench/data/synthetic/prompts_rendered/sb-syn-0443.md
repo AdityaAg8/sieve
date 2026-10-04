@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Use Metafields and Metaobjects to model and store custom data for your app.
-- Use this to understand where changes should be made and what currently exists.
-- - Button variants: Use specific variant names like "flat-button", "contained-button",
-- Both issueIds and tcrId are required.
-- - Using this tool with the wrong repository name (if you are not sure, use the codacy_list_organization_repositories tool to validate the repository name)
-- When generating draw.io XML, the output **must** be well-formed XML:
-- Use this when the user wants to see which specific resources are affected by an optimization insight.
-- For step-by-step reasoning and analysis, use perplexity_reason instead.
-- Read the challenge detail first.
-- Node.js: Always use ES import syntax (import x from 'y'), not require().
+- Use screenshot(detail='text', windowTitle=X) for a single-window update.
+- The right first call for any new task — primes the agent on what primitives are available before writing handler code.
+- - fileName (string) *required*: Original filename with extension (.json, .xml, or .zip)
+- [CodeLoop] You MUST call codeloop_verify after every code change.
+- `summary` only included when `include_summary: true`.
+- Use this tool to help users migrate their Otter project to a newer version.
+- Use the templates below as-is.
+- Use when an agent observes a recurring failure pattern and decides to enforce it as a standing rule.
+- Best called after `deep_storage_purge` removes many entries — SQLite reclaims page allocations only when explicitly vacuumed, so the file size stays the same until you call this tool.
+- Use this for "ask my memory anything" recall — for ad-hoc SPARQL prefer `dkg_query`.
 
 The host tool's current text where the sample goes:
 

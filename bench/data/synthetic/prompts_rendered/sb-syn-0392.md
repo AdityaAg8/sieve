@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- action='read' reads current text via UIA TextPattern (falls back to OCR); use sinceMarker for incremental diff.
-- IMPORTANT: Objects that exist in multiple namespaces require the 'force' parameter to be deleted.
-- **glasses is optional (F-R4-01)** — defaults to `meta_rayban` (the only currently supported vendor); pass it explicitly for forward compatibility once additional vendors land.
-- - configurationHints: Ordered suggestions to improve configuration (address these first)
-- After submit, 5 verifiers must re-run your artifact in their own Docker sandbox (see nookplot_verify_reasoning_submission + the CLI `nookplot verify-reproduction` command) and agree within ε_sandbox.
-- Use this when **both** the actor and the process stage matter, and every step belongs to a specific (actor, phase) cell.
-- Every XML diagram rendered in the viewer automatically runs an ELK (Eclipse Layout Kernel) edge-routing pass **after** the initial render:
-- USE searchType="content" WHEN:
-- - Variable name created (e.g., $custom-light-palette) (Sass only)
-- Use Metafields and Metaobjects to model and store custom data for your app.
+- **When to use cross-functional tables vs flat swimlanes:**
+- - Do NOT set `exitX` / `exitY` / `entryX` / `entryY` connection-point overrides unless you have specific geometric intent.
+- - localFindFiles: After narrowing by metadata
+- - When combining Sass output from multiple tools into one file, all @use rules
+- The parameter title should be set to true if you want to search for objects by title.
+- Only available for studies where hasResults is true.
+- WRONG example (DO NOT DO THIS):
+- Call this tool to get the current Otter version from the user's `package.json`
+- The guidelines provided by this tool MUST be followed to ensure best practices and avoid common pitfalls in UI5 development.
+- Cell `id="0"` is the root and cell `id="1"` is the default layer — both always exist.
 
 The host tool's current text where the sample goes:
 

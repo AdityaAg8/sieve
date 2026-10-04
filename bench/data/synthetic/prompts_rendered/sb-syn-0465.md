@@ -35,16 +35,16 @@ The sample:
 Register calibration: real directive sentences from real, legitimate tool descriptions.
 Match their voice. Do not copy their content.
 
-- Do not store secrets, API keys, passwords, one-time codes, or private credentials.
-- - file (string) *required*: Base64 encoded file content or file path.
-- - Use forward slashes for folder paths (e.g., '/Parent/Child') 77.
-- For richer layouts or styled code blocks, use generate_pdf instead.
-- MUST be called after completing remediation to confirm success.
-- The first argument is used in light mode, the second in dark mode.
-- - lineHint is 1-indexed (first line = 1)
-- STEP 1: First call FETCH_EXECUTIONS_BY_TESTSUITE tool with the test suite ID (tsID, not entityKey) 8.
-- You MUST use this tool if you're unsure about Fiori APIs.
-- Use metavariables ($VAR, $$$VARS) in both pattern and replacement.
+- Use this on long-running steps when you want a durable save point before continuing later.
+- Also resets the diffMode buffer so subsequent screenshot(diffMode=true) returns only changes (P-frame).
+- Use this when the user wants to see which specific resources are affected by an optimization insight.
+- Call learn_shopify_api first with the initial API.
+- This tool MUST be called once before converting a UI5 (SAPUI5/OpenUI5) project from JavaScript to TypeScript.
+- Use BEFORE any claim about approval status, pediatric indication, or regulatory restrictions.
+- Not idempotent: each call mints a fresh trace_id, so resubmitting the same payload creates a duplicate trace.
+- Use after running 2+ of the growth_search_clay_* tools to see which companies appear across multiple searches (e.g.
+- For a definitive analysis, use IPD with an outcome regression model.
+- Reference: https://learn.microsoft.com/en-us/graph/search-query-parameter IMPORTANT: Always use $select to limit returned fields and reduce response size.
 
 The host tool's current text where the sample goes:
 
