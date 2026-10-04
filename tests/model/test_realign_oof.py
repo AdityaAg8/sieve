@@ -166,3 +166,11 @@ def test_an_unreadable_later_fold_leaves_the_earlier_folds_untouched(tmp_path: P
         realign_folds(jobs, max_distance=0.05)
     assert json.loads((dirs[0] / "oof_ids.json").read_text(encoding="utf-8")) == ids
     assert not list(tmp_path.rglob("*.tmp"))
+
+
+def test_the_ambiguity_budget_is_bf16_only_and_overridable_per_run() -> None:
+    from sieve.model.realign_oof import ambiguity_budget_for
+
+    assert ambiguity_budget_for("bf16", 191) == 3
+    assert ambiguity_budget_for("bf16", 191, 0.03) == 5
+    assert ambiguity_budget_for("fp32", 191, 0.5) == 0

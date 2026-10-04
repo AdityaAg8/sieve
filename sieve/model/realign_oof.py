@@ -74,9 +74,15 @@ def tolerance_for(precision: str) -> float:
     return BF16_MAX_DISTANCE if precision == "bf16" else MAX_DISTANCE
 
 
-def ambiguity_budget_for(precision: str, rows: int) -> int:
-    """How many rows of a `rows`-row fold may stay ambiguous for logits made in `precision`."""
-    return int(BF16_AMBIGUOUS_SHARE * rows) if precision == "bf16" else 0
+def ambiguity_budget_for(precision: str, rows: int, share: float | None = None) -> int:
+    """How many rows of a `rows`-row fold may stay ambiguous for logits made in `precision`.
+
+    `share` overrides `BF16_AMBIGUOUS_SHARE` for one run, explicitly and on the command line;
+    fp32 artefacts get no budget either way.
+    """
+    if precision != "bf16":
+        return 0
+    return int((BF16_AMBIGUOUS_SHARE if share is None else share) * rows)
 
 
 def match_rows(
@@ -254,7 +260,11 @@ def _findings_at(sha: str) -> dict[str, Any]:
 
 
 def realign_artefact(
-    model_dir: Path, corpus: Path, *, max_distance: float | None = None
+    model_dir: Path,
+    corpus: Path,
+    *,
+    max_distance: float | None = None,
+    ambiguous_share: float | None = None,
 ) -> list[dict[str, Any]]:
     """Every fold of one `models/<family>-s<seed>` artefact, then its pooled ids."""
     from sieve.model.data import build_splits, load_corpus
@@ -289,7 +299,7 @@ def realign_artefact(
             return np.log(np.clip(probs, 1e-300, None))
 
         jobs.append((fold_dir, list(oof["id"]), labels, score))
-    budget = ambiguity_budget_for(precision, min(len(job[1]) for job in jobs))
+    budget = ambiguity_budget_for(precision, min(len(job[1]) for job in jobs), ambiguous_share)
     reports = realign_folds(jobs, max_distance=limit, max_ambiguous=budget, pooled=model_dir)
     for report in reports:
         log.info(
@@ -307,6 +317,12 @@ def main(argv: Sequence[str] | None = None) -> list[dict[str, Any]]:
     parser.add_argument("model_dirs", type=Path, nargs="+")
     parser.add_argument("--corpus", type=Path, default=Path("bench/data/labelled.jsonl"))
     parser.add_argument("--max-distance", type=float, default=None)
+    parser.add_argument(
+        "--ambiguous-share",
+        type=float,
+        default=None,
+        help=f"bf16 only: override the {BF16_AMBIGUOUS_SHARE} per-fold best-guess budget",
+    )
     ns = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO)
     import torch
@@ -314,7 +330,12 @@ def main(argv: Sequence[str] | None = None) -> list[dict[str, Any]]:
     torch.set_num_threads(8)  # the machine is shared with a GPU trainer's data loading
     out = []
     for model_dir in ns.model_dirs:
-        out += realign_artefact(model_dir, ns.corpus, max_distance=ns.max_distance)
+        out += realign_artefact(
+            model_dir,
+            ns.corpus,
+            max_distance=ns.max_distance,
+            ambiguous_share=ns.ambiguous_share,
+        )
     print(json.dumps(out, indent=2))
     return out
 
