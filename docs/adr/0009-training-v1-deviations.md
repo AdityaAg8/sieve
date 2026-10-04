@@ -232,6 +232,9 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
     rows in a 191-row fold against a budget of three. It was repaired with an explicit
     `--ambiguous-share 0.03` on its own command line, not by raising the default; its best-guess
     rows are listed like the others.
+  - Outcome: every artefact's 1,010 OOF labels agree with the corpus by id. Best-guess rows, out
+    of 1,010 each: `modernbert-base-s0` 9, `-s1` 2, `-s2` 6, `modernbert-base-1024-s0` 6; every
+    DeBERTa artefact 0.
   - The DeBERTa artefacts were matched under the 0.05 cap before the identity test existed. Their
     fp32 CPU-against-GPU drift is about 1e-5, so ambiguity is practically impossible there.
   - **What changed.** Only `oof_ids.json` was rewritten. The logits and labels are
