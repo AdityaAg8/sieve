@@ -198,6 +198,8 @@ reproduce-check:  ## M6b: re-score REPRO_ROWS from models/ and compare macro-F1 
 eval-final:  ## the one-shot sealed evaluation, SIEVE_FINAL=1; REASON= and MODEL_DIRS= required
 	@test -n "$(REASON)" || (echo "make eval-final REASON=\"why the holdout is being opened\" MODEL_DIRS=\"...\"" && exit 2)
 	@test -n "$(MODEL_DIRS)" || (echo "make eval-final needs MODEL_DIRS=\"<every artefact to score>\"" && exit 2)
+	# The eval-only MCPTox slice is never committed (SC-3, D2): rebuilt from its hash-checked pointer.
+	uv run python -m bench.collect.real_poisoned --reconstruct
 	SIEVE_FINAL=1 uv run python -m bench.eval_final --reason "$(REASON)" --model-dirs $(MODEL_DIRS) $(if $(NEW_VERSION),--new-version,)
 	uv run python -m bench.report_final $(if $(HEADLINE),--headline $(HEADLINE),)
 

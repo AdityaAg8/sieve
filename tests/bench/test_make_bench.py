@@ -92,6 +92,17 @@ def test_eval_final_requires_model_dirs() -> None:
     assert out.returncode != 0 and "MODEL_DIRS" in out.stdout
 
 
+def test_eval_final_rebuilds_the_uncommitted_mcptox_slice_first() -> None:
+    text = _dry("eval-final", "REASON=x", "MODEL_DIRS=m")
+    rebuild = text.find("bench.collect.real_poisoned --reconstruct")
+    assert 0 <= rebuild < text.find("bench.eval_final")
+    ignored = subprocess.run(  # noqa: S603 - fixed argv
+        ["git", "check-ignore", "-q", "bench/data/real_poisoned.jsonl"],  # noqa: S607
+        check=False,
+    )
+    assert ignored.returncode == 0, "MCPTox text must never be committable (SC-3)"
+
+
 # --- the real target on tiny fixtures -----------------------------------------------------
 
 
