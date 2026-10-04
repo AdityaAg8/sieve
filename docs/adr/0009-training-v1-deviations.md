@@ -199,6 +199,70 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
 - **A key mismatch in the minimal-pair index was fixed.** `bench.split.pairs` writes
   `host`/`mutation`, while the ablation runner read `host_id`/`mutation_id`. The two had never met
   until the tiny-fixture `make bench` test (C7). The reader now accepts both.
+- **The OOF arrays were saved out of order, and were repaired without retraining**
+  (commits `69f8c39`, `1e69672`, `08e8485`, `16e62b9`).
+  - **The bug.** transformers 4.57 gives `trainer.predict` a `LengthGroupedSampler` whenever
+    `group_by_length` is on. So every fold's `oof_logits.npy` came back length-grouped while
+    `oof_ids.json` was written in dataset order.
+  - **What it did not touch.** Metrics that read logits with their own labels never join by id:
+    temperature, `T_low`/`T_high`, ECE, cross-fit recall, best epoch, seed and architecture
+    selection. Neither does anything scored through the inference path: the sealed opening and
+    val-OOD.
+  - **What it broke.** Every metric that joins a prediction to its record by id: the first
+    `make bench`'s ablation rows, per-tier and per-concealment breakdowns, M11 and the error
+    analysis. The symptom was row 4 at macro-F1 0.32 against the 0.89 its own arrays give.
+  - **The fix.** `WeightedTrainer` now evaluates and predicts sequentially, and
+    `_logits_and_labels` refuses any reordering.
+  - **The repair.** `sieve.model.realign_oof` re-scored each fold's held-out rows with that
+    fold's saved model, on the CPU, in dataset order. It matched every stored row to the fresh row
+    with the same label by exact assignment on log-probabilities, and accepted the match only
+    within a probability distance of 0.05 (fp32 artefacts) or 0.15 (bf16 ModernBERT: its worst
+    measured drift was 0.104, median 0.00016).
+  - **What changed.** Only `oof_ids.json` was rewritten. The logits and labels are
+    byte-identical, so calibration and the thresholds the sealed opening used did not move.
+  - **The check.** After the repair, every artefact's labels agree with the corpus by id, and
+    row 4's recall at `T_low` read by id matches calibration's.
+- **v1 serves the fp32 ONNX graph, not int8** (amends ADR-005; commits `99f5557`, `32ca288`).
+  ADR-005's own revisit trigger fired on the published artefact `deberta-v3-base-s1`:
+  - dynamic int8 failed dev parity at max |Δp| 0.77, with 443 decisions flipping at `T_low`;
+  - a per-channel, MatMul-only int8 attempt reached 0.92;
+  - fp32 ONNX matched PyTorch to 6.7e-6 on all 1,010 dev rows, with 0 flips.
+  `make export` passes `EXPORT_FLAGS=--no-quantize`. The parity figure is now `onnx_parity`, with
+  `onnx_graph` naming the graph, and the card prints both. Latency is measured on the fp32 graph,
+  so M5 is judged against it.
+- **Tools whose names break MCP's name rule are excluded and reported**
+  (commits `4216e1f`, `5011db7`).
+  - Ingest rejects any tool whose name fails `TOOL_NAME_RE`, so such a tool never reaches
+    Stage 1.
+  - Three upstream OOD rows have one: a poisoned val-OOD row whose name ends in a zero-width
+    space, and two test-OOD Docker negatives whose names contain spaces.
+  - Scoring them crashed val-OOD. In `make eval-final` the crash would have come after the log
+    line, which would have burned the one-shot opening.
+  - The scorers now keep these rows out of every metric and list them by id:
+    `val_ood.json` and `holdout.json` both carry `excluded_invalid_tool_name`.
+- **The MCPTox slice was never built until step 12** (commits `2acd47d`, `71e9e26`).
+  - `bench.collect.real_poisoned --reconstruct` verified the hash but only printed a count, so
+    `bench/data/real_poisoned.jsonl` did not exist. The first `make eval-final` refused in
+    preflight, before the log line, so the seal held.
+  - The CLI now writes the slice, and `make eval-final` rebuilds it first: 485 rows, of which 483
+    form the M13 slice after G4 drops.
+  - The file is gitignored, because MCPTox has no licence (SC-3, D2).
+  - `bench/results/test_opened.log` was itself caught by `*.log` and is now committed, since the
+    card quotes its line.
+- **The headline defaults to the published artefact** (commit `b20c7e3`). With several models
+  scored, `bench.report_final` used to refuse unless `--headline` was passed. It now reads
+  `selection.json`'s `published_dir` (D14), which is the pre-registered choice and not a new one.
+- **The release gate passes on 41 of 41.** The headline `deberta-v3-base-s1` caught all 41
+  poisoned holdout-synthetic rows at `T_low`. The pre-registered bootstrap interval collapses to
+  [1, 1] when every row is a hit, so it overstates certainty. An exact Clopper–Pearson 95% lower
+  bound for 41/41 is 0.914 two-sided (0.930 one-sided), which still clears D11's 0.90 floor. The
+  recall comes at a price: `T_low` is 0.018, and on the 105 real test-ID tools Stage 1 sends 35%
+  to review (FPR 0.35, interval 0.22–0.49). MCPTox (M13, 483 rows) Stage-1 recall is 1.0 at the
+  same threshold, and is reported, never gated.
+- **The published seed is the D14 median, not the best seed.** The median-seed rule picked
+  `deberta-v3-base-s1`. Its OOF macro-F1 is 0.890, and its routing rate is the highest of the
+  three seeds (0.38 against 0.16 and 0.17). The rule was registered before any number existed, so
+  it stands, and the spread is published as mean ± std.
 
 ### Shared-file changes
 
