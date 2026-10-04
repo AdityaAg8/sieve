@@ -407,3 +407,18 @@ def test_the_cli_requires_a_reason_and_model_dirs(
 
 def test_the_env_var_is_not_leaked_between_tests() -> None:
     assert os.environ.get("SIEVE_FINAL") != "1"
+
+
+@pytest.mark.usefixtures("unsealed")
+def test_a_broken_scanner_is_refused_before_the_log_line(world: World) -> None:
+    """Z2: a missing mcp-scanner used to fail after the opening was logged."""
+
+    def broken(records: Any) -> list[bool]:
+        raise FileNotFoundError("mcp-scanner")
+
+    with pytest.raises(ef.PreflightError, match="smoke test"):
+        world.run(yara=broken)
+    assert world.log_lines() == []
+    with pytest.raises(ef.PreflightError, match="returned"):
+        world.run(yara=lambda records: [])
+    assert world.log_lines() == []

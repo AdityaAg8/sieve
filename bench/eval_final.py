@@ -193,9 +193,24 @@ def _scan(records: Sequence[ToolRecord]) -> list[bool]:
         OodRow(f"t{i}", "scan", r.server_name, r.tool.model_dump(exclude_none=True), False)
         for i, r in enumerate(records)
     ]
-    work = Path(tempfile.mkdtemp(prefix="sieve-yara-"))
-    flags = yara_sidecar(rows, work)
+    # The scan input holds sealed text: it lives only as long as the scan (Z2 review).
+    with tempfile.TemporaryDirectory(prefix="sieve-yara-") as work:
+        flags = yara_sidecar(rows, Path(work))
     return [flags[f"t{i}"] for i in range(len(records))]
+
+
+def scanner_smoke(yara: YaraRunner, corpus: Path) -> None:
+    """Run the YARA scanner on one dev row before the log line. A missing or broken
+    `mcp-scanner` used to fail inside `load_sealed`, after the opening was logged (Z2 review)."""
+    dev = sorted((r for r in _load_corpus(corpus) if r.split == "dev"), key=lambda r: r.id)
+    if not dev:
+        raise PreflightError(f"{corpus} has no dev row to smoke-test the scanner on")
+    try:
+        flags = yara([dev[0].to_tool_record()])
+    except Exception as error:  # noqa: BLE001 - any failure here must stop the opening
+        raise PreflightError(f"the YARA scanner failed its smoke test: {error}") from error
+    if len(flags) != 1 or not isinstance(flags[0], bool):
+        raise PreflightError(f"the YARA scanner returned {flags!r} for one dev row")
 
 
 def count_sealed(inputs: SealedInputs) -> int:
@@ -344,6 +359,7 @@ def preflight(
     new_version: bool = False,
     reason: str = "",
     loader: Loader = _default_loader,
+    yara: YaraRunner = _scan,
 ) -> tuple[list[LoadedModel], str]:
     """Every check that can fail without opening anything. Returns (models, dataset_version)."""
     if not reason.strip():
@@ -352,6 +368,7 @@ def preflight(
     if missing:
         raise PreflightError(f"sealed inputs missing: {missing}")
     models = preflight_models(model_dirs, inputs.corpus, results_dir, loader=loader)
+    scanner_smoke(yara, inputs.corpus)
     _writable(LOG_PATH.parent)
     version = dataset_version(inputs.corpus)
     if earlier_openings(version) and not new_version:
@@ -480,7 +497,13 @@ def run(
     require_unsealed()
     inputs = inputs or SealedInputs()
     models, version = preflight(
-        model_dirs, inputs, results_dir, new_version=new_version, reason=reason, loader=loader
+        model_dirs,
+        inputs,
+        results_dir,
+        new_version=new_version,
+        reason=reason,
+        loader=loader,
+        yara=yara,
     )
     # Logged before a sealed row is read, so a run that crashes half way through still leaves
     # a record that the seal was broken.
