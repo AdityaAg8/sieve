@@ -480,3 +480,42 @@ def test_a_payload_file_out_of_step_with_its_plan_is_refused(tmp_path) -> None:
             Path(args["--human-payloads"]),
         )
     del json
+
+
+def test_survival_is_checked_under_both_headline_tokenizers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """D13: both architectures train at 512, so a payload must survive both tokenizers."""
+    import transformers
+
+    import sieve.model.data as data
+    import sieve.model.train as train
+
+    loaded: list[str] = []
+
+    class Fake:
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+    def from_pretrained(name: str, revision: str | None = None) -> Fake:
+        loaded.append(name)
+        return Fake(name)
+
+    monkeypatch.setattr(transformers.AutoTokenizer, "from_pretrained", from_pretrained)
+    monkeypatch.setattr(data, "add_markers", lambda tok: None)
+    # ModernBERT loses the payload of "lost"; DeBERTa keeps every payload.
+    monkeypatch.setattr(
+        train,
+        "payload_survival_failures",
+        lambda records, tok, max_length: (
+            [(records[0].id, "description")]
+            if "modernbert" in tok.name.lower() and records[0].id == "lost"
+            else []
+        ),
+    )
+    from bench.generate import plan as plan_module
+
+    survives = plan_module._survival_check(Path("bench/train.yaml"))
+    assert len(loaded) == 2 and any("modernbert" in n.lower() for n in loaded)
+    kept, lost = (type("R", (), {"id": i})() for i in ("kept", "lost"))
+    assert survives(kept) and not survives(lost)

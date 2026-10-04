@@ -556,25 +556,40 @@ def _split_map(path: Path) -> dict[str, dict[str, Any]]:
     return dict(json.loads(path.read_text(encoding="utf-8"))["servers"])
 
 
-def _profile(config: Path) -> dict[str, Any]:
+#: Both headline architectures train at 512 tokens (plan D13), so a payload must survive BOTH
+#: tokenizers. DeBERTa alone was checked until ModernBERT refused four rows at `make gpu-bench`
+#: (2026-10-04): its tokenizer spends more tokens on the same text.
+HEADLINE_PROFILES = ("deberta", "modernbert")
+
+
+def _profile(config: Path, name: str = "deberta") -> dict[str, Any]:
     import yaml
 
-    return dict(yaml.safe_load(config.read_text(encoding="utf-8"))["profiles"]["deberta"])
+    return dict(yaml.safe_load(config.read_text(encoding="utf-8"))["profiles"][name])
 
 
-def _survival_check(config: Path) -> Callable[[CorpusRecord], bool]:
-    """The real 512-token check (`sieve.model.train.payload_survival_failures`) on DeBERTa's
-    tokenizer, pinned to the training profile's revision."""
+def _survival_check(
+    config: Path, profiles: Sequence[str] = HEADLINE_PROFILES
+) -> Callable[[CorpusRecord], bool]:
+    """The real check (`sieve.model.train.payload_survival_failures`) under every headline
+    profile's tokenizer and max_length, each pinned to the profile's revision."""
     from transformers import AutoTokenizer
 
     from sieve.model.data import add_markers
     from sieve.model.train import payload_survival_failures
 
-    profile = _profile(config)
-    tokenizer = AutoTokenizer.from_pretrained(profile["base_model"], revision=profile["revision"])  # type: ignore[no-untyped-call]
-    add_markers(tokenizer)
-    max_length = int(profile["max_length"])
-    return lambda record: not payload_survival_failures([record], tokenizer, max_length=max_length)
+    checks = []
+    for name in profiles:
+        profile = _profile(config, name)
+        tokenizer = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call]
+            profile["base_model"], revision=profile["revision"]
+        )
+        add_markers(tokenizer)
+        checks.append((tokenizer, int(profile["max_length"])))
+    return lambda record: all(
+        not payload_survival_failures([record], tokenizer, max_length=length)
+        for tokenizer, length in checks
+    )
 
 
 def _token_lengths(records: Sequence[CorpusRecord], config: Path) -> Any:
