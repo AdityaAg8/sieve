@@ -138,3 +138,10 @@ def test_classifier_pooling_reaches_the_model_only_when_a_profile_sets_it(tmp_pa
     )
     with pytest.raises(ValueError):
         load_profile(config, "mb-cls", fold=0, seed=0)
+
+
+def test_modernbert_profiles_use_the_official_fine_tuning_lr() -> None:
+    """At 3e-5 ModernBERT underfit (pooled OOF macro-F1 ~0.61, best epoch at the horizon);
+    the ModernBERT authors' fine-tuning recipe uses 8e-5 (ADR-009)."""
+    for profile in ("modernbert", "modernbert-acc", "modernbert-1024"):
+        assert load_profile(CONFIG, profile, fold=0, seed=0).lr == 8.0e-5
