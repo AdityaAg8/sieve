@@ -16,6 +16,7 @@ from .test_split import _corpus, _record
 
 LABELLED = Path("bench/data/labelled.jsonl")
 DEDUPED = Path("bench/data/deduped.jsonl")
+NEAR_TWINS = Path("bench/data/near_twins.json")
 
 
 def _sealed_ids(records: list[CorpusRecord]) -> set[str]:
@@ -106,6 +107,10 @@ def test_rebuilding_the_real_corpus_keeps_every_assignment() -> None:
         if x
     ]
     rebuilt = assign(deduped, split_map=load_split_map(split_mod.SPLIT_MAP))
+    # As `make corpus` runs it since C8: near-twin pairs are grouped into one fold afterwards.
+    if NEAR_TWINS.exists():
+        pairs = json.loads(NEAR_TWINS.read_text(encoding="utf-8"))["pairs"]
+        rebuilt, _ = split_mod.group_and_separate(rebuilt, [(x, y, z) for x, y, z in pairs])
     assert [r.model_dump_json() for r in rebuilt] == [r.model_dump_json() for r in labelled]
     real: tuple[str, ...] = ("public_repo", "wild_fp")
     assert {r.id for r in rebuilt if r.split != "dev" and r.source in real} == {
