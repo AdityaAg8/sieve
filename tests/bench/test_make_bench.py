@@ -79,6 +79,9 @@ def test_select_export_and_reproduce_check_targets_exist() -> None:
     assert "sieve.model.select --candidate deberta-v3-base=" in _dry("select")
     assert "sieve.model.export $(uv run python -m sieve.model.select" in _dry("export")
     assert "sieve.model.export elsewhere/x" in _dry("export", "PUBLISHED_DIR=elsewhere/x")
+    # ADR-009: int8 failed parity on DeBERTa-v3, so the fp32 graph is exported and served.
+    assert "--no-quantize" in _dry("export")
+    assert "--no-quantize" not in _dry("export", "EXPORT_FLAGS=")
     text = _dry("reproduce-check")
     assert "--out bench/data/_reproduce/ablations.json" in text
     assert "--tolerance 0.01" in text

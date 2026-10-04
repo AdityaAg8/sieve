@@ -181,8 +181,11 @@ latency-http:  ## p50/p95/p99 of POST /api/v1/triage against a running server at
 select:  ## the pre-registered architecture choice from CANDIDATES' OOF arrays -> selection.json
 	$(SELECT)
 
+# ADR-009 amends ADR-005: dynamic int8 failed parity on DeBERTa-v3 (max |dp| 0.77), so the fp32
+# graph is exported and served. EXPORT_FLAGS= (empty) restores the int8 attempt.
+EXPORT_FLAGS ?= --no-quantize
 export:  ## ONNX export of PUBLISHED_DIR with dev-set parity -> export_parity.json (H6)
-	uv run python -m sieve.model.export $(PUBLISHED) --corpus $(BENCH_CORPUS) --results-dir $(RESULTS_DIR)
+	uv run python -m sieve.model.export $(PUBLISHED) $(EXPORT_FLAGS) --corpus $(BENCH_CORPUS) --results-dir $(RESULTS_DIR)
 
 push:  ## card + Hub upload of PUBLISHED_DIR to HF_REPO; a dry run unless CONFIRM=1
 	@test -n "$(HF_REPO)" || (echo "make push needs HF_REPO=<owner/name>" && exit 2)
