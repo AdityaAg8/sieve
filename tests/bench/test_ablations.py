@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -536,17 +537,32 @@ def test_demo_accepts_an_injected_triage_callable() -> None:
     assert payload["summary"]["model_version"] == "injected@0"
 
 
-def test_the_committed_demo_file_is_provisional_and_matches_a_fresh_run(tmp_path: Path) -> None:
+def test_the_committed_demo_file_matches_a_fresh_run_in_its_own_mode(tmp_path: Path) -> None:
+    """Provisional before training (the fixture classifier); `--final` after `make bench`, from
+    the published artefact `selection.json` names, which only exists where it was trained."""
     from bench.demo import main
 
     committed = Path("bench/results/demo.json")
     if not committed.exists():
         pytest.skip("bench/results/demo.json has not been generated yet")
-    fresh = main(["--results-dir", str(tmp_path)])
+    if json.loads(committed.read_text(encoding="utf-8"))["meta"]["provisional"]:
+        fresh = main(["--results-dir", str(tmp_path)])
+    else:
+        selection = json.loads(Path("bench/results/selection.json").read_text(encoding="utf-8"))
+        published = Path(str(selection["published_dir"]))
+        if not (published / "sieve_config.json").exists():
+            pytest.skip(f"{published} is not on this machine (models/ is never committed)")
+        fresh = main(["--model-id", str(published), "--final", "--results-dir", str(tmp_path)])
+
     # Bytes, not parsed JSON: `make bench` claims byte-identical reproduction (M6a), and a
-    # newline or key-order change is exactly the drift a parsed comparison would hide.
-    assert committed.read_bytes() == fresh.read_bytes()
-    assert json.loads(committed.read_text(encoding="utf-8"))["meta"]["provisional"] is True
+    # newline or key-order change is exactly the drift a parsed comparison would hide. Measured
+    # wall-clock latency is the one exception M6a names (ADR-005): a real model's `latency_ms`
+    # differs run to run, so it is blanked on both sides before the bytes are compared.
+    def without_latency(path: Path) -> str:
+        return re.sub(r'"latency_ms": \d+', '"latency_ms": 0', path.read_text(encoding="utf-8"))
+
+    assert without_latency(committed) == without_latency(fresh)
+    assert committed.read_bytes().count(b"\r\n") == 0
 
 
 # ===========================================================================================
