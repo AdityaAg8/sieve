@@ -6,8 +6,8 @@
       "probes": {
         "rows": "dev",
         "imperative": {
-          "auroc": 0.6332,
-          "n": 273,
+          "auroc": 0.6681,
+          "n": 271,
           "gate": 0.7,
           "passed": true,
           "stratum": "imperative_benign"
@@ -20,8 +20,8 @@
           "stratum": "benign"
         },
         "surface": {
-          "auroc": 0.5602,
-          "n": 273,
+          "auroc": 0.5811,
+          "n": 271,
           "gate": 0.7,
           "passed": true,
           "features": [
@@ -34,30 +34,30 @@
           ]
         },
         "length": {
-          "auroc": 0.6954,
-          "separation": 0.6954,
+          "auroc": 0.6938,
+          "separation": 0.6938,
           "real_only_separation": 0.6958,
           "synthetic_length_leak": 0.5435,
-          "n": 767,
+          "n": 765,
           "gate": 0.7,
           "absolute_passed": true,
           "passed": true,
           "feature": "serialised-token length (DeBERTa-v3, untruncated)"
         },
         "transfer": {
-          "auroc": 0.507,
-          "n": 422,
+          "auroc": 0.5273,
+          "n": 420,
           "gate": 0.7,
           "passed": true,
           "versus": "real imperative_benign",
-          "auroc_vs_all_real": 0.7139
+          "auroc_vs_all_real": 0.7349
         },
         "passed": true
       },
       "failing_probes": [],
       "survival_failures": [],
       "minimal_pairs": {
-        "count": 395,
+        "count": 391,
         "baseline": 480,
         "passed": false
       },
