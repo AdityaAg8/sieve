@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import fixture from "../src/mocks/fixtures/bench-summary.json";
+import measured from "../src/mocks/fixtures/bench-summary.v1.json";
 
 import { EXPECTED, WIDTHS, expectNoHorizontalScroll, mockOverride } from "./helpers";
 
@@ -36,13 +36,13 @@ const ROUTES: Route[] = [
       expect(page.getByTestId("group-count-dismissed")).toHaveText(String(EXPECTED.dismissed)),
   },
   {
-    // The fixture results (`python -m tests.api.bench_fixture`, training plan I5): every panel
-    // filled from its producer's keys, the deferred judge rows included.
+    // The measured v1 results (`python -m tests.api.bench_fixture --real`, training plan §13
+    // step 14): the summary the API serves over the committed `bench/results/`.
     name: "benchmark",
     path: "/benchmark",
     ready: "region" as const,
     readyName: "Headline",
-    bench: fixture as unknown as Record<string, unknown>,
+    bench: measured as unknown as Record<string, unknown>,
     settled: async (page: import("@playwright/test").Page) =>
       expect(page.getByTestId("provisional-notice")).toHaveCount(0),
   },
