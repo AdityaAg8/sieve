@@ -70,6 +70,9 @@ fixtures/scanner/.tools-only.json
 # ---------------------------------------------------------------- Local run output
 *.sarif
 *.log
+# ...except the append-only record that the sealed sets were opened (PRD §11.6). The model card
+# quotes its line, so it is evidence, not run output.
+!bench/results/test_opened.log
 README.md.tmp
 .lighthouseci/
 
