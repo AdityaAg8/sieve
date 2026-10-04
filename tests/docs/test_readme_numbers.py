@@ -666,3 +666,24 @@ def test_a_deferred_judge_headline_follows_the_selection_winner() -> None:
 def test_a_readme_with_one_results_marker_is_refused() -> None:
     with pytest.raises(rn.Refused, match="one of the two results markers"):
         rn.replace_results(f"intro\n{rn.RESULTS_START}\nrest\n", "table")
+
+
+def test_an_undefined_real_subset_recall_reads_the_all_sources_recall_and_says_so() -> None:
+    """The real subset can hold no poisoned row; M2's recall is then the all-sources one."""
+    row = {
+        "fp_reduction_vs_baseline": {"sieve_recall": None, "baseline_recall": None},
+        "fp_reduction_all_sources": {
+            "sieve_recall": 0.94,
+            "baseline_recall": 0.64,
+            "recall_not_lower": True,
+        },
+    }
+    text = rn._recall_comparison(row["fp_reduction_vs_baseline"], row)
+    assert "0.940" in text and "0.640" in text
+    assert "all development sources" in text and "not lower" in text
+
+
+def test_a_two_class_rows_macro_f1_is_labelled_as_two_classes() -> None:
+    row = {"macro_f1_mean": 0.959, "macro_f1_std": None, "num_labels": 2}
+    assert rn._f1(row) == "0.959 (2 classes, 1 seed)"
+    assert rn._f1({"macro_f1_mean": 0.892, "macro_f1_std": 0.003}) == "0.892 ± 0.003"

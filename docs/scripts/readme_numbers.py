@@ -190,12 +190,21 @@ def _relative(reduction: dict[str, Any]) -> str:
     )
 
 
-def _recall_comparison(reduction: dict[str, Any]) -> str:
-    """D7: M2 is published only beside the pipeline recall it was bought at."""
+def _recall_comparison(reduction: dict[str, Any], row: dict[str, Any]) -> str:
+    """D7: M2 is published only beside the pipeline recall it was bought at.
+
+    The real development subset can hold no poisoned row (every real poisoned tool is sealed),
+    so recall there is undefined; the recall is then read over all development sources and
+    says so, rather than refusing or guessing.
+    """
+    where, why = "", ""
+    if reduction.get("sieve_recall") is None and reduction.get("baseline_recall") is None:
+        reduction = row.get("fp_reduction_all_sources") or {}
+        where, why = " over all development sources", "; the real subset holds no poisoned row"
     verdict = "not lower" if reduction.get("recall_not_lower") else "LOWER, so M2 is not met"
     return (
         f"at pipeline recall {ratio(reduction.get('sieve_recall'))} vs the baseline's "
-        f"{ratio(reduction.get('baseline_recall'))} ({verdict})"
+        f"{ratio(reduction.get('baseline_recall'))}{where} ({verdict}{why})"
     )
 
 
@@ -215,7 +224,7 @@ def _reduction_line(row: dict[str, Any], baseline: Any) -> str:
         )
     return (
         f"**M2 · False positives vs {baseline_name(baseline)}, real subset:** "
-        f"{_relative(reduction)}, {_recall_comparison(reduction)}; "
+        f"{_relative(reduction)}, {_recall_comparison(reduction, row)}; "
         f"{points(reduction['absolute'])} of absolute `FPR` difference; {_tests(reduction)}. "
         f"From ablations row {row['row']}, {row['name']}"
         + (
@@ -251,9 +260,11 @@ def _real_poisoned_line(holdout: dict[str, Any]) -> str:
             "run, so the number does not exist and is not going to be guessed"
         )
     return (
-        f"**M13 · `real_poisoned` recall:** {ratio(stage1)} at Stage 1 and {ratio(pipeline)} "
-        f"after the pipeline, over {int(holdout['n_eval_only'])} rows collected from the wild. "
-        "This is the generalisation number, reported whatever it is."
+        f"**M13 · `real_poisoned` recall:** {ratio(stage1)} at Stage 1 (not dismissed at "
+        f"T_low) and {ratio(pipeline)} auto-confirmed by the pipeline, "
+        f"{ratio(stage1 - pipeline)} going to human review, over "
+        f"{int(holdout['n_eval_only'])} rows collected from the wild. This is the "
+        "generalisation number, reported whatever it is."
     )
 
 
@@ -301,7 +312,7 @@ def _synthetic_line(row: dict[str, Any]) -> str:
         )
     return (
         f"*Reported second and labelled, per M2: including the synthetic rows the same row "
-        f"shows {_relative(reduction)}, {_recall_comparison(reduction)}; "
+        f"shows {_relative(reduction)}, {_recall_comparison(reduction, row)}; "
         f"{points(reduction['absolute'])} absolute; {_tests(reduction)}. The real-subset figure "
         "on line 2 is the headline; this one is easier and says less.*"
     )
@@ -353,9 +364,12 @@ def _f1(row: dict[str, Any]) -> str:
     mean, std = row.get("macro_f1_mean"), row.get("macro_f1_std")
     if mean is None:
         return "n/a"
-    if std is None:
-        return f"{mean:.3f} (1 seed)"
-    return f"{mean:.3f} ± {std:.3f}"
+    # A two-class head's macro-F1 averages two classes, not three: not comparable, so say so.
+    notes = ["1 seed"] if std is None else []
+    if int(row.get("num_labels") or 3) == 2:
+        notes.insert(0, "2 classes")
+    figure = f"{mean:.3f}" if std is None else f"{mean:.3f} ± {std:.3f}"
+    return f"{figure} ({', '.join(notes)})" if notes else figure
 
 
 def _point(row: dict[str, Any], key: str) -> Any:
