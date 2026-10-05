@@ -733,6 +733,17 @@ def test_an_artefact_that_does_not_cover_the_dev_set_raises(
         )
 
 
+def test_an_artefact_whose_labels_disagree_with_the_corpus_raises(
+    dev: list[CorpusRecord], artefacts: Path
+) -> None:
+    """F13: the right ids with shuffled labels is an un-realigned fold, not a model."""
+    labels_file = artefacts / "tiny-s0" / "oof_labels.npy"
+    labels = np.load(labels_file)
+    np.save(labels_file, np.roll(labels, 1))
+    with pytest.raises(MatrixError, match="corpus says"):
+        pooled_oof_scores(artefacts / "tiny-s0", dev)
+
+
 def test_an_uncalibrated_artefact_raises_rather_than_defaulting_a_threshold(
     dev: list[CorpusRecord], tmp_path: Path
 ) -> None:
@@ -1031,3 +1042,138 @@ def test_minimal_pairs_count_only_poisoned_mutations() -> None:
     assert minimal_pair_accuracy(pairs, predicted) == 0.5, "unlabelled pairs keep the old rule"
     labelled = [{**p, "label": labels[p["mutation_id"]]} for p in pairs]
     assert minimal_pair_accuracy(labelled, predicted) == 1.0
+
+
+# ------------------------------------------------- like-for-like keys (v1 fix plan, track T2)
+
+
+def _headline(inputs: Inputs, artefacts: Path) -> dict[str, Any]:
+    return _row(
+        RowSpec(row=4, name="headline", classifier=str(artefacts / "tiny-s*"), judge="none"),
+        inputs,
+    )
+
+
+def test_the_real_only_stage1_fpr_reads_only_real_negatives(
+    inputs: Inputs, artefacts: Path
+) -> None:
+    """F20: the README's "real tools sent to review" column needs the real-only population."""
+    from bench.ablations.run import REAL_SOURCES
+    from sieve.eval.metrics import precision_recall_fpr
+
+    result = _headline(inputs, artefacts)
+    for block in result["per_seed"]:
+        scores = pooled_oof_scores(artefacts / f"tiny-s{block['seed']}", inputs.records).scores
+        real = [i for i, r in enumerate(inputs.records) if r.source in REAL_SOURCES]
+        _, _, fpr = precision_recall_fpr(
+            [inputs.records[i].label for i in real], [scores[i] for i in real], block["t_low"]
+        )
+        got = block["fpr_stage1_real_at_t_low"]
+        assert set(got) == {"point", "lo", "hi"}
+        assert got["point"] == pytest.approx(fpr)
+        assert got["lo"] <= got["point"] <= got["hi"]
+    points = [b["fpr_stage1_real_at_t_low"]["point"] for b in result["per_seed"]]
+    assert result["fpr_stage1_real_at_t_low"]["point"] == pytest.approx(np.mean(points))
+    assert result["fpr_stage1_real_at_t_low"]["per_seed"] == points
+
+
+def test_the_dismissed_share_of_yara_false_positives_is_real_flagged_negatives_below_t_low(
+    inputs: Inputs, artefacts: Path
+) -> None:
+    from bench.ablations.run import REAL_SOURCES
+
+    result = _headline(inputs, artefacts)
+    flagged = [
+        i
+        for i, r in enumerate(inputs.records)
+        if r.source in REAL_SOURCES
+        and r.label != "poisoned"
+        and inputs.baseline_rows[r.id]["flagged"]
+    ]
+    assert flagged, "the fixture flags four real benign rows"
+    for block in result["per_seed"]:
+        scores = pooled_oof_scores(artefacts / f"tiny-s{block['seed']}", inputs.records).scores
+        got = block["fp_dismissed_real_triage"]
+        assert set(got) == {"point", "lo", "hi", "n", "n_undefined"}
+        assert got["n"] == len(flagged)
+        assert got["point"] == pytest.approx(np.mean([scores[i] < block["t_low"] for i in flagged]))
+        assert got["lo"] <= got["point"] <= got["hi"]
+    points = [b["fp_dismissed_real_triage"]["point"] for b in result["per_seed"]]
+    assert result["fp_dismissed_real_triage"]["point"] == pytest.approx(np.mean(points))
+
+
+def test_the_source_probe_is_the_auroc_of_synthetic_vs_real_negatives(
+    inputs: Inputs, artefacts: Path
+) -> None:
+    """F10: how well p(poisoned) alone tells a generated negative from a real one."""
+    from bench.ablations.run import REAL_SOURCES
+    from sieve.eval.metrics import auroc
+
+    result = _headline(inputs, artefacts)
+    negatives = [i for i, r in enumerate(inputs.records) if r.label != "poisoned"]
+    per_seed = []
+    for block in result["per_seed"]:
+        scores = pooled_oof_scores(artefacts / f"tiny-s{block['seed']}", inputs.records).scores
+        truth = [
+            "synthetic" if inputs.records[i].source not in REAL_SOURCES else "real"
+            for i in negatives
+        ]
+        want = auroc(truth, [scores[i] for i in negatives], positive="synthetic")
+        got = block["source_probe"]["auroc_synthetic_vs_real_negatives"]
+        assert got == pytest.approx(want)
+        per_seed.append(got)
+    assert result["source_probe"]["auroc_synthetic_vs_real_negatives"] == pytest.approx(
+        np.mean(per_seed)
+    )
+
+
+def test_every_breakdown_bucket_counts_its_poisoned_rows(inputs: Inputs, artefacts: Path) -> None:
+    """The web says "n/a" for a bucket with no attacks rather than "recall 0%"."""
+    result = _headline(inputs, artefacts)
+    block = result["per_seed"][0]
+    for bucket, values in block["per_tier"].items():
+        rows = [r for r in inputs.records if (r.difficulty or "unscored") == bucket]
+        assert values["n_poisoned"] == sum(r.label == "poisoned" for r in rows)
+    assert "n_poisoned" in next(iter(result["per_tier"].values()))
+
+
+def test_the_length_slice_buckets_rows_at_512_tokens(inputs: Inputs, artefacts: Path) -> None:
+    """F15: FPR on the long tools DeBERTa truncates, beside the short ones."""
+    assert _headline(inputs, artefacts)["per_length"] is None, "no lengths, no slice"
+    inputs.token_lengths = {
+        r.id: (600 if i % 3 == 0 else 100) for i, r in enumerate(inputs.records)
+    }
+    result = _headline(inputs, artefacts)
+    per_length = result["per_seed"][0]["per_length"]
+    assert set(per_length) == {"<=512", ">512"}
+    assert per_length[">512"]["n"] == sum(n > 512 for n in inputs.token_lengths.values())
+    assert set(result["per_length"]) == {"<=512", ">512"}
+
+
+def test_token_counts_serialise_each_record_and_count_special_tokens(
+    dev: list[CorpusRecord],
+) -> None:
+    from bench.ablations.run import count_tokens
+    from sieve.serialise import serialise
+
+    class Words:
+        def encode(self, text: str, add_special_tokens: bool = True) -> list[int]:
+            return [0] * (len(text.split()) + (2 if add_special_tokens else 0))
+
+    counts = count_tokens(dev, Words())
+    assert counts == {r.id: len(serialise(r.to_tool_record()).split()) + 2 for r in dev}
+
+
+def test_the_length_tokenizer_comes_from_the_published_artefact(tmp_path: Path) -> None:
+    from bench.ablations.run import length_tokenizer
+
+    assert length_tokenizer(tmp_path / "selection.json") is None, "no selection yet: no slice"
+    published = tmp_path / "published"
+    published.mkdir()
+    (tmp_path / "selection.json").write_text(
+        json.dumps({"published_dir": published.as_posix()}), encoding="utf-8"
+    )
+    assert length_tokenizer(tmp_path / "selection.json") is None, "no tokenizer shipped"
+    (published / "tokenizer_config.json").write_text("{not json", encoding="utf-8")
+    with pytest.raises(MatrixError, match="tokenizer"):
+        length_tokenizer(tmp_path / "selection.json")

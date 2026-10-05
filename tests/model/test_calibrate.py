@@ -114,6 +114,35 @@ def test_pool_oof_raises_on_a_length_mismatch(tmp_path: Path) -> None:
         pool_oof([a])
 
 
+def test_pool_oof_accepts_labels_that_agree_with_the_corpus(tmp_path: Path) -> None:
+    a = _write_fold(tmp_path / "f0", ["a1", "a2"], [0, 2])
+    b = _write_fold(tmp_path / "f1", ["b1"], [1], seed=1)
+    labels = {"a1": "benign", "a2": "poisoned", "b1": "imperative_benign"}
+    _, pooled, _ = pool_oof([a, b], expected_ids=list(labels), expected_labels=labels)
+    assert list(pooled) == [0, 2, 1]
+
+
+def test_pool_oof_names_the_first_label_that_disagrees_with_the_corpus(tmp_path: Path) -> None:
+    """F13: an un-realigned fold has the right ids and the wrong labels, and used to pass."""
+    a = _write_fold(tmp_path / "f0", ["a1", "a2"], [0, 2])
+    b = _write_fold(tmp_path / "f1", ["b1"], [1], seed=1)
+    labels = {"a1": "benign", "a2": "benign", "b1": "poisoned"}
+    with pytest.raises(PoolError, match=r"a2.*poisoned.*benign"):
+        pool_oof([a, b], expected_ids=list(labels), expected_labels=labels)
+
+
+def test_pool_oof_reads_a_two_class_head_through_its_own_label_map(tmp_path: Path) -> None:
+    a = tmp_path / "f0"
+    a.mkdir()
+    np.save(a / "oof_logits.npy", np.zeros((2, 2), dtype=np.float32))
+    np.save(a / "oof_labels.npy", np.asarray([0, 1], dtype=np.int64))
+    (a / "oof_ids.json").write_text(json.dumps(["a1", "a2"]), encoding="utf-8", newline="\n")
+    ok = {"a1": "imperative_benign", "a2": "poisoned"}
+    pool_oof([a], expected_ids=list(ok), expected_labels=ok)
+    with pytest.raises(PoolError, match="a1"):
+        pool_oof([a], expected_ids=list(ok), expected_labels={**ok, "a1": "poisoned"})
+
+
 def _fold_dir(directory: Path, records: list, fold: int, *, rng: np.random.Generator) -> Path:
     """A fake fold artefact: real ids and labels from the fixture, synthetic logits."""
     from sieve.model.data import LABEL2ID

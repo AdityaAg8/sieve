@@ -1,0 +1,320 @@
+{
+  "dataset_version": "labelled.jsonl@51caf0707f46",
+  "per_seed": {
+    "deberta-v3-base-s0": [
+      {
+        "misses": 1,
+        "n_poisoned": 245,
+        "n_real_negatives": 619,
+        "n_yara_fp": 159,
+        "real_negative_review_share": 0.17124394184168013,
+        "recall": 0.9959183673469387,
+        "target_recall": 1.0,
+        "thresholds_per_fold": {
+          "0": 0.032553167358903484,
+          "1": 0.03416380337663588,
+          "2": 0.032553167358903484,
+          "3": 0.032553167358903484,
+          "4": 0.032553167358903484
+        },
+        "yara_fp_dismissed": 0.6918238993710693
+      },
+      {
+        "misses": 1,
+        "n_poisoned": 245,
+        "n_real_negatives": 619,
+        "n_yara_fp": 159,
+        "real_negative_review_share": 0.1680129240710824,
+        "recall": 0.9959183673469387,
+        "target_recall": 0.995,
+        "thresholds_per_fold": {
+          "0": 0.032553167358903484,
+          "1": 0.03607068460601139,
+          "2": 0.032553167358903484,
+          "3": 0.03416380337663588,
+          "4": 0.032553167358903484
+        },
+        "yara_fp_dismissed": 0.6981132075471699
+      },
+      {
+        "misses": 2,
+        "n_poisoned": 245,
+        "n_real_negatives": 619,
+        "n_yara_fp": 159,
+        "real_negative_review_share": 0.1583198707592892,
+        "recall": 0.9918367346938776,
+        "target_recall": 0.99,
+        "thresholds_per_fold": {
+          "0": 0.03416380337663588,
+          "1": 0.04912215750329163,
+          "2": 0.03416380337663588,
+          "3": 0.03607068460601139,
+          "4": 0.03607068460601139
+        },
+        "yara_fp_dismissed": 0.7232704402515724
+      },
+      {
+        "misses": 4,
+        "n_poisoned": 245,
+        "n_real_negatives": 619,
+        "n_yara_fp": 159,
+        "real_negative_review_share": 0.07431340872374798,
+        "recall": 0.9836734693877551,
+        "target_recall": 0.98,
+        "thresholds_per_fold": {
+          "0": 0.051207464821404716,
+          "1": 0.05201410282411025,
+          "2": 0.04912215750329163,
+          "3": 0.05201410282411025,
+          "4": 0.051207464821404716
+        },
+        "yara_fp_dismissed": 0.8930817610062893
+      },
+      {
+        "misses": 9,
+        "n_poisoned": 245,
+        "n_real_negatives": 619,
+        "n_yara_fp": 159,
+        "real_negative_review_share": 0.04038772213247173,
+        "recall": 0.963265306122449,
+        "target_recall": 0.97,
+        "thresholds_per_fold": {
+          "0": 0.059952431004339245,
+          "1": 0.07177589350885688,
+          "2": 0.1979114295227092,
+          "3": 0.07177589350885688,
+          "4": 0.059952431004339245
+        },
+        "yara_fp_dismissed": 0.9245283018867925
+      },
+      {
+        "misses": 12,
+        "n_poisoned": 245,
+        "n_real_negatives": 619,
+        "n_yara_fp": 159,
+        "real_negative_review_share": 0.012924071082390954,
+        "recall": 0.9510204081632653,
+        "target_recall": 0.95,
+        "thresholds_per_fold": {
+          "0": 0.1979114295227092,
+          "1": 0.34771693744543686,
+          "2": 0.3819734065010568,
+          "3": 0.34771693744543686,
+          "4": 0.1979114295227092
+        },
+        "yara_fp_dismissed": 0.9811320754716981
+      }
+    ],
+    "deberta-v3-base-s1": [
+      {
+        "misses": 2,
+        "n_poisoned": 245,
+        "n_real_negatives": 619,
+        "n_yara_fp": 159,
+        "real_negative_review_share": 0.5654281098546042,
+        "recall": 0.9918367346938776,
+        "target_recall": 1.0,
+        "thresholds_per_fold": {
+          "0": 0.02636213260314622,
+          "1": 0.014451804351955594,
+          "2": 0.014451804351955594,
+          "3": 0.014451804351955594,
+          "4": 0.014451804351955594
+        },
+        "yara_fp_dismissed": 0.339622641509434
+      },
+      {
+        "misses": 2,
+        "n_poisoned": 245,
+        "n_real_negatives": 619,
+        "n_yara_fp": 159,
+        "real_negative_review_share": 0.47334410339256866,
+        "recall": 0.9918367346938776,
+        "target_recall": 0.995,
+        "thresholds_per_fold": {
+          "0": 0.02636213260314622,
+          "1": 0.018022842588363834,
+          "2": 0.014451804351955594,
+          "3": 0.018022842588363834,
+          "4": 0.014451804351955594
+        },
+        "yara_fp_dismissed": 0.39622641509433965
+      },
+      {
+        "misses": 3,
+        "n_poisoned": 245,
+        "n_real_negatives": 619,
+        "n_yara_fp": 159,
+        "real_negative_review_share": 0.41195476575121165,
+        "recall": 0.9877551020408163,
+        "target_recall": 0.99,
+        "thresholds_per_fold": {
+          "0": 0.045824183454990654,
+          "1": 0.02636213260314622,
+          "2": 0.018022842588363834,
+          "3": 0.02636213260314622,
+          "4": 0.018022842588363834
+        },
+        "yara_fp_dismissed": 0.46540880503144655
+      },
+      {
+        "misses": 6,
+        "n_poisoned": 245,
+        "n_real_negatives": 619,
+        "n_yara_fp": 159,
+        "real_negative_review_share": 0.17447495961227788,
+        "recall": 0.9755102040816327,
+        "target_recall": 0.98,
+        "thresholds_per_fold": {
+          "0": 0.0716607576165263,
+          "1": 0.0716607576165263,
+          "2": 0.041050699389401944,
+          "3": 0.045824183454990654,
+          "4": 0.045824183454990654
+        },
+        "yara_fp_dismissed": 0.7358490566037736
+      },
+      {
+        "misses": 6,
+        "n_poisoned": 245,
+        "n_real_negatives": 619,
+        "n_yara_fp": 159,
+        "real_negative_review_share": 0.1098546042003231,
+        "recall": 0.9755102040816327,
+        "target_recall": 0.97,
+        "thresholds_per_fold": {
+          "0": 0.07906308019426951,
+          "1": 0.07906308019426951,
+          "2": 0.06921990171728105,
+          "3": 0.0716607576165263,
+          "4": 0.0716607576165263
+        },
+        "yara_fp_dismissed": 0.8238993710691824
+      },
+      {
+        "misses": 12,
+        "n_poisoned": 245,
+        "n_real_negatives": 619,
+        "n_yara_fp": 159,
+        "real_negative_review_share": 0.03715670436187399,
+        "recall": 0.9510204081632653,
+        "target_recall": 0.95,
+        "thresholds_per_fold": {
+          "0": 0.21164152130843697,
+          "1": 0.1877919932173593,
+          "2": 0.16953650705296666,
+          "3": 0.13656818593400552,
+          "4": 0.21164152130843697
+        },
+        "yara_fp_dismissed": 0.9433962264150944
+      }
+    ],
+    "deberta-v3-base-s2": [
+      {
+        "misses": 2,
+        "n_poisoned": 245,
+        "n_real_negatives": 619,
+        "n_yara_fp": 159,
+        "real_negative_review_share": 0.19547657512116318,
+        "recall": 0.9918367346938776,
+        "target_recall": 1.0,
+        "thresholds_per_fold": {
+          "0": 0.05550537917454337,
+          "1": 0.03643452338110548,
+          "2": 0.03643452338110548,
+          "3": 0.03643452338110548,
+          "4": 0.03643452338110548
+        },
+        "yara_fp_dismissed": 0.7169811320754718
+      },
+      {
+        "misses": 2,
+        "n_poisoned": 245,
+        "n_real_negatives": 619,
+        "n_yara_fp": 159,
+        "real_negative_review_share": 0.18578352180936994,
+        "recall": 0.9918367346938776,
+        "target_recall": 0.995,
+        "thresholds_per_fold": {
+          "0": 0.05550537917454337,
+          "1": 0.04270938170961036,
+          "2": 0.03643452338110548,
+          "3": 0.04270938170961036,
+          "4": 0.03643452338110548
+        },
+        "yara_fp_dismissed": 0.7232704402515724
+      },
+      {
+        "misses": 2,
+        "n_poisoned": 245,
+        "n_real_negatives": 619,
+        "n_yara_fp": 159,
+        "real_negative_review_share": 0.1583198707592892,
+        "recall": 0.9918367346938776,
+        "target_recall": 0.99,
+        "thresholds_per_fold": {
+          "0": 0.06301012812850017,
+          "1": 0.05550537917454337,
+          "2": 0.04270938170961036,
+          "3": 0.05550537917454337,
+          "4": 0.04270938170961036
+        },
+        "yara_fp_dismissed": 0.7358490566037736
+      },
+      {
+        "misses": 4,
+        "n_poisoned": 245,
+        "n_real_negatives": 619,
+        "n_yara_fp": 159,
+        "real_negative_review_share": 0.09531502423263329,
+        "recall": 0.9836734693877551,
+        "target_recall": 0.98,
+        "thresholds_per_fold": {
+          "0": 0.07542708411684695,
+          "1": 0.07058068588540492,
+          "2": 0.06301012812850017,
+          "3": 0.07058068588540492,
+          "4": 0.07542708411684695
+        },
+        "yara_fp_dismissed": 0.8490566037735849
+      },
+      {
+        "misses": 7,
+        "n_poisoned": 245,
+        "n_real_negatives": 619,
+        "n_yara_fp": 159,
+        "real_negative_review_share": 0.07592891760904685,
+        "recall": 0.9714285714285714,
+        "target_recall": 0.97,
+        "thresholds_per_fold": {
+          "0": 0.08283475671199708,
+          "1": 0.07992339303873852,
+          "2": 0.08283475671199708,
+          "3": 0.07992339303873852,
+          "4": 0.11486155371727133
+        },
+        "yara_fp_dismissed": 0.8930817610062893
+      },
+      {
+        "misses": 12,
+        "n_poisoned": 245,
+        "n_real_negatives": 619,
+        "n_yara_fp": 159,
+        "real_negative_review_share": 0.004846526655896607,
+        "recall": 0.9510204081632653,
+        "target_recall": 0.95,
+        "thresholds_per_fold": {
+          "0": 0.1386237878527269,
+          "1": 0.4220308970188437,
+          "2": 0.561988169262618,
+          "3": 0.1386237878527269,
+          "4": 0.4220308970188437
+        },
+        "yara_fp_dismissed": 1.0
+      }
+    ]
+  },
+  "published_dir": "models/deberta-v3-base-s1",
+  "rule": "For each target recall r and each fold f, the threshold is the floor((1 - r) * n_pos)-th lowest poisoned score (0-indexed) among the positives of the other folds, applied to fold f only; recall, misses and the review and dismissal shares are then pooled over all folds.",
+  "status": "post-hoc; not adopted for v1"
+}

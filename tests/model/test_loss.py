@@ -19,6 +19,10 @@ pytestmark = [
 
 WEIGHTS = [0.5, 1.0, 3.0]
 
+# Every Trainer here is pinned to the CPU (`use_cpu=True`, F21): the batches and the reference
+# loss are CPU tensors, and on a dev box with a visible GPU the Trainer would otherwise move
+# the model to cuda:0 and every comparison would fail on a device mismatch.
+
 
 def _bert() -> Any:
     from transformers import BertConfig, BertForSequenceClassification
@@ -66,7 +70,7 @@ def test_the_window_loss_is_the_weighted_mean(
     model = build()
     config = load_profile(Path("bench/train.yaml"), "tiny", fold=0, seed=0)
     args = training_arguments(
-        config, tmp_path, has_early=False, gradient_accumulation_steps=accumulation
+        config, tmp_path, has_early=False, gradient_accumulation_steps=accumulation, use_cpu=True
     )
     trainer = WeightedTrainer(model=model, args=args, class_weights=WEIGHTS, num_labels=3)
     assert trainer.model_accepts_loss_kwargs is False
@@ -100,7 +104,7 @@ def test_evaluation_uses_the_plain_weighted_mean(tmp_path: Path) -> None:
     config = load_profile(Path("bench/train.yaml"), "tiny", fold=0, seed=0)
     trainer = WeightedTrainer(
         model=model,
-        args=training_arguments(config, tmp_path, has_early=False),
+        args=training_arguments(config, tmp_path, has_early=False, use_cpu=True),
         class_weights=WEIGHTS,
         num_labels=3,
     )
@@ -117,7 +121,7 @@ def test_without_class_weights_it_is_the_plain_mean(tmp_path: Path) -> None:
     config = load_profile(Path("bench/train.yaml"), "tiny", fold=0, seed=0)
     trainer = WeightedTrainer(
         model=model,
-        args=training_arguments(config, tmp_path, has_early=False),
+        args=training_arguments(config, tmp_path, has_early=False, use_cpu=True),
         class_weights=None,
         num_labels=3,
     )

@@ -166,6 +166,7 @@ bench:  ## regenerate bench/results/* offline, no server (baseline ... selection
 	uv run python -m bench.split.pairs --corpus $(BENCH_CORPUS) --out $(RESULTS_DIR)/minimal_pairs.json
 	$(SELECT)
 	uv run python -m bench.ablations.run --matrix $(ABLATIONS_MATRIX) --corpus $(BENCH_CORPUS) --results-dir $(RESULTS_DIR) $(BOOT)
+	uv run python -m bench.analysis.operating_points --corpus $(BENCH_CORPUS) --results-dir $(RESULTS_DIR)
 	uv run python -m bench.analysis.errors --dirs $(FOLD_DIRS) --corpus $(BENCH_CORPUS) --model-dir $(MODEL_DIR) --results-dir $(RESULTS_DIR)
 	# H3: the sealed report is a pure function of the saved predictions; re-rendered when they exist.
 	@if [ -f $(RESULTS_DIR)/holdout_predictions.jsonl ]; then uv run python -m bench.report_final --results-dir $(RESULTS_DIR) $(BOOT) $(if $(HEADLINE),--headline $(HEADLINE),); fi

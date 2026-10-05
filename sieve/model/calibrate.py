@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -85,9 +85,17 @@ def _check_head(
 
 
 def pool_oof(
-    model_dirs: Sequence[Path], *, expected_ids: Sequence[str] | None = None
+    model_dirs: Sequence[Path],
+    *,
+    expected_ids: Sequence[str] | None = None,
+    expected_labels: Mapping[str, str] | None = None,
 ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int_], list[str]]:
-    """Concatenate the folds' held-out predictions for one (profile, seed)."""
+    """Concatenate the folds' held-out predictions for one (profile, seed).
+
+    `expected_labels` (corpus id -> label name) also checks every `oof_labels[i]` against the
+    corpus label of `ids[i]`, read through the head's own label map (F13): an un-realigned fold
+    carries the right ids in the wrong order, and only its labels give it away.
+    """
     blocks: list[npt.NDArray[np.float64]] = []
     label_blocks: list[npt.NDArray[np.int_]] = []
     ids: list[str] = []
@@ -131,7 +139,32 @@ def pool_oof(
                 f"{len(seen - expected)} pooled id(s) are not in the dev set: "
                 f"{sorted(seen - expected)[:5]}"
             )
-    return np.concatenate(blocks), np.concatenate(label_blocks), ids
+    pooled_labels = np.concatenate(label_blocks)
+    if expected_labels is not None:
+        _check_labels(ids, pooled_labels, expected_labels, blocks[0].shape[1])
+    return np.concatenate(blocks), pooled_labels, ids
+
+
+def _check_labels(
+    ids: Sequence[str],
+    labels: npt.NDArray[np.int_],
+    expected: Mapping[str, str],
+    n_columns: int,
+) -> None:
+    """Every pooled label is its id's corpus label, collapsed the way the head collapses it."""
+    names = th.head_labels(n_columns)
+    for record_id, label in zip(ids, labels, strict=True):
+        if record_id not in expected:
+            raise PoolError(f"pooled id {record_id!r} has no expected label")
+        want = expected[record_id]
+        if n_columns == 2:
+            want = "poisoned" if want == "poisoned" else names[0]
+        got = names[int(label)]
+        if got != want:
+            raise PoolError(
+                f"{record_id!r}: the OOF label is {got!r} but the corpus says {want!r}; the "
+                "fold's labels are not aligned with its ids"
+            )
 
 
 # ------------------------------------------------------------------------- cross-fitting
@@ -295,7 +328,11 @@ def main(argv: Sequence[str] | None = None) -> Path:
 
     records = [r for r in load_corpus(ns.corpus) if r.split == "dev"]
     groups_by_id = {r.id: r.server_name for r in records}
-    logits, labels, ids = pool_oof(ns.dirs, expected_ids=list(groups_by_id))
+    logits, labels, ids = pool_oof(
+        ns.dirs,
+        expected_ids=list(groups_by_id),
+        expected_labels={r.id: r.label for r in records},
+    )
     groups = [groups_by_id[i] for i in ids]
 
     before = expected_calibration_error(apply(logits, 1.0), labels)

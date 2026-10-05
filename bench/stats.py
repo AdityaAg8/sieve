@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 import numpy as np
+from scipy.stats import beta  # type: ignore[import-untyped]
 
 from bench.collect.sandbox_capture import EXCLUSIONS_PATH, load_exclusions
 from bench.split.dedup import (
@@ -346,6 +347,20 @@ def _print_tables(report: dict[str, Any]) -> None:
         )
     if report["excluded_servers"]:
         print(f"\nexcluded servers: {report['excluded_servers']}")
+
+
+def clopper_pearson(k: int, n: int, alpha: float = 0.05) -> tuple[float, float]:
+    """The exact (Clopper-Pearson) two-sided `1 - alpha` interval of a binomial share k/n.
+
+    A count with no cluster structure worth bootstrapping, or one at the boundary (41/41, 0/104),
+    where a bootstrap collapses to a point: the beta quantiles still give an honest width. The
+    ends are pinned at k = 0 (lo = 0) and k = n (hi = 1), where the quantile is undefined.
+    """
+    if n <= 0 or not 0 <= k <= n:
+        raise ValueError(f"clopper_pearson needs 0 <= k <= n and n > 0, got k={k}, n={n}")
+    lo = 0.0 if k == 0 else float(beta.ppf(alpha / 2, k, n - k + 1))
+    hi = 1.0 if k == n else float(beta.ppf(1 - alpha / 2, k + 1, n - k))
+    return lo, hi
 
 
 def _load(path: Path) -> list[CorpusRecord]:

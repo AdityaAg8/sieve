@@ -23,7 +23,7 @@ from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, Protocol
 
 import numpy as np
 import numpy.typing as npt
@@ -31,6 +31,8 @@ import yaml
 from pydantic import BaseModel, ConfigDict
 
 from sieve.eval.metrics import (
+    auroc,
+    cluster_bootstrap,
     cluster_bootstrap_ci,
     fp_reduction,
     macro_f1_present,
@@ -51,6 +53,10 @@ REAL_SOURCES: frozenset[str] = frozenset({"public_repo", "wild_fp"})
 #: operating point: calibrated thresholds only ever come from `thresholds.select` or the
 #: artefact's `sieve_config.json` (PRD §11.4).
 BINARY_DECISION = 0.5
+
+#: DeBERTa-v3 truncates at 512 tokens (PRD §11.2); the length slice (F15) splits there.
+LENGTH_LIMIT = 512
+LENGTH_BUCKETS: tuple[str, str] = (f"<={LENGTH_LIMIT}", f">{LENGTH_LIMIT}")
 
 TWO_CLASS_LABELS: tuple[str, str] = ("not_poisoned", "poisoned")
 
@@ -119,6 +125,9 @@ class Inputs:
     judge_usage: list[dict[str, Any]] = field(default_factory=list)
     scanner_findings_by_id: dict[str, list[ScannerFinding]] = field(default_factory=dict)
     dataset_version: str | None = None
+    #: Tokens per record id for the length slice, counted once per run (`count_tokens`).
+    #: Empty means no tokenizer was available and `per_length` is null.
+    token_lengths: dict[str, int] = field(default_factory=dict)
 
 
 # --------------------------------------------------------------------------- offline guard
@@ -212,6 +221,44 @@ def load_minimal_pairs(path: Path) -> list[dict[str, Any]]:
     ]  # fmt: skip
 
 
+class Tokenizer(Protocol):
+    def encode(self, text: str, add_special_tokens: bool = True) -> list[int]: ...
+
+
+def length_tokenizer(selection: Path) -> Tokenizer | None:
+    """The published artefact's own tokenizer (local files only), for the length slice.
+
+    One tokenizer for every row, so each row's `per_length` buckets hold the same records; a row
+    whose model has no tokenizer (TF-IDF, the hygiene detector, YARA) reads the published one
+    like the rest. None (and `per_length` null) before any selection exists, or when the
+    published directory ships no tokenizer at all (the tiny `make bench` fixture); a tokenizer
+    that is there but does not load offline is an error, not a missing slice.
+    """
+    if not selection.exists():
+        return None
+    published = json.loads(selection.read_text(encoding="utf-8")).get("published_dir")
+    if not published or not (Path(str(published)) / "tokenizer_config.json").exists():
+        log.warning("no published tokenizer (%s): the length slice is null", published)
+        return None
+    try:
+        from transformers import AutoTokenizer
+
+        tokenizer: Tokenizer = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call]
+            str(published), local_files_only=True
+        )
+    except Exception as exc:  # noqa: BLE001 - any failure means the slice cannot be measured
+        raise MatrixError(
+            f"the length slice needs the published artefact's tokenizer, and {published} has "
+            f"none that loads offline: {type(exc).__name__}: {exc}"[:400]
+        ) from exc
+    return tokenizer
+
+
+def count_tokens(records: Sequence[CorpusRecord], tokenizer: Tokenizer) -> dict[str, int]:
+    """Tokens per record, special tokens included: what the model sees before truncation."""
+    return {r.id: len(tokenizer.encode(serialise(r.to_tool_record()))) for r in records}
+
+
 def load_judge_usage(path: Path | None) -> list[dict[str, Any]]:
     """The recorded token usage, for the cost column. Absent means the column is null."""
     if path is None or not path.exists():
@@ -284,7 +331,11 @@ def pooled_oof_scores(model_dir: Path, records: Sequence[CorpusRecord]) -> Score
 
     expected = [r.id for r in records]
     try:
-        logits, _, ids = pool_oof([Path(model_dir)], expected_ids=expected)
+        logits, _, ids = pool_oof(
+            [Path(model_dir)],
+            expected_ids=expected,
+            expected_labels={r.id: r.label for r in records},
+        )
     except PoolError as exc:
         raise MatrixError(str(exc)) from exc
     thresholds = th.load(Path(model_dir))
@@ -488,6 +539,7 @@ def _ci(
 #: rather than repeating it, and `sieve.model.push._table` reads exactly these names.
 BREAKDOWN_KEYS: tuple[str, ...] = (
     "n",
+    "n_poisoned",
     "recall_at_t_low",
     "fpr_stage1_at_t_low",
     "fpr_pipeline",
@@ -515,6 +567,9 @@ def breakdown(
         )
         out[bucket] = {
             "n": float(len(indices)),
+            # Recall over a bucket with no attack is 0.0 by convention; this count tells a
+            # reader it is undefined there, without changing the value (web: "n/a").
+            "n_poisoned": float(sum(t == "poisoned" for t in bucket_truth)),
             "recall_at_t_low": recall,
             "fpr_stage1_at_t_low": fpr,
             "fpr_pipeline": fpr_pipeline,
@@ -720,7 +775,48 @@ _SEED_KEYS: tuple[str, ...] = (
     "per_concealment",
     "per_source",
     "minimal_pair_accuracy",
+    "fpr_stage1_real_at_t_low",
+    "fp_dismissed_real_triage",
+    "source_probe",
+    "per_length",
 )
+
+
+def _share_below(
+    scores: Sequence[float], groups: Sequence[str], threshold: float, n_boot: int
+) -> dict[str, Any]:
+    """The share of `scores` below `threshold`, with its server-cluster bootstrap CI."""
+    if not scores:
+        return {"point": None, "lo": None, "hi": None, "n": 0, "n_undefined": 0}
+
+    def stat(_: Any, y_score: Any) -> float:
+        return float(np.mean(np.asarray(y_score) < threshold)) if len(y_score) else float("nan")
+
+    r = cluster_bootstrap(stat, ["not_poisoned"] * len(scores), scores, groups, n_boot=n_boot)
+    return {
+        "point": r.point,
+        "lo": r.lo,
+        "hi": r.hi,
+        "n": len(scores),
+        "n_undefined": r.n_undefined,
+    }
+
+
+def _source_probe(
+    records: Sequence[CorpusRecord], truth: Sequence[str], scores: Sequence[float]
+) -> dict[str, float | None]:
+    """F10: the AUROC of p(poisoned) separating synthetic negatives (positive) from real ones.
+
+    0.5 means the score carries no source tell; the further above, the more a generated benign
+    tool looks like an attack to the model simply for being generated.
+    """
+    negatives = [i for i, t in enumerate(truth) if t != "poisoned"]
+    value = auroc(
+        ["real" if records[i].source in REAL_SOURCES else "synthetic" for i in negatives],
+        [scores[i] for i in negatives],
+        positive="synthetic",
+    )
+    return {"auroc_synthetic_vs_real_negatives": None if math.isnan(value) else value}
 
 
 def _seed_block(
@@ -787,6 +883,40 @@ def _seed_block(
         ),
         "minimal_pair_accuracy": None,
     }
+    # The like-for-like keys (v1 fix plan T2), after every existing key: each bootstrap below
+    # builds its own generator, so nothing above draws from a stream these consume.
+    real_flagged = [
+        i for i in real if truth[i] != "poisoned" and baseline_flags[i] >= BINARY_DECISION
+    ]
+    block["fpr_stage1_real_at_t_low"] = (
+        _ci(
+            "fpr",
+            [truth[i] for i in real],
+            [head.scores[i] for i in real],
+            [groups[i] for i in real],
+            t_low,
+            n_boot,
+        )
+        if real
+        else {"point": None, "lo": None, "hi": None}
+    )
+    block["fp_dismissed_real_triage"] = _share_below(
+        [head.scores[i] for i in real_flagged], [groups[i] for i in real_flagged], t_low, n_boot
+    )
+    block["source_probe"] = _source_probe(records, truth, head.scores)
+    lengths = inputs.token_lengths
+    block["per_length"] = (
+        breakdown(
+            records,
+            truth,
+            head.scores,
+            confirmed,
+            t_low,
+            lambda r: LENGTH_BUCKETS[0] if lengths[r.id] <= LENGTH_LIMIT else LENGTH_BUCKETS[1],
+        )
+        if lengths
+        else None
+    )
     if spec.minimal_pairs:
         if inputs.minimal_pairs is None:
             raise MatrixError(f"row {spec.row} asks for minimal pairs but none were supplied")
@@ -1001,6 +1131,9 @@ def main(argv: Sequence[str] | None = None) -> Path:
         ),
         dataset_version=dataset_version(ns.corpus),
     )
+    tokenizer = length_tokenizer(ns.results_dir / "selection.json")
+    if tokenizer is not None:
+        inputs.token_lengths = count_tokens(records, tokenizer)
     payload = run_matrix(
         specs,
         inputs,

@@ -30,7 +30,7 @@ import argparse
 import hashlib
 import json
 import math
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict
 from pathlib import Path
@@ -39,6 +39,7 @@ from typing import Any
 import numpy as np
 
 from bench.ablations.run import breakdown
+from bench.stats import clopper_pearson
 from sieve.eval.metrics import (
     auprc,
     auroc,
@@ -130,6 +131,25 @@ def _fpr_stat(threshold: float) -> Stat:
         return float(np.mean(ys[neg] >= threshold)) if neg.any() else float("nan")
 
     return stat
+
+
+def _flipped(interval: Mapping[str, Any]) -> dict[str, Any]:
+    """`1 - share` of an interval from the SAME bootstrap: the point flips, and so do the ends."""
+
+    def one_minus(x: float | None) -> float | None:
+        return None if x is None else 1.0 - x
+
+    return {
+        "point": one_minus(interval["point"]),
+        "lo": one_minus(interval["hi"]),
+        "hi": one_minus(interval["lo"]),
+        "n": interval["n"],
+    }
+
+
+def _count(k: int, n: int) -> dict[str, Any]:
+    """A share with its counts, so no reader ever divides (or rounds) them itself."""
+    return {"point": k / n if n else None, "k": k, "n": n}
 
 
 def _truth(row: Row) -> str:
@@ -233,6 +253,13 @@ def model_report(preds: Sequence[Row], rows: Mapping[str, Row], *, n_boot: int) 
         "fpr_prevalence_weighted": weighted,
         "routing_rate": _rate([t_low <= x < t_high for x in tid_p]),
     }  # fmt: skip
+    # The like-for-like view (v1 fix plan T2): YARA's own FPR on the same real rows, and the
+    # share of its false positives Sieve dismisses, read off the triage slice's bootstrap.
+    tid_negatives = [i for i, t in enumerate(tid_truth) if t != POISONED]
+    test_id["baseline_fpr_real"] = _count(
+        sum(bool(tid[i].get("yara")) for i in tid_negatives), len(tid_negatives)
+    )
+    test_id["fp_dismissed_real_triage"] = _flipped(test_id["fpr_triage_slice"])
 
     # holdout-synthetic: the release gate.
     syn_truth = [_truth(r) for r in syn]
@@ -248,6 +275,13 @@ def model_report(preds: Sequence[Row], rows: Mapping[str, Row], *, n_boot: int) 
                                     if r["poisoned"] and not r.get("yara")]),
         **_ranking(syn, syn_p),
     }  # fmt: skip
+    caught = [x >= t_low for r, x in zip(syn, syn_p, strict=True) if r["poisoned"]]
+    holdout_synthetic["recall_cp"] = (
+        dict(zip(("lo", "hi"), clopper_pearson(sum(caught), len(caught)), strict=True))
+        | {"k": sum(caught), "n": len(caught)}
+        if caught
+        else {"lo": None, "hi": None, "k": 0, "n": 0}
+    )
 
     # real_poisoned (M13): template x server clusters, eval-only.
     rp_truth = [_truth(r) for r in rp]
@@ -377,6 +411,28 @@ def _log_entry(log_path: Path, headline: str) -> tuple[str | None, dict[str, Any
     return None, {}
 
 
+def _check_coverage(model: str, preds: Sequence[Row], rows: Sequence[Row]) -> None:
+    """F19: each model scored each (set, id) of the rows exactly once.
+
+    A fold artefact (`fold` >= 0, only in `eval_val_ood`'s dev dry run) scores its own fold's
+    rows and nothing else, so for it "exactly once" holds over the rows it scored.
+    """
+    keys = Counter((p["set"], p["id"]) for p in preds)
+    repeated = sorted(k for k, count in keys.items() if count > 1)
+    if repeated:
+        raise ValueError(f"{model} scored {len(repeated)} (set, id) more than once: {repeated[:3]}")
+    wanted = {(r["set"], r["id"]) for r in rows}
+    fold_model = all(isinstance(p.get("fold"), int) and p["fold"] >= 0 for p in preds)
+    if fold_model:
+        wanted &= set(keys)
+    if set(keys) != wanted:
+        missing, extra = sorted(wanted - set(keys)), sorted(set(keys) - wanted)
+        raise ValueError(
+            f"{model}'s predictions do not cover the rows exactly: {len(missing)} missing "
+            f"{missing[:3]}, {len(extra)} not in the rows {extra[:3]}"
+        )
+
+
 def build_report(
     predictions: Sequence[Row],
     rows: Sequence[Row],
@@ -388,6 +444,8 @@ def build_report(
     log_entry: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     by_id = {r["id"]: r for r in rows}
+    if len(by_id) != len(rows):
+        raise ValueError("holdout rows repeat an id; predictions are joined to rows by id")
     by_model: dict[str, list[Row]] = defaultdict(list)
     family_of: dict[str, str] = {}
     for p in predictions:
@@ -395,6 +453,8 @@ def build_report(
         family_of[p["model"]] = str(p.get("family") or p["model"].split("@")[0])
     if not by_model:
         raise ValueError("no predictions to report")
+    for model, preds in by_model.items():
+        _check_coverage(model, preds, rows)
     if headline is None:
         if len(by_model) > 1:
             raise ValueError("several models were scored: name the pre-registered --headline")
@@ -426,6 +486,9 @@ def build_report(
         "recall_interval": gate,
         "fpr_pipeline_real": head["holdout"]["fpr_pipeline_real"],
         "fpr_stage1_real": head["test_id"]["fpr_stage1_at_t_low"],
+        "baseline_fpr_real": head["test_id"]["baseline_fpr_real"],
+        "fp_dismissed_real_triage": head["test_id"]["fp_dismissed_real_triage"],
+        "recall_cp": head["holdout_synthetic"]["recall_cp"],
         "per_tier": head["holdout"]["per_tier"],
         "per_concealment": head["holdout"]["per_concealment"],
         "real_poisoned_recall_stage1": rp["recall_stage1"]["point"],

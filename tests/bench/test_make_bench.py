@@ -24,6 +24,7 @@ BENCH_STEPS = (
     "bench.split.pairs",
     "sieve.model.select --candidate",  # before the ablations: rows 4/5 read it (Z2 review)
     "bench.ablations.run",
+    "bench.analysis.operating_points",  # dev OOF only, post-hoc (v1 fix plan T2)
     "bench.analysis.errors",
     "bench.report_final",
     "bench.latency --in-process",

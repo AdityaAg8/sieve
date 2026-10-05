@@ -18,13 +18,43 @@
       "minProperties": 1,
       "additionalProperties": {
         "type": "object",
-        "required": ["n", "recall_at_t_low", "fpr_stage1_at_t_low", "fpr_pipeline"],
+        "required": ["n", "n_poisoned", "recall_at_t_low", "fpr_stage1_at_t_low", "fpr_pipeline"],
         "properties": {
           "n": {"type": "number"},
+          "n_poisoned": {"type": "number"},
           "recall_at_t_low": {"type": "number"},
           "fpr_stage1_at_t_low": {"type": "number"},
           "fpr_pipeline": {"type": "number"}
         }
+      }
+    },
+    "count": {
+      "type": "object",
+      "required": ["point", "k", "n"],
+      "properties": {
+        "point": {"type": ["number", "null"]},
+        "k": {"type": "integer"},
+        "n": {"type": "integer"}
+      }
+    },
+    "flipped": {
+      "type": "object",
+      "required": ["point", "lo", "hi", "n"],
+      "properties": {
+        "point": {"type": ["number", "null"]},
+        "lo": {"type": ["number", "null"]},
+        "hi": {"type": ["number", "null"]},
+        "n": {"type": "integer"}
+      }
+    },
+    "clopper_pearson": {
+      "type": "object",
+      "required": ["lo", "hi", "k", "n"],
+      "properties": {
+        "lo": {"type": ["number", "null"]},
+        "hi": {"type": ["number", "null"]},
+        "k": {"type": "integer"},
+        "n": {"type": "integer"}
       }
     },
     "aggregate": {
@@ -42,7 +72,8 @@
     "recall", "recall_lcb", "recall_interval", "fpr_pipeline_real", "per_tier",
     "per_concealment", "real_poisoned_recall_stage1", "real_poisoned_recall_pipeline",
     "release_gate", "release_gate_passed", "limitations", "preregistration_sha256",
-    "headline_model", "per_model", "per_family", "judge"
+    "headline_model", "per_model", "per_family", "judge", "baseline_fpr_real",
+    "fp_dismissed_real_triage", "recall_cp"
   ],
   "properties": {
     "dataset_version": {"type": "string"},
@@ -56,6 +87,9 @@
     "recall_lcb": {"type": "number"},
     "recall_interval": {"$ref": "#/$defs/interval"},
     "fpr_pipeline_real": {"$ref": "#/$defs/interval"},
+    "baseline_fpr_real": {"$ref": "#/$defs/count"},
+    "fp_dismissed_real_triage": {"$ref": "#/$defs/flipped"},
+    "recall_cp": {"$ref": "#/$defs/clopper_pearson"},
     "per_tier": {"$ref": "#/$defs/breakdown"},
     "per_concealment": {"$ref": "#/$defs/breakdown"},
     "real_poisoned_recall_stage1": {"type": "number"},
@@ -82,11 +116,16 @@
         "properties": {
           "test_id": {
             "type": "object",
-            "required": ["n", "macro_f1_2class", "fpr_stage1_at_t_low", "fpr_triage_slice", "fpr_by_source", "fpr_prevalence_weighted", "routing_rate"]
+            "required": ["n", "macro_f1_2class", "fpr_stage1_at_t_low", "fpr_triage_slice", "fpr_by_source", "fpr_prevalence_weighted", "routing_rate", "baseline_fpr_real", "fp_dismissed_real_triage"],
+            "properties": {
+              "baseline_fpr_real": {"$ref": "#/$defs/count"},
+              "fp_dismissed_real_triage": {"$ref": "#/$defs/flipped"}
+            }
           },
           "holdout_synthetic": {
             "type": "object",
-            "required": ["n", "n_poisoned", "recall_at_t_low", "per_concealment", "per_generator", "per_payload_field", "miss_catch_recall", "auroc", "auprc"]
+            "required": ["n", "n_poisoned", "recall_at_t_low", "per_concealment", "per_generator", "per_payload_field", "miss_catch_recall", "auroc", "auprc", "recall_cp"],
+            "properties": {"recall_cp": {"$ref": "#/$defs/clopper_pearson"}}
           },
           "real_poisoned": {
             "type": "object",
