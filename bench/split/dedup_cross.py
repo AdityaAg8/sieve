@@ -229,7 +229,7 @@ def write_report(report: Mapping[str, Any], path: Path = RESULTS) -> Path:
 
 
 def _catalog_items() -> list[Item]:
-    import pyarrow.parquet as pq  # type: ignore[import-untyped]
+    import pyarrow.parquet as pq
 
     from bench.analysis.plan_evidence.pool import catalog_rows
     from bench.collect.catalog import download

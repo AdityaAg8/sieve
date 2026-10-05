@@ -154,7 +154,7 @@ def no_network() -> Iterator[None]:
             "computed from committed artefacts (M6a)"
         )
 
-    socket.socket.connect = refuse  # type: ignore[method-assign]
+    socket.socket.connect = refuse  # type: ignore[method-assign, assignment]
     try:
         yield
     finally:

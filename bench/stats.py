@@ -16,11 +16,12 @@ import argparse
 import collections
 import json
 import logging
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Protocol
 
 import numpy as np
-from scipy.stats import beta  # type: ignore[import-untyped]
+from scipy.stats import beta
 
 from bench.collect.sandbox_capture import EXCLUSIONS_PATH, load_exclusions
 from bench.split.dedup import (
@@ -83,7 +84,7 @@ class FastTokenizer(Tokenizer, Protocol):
 
 
 def _counts(records: list[CorpusRecord]) -> dict[str, dict[str, int]]:
-    fields = {
+    fields: dict[str, Callable[[CorpusRecord], str]] = {
         "label": lambda r: r.label,
         "difficulty": lambda r: str(r.difficulty),
         "concealment": lambda r: r.concealment,
@@ -227,7 +228,7 @@ def _load_tokenizers(names: dict[str, str]) -> tuple[dict[str, Tokenizer], dict[
         try:
             from transformers import AutoTokenizer
 
-            loaded[name] = AutoTokenizer.from_pretrained(model)
+            loaded[name] = AutoTokenizer.from_pretrained(model)  # type: ignore[no-untyped-call]
         except Exception as exc:  # noqa: BLE001 (any failure means "not measurable here")
             unavailable[name] = f"{type(exc).__name__}: {exc}"[:200]
             log.warning("tokenizer %s unavailable: %s", model, exc)

@@ -96,7 +96,7 @@ def match_rows(
 ) -> tuple[npt.NDArray[np.int64], list[int]]:
     """(`perm`, ambiguous stored rows) with stored row i == fresh row perm[i]; label-respecting,
     exact assignment. Refuses past `max_ambiguous` rows that fail the identity test."""
-    from scipy.optimize import linear_sum_assignment  # type: ignore[import-untyped]
+    from scipy.optimize import linear_sum_assignment
 
     if stored.shape != fresh.shape:
         raise RealignError(f"{stored.shape} stored rows against {fresh.shape} fresh rows")

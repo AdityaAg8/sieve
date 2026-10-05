@@ -34,7 +34,7 @@ from collections import Counter, defaultdict
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
@@ -167,7 +167,9 @@ def _ranking(rows: Sequence[Row], p: Sequence[float]) -> dict[str, float | None]
     return {"auroc": _nan_to_none(auroc(truth, p)), "auprc": _nan_to_none(auprc(truth, p))}
 
 
-def _slice_recall(rows: Sequence[Row], p: Sequence[float], t_low: float, key: str) -> dict:
+def _slice_recall(
+    rows: Sequence[Row], p: Sequence[float], t_low: float, key: str
+) -> dict[str, Any]:
     buckets: dict[str, list[int]] = defaultdict(list)
     for i, r in enumerate(rows):
         if r["poisoned"]:
@@ -178,7 +180,7 @@ def _slice_recall(rows: Sequence[Row], p: Sequence[float], t_low: float, key: st
     }
 
 
-def _payload_fields(rows: Sequence[Row], p: Sequence[float], t_low: float) -> dict:
+def _payload_fields(rows: Sequence[Row], p: Sequence[float], t_low: float) -> dict[str, Any]:
     """Recall per payload field, on `exact` rows only (an approximated schema moves fields)."""
     buckets: dict[str, list[int]] = defaultdict(list)
     for i, r in enumerate(rows):
@@ -259,7 +261,9 @@ def model_report(preds: Sequence[Row], rows: Mapping[str, Row], *, n_boot: int) 
     test_id["baseline_fpr_real"] = _count(
         sum(bool(tid[i].get("yara")) for i in tid_negatives), len(tid_negatives)
     )
-    test_id["fp_dismissed_real_triage"] = _flipped(test_id["fpr_triage_slice"])
+    test_id["fp_dismissed_real_triage"] = _flipped(
+        cast(dict[str, Any], test_id["fpr_triage_slice"])
+    )
 
     # holdout-synthetic: the release gate.
     syn_truth = [_truth(r) for r in syn]
@@ -333,9 +337,9 @@ def model_report(preds: Sequence[Row], rows: Mapping[str, Row], *, n_boot: int) 
             "fp_reduction_triage": _fp_reduction(holdout, triage, groups, n_boot),
             "fp_reduction_standalone": _fp_reduction(holdout, sieve_alone, groups, n_boot),
             "per_tier": breakdown(holdout, truth, holdout_p, confirmed, t_low,  # type: ignore[arg-type]
-                                  lambda r: r.get("difficulty") or "unscored"),
+                                  lambda r: cast(Row, r).get("difficulty") or "unscored"),
             "per_concealment": breakdown(holdout, truth, holdout_p, confirmed, t_low,  # type: ignore[arg-type]
-                                         lambda r: r.get("concealment") or "none"),
+                                         lambda r: cast(Row, r).get("concealment") or "none"),
             "deberta_unk": None if not any(r.get("deberta_unk") is not None for r in holdout)
             else {"n": len(unk), "recall_at_t_low": _rate(
                 [holdout_p[i] >= t_low for i in unk if holdout[i]["poisoned"]])},
@@ -558,7 +562,7 @@ def main(argv: Sequence[str] | None = None) -> Path:
         if excluded.exists()
         else []
     )
-    path = ns.results_dir / REPORT_FILE
+    path: Path = ns.results_dir / REPORT_FILE
     path.write_text(
         json.dumps(report, indent=2, sort_keys=True, allow_nan=False) + "\n",
         encoding="utf-8",

@@ -59,7 +59,7 @@ class CatalogRow(BaseModel):
 
 
 def read_catalog(tools_path: Path, servers_path: Path) -> list[CatalogRow]:
-    import pyarrow.parquet as pq  # type: ignore[import-untyped]  # the model extra's; only here
+    import pyarrow.parquet as pq  # the model extra's; only here
 
     info: dict[str, str | None] = {}
     for server in pq.read_table(servers_path, columns=["package", "server_info"]).to_pylist():

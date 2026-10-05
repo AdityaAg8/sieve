@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from scipy.stats import beta  # type: ignore[import-untyped]
+from scipy.stats import beta
 
 from bench.collect.merge_corpus import is_human
 from bench.label.sample import dev_audit_ids

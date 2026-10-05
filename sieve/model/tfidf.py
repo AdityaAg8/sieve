@@ -13,9 +13,9 @@ from typing import Any, Self
 
 import numpy as np
 import numpy.typing as npt
-from sklearn.feature_extraction.text import TfidfVectorizer  # type: ignore[import-untyped]
-from sklearn.linear_model import LogisticRegression  # type: ignore[import-untyped]
-from sklearn.pipeline import FeatureUnion, Pipeline  # type: ignore[import-untyped]
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import FeatureUnion, Pipeline
 
 from sieve.model.thresholds import UNCALIBRATED
 from sieve.model.version import git_sha

@@ -16,7 +16,7 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
-from scipy.optimize import minimize_scalar  # type: ignore[import-untyped]
+from scipy.optimize import minimize_scalar
 
 from sieve.eval.metrics import (
     ECE_BINS,

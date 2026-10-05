@@ -629,7 +629,7 @@ def dry_run_records(
 
 
 def _ks(a: Sequence[int], b: Sequence[int]) -> dict[str, Any]:
-    from scipy.stats import ks_2samp  # type: ignore[import-untyped]
+    from scipy.stats import ks_2samp
 
     result = ks_2samp(a, b)
     return {
