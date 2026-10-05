@@ -190,7 +190,7 @@ def download(artefact: Artefact, dest: Path) -> Path:
     Imported lazily: `huggingface_hub` is in the `model` extra, and this module is imported by
     tests that have no business needing it.
     """
-    if artefact.pending:  # pragma: no cover -- callers check `pending()` first
+    if artefact.pending or artefact.hub_repo is None:  # pragma: no cover -- callers check first
         raise ManifestError(f"{artefact.name}: pending, nothing to download")
     from huggingface_hub import snapshot_download
 

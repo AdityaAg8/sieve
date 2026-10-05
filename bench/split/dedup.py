@@ -103,7 +103,7 @@ class MiniLMEmbedder:
 
 def _l2_normalise(matrix: Matrix) -> Matrix:
     norms = np.linalg.norm(matrix, axis=1, keepdims=True)
-    return matrix / np.where(norms == 0.0, 1.0, norms)
+    return np.asarray(matrix / np.where(norms == 0.0, 1.0, norms), dtype=np.float64)
 
 
 def near_duplicates(

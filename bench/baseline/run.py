@@ -27,7 +27,7 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 from pydantic import BaseModel, PrivateAttr
 
@@ -254,7 +254,7 @@ def _filter_split(records: list[CorpusRecord], split: str) -> list[CorpusRecord]
 def _resolve_scanner_name(name: str) -> ScannerName:
     if name not in _RESOLVABLE_SCANNERS:
         raise SystemExit(f"unknown scanner {name!r}; choose from {', '.join(_RESOLVABLE_SCANNERS)}")
-    return cast(ScannerName, name)
+    return name  # narrowed to ScannerName by the membership test above
 
 
 def main(argv: list[str] | None = None) -> int:

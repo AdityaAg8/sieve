@@ -73,11 +73,11 @@ def report(pool: Sequence[Row], extra: Sequence[Row]) -> dict[str, dict[str, flo
 
     tox = [r for r in pool if r["src"] == "mcptox"]
     seen: set[str] = set()
-    clean = [
-        r
-        for r in pool
-        if r["src"] == "mcptox_clean" and not (r["desc"] in seen or seen.add(r["desc"]))
-    ]
+    clean = []
+    for r in pool:
+        if r["src"] == "mcptox_clean" and r["desc"] not in seen:
+            seen.add(r["desc"])
+            clean.append(r)
     corpus_keys = {(r["server"], r["name"]) for r in pool if r["src"].startswith("corpus:")}
     catalog = [
         r for r in pool if r["src"] == "catalog" and (r["server"], r["name"]) not in corpus_keys

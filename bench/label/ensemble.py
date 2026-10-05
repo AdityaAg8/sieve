@@ -242,7 +242,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     ]
     rows: list[Row] = list(dev_rows(records))
     if ns.all:
-        rows += _test_id_rows(records) + _extra_rows(ns.extra)
+        rows.extend(_test_id_rows(records))
+        rows.extend(_extra_rows(ns.extra))
     rows = restrict(rows, ns.ids_file)
     summary = run(client, rows, log=RawLog(ns.raw_log), seed=ns.seed, max_rows=ns.max_rows)
     print(json.dumps(summary, indent=2))

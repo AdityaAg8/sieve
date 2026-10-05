@@ -136,7 +136,7 @@ def build_notice(records: list[CorpusRecord]) -> str:
 
 
 def _composition(records: list[CorpusRecord], stats: dict[str, Any]) -> str:
-    counts = collections.Counter(r.split for r in records)
+    counts: collections.Counter[str] = collections.Counter(str(r.split) for r in records)
     lines = [
         f"- Records: {stats.get('n', len(records))}",
         "- Splits: "

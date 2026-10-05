@@ -24,6 +24,7 @@ import collections
 import hashlib
 import json
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 
@@ -68,7 +69,7 @@ def split_map_from(records: list[CorpusRecord]) -> SplitMap:
         host = _resolve_host(record, by_id)
         if host.source == "real_poisoned":
             continue
-        entry = (record.split, record.fold)
+        entry = (cast(str, record.split), record.fold)
         if out.setdefault(host.server_name, entry) != entry:
             raise ValueError(f"server {host.server_name!r} carries two assignments")
     return out

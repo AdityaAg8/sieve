@@ -26,7 +26,7 @@ def tokenizer(name: str, *, use_fast: bool = True) -> Any:
 
     from sieve.model.data import add_markers
 
-    tok = AutoTokenizer.from_pretrained(name, use_fast=use_fast)
+    tok = AutoTokenizer.from_pretrained(name, use_fast=use_fast)  # type: ignore[no-untyped-call]
     add_markers(tok)
     return tok
 

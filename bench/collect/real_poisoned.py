@@ -204,7 +204,7 @@ def _records_from(
                 label="poisoned",
                 label_rationale=entry.get("rationale"),
                 labeller=labeller,
-                labelled_at=LABELLED_AT,  # type: ignore[arg-type]
+                labelled_at=LABELLED_AT,
                 split="eval_only",
                 fold=None,
             )

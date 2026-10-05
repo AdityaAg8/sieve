@@ -13,7 +13,7 @@ import json
 import re
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from sieve.types import CorpusRecord
 
@@ -77,8 +77,8 @@ def catalog_rows(table: Iterable[dict[str, Any]]) -> list[Row]:
             _row(
                 "catalog",
                 "unlabelled",
-                key[0],
-                key[1],
+                cast(str, key[0]),
+                cast(str, key[1]),
                 r.get("tool_description"),
                 schema,
                 package=r.get("package"),

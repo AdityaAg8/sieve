@@ -269,12 +269,12 @@ def _agreement(
     kappas = {}
     for a, b in (("sonnet", "qwen"), ("sonnet", "gemma"), ("qwen", "gemma")):
         pairs = [(voters[a](r), voters[b](r)) for r in real]
-        pairs = [(x, y) for x, y in pairs if x is not None and y is not None]
+        both = [(x, y) for x, y in pairs if x is not None and y is not None]
         kappas[f"{a}~{b}"] = {
-            "kappa": round(cohens_kappa([x for x, _ in pairs], [y for _, y in pairs]), 4)
-            if pairs
+            "kappa": round(cohens_kappa([x for x, _ in both], [y for _, y in both]), 4)
+            if both
             else None,
-            "n": len(pairs),
+            "n": len(both),
         }
     votes = [
         (construction[i], v)
