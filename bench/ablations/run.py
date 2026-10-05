@@ -230,13 +230,15 @@ def length_tokenizer(selection: Path) -> Tokenizer | None:
 
     One tokenizer for every row, so each row's `per_length` buckets hold the same records; a row
     whose model has no tokenizer (TF-IDF, the hygiene detector, YARA) reads the published one
-    like the rest. None before any selection exists; a selection whose published directory
-    holds no loadable tokenizer is an error, not a missing slice.
+    like the rest. None (and `per_length` null) before any selection exists, or when the
+    published directory ships no tokenizer at all (the tiny `make bench` fixture); a tokenizer
+    that is there but does not load offline is an error, not a missing slice.
     """
     if not selection.exists():
         return None
     published = json.loads(selection.read_text(encoding="utf-8")).get("published_dir")
-    if not published:
+    if not published or not (Path(str(published)) / "tokenizer_config.json").exists():
+        log.warning("no published tokenizer (%s): the length slice is null", published)
         return None
     try:
         from transformers import AutoTokenizer

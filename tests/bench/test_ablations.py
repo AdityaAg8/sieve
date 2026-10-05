@@ -1168,8 +1168,12 @@ def test_the_length_tokenizer_comes_from_the_published_artefact(tmp_path: Path) 
     from bench.ablations.run import length_tokenizer
 
     assert length_tokenizer(tmp_path / "selection.json") is None, "no selection yet: no slice"
+    published = tmp_path / "published"
+    published.mkdir()
     (tmp_path / "selection.json").write_text(
-        json.dumps({"published_dir": (tmp_path / "nowhere").as_posix()}), encoding="utf-8"
+        json.dumps({"published_dir": published.as_posix()}), encoding="utf-8"
     )
+    assert length_tokenizer(tmp_path / "selection.json") is None, "no tokenizer shipped"
+    (published / "tokenizer_config.json").write_text("{not json", encoding="utf-8")
     with pytest.raises(MatrixError, match="tokenizer"):
         length_tokenizer(tmp_path / "selection.json")
