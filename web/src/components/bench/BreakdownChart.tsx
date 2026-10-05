@@ -16,6 +16,27 @@ import { formatPercent, type BreakdownRow } from "@/lib/bench";
 
 import { EmptyNote, Num, TableWrap, Td, Th } from "./primitives";
 
+/** What a recall cell says for a bucket that holds no attacks: undefined, not zero. */
+export const NOT_APPLICABLE = "n/a";
+
+/** Recall is undefined where there are no poisoned rows, or where the report gives no recall. */
+function hasRecall(row: BreakdownRow): row is BreakdownRow & { recall: number } {
+  return row.n_poisoned !== 0 && typeof row.recall === "number";
+}
+
+/**
+ * The chart's data. A bucket with no recall carries `null`, which Recharts leaves undrawn; `0`
+ * would draw a zero-height bar and read as "caught none of them".
+ */
+export function breakdownSeries(rows: BreakdownRow[]) {
+  return rows.map((row) => ({
+    bucket: row.bucket,
+    recall: hasRecall(row) ? row.recall : null,
+    fpr: row.fpr ?? 0,
+    n: row.n ?? 0,
+  }));
+}
+
 /**
  * Two series, both proportions on one 0–1 axis, so one axis is enough — there is never a second
  * y-scale on this page.
@@ -41,12 +62,7 @@ export function BreakdownChart({
   bucketLabel: string;
   rows: BreakdownRow[];
 }) {
-  const data = rows.map((row) => ({
-    bucket: row.bucket,
-    recall: row.recall ?? 0,
-    fpr: row.fpr ?? 0,
-    n: row.n ?? 0,
-  }));
+  const data = breakdownSeries(rows);
 
   return (
     <section aria-labelledby={id} className="border-line-1 flex min-w-0 flex-col gap-4 border-t pt-10">
@@ -145,7 +161,16 @@ export function BreakdownChart({
                     <span data-testid={`${id}-bucket`}>{row.bucket}</span>
                   </Td>
                   <Td>
-                    <Num>{formatPercent(row.recall)}</Num>
+                    {hasRecall(row) ? (
+                      <Num>{formatPercent(row.recall)}</Num>
+                    ) : (
+                      <span
+                        className="t-num text-ink-2"
+                        title="No poisoned tools in this bucket, so recall is undefined"
+                      >
+                        {NOT_APPLICABLE}
+                      </span>
+                    )}
                   </Td>
                   <Td>
                     <Num>{formatPercent(row.fpr)}</Num>

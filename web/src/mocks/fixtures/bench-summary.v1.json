@@ -2431,11 +2431,22 @@
       }
     },
     "holdout": {
+      "baseline_fpr_real": {
+        "k": 26,
+        "n": 105,
+        "point": 0.24761904761904763
+      },
       "dataset_version": "labelled.jsonl@51caf0707f46",
       "excluded_invalid_tool_name": [
         "ood-docker-0418",
         "ood-docker-0419"
       ],
+      "fp_dismissed_real_triage": {
+        "hi": 0.65,
+        "lo": 0.182,
+        "n": 26,
+        "point": 0.385
+      },
       "fpr_pipeline_real": {
         "hi": 0.0,
         "lo": 0.0,
@@ -2617,6 +2628,12 @@
             "n": 64,
             "n_undefined": 0,
             "point": 1.0
+          },
+          "recall_cp": {
+            "hi": 1.0,
+            "k": 41,
+            "lo": 0.914,
+            "n": 41
           }
         },
         "real_poisoned": {
@@ -2694,6 +2711,17 @@
         "t_high": 0.2726996352508842,
         "t_low": 0.018022842588363834,
         "test_id": {
+          "baseline_fpr_real": {
+            "k": 26,
+            "n": 105,
+            "point": 0.24761904761904763
+          },
+          "fp_dismissed_real_triage": {
+            "hi": 0.65,
+            "lo": 0.182,
+            "n": 26,
+            "point": 0.385
+          },
           "fpr_by_source": {
             "public_repo": 0.26582278481012656,
             "wild_fp": 0.6153846153846154
@@ -2829,6 +2857,12 @@
       "real_poisoned_recall_stage1": 1.0,
       "reason": "v1 release",
       "recall": 1.0,
+      "recall_cp": {
+        "hi": 1.0,
+        "k": 41,
+        "lo": 0.914,
+        "n": 41
+      },
       "recall_interval": {
         "hi": 1.0,
         "lo": 1.0,

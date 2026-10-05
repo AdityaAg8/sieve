@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import fixture from "@/mocks/fixtures/bench-summary.json";
+import fixtureV1 from "@/mocks/fixtures/bench-summary.v1.json";
 import { provisionalBench } from "@/mocks/handlers";
 
 import type { BenchSummary } from "./api";
 import {
   NO_NUMBER,
   ablationsOf,
+  formatCount,
   formatInterval,
   formatMeanStd,
   headlineOf,
@@ -136,5 +138,72 @@ describe("isProvisional", () => {
   it("is true only while the API says no results files exist", () => {
     expect(isProvisional(provisionalBench)).toBe(true);
     expect(isProvisional(measured)).toBe(false);
+  });
+});
+
+/**
+ * The v1 audit keys (`baseline_fpr_real`, `fp_dismissed_real_triage`, `recall_cp`) come from the
+ * measured fixture: `bench-summary.v1.json` mirrors `bench/results/holdout.json`.
+ */
+const measuredV1 = fixtureV1 as unknown as BenchSummary;
+const reportV1 = tablesOf(measuredV1).holdout!;
+
+describe("headlineOf, the audited population labels", () => {
+  it("reads the review share, YARA's rate on the same tools and the dismissal share", () => {
+    const headline = headlineOf(measuredV1);
+    expect(headline.real_review_share).toEqual(reportV1.fpr_stage1_real);
+    expect(headline.baseline_fpr_real).toEqual(reportV1.baseline_fpr_real);
+    expect(headline.baseline_fpr_real).toMatchObject({ k: 26, n: 105 });
+    expect(headline.fp_dismissed_real).toEqual(reportV1.fp_dismissed_real_triage);
+    expect(headline.fp_dismissed_real).toMatchObject({ point: 0.385, lo: 0.182, hi: 0.65, n: 26 });
+  });
+
+  it("reads the exact lower bound on the synthetic holdout's recall", () => {
+    expect(headlineOf(measuredV1).holdout_recall_cp).toEqual({ lo: 0.914, hi: 1, k: 41, n: 41 });
+  });
+
+  it("reads MCPTox's clean-tool flag rate off the headline model's out-of-distribution report", () => {
+    const clean = reportV1.headline_report?.test_ood?.mcptox_clean;
+    expect(clean?.point).toBeCloseTo(0.402, 3);
+    expect(headlineOf(measuredV1).mcptox_clean_fpr).toEqual(clean);
+  });
+
+  it("leaves a slot absent when an older report does not carry its key", () => {
+    // The mini-50 fixture predates the three keys the audit added.
+    const older = headlineOf(measured);
+    expect(older).not.toHaveProperty("baseline_fpr_real");
+    expect(older).not.toHaveProperty("fp_dismissed_real");
+    expect(older).not.toHaveProperty("holdout_recall_cp");
+
+    const stripped = structuredClone(measuredV1);
+    delete tablesOf(stripped).holdout!.headline_report!.test_ood;
+    expect(headlineOf(stripped)).not.toHaveProperty("mcptox_clean_fpr");
+  });
+});
+
+describe("formatCount", () => {
+  it("prints k/n only when both are present", () => {
+    expect(formatCount({ k: 41, n: 41 })).toBe("41/41");
+    expect(formatCount({ n: 41 })).toBe(NO_NUMBER);
+    expect(formatCount(undefined)).toBe(NO_NUMBER);
+  });
+});
+
+describe("breakdown rows with no poisoned tools", () => {
+  it("carries the poisoned count so a chart can tell 'no attacks' from 'missed them all'", () => {
+    const rows = perTierOf({
+      tables: {
+        holdout: {
+          per_tier: {
+            hard: { n: 13, n_poisoned: 13, recall_at_t_low: 1 },
+            unscored: { n: 128, n_poisoned: 0, recall_at_t_low: null, fpr_pipeline: 0 },
+          },
+        },
+      },
+    } as unknown as BenchSummary);
+    expect(rows.find((r) => r.bucket === "hard")?.n_poisoned).toBe(13);
+    const unscored = rows.find((r) => r.bucket === "unscored")!;
+    expect(unscored.n_poisoned).toBe(0);
+    expect(unscored.recall).toBeUndefined();
   });
 });

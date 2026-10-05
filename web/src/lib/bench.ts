@@ -30,7 +30,15 @@ export type Interval = {
   per_seed?: number[];
   n?: number;
   n_undefined?: number;
+  /** The count behind a rate, where the producer writes one (`baseline_fpr_real`). */
+  k?: number;
 };
+
+/**
+ * An exact Clopper–Pearson 95 % interval with the counts behind it (`recall_cp`). It carries no
+ * point estimate: a perfect `k` of `n` is shown as the counts, never as "100%".
+ */
+export type ExactInterval = { lo?: number | null; hi?: number | null; k?: number; n?: number };
 
 /** `sieve.eval.metrics.FpReduction`, as `bench.report_final` writes it (M2, D7). */
 export type FpReduction = {
@@ -52,6 +60,8 @@ export type Breakdown = Record<
   string,
   {
     n?: number;
+    /** Poisoned tools in the bucket. Absent on older producers; 0 means recall is undefined. */
+    n_poisoned?: number;
     recall_at_t_low?: number | null;
     fpr_stage1_at_t_low?: number | null;
     fpr_pipeline?: number | null;
@@ -63,6 +73,14 @@ export type ModelReport = {
   t_low?: number;
   t_high?: number;
   real_poisoned?: { n?: number; recall_stage1?: Interval; recall_pipeline?: number | null };
+  /** Real tools only (test-ID): YARA's rate and how many of its false positives Sieve dismisses. */
+  test_id?: {
+    baseline_fpr_real?: Interval;
+    fp_dismissed_real_triage?: Interval;
+  };
+  holdout_synthetic?: { n_poisoned?: number; recall_cp?: ExactInterval };
+  /** Out-of-distribution sets: MCPTox's clean tools, flagged at `T_low`. */
+  test_ood?: { mcptox_clean?: Interval };
   holdout?: {
     n?: number;
     fpr_pipeline_real?: Interval;
@@ -82,6 +100,12 @@ export type HoldoutReport = {
   recall_interval?: Interval;
   fpr_pipeline_real?: Interval;
   fpr_stage1_real?: Interval;
+  /** YARA's false-positive rate on the same real test-ID tools (26 of 105). */
+  baseline_fpr_real?: Interval;
+  /** Of the real tools YARA wrongly flagged, the share Sieve dismisses (holdout, n = 26). */
+  fp_dismissed_real_triage?: Interval;
+  /** Exact 95 % interval on the synthetic holdout's recall, with its k and n. */
+  recall_cp?: ExactInterval;
   per_tier?: Breakdown;
   per_concealment?: Breakdown;
   release_gate?: { recall_point?: number; recall_lower_bound?: number };
@@ -173,13 +197,30 @@ export type Tables = {
 
 /** The headline figures, picked out of the sealed report. */
 export type Headline = {
-  /** Pipeline false-positive rate on the real subset (test-ID) — the headline (PRD §4.3). */
+  /**
+   * Share of real tools the pipeline auto-confirms (test-ID). The judge is deferred, so this
+   * counts Stage-1 auto-confirms only: tools in the review band are not in it. It is not a
+   * false-positive rate for the product; the review share below is.
+   */
   fpr_pipeline_real?: Interval;
   /** Stage-1 false-positive rate at `T_low` on the same rows. */
   fpr_stage1_real?: Interval;
-  /** Relative reduction in YARA's false positives with Sieve as a triage layer (M2). */
+  /** Real tools (test-ID) sent to review: Stage 1 at `T_low`. The product's FP number. */
+  real_review_share?: Interval;
+  /** YARA's rate on the same real tools, so the review share has something to be read against. */
+  baseline_fpr_real?: Interval;
+  /** Of the real tools YARA wrongly flagged, the share Sieve dismisses (holdout, real only). */
+  fp_dismissed_real?: Interval;
+  /** Exact lower bound on the synthetic holdout's recall, with its k and n. */
+  holdout_recall_cp?: ExactInterval;
+  /** Share of MCPTox's clean tools Sieve flags at `T_low`: read beside its recall. */
+  mcptox_clean_fpr?: Interval;
+  /**
+   * Relative reduction in YARA's false positives with Sieve as a triage layer (M2), over ALL
+   * holdout negatives, real and synthetic. Not a headline: show it only labelled with that.
+   */
   fp_reduction?: Interval;
-  /** McNemar's exact test p-value beside the reduction figure. */
+  /** McNemar's exact test p-value. It belongs to `fp_reduction`'s comparison, nothing else. */
   mcnemar_p?: number;
   /** Recall at `T_low` on holdout-synthetic: the release gate's number. */
   holdout_recall?: Interval;
@@ -188,7 +229,14 @@ export type Headline = {
   release_gate_passed?: boolean;
 };
 
-export type BreakdownRow = { bucket: string; recall?: number; fpr?: number; n?: number };
+export type BreakdownRow = {
+  bucket: string;
+  recall?: number;
+  fpr?: number;
+  n?: number;
+  /** 0 means the bucket holds no attacks, so `recall` is undefined rather than zero. */
+  n_poisoned?: number;
+};
 
 export type MinimalPairRow = { row: number; name: string; m11: number };
 
@@ -212,7 +260,17 @@ export function headlineOf(summary: BenchSummary | undefined): Headline {
   const reduction = own?.holdout?.fp_reduction_triage;
   const headline: Headline = {};
   if (present(report.fpr_pipeline_real)) headline.fpr_pipeline_real = report.fpr_pipeline_real;
-  if (present(report.fpr_stage1_real)) headline.fpr_stage1_real = report.fpr_stage1_real;
+  if (present(report.fpr_stage1_real)) {
+    headline.fpr_stage1_real = report.fpr_stage1_real;
+    headline.real_review_share = report.fpr_stage1_real;
+  }
+  if (present(report.baseline_fpr_real)) headline.baseline_fpr_real = report.baseline_fpr_real;
+  if (present(report.fp_dismissed_real_triage)) {
+    headline.fp_dismissed_real = report.fp_dismissed_real_triage;
+  }
+  if (present(report.recall_cp)) headline.holdout_recall_cp = report.recall_cp;
+  const mcptoxClean = own?.test_ood?.mcptox_clean;
+  if (present(mcptoxClean)) headline.mcptox_clean_fpr = mcptoxClean;
   if (present(report.recall_interval)) headline.holdout_recall = report.recall_interval;
   const realPoisoned = own?.real_poisoned?.recall_stage1;
   if (present(realPoisoned)) headline.real_poisoned_recall = realPoisoned;
@@ -263,6 +321,7 @@ function breakdownRows(breakdown: Breakdown | undefined): BreakdownRow[] {
     recall: isNumber(cell.recall_at_t_low) ? cell.recall_at_t_low : undefined,
     fpr: isNumber(cell.fpr_pipeline) ? cell.fpr_pipeline : undefined,
     n: isNumber(cell.n) ? cell.n : undefined,
+    n_poisoned: isNumber(cell.n_poisoned) ? cell.n_poisoned : undefined,
   }));
 }
 
@@ -319,6 +378,24 @@ export function formatInterval(interval: Interval | null | undefined, digits = 2
   const point = interval.point.toFixed(digits);
   if (!isNumber(interval.lo) || !isNumber(interval.hi)) return point;
   return `${point} [${interval.lo.toFixed(digits)}, ${interval.hi.toFixed(digits)}]`;
+}
+
+/** "41/41" from a count and its total, or `—` when either is missing. Never divides. */
+export function formatCount(
+  counts: { k?: number | null; n?: number | null } | null | undefined,
+): string {
+  return counts && isNumber(counts.k) && isNumber(counts.n) ? `${counts.k}/${counts.n}` : NO_NUMBER;
+}
+
+/**
+ * Like `formatInterval`, but a zero-width interval prints its point alone. A bootstrap over a
+ * rate of exactly 0 or 1 has no spread to report, and `1.00 [1.00, 1.00]` reads as a bound.
+ */
+export function formatRate(interval: Interval | null | undefined, digits = 2): string {
+  if (interval && isNumber(interval.lo) && isNumber(interval.hi) && interval.lo === interval.hi) {
+    return formatRatio(interval.point, digits);
+  }
+  return formatInterval(interval, digits);
 }
 
 /** "[1.1%, 9.6%]", or `—` when either bound is missing. */
