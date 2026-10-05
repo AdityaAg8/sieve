@@ -8,7 +8,7 @@ figure ("46% -> 23%") skipped that step and is retired.
 
 Everything comes from dev OOF arrays (`oof_logits.npy`, `oof_ids.json`, the artefact's
 temperature), pooled through `pool_oof` with the corpus ids and labels, so a misaligned fold
-raises. Nothing here reads the holdout, and nothing here is adopted: v1's thresholds stay the
+raises. Nothing here reads a sealed split, and nothing here is adopted: v1's thresholds stay the
 artefacts' own (`status`). Adopting a rule found this way needs a new sealed set.
 """
 
