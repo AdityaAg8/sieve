@@ -418,3 +418,34 @@ def test_a_poisoned_row_dropped_with_its_host_is_listed_not_failed(
     assert report["gates"]["poisoned_dropped"] == []
     assert report["gates"]["dropped_for_leakage"] == sorted(gone)
     assert code == 0
+
+
+# ------------------------------------------------------------------- Clopper-Pearson (§4.3)
+
+
+def test_clopper_pearson_of_a_clean_sweep_has_hi_one_and_the_exact_lower_bound() -> None:
+    lo, hi = stats.clopper_pearson(41, 41)
+    assert lo == pytest.approx(0.9140, abs=1e-3)
+    assert hi == 1.0
+
+
+def test_clopper_pearson_of_no_successes_has_lo_zero() -> None:
+    lo, hi = stats.clopper_pearson(0, 104)
+    assert lo == 0.0
+    assert hi == pytest.approx(0.0348, abs=5e-4)
+
+
+@pytest.mark.parametrize(
+    ("k", "lo", "hi"),
+    [(1, 0.0002, 0.052), (3, 0.006, 0.082), (5, 0.016, 0.109), (8, 0.034, 0.146)],
+)
+def test_clopper_pearson_matches_the_plan_table(k: int, lo: float, hi: float) -> None:
+    got_lo, got_hi = stats.clopper_pearson(k, 104)
+    assert got_lo == pytest.approx(lo, abs=5e-4)
+    assert got_hi == pytest.approx(hi, abs=5e-4)
+
+
+def test_clopper_pearson_refuses_an_impossible_count() -> None:
+    for k, n in ((-1, 10), (11, 10), (0, 0)):
+        with pytest.raises(ValueError):
+            stats.clopper_pearson(k, n)
