@@ -367,12 +367,19 @@ def test_the_generated_block_carries_the_four_headline_numbers(results: Path, re
     assert rn.pct(scanner["point"]) in lines[0]
     assert f"{scanner['k']} of {scanner['n']}" in lines[0]
 
-    # M2: the triage view on real holdout tools, then the all-negatives figure with McNemar.
+    # M2: the triage view on real holdout tools, then the all-negatives figure with McNemar. The
+    # fixture's rows carry no scanner verdict, so both can be undefined; then the line says so.
     real = holdout["fp_dismissed_real_triage"]
     triage = holdout["per_model"][holdout["headline_model"]]["holdout"]["fp_reduction_triage"]
-    assert f"dismisses {rn.pct(real['point'])}" in lines[1]
-    assert rn.pct(triage["relative"]) in lines[1]
-    assert rn.p_value(triage["mcnemar_p"]) in lines[1]
+    if real["point"] is None:
+        assert "flagged none of the real holdout tools" in lines[1]
+    else:
+        assert f"dismisses {rn.pct(real['point'])}" in lines[1]
+    if triage is None or triage.get("relative") is None:
+        assert "all-negatives figure is undefined" in lines[1]
+    else:
+        assert rn.pct(triage["relative"]) in lines[1]
+        assert rn.p_value(triage["mcnemar_p"]) in lines[1]
 
     exact = holdout["recall_cp"]
     assert rn.ratio(holdout["recall"]) in lines[2]
@@ -393,11 +400,11 @@ def test_no_line_calls_an_auto_confirm_rate_a_false_positive_reduction(
     """Audit F1: the v1 README compared Stage 1's auto-confirm rate with the scanner's flag rate
     and called it "97.1% fewer false positives", counting every tool sent to review as a win."""
     assert _run(results, readme) == 0
-    block = _block(readme.read_text(encoding="utf-8"))
-    assert "fewer false positives" not in block
+    text = readme.read_text(encoding="utf-8")
+    assert "fewer false positives" not in _block(text)
     row = rn.headline_row(json.loads((results / "ablations.json").read_text(encoding="utf-8")))
     auto = rn.pct(row["fp_reduction_vs_baseline"]["sieve_fpr"])
-    development = next(line for line in _block_lines(block) if line.startswith("*Development"))
+    development = next(line for line in _block_lines(text) if line.startswith("*Development"))
     assert auto in development and "not a false-positive reduction" in development
 
 
@@ -432,7 +439,7 @@ def test_the_four_numbers_are_one_per_line_in_prd_17_1_order(results: Path, read
     lines = _block_lines(readme.read_text(encoding="utf-8"))
     assert len(lines) >= 7
     assert "M1" in lines[0] and "real subset" in lines[0]
-    assert "M2" in lines[1] and "McNemar" in lines[1]
+    assert "M2" in lines[1] and "dismisses" in lines[1]
     assert "recall" in lines[2].lower() and "lower bound" in lines[2].lower()
     assert "real_poisoned" in lines[3]
     assert lines[4].startswith("*Development")
@@ -447,7 +454,7 @@ def test_the_block_names_the_baseline_and_the_ablation_row_it_read(
     row = rn.headline_row(json.loads((results / "ablations.json").read_text(encoding="utf-8")))
     lines = _block_lines(readme.read_text(encoding="utf-8"))
     assert baseline["scanner"] in lines[1] and baseline["version"] in lines[1]
-    assert row["name"] in lines[4]
+    assert f"ablation row {row['row']}" in lines[4]
 
 
 def test_check_passes_on_a_fresh_readme_and_fails_on_a_hand_edit(
@@ -623,6 +630,16 @@ def test_a_deferred_judge_row_falls_back_to_the_stage_1_headline_and_says_so(
     assert "judge is deferred" in _block(readme.read_text(encoding="utf-8"))
 
 
+def test_the_committed_readme_is_exactly_what_the_committed_results_generate(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The drift guard CI runs: a hand-edited number, or results regenerated without
+    `make readme`, fails here before it fails in CI (audit F14)."""
+    if not (REPO / "bench" / "results" / "holdout.json").exists():
+        pytest.skip("the holdout has not been opened; the README keeps its placeholder block")
+    assert rn.main(["--check"]) == 0, capsys.readouterr().err
+
+
 def test_the_committed_results_directory_cannot_produce_a_readme_today(
     readme: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -733,7 +750,7 @@ def test_the_development_line_names_its_populations_and_the_published_seed() -> 
 def test_the_post_hoc_line_is_labelled_and_spans_the_seeds() -> None:
     def point(review: float, dismissed: float, recall: float) -> dict[str, float]:
         return {
-            "target": 0.98,
+            "target_recall": 0.98,
             "real_negative_review_share": review,
             "yara_fp_dismissed": dismissed,
             "recall": recall,

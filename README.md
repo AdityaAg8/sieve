@@ -19,17 +19,21 @@ Sieve does not scan and it does not detect. It takes the findings a scanner alre
 decides which of them a human should actually look at, and says why.
 
 <!-- numbers:start -->
-**M1 · `FPR_pipeline` on the real subset:** 0.0% (95% cluster-bootstrap CI 0.0% to 0.0%), over 169 sealed holdout rows at the frozen thresholds T_low = 0.018, T_high = 0.273. At T_low, Stage 1 sends 35.2% of the real non-poisoned tools to review (95% CI 21.7% to 49.1%).
+**M1 · `FPR_pipeline` on the real subset:** not measured in v1, because the PRD defines it with the LLM judge running and the judge is deferred to v1.1 (D8). What a user gets instead: **Stage 1 sends 35.2% of the 105 real non-poisoned holdout tools to human review** (95% cluster-bootstrap CI 21.7% to 49.1%), where cisco_yara 4.8.0 flags 24.8% (26 of 105) of the same tools. It auto-confirms 0.0% of them. Frozen thresholds T_low = 0.018, T_high = 0.273.
 
-**M2 · False positives vs cisco_yara 4.8.0, real subset:** 97.1% fewer false positives (95% cluster-bootstrap CI 93.3% to 99.6%), at pipeline recall 0.941 vs the baseline's 0.645 over all development sources (not lower; the real subset holds no poisoned row); 24.9 points of absolute `FPR` difference; McNemar on non-poisoned rows: exact p < 0.0001, server-clustered p < 0.0001. From ablations row 4, Primary encoder, full serialisation (pre-registered headline); Stage 1 alone, because the judge is deferred to v1.1 (D8).
+**M2 · Scanner false positives Stage 1 dismisses, real holdout tools:** of the 26 real tools cisco_yara 4.8.0 wrongly flagged, Stage 1 dismisses 38.5% (95% cluster-bootstrap CI 18.2% to 65.0%). Across all 128 non-poisoned holdout rows, synthetic included, it dismisses 33.3% of the scanner's false positives (95% cluster-bootstrap CI 16.1% to 56.3%; McNemar on non-poisoned rows: exact p = 0.0005, server-clustered p = 0.0105). On its own it is not a scanner replacement: Stage 1 flags 45.3% of those rows against the scanner's 28.1%, at recall 1.000 against 0.707 on the synthetic attacks; the real holdout holds no poisoned row, so no recall exists on real tools.
 
-**Holdout poisoned recall:** 1.000 (95% cluster-bootstrap lower bound 1.000); the release gate is 0.950 point and 0.900 lower bound, and this run passes it.
+**Holdout poisoned recall (synthetic attacks; the real holdout holds none):** 41 of 41 caught at T_low, recall 1.000 with an exact (Clopper-Pearson) 95% lower bound of 0.914. The release gate is 0.950 point and 0.900 lower bound; this run passes it, and the exact bound clears the floor too.
 
-**M13 · `real_poisoned` recall:** 1.000 at Stage 1 (not dismissed at T_low) and 0.495 auto-confirmed by the pipeline, 0.505 going to human review, over 483 rows collected from the wild. This is the generalisation number, reported whatever it is.
+**M13 · `real_poisoned` recall:** 1.000 at Stage 1 (not dismissed at T_low) and 0.495 auto-confirmed, 0.505 going to human review, over 483 MCPTox attacks collected from the wild. The cost at the same threshold: Stage 1 also flags 40.2% of MCPTox's 244 clean tools and 11.9% of 717 Docker catalogue tools. On independent attack sets (val-OOD; labels from each source's metadata; report-only) recall at T_low is 0.802 over 91 attacks.
+
+*Development, pooled out-of-fold over 1,010 rows, ablation row 4 averaged over three seeds: Stage 1 sends 26.4% of real development tools to review and dismisses 61.6% of the scanner's false positives on them. The published artefact is seed 1 (the median seed by macro-F1, D14): 45.9% reviewed, 40.9% dismissed. Counting only auto-confirmed tools as flagged, the row's false-positive rate is 0.8% against the scanner's 25.7%; that comparison leaves out the review band, so it is not a false-positive reduction. Recall on development attacks, all synthetic: 0.996 at T_low, 0.941 auto-confirmed.*
+
+*Post-hoc and not adopted for v1 (`operating_points.json`; development out-of-fold only, each threshold chosen on four folds and applied to the fifth): a point-recall rule of 0.98 would send 7.4% to 17.4% of real development tools to review and dismiss 73.6% to 89.3% of the scanner's false positives, at recall 0.976 to 0.984 across the 3 seeds. Adopting it would be a new version, measured on a new sealed test set.*
+
+*Labels: a three-model LLM ensemble. The dev-50 human audit and the test-ID gold labels are still pending (ADR-009), and every figure above carries that caveat until they are recorded.*
 
 *Every figure above is written by `make readme` from `bench/results/` and none of it is typed by hand: dataset `labelled.jsonl@51caf0707f46`; 1000 bootstrap resamples; encoder `deberta-v3-base` (`selection.json`); 200 threshold points in `curves.json`; holdout opened once for "v1 release".*
-
-*Reported second and labelled, per M2: including the synthetic rows the same row shows 93.8% fewer false positives (95% cluster-bootstrap CI 88.8% to 97.3%), at pipeline recall 0.941 vs the baseline's 0.645 (not lower); 23.8 points absolute; McNemar on non-poisoned rows: exact p < 0.0001, server-clustered p < 0.0001. The real-subset figure on line 2 is the headline; this one is easier and says less.*
 <!-- numbers:end -->
 
 <!-- human: rewrite - a 10-second GIF of the sieve belongs here (PRD §17.1). Nothing has been
@@ -55,20 +59,22 @@ readable again.
 <!-- results:start -->
 | Row | Configuration | Macro-F1 (3 classes) | Poisoned recall at T_low | Real non-poisoned sent to review | Routed overall | Minimal-pair accuracy |
 |---:|---|---:|---:|---:|---:|---:|
-| 1 | Cisco YARA baseline alone | n/a | 0.645 | 25.4% | 0.0% | n/a |
-| 2 | TF-IDF + logistic regression | 0.793 (1 seed) | 0.996 | 39.9% | 35.3% | 0.808 |
-| 3 | Primary encoder, description-only serialisation | 0.786 (1 seed) | 0.996 | 97.5% | 83.0% | n/a |
-| 4 | Primary encoder, full serialisation (pre-registered headline) | 0.892 ± 0.003 | 0.996 | 31.1% | 23.7% | 0.916 |
-| 5 | Secondary encoder, full serialisation, 512 | 0.724 ± 0.008 | 0.996 | 76.9% | 70.0% | n/a |
+| 1 | Cisco YARA baseline alone | n/a | 0.645 | 25.7% | 0.0% | n/a |
+| 2 | TF-IDF + logistic regression | 0.793 (1 seed) | 0.996 | 35.2% | 35.3% | 0.808 |
+| 3 | Primary encoder, description-only serialisation | 0.786 (1 seed) | 0.996 | 97.6% | 83.0% | n/a |
+| 4 | Primary encoder, full serialisation (pre-registered headline) | 0.892 ± 0.003 | 0.996 | 26.4% | 23.7% | 0.916 |
+| 5 | Secondary encoder, full serialisation, 512 | 0.724 ± 0.008 | 0.996 | 74.0% | 70.0% | n/a |
 | 6 | Classifier + judge, Haiku 4.5 | deferred to v1.1 (D8) | | | | |
 | 7 | Classifier + judge, Sonnet 5 | deferred to v1.1 (D8) | | | | |
 | 8 | Judge alone on every row | deferred to v1.1 (D8) | | | | |
-| 9 | Full serialisation + scanner features | 0.906 (1 seed) | 0.996 | 64.7% | 48.8% | n/a |
-| 12 | Two-class head, identical data, folds and seeds | 0.959 (2 classes, 1 seed) | 0.996 | 77.6% | 59.2% | 0.918 |
-| 13 | Unicode-hygiene detector alone | n/a | 0.229 | 0.4% | 0.0% | n/a |
-| 15 | ModernBERT-base at 1,024 tokens | 0.588 (1 seed) | 0.996 | 79.5% | 76.8% | n/a |
+| 9 | Full serialisation + scanner features | 0.906 (1 seed) | 0.996 | 60.7% | 48.8% | n/a |
+| 12 | Two-class head, identical data, folds and seeds | 0.959 (2 classes, 1 seed) | 0.996 | 77.2% | 59.2% | 0.918 |
+| 13 | Unicode-hygiene detector alone | n/a | 0.229 | 0.3% | 0.0% | n/a |
+| 15 | ModernBERT-base at 1,024 tokens | 0.588 (1 seed) | 0.996 | 76.7% | 76.8% | n/a |
 
-*Written by `make readme` from `bench/results/ablations.json`: pooled out-of-fold predictions over 1010 development rows, mean ± sample std over three seeds unless marked. Rows 1 and 13 are rules, not classifiers, so they have no macro-F1.*
+*Written by `make readme` from `bench/results/ablations.json`: pooled out-of-fold predictions over 1010 development rows, mean ± sample std over three seeds unless marked. Rows 1 and 13 are rules, not classifiers, so they have no macro-F1. Development holds no real poisoned row, so the recall column is measured on synthetic attacks only.*
+
+*Row 4 per seed, real development tools sent to review: seed 0 16.5%, seed 1 45.9%, seed 2 17.0%. The published artefact (`models/deberta-v3-base-s1`, the median seed by macro-F1, pre-registered as D14) uses T_low = 0.018 and routes 38.1% of development rows to review.*
 <!-- results:end -->
 
 ## How v1 was built

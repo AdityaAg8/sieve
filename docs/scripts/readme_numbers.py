@@ -235,33 +235,58 @@ def _reduction_line(holdout: dict[str, Any], baseline: Any) -> str:
     success. That comparison is gone; the development figures sit on their own labelled line
     (audit F1, F3, F4).
     """
-    real = holdout.get("fp_dismissed_real_triage") or {}
-    if real.get("point") is None:
+    if "fp_dismissed_real_triage" not in holdout:
         raise Refused(
             "holdout.json carries no `fp_dismissed_real_triage`: M2's real-subset triage figure "
             "is computed by `bench.report_final`; run `make bench`"
         )
+    real = holdout.get("fp_dismissed_real_triage") or {}
     own = _headline_report(holdout).get("holdout") or {}
     triage = own.get("fp_reduction_triage") or {}
     standalone = own.get("fp_reduction_standalone") or {}
-    if triage.get("relative") is None or standalone.get("sieve_fpr") is None:
+    if "fp_reduction_triage" not in own or "fp_reduction_standalone" not in own:
         raise Refused(
             "holdout.json carries no `fp_reduction_triage` / `fp_reduction_standalone` for the "
             "headline model"
         )
     name = baseline_name(baseline)
+    if real.get("point") is None:
+        # The scanner flagged no real holdout tool, so there is nothing to dismiss: undefined,
+        # and said so rather than printed as 0% or 100%.
+        real_part = (
+            f"{name} flagged none of the real holdout tools, so the share of its false positives "
+            "Stage 1 dismisses is undefined there."
+        )
+    else:
+        real_part = (
+            f"of the {int(real['n'])} real tools {name} wrongly flagged, Stage 1 dismisses "
+            f"{pct(real['point'])}{_interval(real)}."
+        )
+    negatives = int(own["n"]) - _n_poisoned(holdout)
+    if triage.get("relative") is None:
+        all_part = (
+            f"Across all {negatives} non-poisoned holdout rows the scanner flagged none, so the "
+            "all-negatives figure is undefined too."
+        )
+    else:
+        all_part = (
+            f"Across all {negatives} non-poisoned holdout rows, synthetic included, it dismisses "
+            f"{pct(triage['relative'])} of the scanner's false positives (95% cluster-bootstrap "
+            f"CI {pct(triage['relative_lo'])} to {pct(triage['relative_hi'])}; "
+            f"{_tests(triage)})."
+        )
+    standalone_part = ""
+    if standalone.get("sieve_fpr") is not None and standalone.get("baseline_fpr") is not None:
+        standalone_part = (
+            f" On its own it is not a scanner replacement: Stage 1 flags "
+            f"{pct(standalone['sieve_fpr'])} of those rows against the scanner's "
+            f"{pct(standalone['baseline_fpr'])}, at recall {ratio(standalone['sieve_recall'])} "
+            f"against {ratio(standalone['baseline_recall'])} on the synthetic attacks; the real "
+            "holdout holds no poisoned row, so no recall exists on real tools."
+        )
     return (
-        f"**M2 · Scanner false positives Stage 1 dismisses, real holdout tools:** of the "
-        f"{int(real['n'])} real tools {name} wrongly flagged, Stage 1 dismisses "
-        f"{pct(real['point'])}{_interval(real)}. Across all "
-        f"{int(own['n']) - _n_poisoned(holdout)} non-poisoned holdout rows, synthetic included, "
-        f"it dismisses {pct(triage['relative'])} of the scanner's false positives (95% "
-        f"cluster-bootstrap CI {pct(triage['relative_lo'])} to {pct(triage['relative_hi'])}; "
-        f"{_tests(triage)}). On its own it is not a scanner replacement: Stage 1 flags "
-        f"{pct(standalone['sieve_fpr'])} of those rows against the scanner's "
-        f"{pct(standalone['baseline_fpr'])}, at recall {ratio(standalone['sieve_recall'])} "
-        f"against {ratio(standalone['baseline_recall'])} on the synthetic attacks; the real "
-        "holdout holds no poisoned row, so no recall exists on real tools."
+        f"**M2 · Scanner false positives Stage 1 dismisses, real holdout tools:** {real_part} "
+        f"{all_part}{standalone_part}"
     )
 
 
@@ -348,9 +373,10 @@ def _development_line(row: dict[str, Any], published: Any, n_records: int) -> st
             "`fp_dismissed_real_triage`; run `make bench`"
         )
     line = (
-        f"*Development, pooled out-of-fold over {n_records:,} rows ({row['name']}, mean of "
-        f"three seeds): Stage 1 sends {pct(real['point'])} of real development tools to review "
-        f"and dismisses {pct(dismissed['point'])} of the scanner's false positives on them. "
+        f"*Development, pooled out-of-fold over {n_records:,} rows, ablation row {row['row']} "
+        f"averaged over three seeds: Stage 1 sends {pct(real['point'])} of real development "
+        f"tools to review and dismisses {pct(dismissed['point'])} of the scanner's false "
+        "positives on them. "
     )
     if published is not None:
         own = published.get("fpr_stage1_real_at_t_low") or {}
@@ -381,7 +407,7 @@ def _operating_points_line(points_file: Any) -> str | None:
         point
         for rows in (points_file.get("per_seed") or {}).values()
         for point in rows
-        if point.get("target") == 0.98
+        if point.get("target_recall") == 0.98
     ]
     if not chosen:
         return None
