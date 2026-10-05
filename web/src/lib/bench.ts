@@ -128,6 +128,8 @@ export type AblationRow = {
   single_seed?: boolean;
   oof_recall_at_t_low?: Interval | null;
   fpr_stage1_at_t_low?: Interval | null;
+  /** Real (public_repo, wild_fp) non-poisoned rows not auto-dismissed: the review load. */
+  fpr_stage1_real_at_t_low?: Interval | null;
   fpr_pipeline?: Interval | null;
   macro_f1_mean?: number | null;
   macro_f1_std?: number | null;

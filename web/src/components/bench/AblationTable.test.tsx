@@ -48,13 +48,17 @@ describe("<AblationTable />", () => {
       macro_f1_mean: 0.861,
       macro_f1_std: 0.012,
       oof_recall_at_t_low: { point: 0.94, lo: 0.9, hi: 0.97, std: 0.01 },
-      fpr_pipeline: { point: 0.07, lo: 0.03, hi: 0.13, std: 0.02 },
+      fpr_pipeline: { point: 0.01, lo: 0.0, hi: 0.02, std: 0.0 },
+      fpr_stage1_real_at_t_low: { point: 0.26, lo: 0.2, hi: 0.33, std: 0.15 },
     };
     render(<AblationTable rows={[row]} />);
     const tr = rowFor(4);
     expect(within(tr).getByText("0.86 ± 0.01")).toBeInTheDocument();
     expect(within(tr).getByText("0.94 [0.90, 0.97]")).toBeInTheDocument();
-    expect(within(tr).getByText("0.07 [0.03, 0.13]")).toBeInTheDocument();
+    // The column is the real review load, never the auto-confirm rate (v1 audit F1).
+    expect(within(tr).getByText("0.26 [0.20, 0.33]")).toBeInTheDocument();
+    expect(within(tr).queryByText("0.01 [0.00, 0.02]")).not.toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /Real tools sent to review/ })).toBeVisible();
     expect(within(tr).getByText("3 seeds")).toBeInTheDocument();
   });
 

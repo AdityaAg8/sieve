@@ -35,9 +35,11 @@ export function AblationTable({ rows }: { rows: AblationRow[] }) {
       title="Ablations"
       lede="Every scored row is computed on pooled out-of-fold predictions from the 5-fold grouped
         cross-validation over development servers; none of them has seen the holdout. Encoder
-        rows give the mean across seeds ± the sample standard deviation. Rows that need the LLM
-        judge are listed as deferred: the judge moves to v1.1, and a deferred row has no number
-        rather than a zero."
+        rows give the mean across seeds ± the sample standard deviation. Development holds no real
+        attack, so recall is measured on synthetic attacks only; the review column counts real
+        tools not auto-dismissed, which for the scanner row is simply what it flags. Rows that
+        need the LLM judge are listed as deferred: the judge moves to v1.1, and a deferred row
+        has no number rather than a zero."
     >
       {rows.length === 0 ? (
         <EmptyNote>
@@ -50,7 +52,7 @@ export function AblationTable({ rows }: { rows: AblationRow[] }) {
               <Th>#</Th>
               <Th>Configuration</Th>
               <Th>Recall at T_low [CI]</Th>
-              <Th>Pipeline FPR [CI]</Th>
+              <Th>Real tools sent to review [CI]</Th>
               <Th>Macro-F1 (mean ± sd)</Th>
               <Th>Seeds</Th>
               <Th>Note</Th>
@@ -91,7 +93,7 @@ export function AblationTable({ rows }: { rows: AblationRow[] }) {
                     <Num>{formatInterval(row.oof_recall_at_t_low)}</Num>
                   </Td>
                   <Td>
-                    <Num>{formatInterval(row.fpr_pipeline)}</Num>
+                    <Num>{formatInterval(row.fpr_stage1_real_at_t_low)}</Num>
                   </Td>
                   <Td>
                     <Num>{formatMeanStd(row.macro_f1_mean, row.macro_f1_std)}</Num>
