@@ -1,20 +1,26 @@
 """Rewrite the README's headline-number block from `bench/results/` (PRD §17.1, Task 10.1).
 
 `make readme` runs this script by path. It is the only writer of the block between
-`<!-- numbers:start -->` and `<!-- numbers:end -->`, and the four numbers PRD §17.1 names are
-never typed by hand:
+`<!-- numbers:start -->` and `<!-- numbers:end -->`, and the four headline numbers PRD §17.1
+names are never typed by hand:
 
-1. `FPR_pipeline` on the real subset, with its cluster-bootstrap 95% CI (`holdout.json`),
-2. false-positive reduction against the scanner baseline on the **real** subset, with its
-   paired-bootstrap CI and McNemar's exact p-value (`ablations.json`),
-3. holdout poisoned recall, point and 95% lower bound (`holdout.json`),
-4. the `real_poisoned` recall (M13), Stage 1 and after the pipeline (`holdout.json`).
+1. M1: with the judge deferred (D8) it is stated as not measured, and the line leads with the
+   share of real holdout tools Stage 1 sends to review, beside the scanner's rate on the same
+   tools (`holdout.json`);
+2. M2 as triage: the share of the scanner's false positives on real holdout tools that Stage 1
+   dismisses, then the all-negatives figure with McNemar, then the standalone comparison;
+3. holdout poisoned recall with its exact (Clopper-Pearson) lower bound (`holdout.json`);
+4. the `real_poisoned` recall (M13), beside its false-positive cost on clean OOD tools.
 
-It refuses, loudly and without touching the README, when any of those four is missing: a README
-carrying two of the four numbers is not shippable, and lines 3 and 4 cannot be invented at all.
-The synthetic-inclusive reduction is reported *below* the five headline lines and labelled, per
-M2. `baseline.json`, `curves.json` and `selection.json` supply the names and provenance around
+Each figure names its population. The v1 audit (F1-F20) found a headline that compared an
+auto-confirm rate with a flag rate and paired real-subset FPRs with synthetic recall; the
+development figures now sit on their own labelled line, followed by the post-hoc operating
+point (when `operating_points.json` exists), the labels caveat and the provenance line.
+
+It refuses, loudly and without touching the README, when any headline figure is missing.
+`baseline.json`, `curves.json` and `selection.json` supply the names and provenance around
 the numbers (which scanner, which encoder, which dataset version), never a headline figure.
+`--check` writes nothing and exits 1 when the README differs from what the results generate.
 
 This script lives in `docs/` rather than `bench/` because L10 owns `docs/` (PRD §19) and
 because `bench/` is the tree the sealed-holdout grep polices; it reads the holdout *report*,
@@ -153,59 +159,65 @@ def baseline_name(baseline: Any) -> str:
 # ------------------------------------------------------------------------------ rendering
 
 
-def _fpr_line(holdout: dict[str, Any]) -> str:
-    interval = holdout.get("fpr_pipeline_real") or {}
-    if interval.get("point") is None:
-        raise Refused(
-            "holdout.json carries no `fpr_pipeline_real` point estimate: the real subset of the "
-            "holdout was empty, so M1 is unmeasured and the README cannot state it"
-        )
-    line = (
-        f"**M1 · `FPR_pipeline` on the real subset:** {pct(interval['point'])} "
-        f"(95% cluster-bootstrap CI {pct(interval['lo'])} to {pct(interval['hi'])}), "
-        f"over {int(holdout['n_holdout'])} sealed holdout rows at the frozen thresholds "
-        f"T_low = {ratio(holdout['t_low'])}, T_high = {ratio(holdout['t_high'])}."
-    )
-    review = holdout.get("fpr_stage1_real") or {}
-    if review.get("point") is not None:
-        # `FPR_pipeline` counts auto-confirmed false alarms. The share a human must look at is
-        # the price of the recall, and it is printed beside it rather than left implicit.
-        line += (
-            f" At T_low, Stage 1 sends {pct(review['point'])} of the real non-poisoned tools to "
-            f"review (95% CI {pct(review['lo'])} to {pct(review['hi'])})."
-        )
-    return line
+def _interval(ci: dict[str, Any], formatter: Any = None) -> str:
+    """`(95% cluster-bootstrap CI a to b)`, or nothing when the bootstrap collapsed.
 
-
-def _relative(reduction: dict[str, Any]) -> str:
-    """M2's relative reduction and its CI, or why it is undefined (training plan D7)."""
-    if reduction.get("point") is None:
-        return (
-            "a false-positive reduction whose relative size is undefined (the baseline flagged "
-            "no non-poisoned row)"
-        )
-    return (
-        f"{pct(reduction['point'])} fewer false positives (95% cluster-bootstrap CI "
-        f"{pct(reduction['lo'])} to {pct(reduction['hi'])})"
-    )
-
-
-def _recall_comparison(reduction: dict[str, Any], row: dict[str, Any]) -> str:
-    """D7: M2 is published only beside the pipeline recall it was bought at.
-
-    The real development subset can hold no poisoned row (every real poisoned tool is sealed),
-    so recall there is undefined; the recall is then read over all development sources and
-    says so, rather than refusing or guessing.
+    A resample of all hits or all misses gives the interval [x, x]; printing it would claim a
+    certainty the sample does not have, so a collapsed interval is dropped and the caller states
+    the count instead (audit F2, F7).
     """
-    where, why = "", ""
-    if reduction.get("sieve_recall") is None and reduction.get("baseline_recall") is None:
-        reduction = row.get("fp_reduction_all_sources") or {}
-        where, why = " over all development sources", "; the real subset holds no poisoned row"
-    verdict = "not lower" if reduction.get("recall_not_lower") else "LOWER, so M2 is not met"
+    fmt = formatter or pct
+    lo, hi = ci.get("lo"), ci.get("hi")
+    if lo is None or hi is None or lo == hi:
+        return ""
+    return f" (95% cluster-bootstrap CI {fmt(lo)} to {fmt(hi)})"
+
+
+def _headline_report(holdout: dict[str, Any]) -> dict[str, Any]:
+    """The published model's own block of `holdout.json`, by the name the report gives it."""
+    report = (holdout.get("per_model") or {}).get(holdout.get("headline_model"))
+    if not isinstance(report, dict):
+        raise Refused(
+            "holdout.json carries no `per_model` block for its `headline_model`; the triage and "
+            "out-of-distribution figures live there"
+        )
+    return report
+
+
+def _fpr_line(holdout: dict[str, Any], baseline: Any) -> str:
+    """M1. PRD M1 is defined with the judge running; v1 defers it (D8), so M1 is not measured
+    and the line leads with what a user actually gets: the share of real tools sent to a human,
+    beside the share the scanner flags (audit F1, F2)."""
+    review = holdout.get("fpr_stage1_real") or {}
+    scanner = holdout.get("baseline_fpr_real") or {}
+    confirmed = holdout.get("fpr_pipeline_real") or {}
+    if review.get("point") is None or confirmed.get("point") is None:
+        raise Refused(
+            "holdout.json carries no `fpr_stage1_real` / `fpr_pipeline_real` point estimate: the "
+            "real subset of the holdout was empty, so the review share is unmeasured"
+        )
+    if scanner.get("point") is None:
+        raise Refused(
+            "holdout.json carries no `baseline_fpr_real`: the scanner's rate on the same real "
+            "tools is the comparison the review share needs; run `make bench`"
+        )
     return (
-        f"at pipeline recall {ratio(reduction.get('sieve_recall'))} vs the baseline's "
-        f"{ratio(reduction.get('baseline_recall'))}{where} ({verdict}{why})"
+        "**M1 · `FPR_pipeline` on the real subset:** not measured in v1, because the PRD defines "
+        "it with the LLM judge running and the judge is deferred to v1.1 (D8). What a user gets "
+        f"instead: **Stage 1 sends {pct(review['point'])} of the {int(review['n'])} real "
+        f"non-poisoned holdout tools to human review**{_interval(review)}, where "
+        f"{baseline_name(baseline)} flags {pct(scanner['point'])} "
+        f"({int(scanner['k'])} of {int(scanner['n'])}) of the same tools. It auto-confirms "
+        f"{pct(confirmed['point'])} of them. Frozen thresholds T_low = {ratio(holdout['t_low'])}, "
+        f"T_high = {ratio(holdout['t_high'])}."
     )
+
+
+def _n_poisoned(holdout: dict[str, Any]) -> int:
+    synthetic = _headline_report(holdout).get("holdout_synthetic") or {}
+    if synthetic.get("n_poisoned") is None:
+        raise Refused("holdout.json carries no `holdout_synthetic.n_poisoned`")
+    return int(synthetic["n_poisoned"])
 
 
 def _tests(reduction: dict[str, Any]) -> str:
@@ -215,43 +227,69 @@ def _tests(reduction: dict[str, Any]) -> str:
     )
 
 
-def _reduction_line(row: dict[str, Any], baseline: Any) -> str:
-    reduction = row.get("fp_reduction_vs_baseline") or {}
-    if reduction.get("absolute") is None:
+def _reduction_line(holdout: dict[str, Any], baseline: Any) -> str:
+    """M2 as triage: of the real tools the scanner wrongly flagged, the share Stage 1 dismisses.
+
+    The v1 README used to print the development row's auto-confirm FPR against the scanner's
+    flag rate ("97.1% fewer false positives"), which counted every tool sent to review as a
+    success. That comparison is gone; the development figures sit on their own labelled line
+    (audit F1, F3, F4).
+    """
+    real = holdout.get("fp_dismissed_real_triage") or {}
+    if real.get("point") is None:
         raise Refused(
-            "the headline ablation row carries no `fp_reduction_vs_baseline`: the real subset "
-            "was empty, so M2 is unmeasured"
+            "holdout.json carries no `fp_dismissed_real_triage`: M2's real-subset triage figure "
+            "is computed by `bench.report_final`; run `make bench`"
         )
+    own = _headline_report(holdout).get("holdout") or {}
+    triage = own.get("fp_reduction_triage") or {}
+    standalone = own.get("fp_reduction_standalone") or {}
+    if triage.get("relative") is None or standalone.get("sieve_fpr") is None:
+        raise Refused(
+            "holdout.json carries no `fp_reduction_triage` / `fp_reduction_standalone` for the "
+            "headline model"
+        )
+    name = baseline_name(baseline)
     return (
-        f"**M2 · False positives vs {baseline_name(baseline)}, real subset:** "
-        f"{_relative(reduction)}, {_recall_comparison(reduction, row)}; "
-        f"{points(reduction['absolute'])} of absolute `FPR` difference; {_tests(reduction)}. "
-        f"From ablations row {row['row']}, {row['name']}"
-        + (
-            "; Stage 1 alone, because the judge is deferred to v1.1 (D8)."
-            if row.get("judge") == "none"
-            else "."
-        )
+        f"**M2 · Scanner false positives Stage 1 dismisses, real holdout tools:** of the "
+        f"{int(real['n'])} real tools {name} wrongly flagged, Stage 1 dismisses "
+        f"{pct(real['point'])}{_interval(real)}. Across all "
+        f"{int(own['n']) - _n_poisoned(holdout)} non-poisoned holdout rows, synthetic included, "
+        f"it dismisses {pct(triage['relative'])} of the scanner's false positives (95% "
+        f"cluster-bootstrap CI {pct(triage['relative_lo'])} to {pct(triage['relative_hi'])}; "
+        f"{_tests(triage)}). On its own it is not a scanner replacement: Stage 1 flags "
+        f"{pct(standalone['sieve_fpr'])} of those rows against the scanner's "
+        f"{pct(standalone['baseline_fpr'])}, at recall {ratio(standalone['sieve_recall'])} "
+        f"against {ratio(standalone['baseline_recall'])} on the synthetic attacks; the real "
+        "holdout holds no poisoned row, so no recall exists on real tools."
     )
 
 
 def _recall_line(holdout: dict[str, Any]) -> str:
-    if holdout.get("recall") is None or holdout.get("recall_lcb") is None:
+    """The release gate, read off the exact binomial bound: at k = n the cluster bootstrap
+    collapses to [1, 1] and says nothing (audit F7)."""
+    exact = holdout.get("recall_cp") or {}
+    if holdout.get("recall") is None or exact.get("lo") is None:
         raise Refused(
-            "holdout.json carries no poisoned recall: the holdout had no poisoned row, so the "
-            "release gate is unmeasured"
+            "holdout.json carries no poisoned recall or no `recall_cp`: the release gate is "
+            "unmeasured, or `bench.report_final` predates the exact bound; run `make bench`"
         )
     gate = holdout.get("release_gate") or {}
+    floor = gate.get("recall_lower_bound")
+    exact_clears = floor is not None and exact["lo"] >= floor
     return (
-        f"**Holdout poisoned recall:** {ratio(holdout['recall'])} "
-        f"(95% cluster-bootstrap lower bound {ratio(holdout['recall_lcb'])}); the release gate "
-        f"is {ratio(gate.get('recall_point'))} point and "
-        f"{ratio(gate.get('recall_lower_bound'))} lower bound, and this run "
-        f"{'passes' if holdout.get('release_gate_passed') else 'does not pass'} it."
+        f"**Holdout poisoned recall (synthetic attacks; the real holdout holds none):** "
+        f"{int(exact['k'])} of {int(exact['n'])} caught at T_low, recall "
+        f"{ratio(holdout['recall'])} with an exact (Clopper-Pearson) 95% lower bound of "
+        f"{ratio(exact['lo'])}. The release gate is {ratio(gate.get('recall_point'))} point and "
+        f"{ratio(floor)} lower bound; this run "
+        f"{'passes' if holdout.get('release_gate_passed') else 'does not pass'} it, and the "
+        f"exact bound {'clears' if exact_clears else 'does not clear'} the floor too."
     )
 
 
-def _real_poisoned_line(holdout: dict[str, Any]) -> str:
+def _real_poisoned_line(holdout: dict[str, Any], val_ood: Any) -> str:
+    """M13, printed beside what its recall costs on clean out-of-distribution tools (F8)."""
     stage1 = holdout.get("real_poisoned_recall_stage1")
     pipeline = holdout.get("real_poisoned_recall_pipeline")
     if stage1 is None or pipeline is None:
@@ -259,12 +297,122 @@ def _real_poisoned_line(holdout: dict[str, Any]) -> str:
             "holdout.json carries no `real_poisoned` recall: the M13 slice was empty for this "
             "run, so the number does not exist and is not going to be guessed"
         )
-    return (
+    ood = _headline_report(holdout).get("test_ood") or {}
+    clean, docker = ood.get("mcptox_clean") or {}, ood.get("docker") or {}
+    line = (
         f"**M13 · `real_poisoned` recall:** {ratio(stage1)} at Stage 1 (not dismissed at "
-        f"T_low) and {ratio(pipeline)} auto-confirmed by the pipeline, "
-        f"{ratio(stage1 - pipeline)} going to human review, over "
-        f"{int(holdout['n_eval_only'])} rows collected from the wild. This is the "
-        "generalisation number, reported whatever it is."
+        f"T_low) and {ratio(pipeline)} auto-confirmed, {ratio(stage1 - pipeline)} going to "
+        f"human review, over {int(holdout['n_eval_only'])} MCPTox attacks collected from the "
+        "wild."
+    )
+    if clean.get("point") is not None and docker.get("point") is not None:
+        line += (
+            f" The cost at the same threshold: Stage 1 also flags {pct(clean['point'])} of "
+            f"MCPTox's {int(clean['n'])} clean tools and {pct(docker['point'])} of "
+            f"{int(docker['n'])} Docker catalogue tools."
+        )
+    else:
+        # Never silent: a recall printed without its false-positive cost reads as free (F8).
+        line += " Its false-positive cost on clean out-of-distribution tools was not measured."
+    model = holdout.get("headline_model")
+    row = (((val_ood or {}).get("models") or {}).get(model) or {}).get("per_source") or {}
+    independent = row.get("all_but_stress") or {}
+    if independent.get("recall_at_t_low") is not None:
+        line += (
+            " On independent attack sets (val-OOD; labels from each source's metadata; "
+            f"report-only) recall at T_low is {ratio(independent['recall_at_t_low'])} over "
+            f"{int(independent['n_poisoned'])} attacks."
+        )
+    return line
+
+
+def _published_seed(row: dict[str, Any], selection: Any) -> Any:
+    """The per-seed block of the artefact `selection.json` published (D14), or None."""
+    published = str((selection or {}).get("published_dir") or "")
+    seed = published.rsplit("-s", 1)[-1] if "-s" in published else ""
+    for block in row.get("per_seed") or []:
+        if str(block.get("seed")) == seed:
+            return block
+    return None
+
+
+def _development_line(row: dict[str, Any], published: Any, n_records: int) -> str:
+    """Development (pooled out-of-fold) figures, each labelled with its population (F1, F3,
+    F5, F20). Development holds no real poisoned row, so every recall here is synthetic."""
+    real = row.get("fpr_stage1_real_at_t_low") or {}
+    dismissed = row.get("fp_dismissed_real_triage") or {}
+    confirm = row.get("fp_reduction_vs_baseline") or {}
+    if real.get("point") is None or dismissed.get("point") is None:
+        raise Refused(
+            "the headline ablation row carries no `fpr_stage1_real_at_t_low` / "
+            "`fp_dismissed_real_triage`; run `make bench`"
+        )
+    line = (
+        f"*Development, pooled out-of-fold over {n_records:,} rows ({row['name']}, mean of "
+        f"three seeds): Stage 1 sends {pct(real['point'])} of real development tools to review "
+        f"and dismisses {pct(dismissed['point'])} of the scanner's false positives on them. "
+    )
+    if published is not None:
+        own = published.get("fpr_stage1_real_at_t_low") or {}
+        own_dismissed = published.get("fp_dismissed_real_triage") or {}
+        if own.get("point") is not None and own_dismissed.get("point") is not None:
+            line += (
+                f"The published artefact is seed {published['seed']} (the median seed by "
+                f"macro-F1, D14): {pct(own['point'])} reviewed, {pct(own_dismissed['point'])} "
+                "dismissed. "
+            )
+    recall = row.get("oof_recall_at_t_low") or {}
+    auto = (row.get("fp_reduction_all_sources") or {}).get("sieve_recall")
+    line += (
+        "Counting only auto-confirmed tools as flagged, the row's false-positive rate is "
+        f"{pct(confirm.get('sieve_fpr'))} against the scanner's "
+        f"{pct(confirm.get('baseline_fpr'))}; that comparison leaves out the review band, so it "
+        "is not a false-positive reduction. Recall on development attacks, all synthetic: "
+        f"{ratio(recall.get('point'))} at T_low, {ratio(auto)} auto-confirmed.*"
+    )
+    return line
+
+
+def _operating_points_line(points_file: Any) -> str | None:
+    """A post-hoc look at a less conservative threshold rule, never adopted for v1 (F6)."""
+    if not isinstance(points_file, dict):
+        return None
+    chosen = [
+        point
+        for rows in (points_file.get("per_seed") or {}).values()
+        for point in rows
+        if point.get("target") == 0.98
+    ]
+    if not chosen:
+        return None
+
+    def span(key: str, formatter: Any) -> str:
+        values = sorted(point[key] for point in chosen)
+        low, high = formatter(values[0]), formatter(values[-1])
+        return low if low == high else f"{low} to {high}"
+
+    return (
+        "*Post-hoc and not adopted for v1 (`operating_points.json`; development out-of-fold "
+        "only, each threshold chosen on four folds and applied to the fifth): a point-recall "
+        f"rule of 0.98 would send {span('real_negative_review_share', pct)} of real "
+        f"development tools to review and dismiss {span('yara_fp_dismissed', pct)} of the "
+        f"scanner's false positives, at recall {span('recall', ratio)} across the "
+        f"{len(chosen)} seeds. Adopting it would be a new version, measured on a new sealed "
+        "test set.*"
+    )
+
+
+def _labels_line(agreement: Any) -> str:
+    """ADR-009: until the human audit exists, every number carries this caveat (F9)."""
+    if isinstance(agreement, dict) and agreement:
+        return (
+            "*Labels: a three-model LLM ensemble, checked against the owner's blind audit "
+            "(`agreement.json`).*"
+        )
+    return (
+        "*Labels: a three-model LLM ensemble. The dev-50 human audit and the test-ID gold labels "
+        "are still pending (ADR-009), and every figure above carries that caveat until they are "
+        "recorded.*"
     )
 
 
@@ -273,7 +421,7 @@ def _required(payload: dict[str, Any], key: str, source: str) -> Any:
     value = payload.get(key)
     if value is None:
         raise Refused(
-            f"{source} carries no `{key}`; the provenance line states what produced the four "
+            f"{source} carries no `{key}`; the provenance line states what produced the "
             "numbers above, so a missing key is a refusal rather than a default"
         )
     return value
@@ -302,24 +450,9 @@ def _provenance_line(
     )
 
 
-def _synthetic_line(row: dict[str, Any]) -> str:
-    """M2's second figure, reported below the headline five lines and labelled as such."""
-    reduction = row.get("fp_reduction_all_sources") or {}
-    if reduction.get("absolute") is None:
-        return (
-            "*Reported second, per M2: the synthetic-inclusive false-positive reduction is not "
-            "computable for this run.*"
-        )
-    return (
-        f"*Reported second and labelled, per M2: including the synthetic rows the same row "
-        f"shows {_relative(reduction)}, {_recall_comparison(reduction, row)}; "
-        f"{points(reduction['absolute'])} absolute; {_tests(reduction)}. The real-subset figure "
-        "on line 2 is the headline; this one is easier and says less.*"
-    )
-
-
 def render_block(results_dir: Path) -> str:
-    """The five headline lines, then M2's labelled second figure. No em dash is ever emitted."""
+    """The four headline lines (M1, M2, recall, M13), then the labelled development, post-hoc,
+    labels and provenance lines. No em dash is ever emitted."""
     holdout = _read(
         results_dir,
         "holdout.json",
@@ -333,21 +466,28 @@ def render_block(results_dir: Path) -> str:
         results_dir,
         "ablations.json",
         required=True,
-        hint=": run `make bench` first; the M2 figure lives there and is not invented here",
+        hint=": run `make bench` first; the development figures live there",
     )
     baseline = _read(results_dir, "baseline.json", required=False)
     curves = _read(results_dir, "curves.json", required=False)
     selection = _read(results_dir, "selection.json", required=False)
+    val_ood = _read(results_dir, "val_ood.json", required=False)
+    points_file = _read(results_dir, "operating_points.json", required=False)
+    agreement = _read(results_dir, "agreement.json", required=False)
 
     row = headline_row(ablations, (selection or {}).get("winner"))
+    n_records = int(_required(ablations, "n_records", "ablations.json"))
     lines = [
-        _fpr_line(holdout),
-        _reduction_line(row, baseline),
+        _fpr_line(holdout, baseline),
+        _reduction_line(holdout, baseline),
         _recall_line(holdout),
-        _real_poisoned_line(holdout),
-        _provenance_line(holdout, ablations, selection, curves),
-        _synthetic_line(row),
+        _real_poisoned_line(holdout, val_ood),
+        _development_line(row, _published_seed(row, selection), n_records),
     ]
+    post_hoc = _operating_points_line(points_file)
+    if post_hoc:
+        lines.append(post_hoc)
+    lines += [_labels_line(agreement), _provenance_line(holdout, ablations, selection, curves)]
     return "\n" + "\n\n".join(lines) + "\n"
 
 
@@ -381,6 +521,7 @@ def render_results(results_dir: Path) -> str:
     """The ablation matrix as one table, from `ablations.json` only; breakdown rows are left to
     the file (they slice row 4, they do not compete with it)."""
     ablations = _read(results_dir, "ablations.json", required=True, hint=": run `make bench`")
+    selection = _read(results_dir, "selection.json", required=False)
     lines = [
         "",
         "| Row | Configuration | Macro-F1 (3 classes) | Poisoned recall at T_low | Real "
@@ -394,9 +535,11 @@ def render_results(results_dir: Path) -> str:
         if row.get("status") == "deferred":
             lines.append(f"{head} deferred to v1.1 (D8) | | | | |")
             continue
+        # The column reads the real-only rate: `fpr_stage1_at_t_low` also counts synthetic
+        # negatives, which the column's name excludes (audit F20).
         lines.append(
             f"{head} {_f1(row)} | {_cell(_point(row, 'oof_recall_at_t_low'), ratio)} | "
-            f"{_cell(_point(row, 'fpr_stage1_at_t_low'), pct)} | "
+            f"{_cell(_point(row, 'fpr_stage1_real_at_t_low'), pct)} | "
             f"{_cell(row.get('routing_rate'), pct)} | "
             f"{_cell(row.get('minimal_pair_accuracy'), ratio)} |"
         )
@@ -406,10 +549,36 @@ def render_results(results_dir: Path) -> str:
         f"predictions over {int(_required(ablations, 'n_records', 'ablations.json'))} "
         "development rows, "
         "mean ± sample std over three seeds unless marked. Rows 1 and 13 are rules, not "
-        "classifiers, so they have no macro-F1.*",
-        "",
+        "classifiers, so they have no macro-F1. Development holds no real poisoned row, so the "
+        "recall column is measured on synthetic attacks only.*",
     ]
+    published = _published_line(ablations, selection)
+    if published:
+        lines += ["", published]
+    lines.append("")
     return "\n".join(lines)
+
+
+def _published_line(ablations: dict[str, Any], selection: Any) -> str | None:
+    """The shipped artefact's own seed, beside the three-seed means above (audit F5)."""
+    try:
+        row = headline_row(ablations, (selection or {}).get("winner"))
+    except Refused:
+        return None
+    published = _published_seed(row, selection)
+    if published is None:
+        return None
+    seeds = sorted(row.get("per_seed") or [], key=lambda block: block.get("seed", 0))
+    spread = ", ".join(
+        f"seed {block['seed']} {_cell(_point(block, 'fpr_stage1_real_at_t_low'), pct)}"
+        for block in seeds
+    )
+    return (
+        f"*Row {row['row']} per seed, real development tools sent to review: {spread}. The "
+        f"published artefact (`{selection['published_dir']}`, the median seed by macro-F1, "
+        f"pre-registered as D14) uses T_low = {ratio(published.get('t_low'))} and routes "
+        f"{_cell(published.get('routing_rate'), pct)} of development rows to review.*"
+    )
 
 
 def replace_results(text: str, block: str) -> str:
@@ -456,6 +625,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="exists so the test can point at a temp directory; do not use it otherwise",
     )
     parser.add_argument("--readme", type=Path, default=DEFAULT_README)
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="write nothing; exit 1 when the README's generated blocks differ from bench/results",
+    )
     ns = parser.parse_args(argv)
 
     try:
@@ -471,6 +645,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     except Refused as refusal:
         print(f"make readme: {refusal}", file=sys.stderr)
         return 2
+    if ns.check:
+        # CI's drift guard: a hand-edited number, or results regenerated without `make readme`.
+        if updated != text:
+            print(
+                f"make readme: {readme} is out of date with {ns.results_dir}; run `make readme`",
+                file=sys.stderr,
+            )
+            return 1
+        print(f"make readme: {readme} matches {ns.results_dir}")
+        return 0
     if updated != text:
         write_atomically(readme, updated)
     print(f"make readme: wrote the headline numbers into {readme}")

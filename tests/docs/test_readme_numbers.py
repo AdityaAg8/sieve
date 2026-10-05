@@ -357,29 +357,26 @@ def test_make_readme_calls_the_generator_by_path() -> None:
 def test_the_generated_block_carries_the_four_headline_numbers(results: Path, readme: Path) -> None:
     assert _run(results, readme) == 0
     holdout = json.loads((results / "holdout.json").read_text(encoding="utf-8"))
-    row = rn.headline_row(json.loads((results / "ablations.json").read_text(encoding="utf-8")))
     lines = _block_lines(readme.read_text(encoding="utf-8"))
 
-    assert rn.pct(holdout["fpr_pipeline_real"]["point"]) in lines[0]
-    assert rn.pct(holdout["fpr_pipeline_real"]["lo"]) in lines[0]
-    assert rn.pct(holdout["fpr_pipeline_real"]["hi"]) in lines[0]
-    # The review cost sits beside M1: with no judge, FPR_pipeline counts auto-confirmed false
-    # alarms only, and the share routed to a human is the price of the recall (ADR-009).
-    review = holdout["fpr_stage1_real"]
-    assert f"sends {rn.pct(review['point'])} of the real non-poisoned tools to review" in lines[0]
+    # M1: not measured with the judge deferred; the line leads with the review share and the
+    # scanner's rate on the same real tools (audit F1, F2).
+    review, scanner = holdout["fpr_stage1_real"], holdout["baseline_fpr_real"]
+    assert "not measured" in lines[0]
+    assert f"sends {rn.pct(review['point'])} of the {review['n']} real" in lines[0]
+    assert rn.pct(scanner["point"]) in lines[0]
+    assert f"{scanner['k']} of {scanner['n']}" in lines[0]
 
-    reduction = row["fp_reduction_vs_baseline"]
-    if reduction["point"] is not None:
-        assert rn.pct(reduction["point"]) in lines[1]
-    assert rn.points(reduction["absolute"]) in lines[1]
-    assert rn.p_value(reduction["mcnemar_p"]) in lines[1]
-    assert rn.p_value(reduction["mcnemar_p_clustered"]) in lines[1]
-    # D7: M2 never appears without the pipeline recall it was bought at.
-    assert rn.ratio(reduction["sieve_recall"]) in lines[1]
-    assert rn.ratio(reduction["baseline_recall"]) in lines[1]
+    # M2: the triage view on real holdout tools, then the all-negatives figure with McNemar.
+    real = holdout["fp_dismissed_real_triage"]
+    triage = holdout["per_model"][holdout["headline_model"]]["holdout"]["fp_reduction_triage"]
+    assert f"dismisses {rn.pct(real['point'])}" in lines[1]
+    assert rn.pct(triage["relative"]) in lines[1]
+    assert rn.p_value(triage["mcnemar_p"]) in lines[1]
 
+    exact = holdout["recall_cp"]
     assert rn.ratio(holdout["recall"]) in lines[2]
-    assert rn.ratio(holdout["recall_lcb"]) in lines[2]
+    assert rn.ratio(exact["lo"]) in lines[2] and "Clopper-Pearson" in lines[2]
 
     assert rn.ratio(holdout["real_poisoned_recall_stage1"]) in lines[3]
     assert rn.ratio(holdout["real_poisoned_recall_pipeline"]) in lines[3]
@@ -390,37 +387,56 @@ def test_the_generated_block_has_no_placeholder_dash(results: Path, readme: Path
     assert "—" not in _block(readme.read_text(encoding="utf-8"))
 
 
-def test_the_synthetic_inclusive_reduction_is_never_in_the_first_five_lines(
+def test_no_line_calls_an_auto_confirm_rate_a_false_positive_reduction(
     results: Path, readme: Path
 ) -> None:
+    """Audit F1: the v1 README compared Stage 1's auto-confirm rate with the scanner's flag rate
+    and called it "97.1% fewer false positives", counting every tool sent to review as a win."""
     assert _run(results, readme) == 0
+    block = _block(readme.read_text(encoding="utf-8"))
+    assert "fewer false positives" not in block
     row = rn.headline_row(json.loads((results / "ablations.json").read_text(encoding="utf-8")))
-    real = row["fp_reduction_vs_baseline"]
-    synthetic_inclusive = row["fp_reduction_all_sources"]
-    # The two differ in the absolute reduction, which is the point: the synthetic rows are
-    # easier, so including them flatters the number. (D7 runs McNemar on non-poisoned rows only,
-    # so the two p-values can coincide and are not what tells the figures apart.)
-    assert rn.points(real["absolute"]) != rn.points(synthetic_inclusive["absolute"])
+    auto = rn.pct(row["fp_reduction_vs_baseline"]["sieve_fpr"])
+    development = next(line for line in _block_lines(block) if line.startswith("*Development"))
+    assert auto in development and "not a false-positive reduction" in development
 
-    lines = _block_lines(readme.read_text(encoding="utf-8"))
-    first_five = "\n".join(lines[:5])
-    assert rn.points(synthetic_inclusive["absolute"]) not in first_five
-    # M2 asks for it second and labelled, so it appears below and says what it is.
-    rest = "\n".join(lines[5:])
-    assert rn.points(synthetic_inclusive["absolute"]) in rest
-    assert rn.p_value(synthetic_inclusive["mcnemar_p"]) in rest
-    assert "synthetic" in rest.lower()
+
+def test_no_interval_collapsed_to_a_point_is_printed(results: Path, readme: Path) -> None:
+    """Audit F2, F7: a bootstrap of all hits reads [1, 1]; it claims certainty, so it is dropped."""
+    assert _run(results, readme) == 0
+    block = _block(readme.read_text(encoding="utf-8"))
+    for value in ("0.0%", "100.0%", "1.000", "0.000"):
+        assert f"CI {value} to {value}" not in block
+    assert "lower bound 1.000" not in block
+
+
+def test_every_development_recall_is_labelled_synthetic(results: Path, readme: Path) -> None:
+    """Audit F3: development holds no real poisoned row, so its recall is synthetic only."""
+    assert _run(results, readme) == 0
+    development = next(
+        line
+        for line in _block_lines(readme.read_text(encoding="utf-8"))
+        if line.startswith("*Development")
+    )
+    assert "all synthetic" in development
+
+
+def test_the_labels_caveat_stands_until_the_human_audit_exists(results: Path, readme: Path) -> None:
+    assert _run(results, readme) == 0
+    block = _block(readme.read_text(encoding="utf-8"))
+    assert "human audit" in block and "pending" in block
 
 
 def test_the_four_numbers_are_one_per_line_in_prd_17_1_order(results: Path, readme: Path) -> None:
     assert _run(results, readme) == 0
     lines = _block_lines(readme.read_text(encoding="utf-8"))
-    assert len(lines) >= 5
-    assert "FPR_pipeline" in lines[0] and "real subset" in lines[0]
-    assert "McNemar" in lines[1]
+    assert len(lines) >= 7
+    assert "M1" in lines[0] and "real subset" in lines[0]
+    assert "M2" in lines[1] and "McNemar" in lines[1]
     assert "recall" in lines[2].lower() and "lower bound" in lines[2].lower()
     assert "real_poisoned" in lines[3]
-    assert "make readme" in lines[4] and "bench/results" in lines[4]
+    assert lines[4].startswith("*Development")
+    assert "make readme" in lines[-1] and "bench/results" in lines[-1]
 
 
 def test_the_block_names_the_baseline_and_the_ablation_row_it_read(
@@ -431,7 +447,24 @@ def test_the_block_names_the_baseline_and_the_ablation_row_it_read(
     row = rn.headline_row(json.loads((results / "ablations.json").read_text(encoding="utf-8")))
     lines = _block_lines(readme.read_text(encoding="utf-8"))
     assert baseline["scanner"] in lines[1] and baseline["version"] in lines[1]
-    assert f"row {row['row']}" in lines[1]
+    assert row["name"] in lines[4]
+
+
+def test_check_passes_on_a_fresh_readme_and_fails_on_a_hand_edit(
+    results: Path, readme: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert _run(results, readme) == 0
+    argv = ["--results-dir", str(results), "--readme", str(readme), "--check"]
+    assert rn.main(argv) == 0
+    text = readme.read_text(encoding="utf-8")
+    first = _block_lines(text)[0]
+    readme.write_text(
+        text.replace(first, first.replace("%", " percent", 1)), encoding="utf-8", newline="\n"
+    )
+    before = readme.read_bytes()
+    assert rn.main(argv) == 1
+    assert "out of date" in capsys.readouterr().err
+    assert readme.read_bytes() == before, "--check never writes"
 
 
 def test_the_rest_of_the_readme_is_untouched(results: Path, readme: Path) -> None:
@@ -668,19 +701,57 @@ def test_a_readme_with_one_results_marker_is_refused() -> None:
         rn.replace_results(f"intro\n{rn.RESULTS_START}\nrest\n", "table")
 
 
-def test_an_undefined_real_subset_recall_reads_the_all_sources_recall_and_says_so() -> None:
-    """The real subset can hold no poisoned row; M2's recall is then the all-sources one."""
+def test_the_development_line_names_its_populations_and_the_published_seed() -> None:
+    def seed(n: int, real: float, dismissed: float) -> dict[str, Any]:
+        return {
+            "seed": n,
+            "t_low": 0.02,
+            "routing_rate": 0.3,
+            "fpr_stage1_real_at_t_low": {"point": real},
+            "fp_dismissed_real_triage": {"point": dismissed},
+        }
+
     row = {
-        "fp_reduction_vs_baseline": {"sieve_recall": None, "baseline_recall": None},
-        "fp_reduction_all_sources": {
-            "sieve_recall": 0.94,
-            "baseline_recall": 0.64,
-            "recall_not_lower": True,
+        "row": 4,
+        "name": "Primary encoder",
+        "fpr_stage1_real_at_t_low": {"point": 0.265},
+        "fp_dismissed_real_triage": {"point": 0.6},
+        "fp_reduction_vs_baseline": {"sieve_fpr": 0.0075, "baseline_fpr": 0.257},
+        "fp_reduction_all_sources": {"sieve_recall": 0.941},
+        "oof_recall_at_t_low": {"point": 0.996},
+        "per_seed": [seed(0, 0.165, 0.71), seed(1, 0.459, 0.409), seed(2, 0.17, 0.73)],
+    }
+    published = rn._published_seed(row, {"published_dir": "models/deberta-v3-base-s1"})
+    assert published is not None and published["seed"] == 1
+    text = rn._development_line(row, published, 1010)
+    assert "26.5% of real development tools" in text
+    assert "seed 1" in text and "45.9% reviewed" in text and "40.9% dismissed" in text
+    assert "0.8%" in text and "not a false-positive reduction" in text
+    assert "all synthetic" in text and "0.996" in text and "0.941" in text
+
+
+def test_the_post_hoc_line_is_labelled_and_spans_the_seeds() -> None:
+    def point(review: float, dismissed: float, recall: float) -> dict[str, float]:
+        return {
+            "target": 0.98,
+            "real_negative_review_share": review,
+            "yara_fp_dismissed": dismissed,
+            "recall": recall,
+        }
+
+    payload = {
+        "status": "post-hoc; not adopted for v1",
+        "per_seed": {
+            "s0": [point(0.074, 0.893, 0.984)],
+            "s1": [point(0.174, 0.736, 0.976)],
+            "s2": [point(0.095, 0.849, 0.984)],
         },
     }
-    text = rn._recall_comparison(row["fp_reduction_vs_baseline"], row)
-    assert "0.940" in text and "0.640" in text
-    assert "all development sources" in text and "not lower" in text
+    text = rn._operating_points_line(payload)
+    assert text is not None
+    assert "not adopted" in text and "new sealed test set" in text
+    assert "7.4% to 17.4%" in text and "73.6% to 89.3%" in text and "0.976 to 0.984" in text
+    assert rn._operating_points_line(None) is None
 
 
 def test_a_two_class_rows_macro_f1_is_labelled_as_two_classes() -> None:
