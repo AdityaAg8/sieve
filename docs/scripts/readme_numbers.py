@@ -421,17 +421,32 @@ def _operating_points_line(points_file: Any) -> str | None:
     )
 
 
-def _labels_line(agreement: Any) -> str:
-    """ADR-009: until the human audit exists, every number carries this caveat (F9)."""
-    if isinstance(agreement, dict) and agreement:
+def _labels_line(label_audit: Any) -> str:
+    """ADR-009: every number carries the labels caveat until the dev-50 human audit is recorded
+    in `label_audit.json` (`python -m bench.label.audit --gate dev50`), and says so if it fails."""
+    dev50 = (label_audit or {}).get("dev50") if isinstance(label_audit, dict) else None
+    if not isinstance(dev50, dict) or not dev50.get("ready"):
         return (
-            "*Labels: a three-model LLM ensemble, checked against the owner's blind audit "
-            "(`agreement.json`).*"
+            "*Labels: a three-model LLM ensemble. The dev-50 human audit and the test-ID gold "
+            "labels are still pending (ADR-009), and every figure above carries that caveat "
+            "until they are recorded.*"
         )
+    kappa = (
+        f"Cohen's kappa {dev50['kappa']:.2f} (95% CI {dev50['kappa_lo']:.2f} to "
+        f"{dev50['kappa_hi']:.2f}) against the owner's blind labels on {int(dev50['n'])} real "
+        "development rows"
+    )
+    if not dev50.get("passed"):
+        return (
+            f"*Labels: a three-model LLM ensemble whose dev-50 human audit FAILED its "
+            f"pre-registered gate ({kappa}, below {dev50['gate']:.2f}). Under ADR-009 the "
+            "trained models are void until the labels are corrected and the models retrained.*"
+        )
+    test_id = "recorded" if (label_audit or {}).get("test_id") else "still pending"
     return (
-        "*Labels: a three-model LLM ensemble. The dev-50 human audit and the test-ID gold labels "
-        "are still pending (ADR-009), and every figure above carries that caveat until they are "
-        "recorded.*"
+        f"*Labels: a three-model LLM ensemble, checked by the dev-50 human audit: {kappa}, "
+        f"passing the pre-registered {dev50['gate']:.2f} gate. The test-ID gold labels are "
+        f"{test_id}.*"
     )
 
 
@@ -492,7 +507,7 @@ def render_block(results_dir: Path) -> str:
     selection = _read(results_dir, "selection.json", required=False)
     val_ood = _read(results_dir, "val_ood.json", required=False)
     points_file = _read(results_dir, "operating_points.json", required=False)
-    agreement = _read(results_dir, "agreement.json", required=False)
+    label_audit = _read(results_dir, "label_audit.json", required=False)
 
     row = headline_row(ablations, (selection or {}).get("winner"))
     n_records = int(_required(ablations, "n_records", "ablations.json"))
@@ -506,7 +521,7 @@ def render_block(results_dir: Path) -> str:
     post_hoc = _operating_points_line(points_file)
     if post_hoc:
         lines.append(post_hoc)
-    lines += [_labels_line(agreement), _provenance_line(holdout, ablations, selection, curves)]
+    lines += [_labels_line(label_audit), _provenance_line(holdout, ablations, selection, curves)]
     return "\n" + "\n\n".join(lines) + "\n"
 
 

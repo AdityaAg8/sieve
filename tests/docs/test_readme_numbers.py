@@ -434,6 +434,19 @@ def test_the_labels_caveat_stands_until_the_human_audit_exists(results: Path, re
     assert "human audit" in block and "pending" in block
 
 
+def test_the_labels_line_follows_the_dev50_audit() -> None:
+    dev50 = {"ready": True, "n": 50, "gate": 0.7, "kappa": 0.81, "kappa_lo": 0.66}
+    dev50 |= {"kappa_hi": 0.93}
+    assert "pending" in rn._labels_line(None)
+    assert "pending" in rn._labels_line({"dev50": {"ready": False, "passed": False}})
+    passed = rn._labels_line({"dev50": {**dev50, "passed": True}})
+    assert "kappa 0.81" in passed and "passing" in passed and "still pending" in passed
+    failed = rn._labels_line({"dev50": {**dev50, "kappa": 0.55, "passed": False}})
+    assert "FAILED" in failed and "void" in failed
+    # The README must never use the word the judge-as-rater guard forbids.
+    assert "agreement" not in passed.lower() + failed.lower()
+
+
 def test_the_four_numbers_are_one_per_line_in_prd_17_1_order(results: Path, readme: Path) -> None:
     assert _run(results, readme) == 0
     lines = _block_lines(readme.read_text(encoding="utf-8"))

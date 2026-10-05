@@ -189,6 +189,28 @@ def _source_probe(row: Mapping[str, Any]) -> str:
     return f"AUROC {min(values):.3f}–{max(values):.3f} across {len(values)} seeds"
 
 
+def _labels_status(results_dir: Path) -> str:
+    """The dev-50 human audit's state from `label_audit.json` (ADR-009): pending, passed or
+    failed. A failed gate voids the models, and the card says so rather than hiding it."""
+    path = results_dir / "label_audit.json"
+    dev50 = (read_json(path).get("dev50") or {}) if path.exists() else {}
+    if not dev50.get("ready"):
+        return (
+            "three-model LLM ensemble; the dev-50 human audit and the test-ID gold labels "
+            "are pending (ADR-009)"
+        )
+    kappa = (
+        f"Cohen's kappa {dev50['kappa']:.2f} (95% CI {dev50['kappa_lo']:.2f}–"
+        f"{dev50['kappa_hi']:.2f}) on {int(dev50['n'])} blind owner labels"
+    )
+    if not dev50.get("passed"):
+        return (
+            f"three-model LLM ensemble; the dev-50 human audit FAILED its gate ({kappa}), so "
+            "under ADR-009 these models are void until relabelled and retrained"
+        )
+    return f"three-model LLM ensemble, checked by the dev-50 human audit ({kappa})"
+
+
 def _crossfit_t_low(config: Mapping[str, Any]) -> str | None:
     """The fold-to-fold range of `T_low` when each fold's threshold is chosen on the other
     four: the threshold's real variability, unlike the bootstrap-seed check (audit F18)."""
@@ -294,12 +316,7 @@ def build_context(
         "mcptox_clean_fpr": _share(test_ood.get("mcptox_clean")),
         "docker_fpr": _share(test_ood.get("docker")),
         "val_ood": _val_ood(results_dir, headline),
-        "labels_status": (
-            "LLM ensemble, checked against the owner's blind audit (`agreement.json`)"
-            if (results_dir / "agreement.json").exists()
-            else "three-model LLM ensemble; the dev-50 human audit and the test-ID gold labels "
-            "are pending (ADR-009)"
-        ),
+        "labels_status": _labels_status(results_dir),
         "real_poisoned_stage1": holdout.get("real_poisoned_recall_stage1"),
         "real_poisoned_pipeline": holdout.get("real_poisoned_recall_pipeline"),
         "per_tier": _table(holdout.get("per_tier")),

@@ -253,10 +253,18 @@ def test_the_card_carries_the_labels_caveat_until_the_audit_exists(
 ) -> None:
     text = _flat(render_card(build_context(model_dir, results, sha=SHA)))
     assert "the dev-50 human audit and the test-ID gold labels are pending" in text
-    (results / "agreement.json").write_text("{}", encoding="utf-8", newline="\n")
+    audit = results / "label_audit.json"
+    dev50 = {"ready": True, "n": 50, "of": 50, "gate": 0.7, "kappa": 0.81}
+    dev50 |= {"kappa_lo": 0.66, "kappa_hi": 0.93}
+    audit.write_text(json.dumps({"dev50": {**dev50, "passed": True}}), encoding="utf-8")
     text = _flat(render_card(build_context(model_dir, results, sha=SHA)))
-    assert "checked against the owner's blind audit" in text
+    assert "checked by the dev-50 human audit (Cohen's kappa 0.81" in text
     assert "gold labels are pending" not in text
+    # A failed gate voids the models (ADR-009); the card must say so, never hide it.
+    failed = {**dev50, "kappa": 0.55, "passed": False}
+    audit.write_text(json.dumps({"dev50": failed}), encoding="utf-8")
+    text = _flat(render_card(build_context(model_dir, results, sha=SHA)))
+    assert "FAILED its gate" in text and "void" in text
 
 
 def test_an_unmeasured_optional_figure_says_so_and_never_blocks_the_card(
