@@ -116,7 +116,9 @@ def main(argv: Sequence[str] | None = None) -> Path:
 
     records = [r for r in load_corpus(ns.corpus) if r.split == "dev"]
     by_id = {r.id: r for r in records}
-    logits, _, ids = pool_oof(ns.dirs, expected_ids=list(by_id))
+    logits, _, ids = pool_oof(
+        ns.dirs, expected_ids=list(by_id), expected_labels={i: r.label for i, r in by_id.items()}
+    )
     thresholds = th.load(ns.model_dir)
     probs = apply(logits, thresholds.temperature)
     ordered = [by_id[i] for i in ids]

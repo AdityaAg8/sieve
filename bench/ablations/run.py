@@ -284,7 +284,11 @@ def pooled_oof_scores(model_dir: Path, records: Sequence[CorpusRecord]) -> Score
 
     expected = [r.id for r in records]
     try:
-        logits, _, ids = pool_oof([Path(model_dir)], expected_ids=expected)
+        logits, _, ids = pool_oof(
+            [Path(model_dir)],
+            expected_ids=expected,
+            expected_labels={r.id: r.label for r in records},
+        )
     except PoolError as exc:
         raise MatrixError(str(exc)) from exc
     thresholds = th.load(Path(model_dir))

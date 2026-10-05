@@ -733,6 +733,17 @@ def test_an_artefact_that_does_not_cover_the_dev_set_raises(
         )
 
 
+def test_an_artefact_whose_labels_disagree_with_the_corpus_raises(
+    dev: list[CorpusRecord], artefacts: Path
+) -> None:
+    """F13: the right ids with shuffled labels is an un-realigned fold, not a model."""
+    labels_file = artefacts / "tiny-s0" / "oof_labels.npy"
+    labels = np.load(labels_file)
+    np.save(labels_file, np.roll(labels, 1))
+    with pytest.raises(MatrixError, match="corpus says"):
+        pooled_oof_scores(artefacts / "tiny-s0", dev)
+
+
 def test_an_uncalibrated_artefact_raises_rather_than_defaulting_a_threshold(
     dev: list[CorpusRecord], tmp_path: Path
 ) -> None:
