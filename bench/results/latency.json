@@ -1,15 +1,15 @@
 {
   "cpu": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
   "cpu_count": 32,
-  "git_sha": "a4d9dc0f6ff59ed06be403e6fbfb47d20102ff27",
+  "git_sha": "e6ede54a87a51a4b99981b376aa6f6b732359e46",
   "mode": "in_process",
   "model_id": "deberta-v3-base-s1@0900e7e",
   "n": 1000,
-  "p50_ms": 941.151,
-  "p95_ms": 1297.238,
-  "p99_ms": 1386.102,
+  "p50_ms": 977.502,
+  "p95_ms": 1211.292,
+  "p99_ms": 1433.202,
   "sample_tokens": 512,
   "threads": 2,
-  "utc": "2026-10-04T15:28:17.667830Z",
+  "utc": "2026-10-05T14:39:39.372536Z",
   "warmup": 50
 }

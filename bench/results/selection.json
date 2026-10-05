@@ -1,7 +1,7 @@
 {
-  "decided_at": "2026-10-04T15:27:11.314593+00:00",
+  "decided_at": "2026-10-05T14:37:53.555351+00:00",
   "decided_by": "mean",
-  "git_sha": "a4d9dc0f6ff59ed06be403e6fbfb47d20102ff27",
+  "git_sha": "e6ede54a87a51a4b99981b376aa6f6b732359e46",
   "margin": 0.1681684108783561,
   "per_architecture": {
     "deberta-v3-base": {
