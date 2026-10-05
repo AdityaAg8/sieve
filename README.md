@@ -351,8 +351,18 @@ lists what is *not* yet proven.
 
 - **Sieve is not a scanner.** It cannot find a tool nobody flagged unless you hand it the whole
   `tools/list`. It writes no detection rules and no signatures, by design (PRD §4.2).
-- **The corpus is small and partly synthetic.** Synthetic mutations are minimal pairs of real
-  tools, labelled blind and reported separately from the real subset.
+- **Every attack it learned from is synthetic.** The poisoned rows are minimal-pair mutations of
+  real tools, written by two local model families; no real attack is in the development set or the
+  sealed holdout. Real-attack recall comes only from MCPTox and the independent val-OOD sets, and
+  the numbers block prints each beside its false-positive cost.
+- **Stage 1 alone is a triage layer, not a better scanner.** On real tools it sends more to
+  review than the scanner flags; its value is in dismissing a share of the scanner's false
+  positives. The numbers block above states both, on the same tools.
+- **The operating point is conservative and fragile.** `T_low` sits on the score of one or two
+  hard synthetic attacks, and the published artefact (the pre-registered median seed) is the least
+  selective of the three seeds. A cross-fitted post-hoc table in
+  `bench/results/operating_points.json` shows less conservative rules; adopting one is a new
+  version, measured on a new sealed test set, because the v1 holdout is spent.
 - **One public audit.** The problem statement rests on a single 2026 audit of 33 servers [R1],
   quoted with its confidence interval and named as the only one that exists.
 - **The judge's self-defence suite is unmeasured.** The two-sided injection gate (PRD §12.5) is

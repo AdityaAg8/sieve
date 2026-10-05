@@ -289,6 +289,37 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
   three seeds (0.38 against 0.16 and 0.17). The rule was registered before any number existed, so
   it stands, and the spread is published as mean ± std.
 
+### v1 audit corrections (2026-10-05)
+
+A post-release audit of v1's claims (owner-requested; the working notes live in the gitignored
+`docs/handoffs/`) found the trained models and the sealed run sound, and the published claims
+not. Nothing was retrained, no threshold or prediction moved, and the holdout was not re-opened.
+
+- **The M2 headline compared unlike rates.** `fp_reduction_vs_baseline` divides Stage 1's
+  auto-confirm rate (≥ `T_high`) by YARA's flag rate. With the judge deferred, every tool in the
+  [`T_low`, `T_high`) band goes to a human, so the "97.1% fewer false positives" counted the
+  review band as a success. The README, card, web and plan §9 now state M2 as triage (the share of
+  YARA's false positives on real tools that Stage 1 dismisses) beside the standalone comparison.
+  M1 is stated as not measured, because PRD M1 is defined with the judge running.
+- **A "real" column counted synthetic rows.** `fpr_stage1_at_t_low` is computed over every
+  non-poisoned row (`bench/ablations/run.py`); the README's "Real non-poisoned sent to review"
+  column read it. The new key `fpr_stage1_real_at_t_low` is real-only, and the column reads it.
+- **Collapsed intervals are no longer printed.** At 41/41 the cluster bootstrap gives [1, 1]; the
+  README and card print the exact Clopper-Pearson bound (`holdout.json` `recall_cp`) instead.
+- **New report keys, all additive.** `ablations.json` gains `fpr_stage1_real_at_t_low`,
+  `fp_dismissed_real_triage`, `source_probe` and `per_length`. `holdout.json` gains
+  `baseline_fpr_real`, `fp_dismissed_real_triage` and `recall_cp`. `operating_points.json` is
+  new: a cross-fitted, post-hoc table of other `T_low` rules on development OOF only, labelled
+  not adopted.
+- **Reading of PRD §11.6.** §11.6 forbids any change "for that version" after the sealed run. A
+  change that moves no prediction, threshold, model, data or decision, and only labels, slices or
+  bounds predictions that already exist, is reporting, not a change to the version. The check:
+  every value already present in `holdout.json` and `ablations.json` is byte-identical after the
+  re-render, and nothing is chosen from a holdout figure. `bench/eval_final.py` is untouched.
+- **Not changed by the audit.** The D14 median-seed rule stands, though seed 1 turned out the
+  least selective of the three; the README states it per seed. Adopting a different operating
+  point is v1.1 work and needs a new sealed test set.
+
 ### Shared-file changes
 
 Every change to a shared file (Makefile, `pyproject.toml`, `.gitignore`, `sieve/types.py`, the seal
