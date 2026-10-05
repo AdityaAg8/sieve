@@ -24,7 +24,14 @@ type Route = {
 };
 
 const ROUTES: Route[] = [
-  { name: "landing", path: "/", ready: "figure" as const, readyName: "The sieve" },
+  {
+    // The proof band shows the measured v1 numbers, the same summary as the benchmark page.
+    name: "landing",
+    path: "/",
+    ready: "figure" as const,
+    readyName: "The sieve",
+    bench: measured as unknown as Record<string, unknown>,
+  },
   { name: "scan", path: "/scan", ready: "tab" as const, readyName: "Paste JSON" },
   {
     name: "results",

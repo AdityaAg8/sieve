@@ -60,10 +60,12 @@ test.describe("benchmark page", () => {
     await expect(page.getByTestId("provisional-notice")).toHaveCount(0);
 
     const headline = page.getByRole("region", { name: "Headline" });
-    await expect(headline.getByText("Real tools sent to review")).toBeVisible();
-    await expect(headline.getByText(formatInterval(HEADLINE.real_review_share))).toBeVisible();
-    await expect(headline.getByText("not measured: judge deferred (v1.1)")).toBeVisible();
-    await expect(headline.getByText("Synthetic attacks caught")).toBeVisible();
+    // The table renders once per breakpoint; assert on the copy this viewport shows.
+    const shown = (text: string) => headline.getByText(text).filter({ visible: true }).first();
+    await expect(shown("Real tools sent to review")).toBeVisible();
+    await expect(shown(formatInterval(HEADLINE.real_review_share))).toBeVisible();
+    await expect(shown("not measured: judge deferred (v1.1)")).toBeVisible();
+    await expect(shown("Synthetic attacks caught")).toBeVisible();
     await expect(
       headline.getByText(
         HEADLINE.release_gate_passed ? "Release gate passed" : "Release gate not met",
