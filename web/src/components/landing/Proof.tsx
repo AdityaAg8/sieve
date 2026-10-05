@@ -118,12 +118,28 @@ export function Proof() {
               <dd
                 className={`stat-figure mb-2 ${slot.value === NO_NUMBER ? "text-ink-3" : "text-ink-0"}`}
               >
-                {slot.value}
+                <Figure value={slot.value} />
               </dd>
             </div>
           ))}
         </Reveal>
       </div>
     </section>
+  );
+}
+
+
+/**
+ * `0.35 [0.22, 0.49]` as a large point with its interval set small beneath it: at stat-figure
+ * size the bracketed interval wrapped mid-number at desktop widths.
+ */
+function Figure({ value }: { value: string }) {
+  const split = /^(\S+) (\[.+\])$/.exec(value);
+  if (!split) return <>{value}</>;
+  return (
+    <>
+      {split[1]}
+      <span className="t-ui text-ink-2 mt-1 block font-normal">95% CI {split[2]}</span>
+    </>
   );
 }

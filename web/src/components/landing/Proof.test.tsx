@@ -46,7 +46,8 @@ describe("<Proof />", () => {
   it("leads with the share of real tools sent to review, beside YARA's rate on the same tools", () => {
     render(<Proof />);
     const first = within(slot("Real tools sent to review"));
-    expect(first.getByText("0.35 [0.22, 0.49]")).toBeInTheDocument();
+    expect(first.getByText("0.35")).toBeInTheDocument();
+    expect(first.getByText("95% CI [0.22, 0.49]")).toBeInTheDocument();
     expect(
       first.getByText(/real subset, holdout; Stage 1 at T_low\. YARA flags 24\.8% of the same tools/),
     ).toBeInTheDocument();
@@ -55,7 +56,8 @@ describe("<Proof />", () => {
   it("states the population the dismissal share was counted over", () => {
     render(<Proof />);
     const second = within(slot("YARA false positives dismissed"));
-    expect(second.getByText("0.38 [0.18, 0.65]")).toBeInTheDocument(); // 10/26 = 0.3846
+    expect(second.getByText("0.38")).toBeInTheDocument(); // 10/26 = 0.3846
+    expect(second.getByText("95% CI [0.18, 0.65]")).toBeInTheDocument();
     expect(second.getByText(/real tools YARA wrongly flagged, holdout, n = 26/)).toBeInTheDocument();
   });
 
