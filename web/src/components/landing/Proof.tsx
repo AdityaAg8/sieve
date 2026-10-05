@@ -7,14 +7,18 @@ import { Reveal } from "@/components/shell/Reveal";
 import {
   NO_NUMBER,
   NO_NUMBER_LABEL,
+  formatCount,
   formatInterval,
+  formatPercent,
+  formatRate,
+  formatRatio,
   headlineOf,
   isProvisional,
 } from "@/lib/bench";
 import { useBench } from "@/lib/queries";
 
 /**
- * The four numbers the README and the write-up lead with (PRD §4.3), as a stat strip: cells
+ * The four numbers the README and the write-up lead with, as a stat strip: cells
  * divided by hairlines, no boxes. Until `make bench` has run, every slot renders `—` with
  * "metric to confirm" beside it. There is no placeholder number here and there never will be:
  * an invented metric on this page would falsify the one claim the whole project is making.
@@ -24,26 +28,49 @@ export function Proof() {
   const provisional = isProvisional(bench.data);
   const headline = headlineOf(bench.data);
 
+  // Every note opens with the population its figure was counted over, then the comparison that
+  // makes the figure readable. A piece whose key the report does not carry is left out.
+  const yara = headline.baseline_fpr_real?.point;
+  const dismissedN = headline.fp_dismissed_real?.n;
+  const lowerBound = headline.holdout_recall_cp?.lo;
+  const mcptoxClean = headline.mcptox_clean_fpr?.point;
+
   const slots = [
     {
-      label: "Pipeline false-positive rate",
-      note: "real subset, 95% cluster bootstrap",
-      value: formatInterval(headline.fpr_pipeline_real),
+      label: "Real tools sent to review",
+      note: [
+        "real subset, holdout; Stage 1 at T_low",
+        typeof yara === "number" ? `YARA flags ${formatPercent(yara)} of the same tools` : null,
+      ],
+      value: formatInterval(headline.real_review_share),
     },
     {
-      label: "False positives removed",
-      note: "vs YARA as a triage layer, cluster bootstrap",
-      value: formatInterval(headline.fp_reduction),
+      label: "YARA false positives dismissed",
+      note: [
+        "real tools YARA wrongly flagged, holdout" +
+          (typeof dismissedN === "number" ? `, n = ${dismissedN}` : ""),
+      ],
+      value: formatInterval(headline.fp_dismissed_real),
     },
     {
-      label: "Recall on the sealed holdout",
-      note: "holdout-synthetic, opened once, logged",
-      value: formatInterval(headline.holdout_recall),
+      label: "Synthetic attacks caught",
+      note: [
+        "synthetic holdout" +
+          (typeof lowerBound === "number"
+            ? `; exact 95% lower bound ${formatRatio(lowerBound, 3)}`
+            : ""),
+      ],
+      value: formatCount(headline.holdout_recall_cp),
     },
     {
-      label: "Recall on real poisoned tools",
-      note: "MCPTox, evaluation-only slice",
-      value: formatInterval(headline.real_poisoned_recall),
+      label: "Real attacks not dismissed",
+      note: [
+        "MCPTox, evaluation-only" +
+          (typeof mcptoxClean === "number"
+            ? `; Sieve flags ${formatPercent(mcptoxClean, 0)} of MCPTox's clean tools`
+            : ""),
+      ],
+      value: formatRate(headline.real_poisoned_recall),
     },
   ];
 
@@ -65,7 +92,8 @@ export function Proof() {
             ) : (
               <p className="t-body text-ink-2 max-w-[62ch]">
                 Every interval is a 95% cluster bootstrap over servers, regenerated from committed
-                predictions.
+                predictions. The LLM judge is deferred to v1.1, so uncertain tools go to human
+                review rather than to a verdict, and each figure names the tools it counts.
               </p>
             )}
           </div>
@@ -84,7 +112,7 @@ export function Proof() {
               <dt className="t-ui text-ink-0">
                 {slot.label}
                 <span className="t-ui text-ink-2 mt-1 block font-normal">
-                  {slot.value === NO_NUMBER ? NO_NUMBER_LABEL : slot.note}
+                  {slot.value === NO_NUMBER ? NO_NUMBER_LABEL : slot.note.filter(Boolean).join(". ")}
                 </span>
               </dt>
               <dd
