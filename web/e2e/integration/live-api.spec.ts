@@ -88,7 +88,7 @@ test.describe("the app against the live API", () => {
   }) => {
     const summary = (await (
       await request.get(`${API_BASE_URL}/api/v1/bench/summary`)
-    ).json()) as { provisional: boolean; headline: Record<string, unknown> };
+    ).json()) as { provisional: boolean; tables: Record<string, unknown> };
 
     await page.goto("/benchmark");
     await expect(page.getByRole("heading", { name: "Headline" })).toBeVisible();
@@ -97,7 +97,12 @@ test.describe("the app against the live API", () => {
     // renders as `—` with "metric to confirm", and a measured one renders as the number. That
     // "No test defined" appears on the rows with no paired comparison is a property of the
     // component and is asserted where it can fail — `HeadlineTable.test.tsx`.
-    if (typeof summary.headline.mcnemar_p === "number") {
+    // The p-value is read from the sealed report, where the page reads it, and shown on the
+    // all-holdout-negatives row it was computed on.
+    const { holdout } = summary.tables as {
+      holdout?: { headline_report?: { holdout?: { fp_reduction_triage?: { mcnemar_p?: unknown } } } };
+    };
+    if (typeof holdout?.headline_report?.holdout?.fp_reduction_triage?.mcnemar_p === "number") {
       await expect(page.getByText(/^McNemar p = /)).toBeVisible();
     } else {
       await expect(page.getByTitle("metric to confirm").first()).toBeVisible();

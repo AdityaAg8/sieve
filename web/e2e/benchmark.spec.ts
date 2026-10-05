@@ -41,7 +41,11 @@ test.describe("benchmark page", () => {
     const headline = page.getByRole("region", { name: "Headline" });
     const values = await headline.locator("tbody tr td:nth-child(3)").allTextContents();
     expect(values.length).toBeGreaterThan(0);
-    expect(values.every((value) => value.startsWith("—"))).toBe(true);
+    // M1 is the one row that states a fact rather than a measurement: the judge is deferred, so
+    // the pipeline's false-positive rate is not measured, with or without a bench run.
+    const measuredRows = values.filter((value) => !value.startsWith("not measured"));
+    expect(values.length - measuredRows.length).toBe(1);
+    expect(measuredRows.every((value) => value.startsWith("—"))).toBe(true);
   });
 
   test("says the holdout has not been opened when the log is empty", async ({ page }) => {
@@ -56,8 +60,10 @@ test.describe("benchmark page", () => {
     await expect(page.getByTestId("provisional-notice")).toHaveCount(0);
 
     const headline = page.getByRole("region", { name: "Headline" });
-    await expect(headline.getByText(formatInterval(HEADLINE.fpr_stage1_real))).toBeVisible();
-    await expect(headline.getByText(formatInterval(HEADLINE.holdout_recall))).toBeVisible();
+    await expect(headline.getByText("Real tools sent to review")).toBeVisible();
+    await expect(headline.getByText(formatInterval(HEADLINE.real_review_share))).toBeVisible();
+    await expect(headline.getByText("not measured: judge deferred (v1.1)")).toBeVisible();
+    await expect(headline.getByText("Synthetic attacks caught")).toBeVisible();
     await expect(
       headline.getByText(
         HEADLINE.release_gate_passed ? "Release gate passed" : "Release gate not met",
