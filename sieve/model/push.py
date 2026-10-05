@@ -123,6 +123,81 @@ def _selection_table(selection: Mapping[str, Any]) -> str | None:
     return "\n".join(lines)
 
 
+#: What a slot says when its source was not produced by this run. Never None, so an optional
+#: figure cannot block a push, and never a blank, so the card says what is missing (audit F8).
+NOT_MEASURED = "not measured in this run"
+
+
+def _share(block: Mapping[str, Any] | None) -> str:
+    """`37/105 (35.2%, 95% CI 21.7%–49.1%)`, the count when the block carries one."""
+    if not block or block.get("point") is None:
+        return NOT_MEASURED
+    figure = f"{block['point'] * 100:.1f}%"
+    lo, hi = block.get("lo"), block.get("hi")
+    if lo is not None and hi is not None and lo != hi:
+        figure += f", 95% CI {lo * 100:.1f}%–{hi * 100:.1f}%"
+    if block.get("k") is not None and block.get("n") is not None:
+        return f"{int(block['k'])}/{int(block['n'])} ({figure})"
+    if block.get("n") is not None:
+        return f"{figure}, n = {int(block['n'])}"
+    return figure
+
+
+def _recall_cp(block: Mapping[str, Any] | None) -> str:
+    if not block or block.get("lo") is None:
+        return NOT_MEASURED
+    return f"{int(block['k'])}/{int(block['n'])}, exact 95% lower bound {block['lo']:.3f}"
+
+
+def _per_seed_review(row: Mapping[str, Any], published: str | None) -> str:
+    """Real development tools sent to review, per seed, with the published one marked (F5)."""
+    seeds = sorted(row.get("per_seed") or [], key=lambda block: block.get("seed", 0))
+    parts = []
+    for block in seeds:
+        point = (block.get("fpr_stage1_real_at_t_low") or {}).get("point")
+        if point is None:
+            return NOT_MEASURED
+        mark = " (published)" if published and published.endswith(f"-s{block['seed']}") else ""
+        parts.append(f"seed {block['seed']}{mark} {point * 100:.1f}%")
+    return "; ".join(parts) if parts else NOT_MEASURED
+
+
+def _val_ood(results_dir: Path, model_version: Any) -> str:
+    """Report-only recall on independent attack sets, when `make eval-val-ood` has run."""
+    path = results_dir / "val_ood.json"
+    if not path.exists():
+        return NOT_MEASURED
+    models = read_json(path).get("models") or {}
+    block = ((models.get(model_version) or {}).get("per_source") or {}).get("all_but_stress")
+    if not block or block.get("recall_at_t_low") is None:
+        return NOT_MEASURED
+    return (
+        f"recall at `T_low` {block['recall_at_t_low']:.3f} over {int(block['n_poisoned'])} "
+        f"attacks, AUROC {block['auroc']:.3f} (labels from each source's metadata)"
+    )
+
+
+def _source_probe(row: Mapping[str, Any]) -> str:
+    """AUROC of the poisoned score, synthetic vs real non-poisoned rows, per seed (audit F10)."""
+    raw = [
+        (block.get("source_probe") or {}).get("auroc_synthetic_vs_real_negatives")
+        for block in sorted(row.get("per_seed") or [], key=lambda b: b.get("seed", 0))
+    ]
+    values = [float(v) for v in raw if v is not None]
+    if not values or len(values) != len(raw):
+        return NOT_MEASURED
+    return f"AUROC {min(values):.3f}–{max(values):.3f} across {len(values)} seeds"
+
+
+def _crossfit_t_low(config: Mapping[str, Any]) -> str | None:
+    """The fold-to-fold range of `T_low` when each fold's threshold is chosen on the other
+    four: the threshold's real variability, unlike the bootstrap-seed check (audit F18)."""
+    per_fold = config.get("crossfit_t_low_per_fold") or []
+    if not per_fold:
+        return None
+    return f"{min(per_fold):.4f}–{max(per_fold):.4f} over {len(per_fold)} folds"
+
+
 def _limitations(derived: str | None, extra: str | None) -> str | None:
     """What `eval_final` derived from the run, plus anything the release note adds."""
     parts = [p for p in (derived, extra) if p]
@@ -171,6 +246,8 @@ def build_context(
         )
 
     spread = config.get("t_low_spread") or []
+    headline_report = (holdout.get("per_model") or {}).get(headline) or {}
+    test_ood = headline_report.get("test_ood") or {}
     return {
         "model_version": config.get("model_version"),
         "base_model": config.get("base_model") or selection.get("winner"),
@@ -189,8 +266,11 @@ def build_context(
         "t_low": config.get("t_low"),
         "t_high": config.get("t_high"),
         "t_low_spread": (
-            f"{min(spread):.4f}–{max(spread):.4f} over {len(spread)} refits" if spread else None
+            f"{min(spread):.4f}–{max(spread):.4f} over {len(spread)} bootstrap seeds"
+            if spread
+            else None
         ),
+        "crossfit_t_low": _crossfit_t_low(config) or NOT_MEASURED,
         "temperature": config.get("temperature"),
         "ece_before": config.get("ece_before"),
         "ece_after": config.get("ece_after"),
@@ -199,10 +279,27 @@ def build_context(
         "macro_f1": _mean_std(row),
         "fpr_stage1_at_t_low": _interval(row.get("fpr_stage1_at_t_low")),
         "fpr_pipeline": _interval(row.get("fpr_pipeline")),
+        "fpr_stage1_real_at_t_low": _share(row.get("fpr_stage1_real_at_t_low")),
+        "fp_dismissed_real_triage": _share(row.get("fp_dismissed_real_triage")),
+        "per_seed_review": _per_seed_review(row, selection.get("published_dir")),
+        "source_probe": _source_probe(row),
         "minimal_pair_accuracy": row.get("minimal_pair_accuracy"),
         "holdout_recall": holdout.get("recall"),
         "holdout_recall_lcb": holdout.get("recall_lcb"),
+        "holdout_recall_cp": _recall_cp(holdout.get("recall_cp")),
         "holdout_fpr_pipeline": _interval(holdout.get("fpr_pipeline_real")),
+        "holdout_review_real": _share(holdout.get("fpr_stage1_real")),
+        "holdout_baseline_fpr_real": _share(holdout.get("baseline_fpr_real")),
+        "holdout_fp_dismissed_real": _share(holdout.get("fp_dismissed_real_triage")),
+        "mcptox_clean_fpr": _share(test_ood.get("mcptox_clean")),
+        "docker_fpr": _share(test_ood.get("docker")),
+        "val_ood": _val_ood(results_dir, headline),
+        "labels_status": (
+            "LLM ensemble, checked against the owner's blind audit (`agreement.json`)"
+            if (results_dir / "agreement.json").exists()
+            else "three-model LLM ensemble; the dev-50 human audit and the test-ID gold labels "
+            "are pending (ADR-009)"
+        ),
         "real_poisoned_stage1": holdout.get("real_poisoned_recall_stage1"),
         "real_poisoned_pipeline": holdout.get("real_poisoned_recall_pipeline"),
         "per_tier": _table(holdout.get("per_tier")),

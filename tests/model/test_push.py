@@ -227,8 +227,48 @@ def test_the_card_carries_the_thresholds_the_spread_and_the_ece(
 ) -> None:
     text = render_card(build_context(model_dir, results, sha=SHA))
     assert "0.11" in text and "0.87" in text
-    assert "0.0900–0.1300 over 5 refits" in text
+    assert "0.0900–0.1300 over 5 bootstrap seeds" in text
     assert "0.18" in text and "0.03" in text
+
+
+def _flat(text: str) -> str:
+    """The card wraps prose at 100 columns; compare it as one line."""
+    return " ".join(text.split())
+
+
+def test_the_card_names_the_review_load_as_the_v1_product_number(
+    results: Path, model_dir: Path
+) -> None:
+    """Audit F11: with the judge deferred, the band goes to a human, so the auto-confirm rate is
+    never the product number, and no real subset holds a poisoned row."""
+    text = _flat(render_card(build_context(model_dir, results, sha=SHA)))
+    assert "The second is the product number" not in text
+    assert "the product number is `FPR_stage1@T_low` on real tools" in text
+    assert "are the ones to believe" not in text
+    assert "no real subset, development or holdout, holds a poisoned row" in text
+
+
+def test_the_card_carries_the_labels_caveat_until_the_audit_exists(
+    results: Path, model_dir: Path
+) -> None:
+    text = _flat(render_card(build_context(model_dir, results, sha=SHA)))
+    assert "the dev-50 human audit and the test-ID gold labels are pending" in text
+    (results / "agreement.json").write_text("{}", encoding="utf-8", newline="\n")
+    text = _flat(render_card(build_context(model_dir, results, sha=SHA)))
+    assert "checked against the owner's blind audit" in text
+    assert "gold labels are pending" not in text
+
+
+def test_an_unmeasured_optional_figure_says_so_and_never_blocks_the_card(
+    results: Path, model_dir: Path
+) -> None:
+    """Audit F8: a recall printed without its false-positive cost reads as free, so a missing
+    test-OOD or val-OOD figure is printed as missing rather than dropped."""
+    (results / "val_ood.json").unlink(missing_ok=True)
+    context = build_context(model_dir, results, sha=SHA)
+    assert context["val_ood"] == "not measured in this run"
+    for name in ("mcptox_clean_fpr", "docker_fpr", "holdout_recall_cp", "per_seed_review"):
+        assert context[name], f"{name} must never be empty"
 
 
 def test_the_card_carries_the_cross_fitted_recall_and_ece(results: Path, model_dir: Path) -> None:
