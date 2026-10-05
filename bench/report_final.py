@@ -412,12 +412,19 @@ def _log_entry(log_path: Path, headline: str) -> tuple[str | None, dict[str, Any
 
 
 def _check_coverage(model: str, preds: Sequence[Row], rows: Sequence[Row]) -> None:
-    """F19: each model scored each (set, id) of the rows exactly once."""
+    """F19: each model scored each (set, id) of the rows exactly once.
+
+    A fold artefact (`fold` >= 0, only in `eval_val_ood`'s dev dry run) scores its own fold's
+    rows and nothing else, so for it "exactly once" holds over the rows it scored.
+    """
     keys = Counter((p["set"], p["id"]) for p in preds)
     repeated = sorted(k for k, count in keys.items() if count > 1)
     if repeated:
         raise ValueError(f"{model} scored {len(repeated)} (set, id) more than once: {repeated[:3]}")
     wanted = {(r["set"], r["id"]) for r in rows}
+    fold_model = all(isinstance(p.get("fold"), int) and p["fold"] >= 0 for p in preds)
+    if fold_model:
+        wanted &= set(keys)
     if set(keys) != wanted:
         missing, extra = sorted(wanted - set(keys)), sorted(set(keys) - wanted)
         raise ValueError(

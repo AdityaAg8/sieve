@@ -169,6 +169,18 @@ def test_every_model_scores_every_row_exactly_once(
     with pytest.raises(ValueError, match="do not cover"):
         rf.build_report(predictions[1:], rows, headline="deberta@s0", n_boot=10,
                         preregistration_sha256="0" * 64)  # fmt: skip
+    # A fold artefact (the dev dry run's) scores only its own rows: a subset, still once each.
+    fold_only = [
+        {**p, "fold": 2} if p["model"] == "deberta@s1" else p
+        for i, p in enumerate(predictions)
+        if p["model"] != "deberta@s1" or i % 2 == 0
+    ]
+    rf.build_report(fold_only, rows, headline="deberta@s0", n_boot=10,
+                    preregistration_sha256="0" * 64)  # fmt: skip
+    stray = [*fold_only, {**fold_only[-1], "id": "not-a-row"}]
+    with pytest.raises(ValueError, match="do not cover"):
+        rf.build_report(stray, rows, headline="deberta@s0", n_boot=10,
+                        preregistration_sha256="0" * 64)  # fmt: skip
     moved = [{**predictions[0], "set": "docker"}, *predictions[1:]]
     with pytest.raises(ValueError, match="do not cover"):
         rf.build_report(moved, rows, headline="deberta@s0", n_boot=10,
