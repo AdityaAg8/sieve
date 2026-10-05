@@ -68,13 +68,6 @@ def pct(value: float | None) -> str:
     return f"{value * 100:.1f}%"
 
 
-def points(value: float | None) -> str:
-    """An absolute difference between two rates, in percentage points."""
-    if value is None:
-        raise Refused("a difference was asked for but the results file carries null")
-    return f"{value * 100:.1f} points"
-
-
 def ratio(value: float | None) -> str:
     """A recall or a probability, three decimals, as the model card prints it."""
     if value is None:
@@ -696,7 +689,6 @@ __all__ = [
     "main",
     "p_value",
     "pct",
-    "points",
     "ratio",
     "render_block",
     "replace_block",
