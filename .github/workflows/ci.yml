@@ -51,6 +51,9 @@ jobs:
       - run: uv run ruff format --check sieve bench tests fixtures docs/scripts
       - run: uv run mypy
       - run: uv run python -m sieve.api.export_schemas && git diff --exit-code schemas/
+      # The README's generated blocks must be exactly what `bench/results/` produces: a hand-edited
+      # number, or results regenerated without `make readme`, fails here (v1 audit F14).
+      - run: uv run python docs/scripts/readme_numbers.py --check
       # 85 as of Task 11.3 (it was 60 from Phase 0). Raise it when the real number rises; the one
       # thing it must never do is come back down to meet a regression.
       - run: >
