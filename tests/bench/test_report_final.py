@@ -69,6 +69,112 @@ def test_the_slices_use_the_ablation_vocabulary(report: dict[str, Any]) -> None:
         assert set(bucket) == set(BREAKDOWN_KEYS)
 
 
+# ------------------------------------------------- like-for-like keys (v1 fix plan, track T2)
+
+
+@pytest.fixture(scope="module")
+def flagged_world() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """The fixture's predictions and rows with YARA flagging six real test-ID rows (mini-50 has
+    no `wild_fp` row, so the fixture's own triage slice is empty)."""
+    from bench import eval_final as ef
+    from tests.bench.report_fixture import SeededFake, sealed_rows
+
+    sealed = sealed_rows(*fixture_world())
+    models = [
+        ef.LoadedModel(Path(f"deberta-s{s}"), SeededFake(s), f"deberta@s{s}", s, "deberta", -1,
+                       "full")
+        for s in (0, 1)
+    ]  # fmt: skip
+    rows = ef.row_entries(sealed, None)
+    test_id = [r for r in rows if r["set"] == "test_id"]
+    for r in test_id[:6]:
+        r["yara"] = True
+    return ef.score(models, sealed), rows
+
+
+def _flagged_report(world: tuple[list[dict[str, Any]], list[dict[str, Any]]]) -> dict[str, Any]:
+    predictions, rows = world
+    return rf.build_report(
+        predictions,
+        rows,
+        headline="deberta@s0",
+        n_boot=40,
+        preregistration_sha256="0" * 64,
+        log_line='{"reason": "fixture"}',
+        log_entry={"reason": "fixture", "dataset_version": "fixture.jsonl@000000000000"},
+    )
+
+
+def test_the_baseline_fpr_on_real_test_id_rows_is_counted_not_divided_downstream(
+    flagged_world: tuple[list[dict[str, Any]], list[dict[str, Any]]],
+) -> None:
+    report = _flagged_report(flagged_world)
+    _, rows = flagged_world
+    # An FPR is over negatives; the fixture's test-ID (unlike the real one) holds attacks too.
+    real = [r for r in rows if r["set"] == "test_id" and not r["poisoned"]]
+    flagged = sum(bool(r.get("yara")) for r in real)
+    for model in report["per_model"].values():
+        got = model["test_id"]["baseline_fpr_real"]
+        assert got == {"point": flagged / len(real), "k": flagged, "n": len(real)}
+    assert (
+        report["baseline_fpr_real"]
+        == report["per_model"]["deberta@s0"]["test_id"]["baseline_fpr_real"]
+    )
+    jsonschema.validate(report, SCHEMA)
+
+
+def test_the_dismissed_share_is_the_triage_slice_flipped_from_the_same_bootstrap(
+    flagged_world: tuple[list[dict[str, Any]], list[dict[str, Any]]],
+) -> None:
+    report = _flagged_report(flagged_world)
+    for model in report["per_model"].values():
+        fpr = model["test_id"]["fpr_triage_slice"]
+        got = model["test_id"]["fp_dismissed_real_triage"]
+        assert set(got) == {"point", "lo", "hi", "n"}
+        assert got["point"] == pytest.approx(1 - fpr["point"])
+        assert got["lo"] == pytest.approx(1 - fpr["hi"])
+        assert got["hi"] == pytest.approx(1 - fpr["lo"])
+        assert got["n"] == fpr["n"] == 6
+    head = report["per_model"]["deberta@s0"]["test_id"]
+    assert report["fp_dismissed_real_triage"] == head["fp_dismissed_real_triage"]
+
+
+def test_an_empty_triage_slice_dismisses_nothing_measurable(report: dict[str, Any]) -> None:
+    got = report["per_model"]["deberta@s0"]["test_id"]["fp_dismissed_real_triage"]
+    assert got == {"point": None, "lo": None, "hi": None, "n": 0}
+
+
+def test_the_synthetic_recall_carries_an_exact_clopper_pearson_interval(
+    report: dict[str, Any],
+) -> None:
+    from bench.stats import clopper_pearson
+
+    head = report["per_model"][report["headline_model"]]
+    syn = head["holdout_synthetic"]
+    got = syn["recall_cp"]
+    assert got["n"] == syn["n_poisoned"]
+    assert got["k"] / got["n"] == pytest.approx(syn["recall_at_t_low"]["point"])
+    assert (got["lo"], got["hi"]) == pytest.approx(clopper_pearson(got["k"], got["n"]))
+    assert report["recall_cp"] == got
+
+
+def test_every_model_scores_every_row_exactly_once(
+    flagged_world: tuple[list[dict[str, Any]], list[dict[str, Any]]],
+) -> None:
+    """F19: the join is by id, so a duplicate or a missing (set, id) has to be refused."""
+    predictions, rows = flagged_world
+    with pytest.raises(ValueError, match="more than once"):
+        rf.build_report([*predictions, predictions[0]], rows, headline="deberta@s0",
+                        n_boot=10, preregistration_sha256="0" * 64)  # fmt: skip
+    with pytest.raises(ValueError, match="do not cover"):
+        rf.build_report(predictions[1:], rows, headline="deberta@s0", n_boot=10,
+                        preregistration_sha256="0" * 64)  # fmt: skip
+    moved = [{**predictions[0], "set": "docker"}, *predictions[1:]]
+    with pytest.raises(ValueError, match="do not cover"):
+        rf.build_report(moved, rows, headline="deberta@s0", n_boot=10,
+                        preregistration_sha256="0" * 64)  # fmt: skip
+
+
 def test_main_refuses_without_a_matching_preregistration(tmp_path: Path) -> None:
     prereg = tmp_path / "PREREGISTRATION.md"
     prereg.write_text("# plan\n", encoding="utf-8")
