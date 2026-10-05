@@ -99,6 +99,7 @@ describe("breakdowns", () => {
       recall: source.recall_at_t_low,
       fpr: source.fpr_pipeline,
       n: source.n,
+      n_poisoned: source.n_poisoned,
     });
     expect(perConcealmentOf(measured).length).toBe(
       Object.keys(report.per_concealment ?? {}).length,
@@ -155,11 +156,17 @@ describe("headlineOf, the audited population labels", () => {
     expect(headline.baseline_fpr_real).toEqual(reportV1.baseline_fpr_real);
     expect(headline.baseline_fpr_real).toMatchObject({ k: 26, n: 105 });
     expect(headline.fp_dismissed_real).toEqual(reportV1.fp_dismissed_real_triage);
-    expect(headline.fp_dismissed_real).toMatchObject({ point: 0.385, lo: 0.182, hi: 0.65, n: 26 });
+    const dismissed = headline.fp_dismissed_real!;
+    expect(dismissed.n).toBe(26);
+    expect(dismissed.point).toBeCloseTo(0.385, 3); // 10 of the 26
+    expect(dismissed.lo).toBeCloseTo(0.182, 3);
+    expect(dismissed.hi).toBeCloseTo(0.65, 3);
   });
 
   it("reads the exact lower bound on the synthetic holdout's recall", () => {
-    expect(headlineOf(measuredV1).holdout_recall_cp).toEqual({ lo: 0.914, hi: 1, k: 41, n: 41 });
+    const exact = headlineOf(measuredV1).holdout_recall_cp!;
+    expect(exact).toMatchObject({ hi: 1, k: 41, n: 41 });
+    expect(exact.lo).toBeCloseTo(0.914, 3);
   });
 
   it("reads MCPTox's clean-tool flag rate off the headline model's out-of-distribution report", () => {
@@ -169,8 +176,13 @@ describe("headlineOf, the audited population labels", () => {
   });
 
   it("leaves a slot absent when an older report does not carry its key", () => {
-    // The mini-50 fixture predates the three keys the audit added.
-    const older = headlineOf(measured);
+    // A report written before the audit added these three keys.
+    const before = structuredClone(measuredV1);
+    const holdout = tablesOf(before).holdout! as Record<string, unknown>;
+    for (const key of ["baseline_fpr_real", "fp_dismissed_real_triage", "recall_cp"]) {
+      delete holdout[key];
+    }
+    const older = headlineOf(before);
     expect(older).not.toHaveProperty("baseline_fpr_real");
     expect(older).not.toHaveProperty("fp_dismissed_real");
     expect(older).not.toHaveProperty("holdout_recall_cp");

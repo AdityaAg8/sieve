@@ -55,7 +55,7 @@ describe("<Proof />", () => {
   it("states the population the dismissal share was counted over", () => {
     render(<Proof />);
     const second = within(slot("YARA false positives dismissed"));
-    expect(second.getByText("0.39 [0.18, 0.65]")).toBeInTheDocument();
+    expect(second.getByText("0.38 [0.18, 0.65]")).toBeInTheDocument(); // 10/26 = 0.3846
     expect(second.getByText(/real tools YARA wrongly flagged, holdout, n = 26/)).toBeInTheDocument();
   });
 

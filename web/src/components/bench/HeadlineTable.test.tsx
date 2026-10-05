@@ -74,7 +74,7 @@ describe("<HeadlineTable />", () => {
     render(<HeadlineTable headline={measured} />);
     const row = within(rowNamed(DISMISSED_REAL));
     expect(row.getByText("YARA false positives dismissed")).toBeInTheDocument();
-    expect(row.getByText("0.39 [0.18, 0.65]")).toBeInTheDocument();
+    expect(row.getByText("0.38 [0.18, 0.65]")).toBeInTheDocument(); // 10/26 = 0.3846
   });
 
   it("shows M1 as not measured, with the Stage-1 auto-confirm count labelled as such", () => {

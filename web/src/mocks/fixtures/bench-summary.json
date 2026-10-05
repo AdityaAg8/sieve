@@ -11,6 +11,17 @@
         "classes_present": [],
         "classifier": "baseline",
         "cost_usd_per_50": null,
+        "fp_dismissed_real_triage": {
+          "hi": 0.0,
+          "lo": 0.0,
+          "n": 4.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            0.0
+          ],
+          "point": 0.0,
+          "std": null
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.0,
           "absolute_hi": 0.0,
@@ -69,6 +80,15 @@
           "point": 0.14814814814814814,
           "std": null
         },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.5298245614035085,
+          "lo": 0.0,
+          "per_seed": [
+            0.2222222222222222
+          ],
+          "point": 0.2222222222222222,
+          "std": null
+        },
         "judge": "none",
         "macro_f1_mean": null,
         "macro_f1_per_seed": [],
@@ -94,26 +114,31 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 1.0,
+            "n_poisoned": 1.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.14814814814814814,
             "fpr_stage1_at_t_low": 0.14814814814814814,
             "n": 40.0,
+            "n_poisoned": 13.0,
             "recall_at_t_low": 1.0
           }
         },
+        "per_length": null,
         "per_source": {
           "public_repo/none": {
             "fpr_pipeline": 0.2222222222222222,
             "fpr_stage1_at_t_low": 0.2222222222222222,
             "n": 23.0,
+            "n_poisoned": 5.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 18.0,
+            "n_poisoned": 9.0,
             "recall_at_t_low": 1.0
           }
         },
@@ -122,24 +147,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 10.0,
+            "n_poisoned": 10.0,
             "recall_at_t_low": 1.0
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "unscored": {
             "fpr_pipeline": 0.14814814814814814,
             "fpr_stage1_at_t_low": 0.14814814814814814,
             "n": 27.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -150,6 +179,9 @@
           0
         ],
         "single_seed": false,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.3888888888888889
+        },
         "status": "active",
         "t_high": 0.5,
         "t_low": 0.5
@@ -163,6 +195,17 @@
         ],
         "classifier": "tfidf",
         "cost_usd_per_50": null,
+        "fp_dismissed_real_triage": {
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 4.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "std": null
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.14814814814814814,
           "absolute_hi": 0.323891129032258,
@@ -221,6 +264,15 @@
           "point": 0.07407407407407407,
           "std": null
         },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.2689285714285713,
+          "lo": 0.0,
+          "per_seed": [
+            0.1111111111111111
+          ],
+          "point": 0.1111111111111111,
+          "std": null
+        },
         "judge": "none",
         "macro_f1_mean": 0.9299145299145298,
         "macro_f1_per_seed": [
@@ -248,26 +300,31 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 1.0,
+            "n_poisoned": 1.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.07407407407407407,
             "n": 40.0,
+            "n_poisoned": 13.0,
             "recall_at_t_low": 1.0
           }
         },
+        "per_length": null,
         "per_source": {
           "public_repo/none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.1111111111111111,
             "n": 23.0,
+            "n_poisoned": 5.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 18.0,
+            "n_poisoned": 9.0,
             "recall_at_t_low": 1.0
           }
         },
@@ -276,24 +333,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 10.0,
+            "n_poisoned": 10.0,
             "recall_at_t_low": 1.0
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "unscored": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.07407407407407407,
             "n": 27.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -304,6 +365,9 @@
           0
         ],
         "single_seed": false,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.024691358024691357
+        },
         "status": "active",
         "t_high": 0.44116326540996015,
         "t_low": 0.3055111033208269
@@ -317,6 +381,17 @@
         ],
         "classifier": "models/deberta-v3-base-desc-s*",
         "cost_usd_per_50": null,
+        "fp_dismissed_real_triage": {
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 4.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "std": null
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.14814814814814814,
           "absolute_hi": 0.323891129032258,
@@ -375,6 +450,15 @@
           "point": 0.4444444444444444,
           "std": null
         },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.5017857142857142,
+          "lo": 0.11011904761904762,
+          "per_seed": [
+            0.3333333333333333
+          ],
+          "point": 0.3333333333333333,
+          "std": null
+        },
         "judge": "none",
         "macro_f1_mean": 0.3406862745098039,
         "macro_f1_per_seed": [
@@ -402,26 +486,31 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 1.0,
+            "n_poisoned": 1.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.4444444444444444,
             "n": 40.0,
+            "n_poisoned": 13.0,
             "recall_at_t_low": 0.38461538461538464
           }
         },
+        "per_length": null,
         "per_source": {
           "public_repo/none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.3333333333333333,
             "n": 23.0,
+            "n_poisoned": 5.0,
             "recall_at_t_low": 0.8
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.6666666666666666,
             "n": 18.0,
+            "n_poisoned": 9.0,
             "recall_at_t_low": 0.2222222222222222
           }
         },
@@ -430,24 +519,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 10.0,
+            "n_poisoned": 10.0,
             "recall_at_t_low": 0.3
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 0.5
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "unscored": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.4444444444444444,
             "n": 27.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -458,6 +551,9 @@
           0
         ],
         "single_seed": true,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.6666666666666666
+        },
         "status": "active",
         "t_high": 0.85,
         "t_low": 0.3
@@ -471,6 +567,19 @@
         ],
         "classifier": "models/deberta-v3-base-s*",
         "cost_usd_per_50": null,
+        "fp_dismissed_real_triage": {
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 4.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "point": 1.0,
+          "std": 0.0
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.14814814814814814,
           "absolute_hi": 0.323891129032258,
@@ -535,6 +644,17 @@
             0.4444444444444444
           ],
           "point": 0.4444444444444444,
+          "std": 0.0
+        },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.5017857142857142,
+          "lo": 0.11011904761904762,
+          "per_seed": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ],
+          "point": 0.3333333333333333,
           "std": 0.0
         },
         "judge": "none",
@@ -568,26 +688,31 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 1.0,
+            "n_poisoned": 1.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.4444444444444444,
             "n": 40.0,
+            "n_poisoned": 13.0,
             "recall_at_t_low": 0.4615384615384615
           }
         },
+        "per_length": null,
         "per_source": {
           "public_repo/none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.3333333333333333,
             "n": 23.0,
+            "n_poisoned": 5.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.6666666666666666,
             "n": 18.0,
+            "n_poisoned": 9.0,
             "recall_at_t_low": 0.2222222222222222
           }
         },
@@ -596,24 +721,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 10.0,
+            "n_poisoned": 10.0,
             "recall_at_t_low": 0.3
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "unscored": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.4444444444444444,
             "n": 27.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -626,6 +755,9 @@
           2
         ],
         "single_seed": false,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.6666666666666666
+        },
         "status": "active",
         "t_high": 0.85,
         "t_low": 0.3
@@ -639,6 +771,19 @@
         ],
         "classifier": "models/modernbert-base-s*",
         "cost_usd_per_50": null,
+        "fp_dismissed_real_triage": {
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 4.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "point": 1.0,
+          "std": 0.0
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.14814814814814814,
           "absolute_hi": 0.323891129032258,
@@ -705,6 +850,17 @@
           "point": 0.4444444444444444,
           "std": 0.0
         },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.5017857142857142,
+          "lo": 0.11011904761904762,
+          "per_seed": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ],
+          "point": 0.3333333333333333,
+          "std": 0.0
+        },
         "judge": "none",
         "macro_f1_mean": 0.3636363636363636,
         "macro_f1_per_seed": [
@@ -736,26 +892,31 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 1.0,
+            "n_poisoned": 1.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.4444444444444444,
             "n": 40.0,
+            "n_poisoned": 13.0,
             "recall_at_t_low": 0.4615384615384615
           }
         },
+        "per_length": null,
         "per_source": {
           "public_repo/none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.3333333333333333,
             "n": 23.0,
+            "n_poisoned": 5.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.6666666666666666,
             "n": 18.0,
+            "n_poisoned": 9.0,
             "recall_at_t_low": 0.2222222222222222
           }
         },
@@ -764,24 +925,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 10.0,
+            "n_poisoned": 10.0,
             "recall_at_t_low": 0.3
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "unscored": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.4444444444444444,
             "n": 27.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -794,6 +959,9 @@
           2
         ],
         "single_seed": false,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.6666666666666666
+        },
         "status": "active",
         "t_high": 0.85,
         "t_low": 0.3
@@ -834,6 +1002,17 @@
         ],
         "classifier": "models/deberta-v3-base-scanner-s*",
         "cost_usd_per_50": null,
+        "fp_dismissed_real_triage": {
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 4.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "std": null
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.14814814814814814,
           "absolute_hi": 0.323891129032258,
@@ -890,6 +1069,15 @@
             0.4444444444444444
           ],
           "point": 0.4444444444444444,
+          "std": null
+        },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.5017857142857142,
+          "lo": 0.11011904761904762,
+          "per_seed": [
+            0.3333333333333333
+          ],
+          "point": 0.3333333333333333,
           "std": null
         },
         "judge": "none",
@@ -919,26 +1107,31 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 1.0,
+            "n_poisoned": 1.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.4444444444444444,
             "n": 40.0,
+            "n_poisoned": 13.0,
             "recall_at_t_low": 0.46153846153846156
           }
         },
+        "per_length": null,
         "per_source": {
           "public_repo/none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.3333333333333333,
             "n": 23.0,
+            "n_poisoned": 5.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.6666666666666666,
             "n": 18.0,
+            "n_poisoned": 9.0,
             "recall_at_t_low": 0.2222222222222222
           }
         },
@@ -947,24 +1140,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 10.0,
+            "n_poisoned": 10.0,
             "recall_at_t_low": 0.3
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "unscored": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.4444444444444444,
             "n": 27.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -975,6 +1172,9 @@
           0
         ],
         "single_seed": true,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.6666666666666666
+        },
         "status": "active",
         "t_high": 0.85,
         "t_low": 0.3
@@ -994,6 +1194,19 @@
         "deferred_breakdown_of": [
           6
         ],
+        "fp_dismissed_real_triage": {
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 4.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "point": 1.0,
+          "std": 0.0
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.14814814814814814,
           "absolute_hi": 0.323891129032258,
@@ -1058,6 +1271,17 @@
             0.4444444444444444
           ],
           "point": 0.4444444444444444,
+          "std": 0.0
+        },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.5017857142857142,
+          "lo": 0.11011904761904762,
+          "per_seed": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ],
+          "point": 0.3333333333333333,
           "std": 0.0
         },
         "judge": "none",
@@ -1091,26 +1315,31 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 1.0,
+            "n_poisoned": 1.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.4444444444444444,
             "n": 40.0,
+            "n_poisoned": 13.0,
             "recall_at_t_low": 0.4615384615384615
           }
         },
+        "per_length": null,
         "per_source": {
           "public_repo/none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.3333333333333333,
             "n": 23.0,
+            "n_poisoned": 5.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.6666666666666666,
             "n": 18.0,
+            "n_poisoned": 9.0,
             "recall_at_t_low": 0.2222222222222222
           }
         },
@@ -1119,24 +1348,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 10.0,
+            "n_poisoned": 10.0,
             "recall_at_t_low": 0.3
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "unscored": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.4444444444444444,
             "n": 27.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -1149,6 +1382,9 @@
           2
         ],
         "single_seed": false,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.6666666666666666
+        },
         "status": "active",
         "t_high": 0.85,
         "t_low": 0.3
@@ -1168,6 +1404,19 @@
         "deferred_breakdown_of": [
           6
         ],
+        "fp_dismissed_real_triage": {
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 4.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "point": 1.0,
+          "std": 0.0
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.14814814814814814,
           "absolute_hi": 0.323891129032258,
@@ -1232,6 +1481,17 @@
             0.4444444444444444
           ],
           "point": 0.4444444444444444,
+          "std": 0.0
+        },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.5017857142857142,
+          "lo": 0.11011904761904762,
+          "per_seed": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ],
+          "point": 0.3333333333333333,
           "std": 0.0
         },
         "judge": "none",
@@ -1265,26 +1525,31 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 1.0,
+            "n_poisoned": 1.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.4444444444444444,
             "n": 40.0,
+            "n_poisoned": 13.0,
             "recall_at_t_low": 0.4615384615384615
           }
         },
+        "per_length": null,
         "per_source": {
           "public_repo/none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.3333333333333333,
             "n": 23.0,
+            "n_poisoned": 5.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.6666666666666666,
             "n": 18.0,
+            "n_poisoned": 9.0,
             "recall_at_t_low": 0.2222222222222222
           }
         },
@@ -1293,24 +1558,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 10.0,
+            "n_poisoned": 10.0,
             "recall_at_t_low": 0.3
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "unscored": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.4444444444444444,
             "n": 27.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -1323,6 +1592,9 @@
           2
         ],
         "single_seed": false,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.6666666666666666
+        },
         "status": "active",
         "t_high": 0.85,
         "t_low": 0.3
@@ -1336,6 +1608,17 @@
         ],
         "classifier": "models/deberta-v3-base-2c-s*",
         "cost_usd_per_50": null,
+        "fp_dismissed_real_triage": {
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 4.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "std": null
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.14814814814814814,
           "absolute_hi": 0.323891129032258,
@@ -1394,6 +1677,15 @@
           "point": 0.4444444444444444,
           "std": null
         },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.5017857142857142,
+          "lo": 0.11011904761904762,
+          "per_seed": [
+            0.3333333333333333
+          ],
+          "point": 0.3333333333333333,
+          "std": null
+        },
         "judge": "none",
         "macro_f1_mean": 0.3636363636363636,
         "macro_f1_per_seed": [
@@ -1421,26 +1713,31 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 1.0,
+            "n_poisoned": 1.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.4444444444444444,
             "n": 40.0,
+            "n_poisoned": 13.0,
             "recall_at_t_low": 0.46153846153846156
           }
         },
+        "per_length": null,
         "per_source": {
           "public_repo/none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.3333333333333333,
             "n": 23.0,
+            "n_poisoned": 5.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.6666666666666666,
             "n": 18.0,
+            "n_poisoned": 9.0,
             "recall_at_t_low": 0.2222222222222222
           }
         },
@@ -1449,24 +1746,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 10.0,
+            "n_poisoned": 10.0,
             "recall_at_t_low": 0.3
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "unscored": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.4444444444444444,
             "n": 27.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -1477,6 +1778,9 @@
           0
         ],
         "single_seed": true,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.6666666666666666
+        },
         "status": "active",
         "t_high": 0.85,
         "t_low": 0.3
@@ -1486,6 +1790,17 @@
         "classes_present": [],
         "classifier": "unicode_hygiene",
         "cost_usd_per_50": null,
+        "fp_dismissed_real_triage": {
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 4.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "std": null
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.14814814814814814,
           "absolute_hi": 0.323891129032258,
@@ -1544,6 +1859,15 @@
           "point": 0.0,
           "std": null
         },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.0,
+          "lo": 0.0,
+          "per_seed": [
+            0.0
+          ],
+          "point": 0.0,
+          "std": null
+        },
         "judge": "none",
         "macro_f1_mean": null,
         "macro_f1_per_seed": [],
@@ -1569,26 +1893,31 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 1.0,
+            "n_poisoned": 1.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 40.0,
+            "n_poisoned": 13.0,
             "recall_at_t_low": 0.0
           }
         },
+        "per_length": null,
         "per_source": {
           "public_repo/none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 23.0,
+            "n_poisoned": 5.0,
             "recall_at_t_low": 0.2
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 18.0,
+            "n_poisoned": 9.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -1597,24 +1926,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 10.0,
+            "n_poisoned": 10.0,
             "recall_at_t_low": 0.0
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 0.5
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 0.0
           },
           "unscored": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 27.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -1625,6 +1958,9 @@
           0
         ],
         "single_seed": false,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.5
+        },
         "status": "active",
         "t_high": 0.5,
         "t_low": 0.5
@@ -1646,6 +1982,19 @@
         "deferred_breakdown_of": [
           6
         ],
+        "fp_dismissed_real_triage": {
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 4.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "point": 1.0,
+          "std": 0.0
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.14814814814814814,
           "absolute_hi": 0.323891129032258,
@@ -1710,6 +2059,17 @@
             0.4444444444444444
           ],
           "point": 0.4444444444444444,
+          "std": 0.0
+        },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.5017857142857142,
+          "lo": 0.11011904761904762,
+          "per_seed": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ],
+          "point": 0.3333333333333333,
           "std": 0.0
         },
         "judge": "none",
@@ -1743,26 +2103,31 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 1.0,
+            "n_poisoned": 1.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.4444444444444444,
             "n": 40.0,
+            "n_poisoned": 13.0,
             "recall_at_t_low": 0.4615384615384615
           }
         },
+        "per_length": null,
         "per_source": {
           "public_repo/none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.3333333333333333,
             "n": 23.0,
+            "n_poisoned": 5.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.6666666666666666,
             "n": 18.0,
+            "n_poisoned": 9.0,
             "recall_at_t_low": 0.2222222222222222
           }
         },
@@ -1771,24 +2136,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 10.0,
+            "n_poisoned": 10.0,
             "recall_at_t_low": 0.3
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "unscored": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.4444444444444444,
             "n": 27.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -1801,6 +2170,9 @@
           2
         ],
         "single_seed": false,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.6666666666666666
+        },
         "status": "active",
         "t_high": 0.85,
         "t_low": 0.3
@@ -1814,6 +2186,17 @@
         ],
         "classifier": "models/modernbert-base-1024-s*",
         "cost_usd_per_50": null,
+        "fp_dismissed_real_triage": {
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 4.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "std": null
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.14814814814814814,
           "absolute_hi": 0.323891129032258,
@@ -1872,6 +2255,15 @@
           "point": 0.4444444444444444,
           "std": null
         },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.5017857142857142,
+          "lo": 0.11011904761904762,
+          "per_seed": [
+            0.3333333333333333
+          ],
+          "point": 0.3333333333333333,
+          "std": null
+        },
         "judge": "none",
         "macro_f1_mean": 0.3636363636363636,
         "macro_f1_per_seed": [
@@ -1899,26 +2291,31 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 1.0,
+            "n_poisoned": 1.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.4444444444444444,
             "n": 40.0,
+            "n_poisoned": 13.0,
             "recall_at_t_low": 0.46153846153846156
           }
         },
+        "per_length": null,
         "per_source": {
           "public_repo/none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.3333333333333333,
             "n": 23.0,
+            "n_poisoned": 5.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.6666666666666666,
             "n": 18.0,
+            "n_poisoned": 9.0,
             "recall_at_t_low": 0.2222222222222222
           }
         },
@@ -1927,24 +2324,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 10.0,
+            "n_poisoned": 10.0,
             "recall_at_t_low": 0.3
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 2.0,
+            "n_poisoned": 2.0,
             "recall_at_t_low": 1.0
           },
           "unscored": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.4444444444444444,
             "n": 27.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -1955,13 +2356,27 @@
           0
         ],
         "single_seed": true,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.6666666666666666
+        },
         "status": "active",
         "t_high": 0.85,
         "t_low": 0.3
       }
     ],
     "holdout": {
+      "baseline_fpr_real": {
+        "k": 0,
+        "n": 21,
+        "point": 0.0
+      },
       "dataset_version": "mini-50.jsonl@fixture",
+      "fp_dismissed_real_triage": {
+        "hi": null,
+        "lo": null,
+        "n": 0,
+        "point": null
+      },
       "fpr_pipeline_real": {
         "hi": 0.0,
         "lo": 0.0,
@@ -1997,12 +2412,14 @@
               "fpr_pipeline": 0.0,
               "fpr_stage1_at_t_low": 0.0,
               "n": 1.0,
+              "n_poisoned": 1.0,
               "recall_at_t_low": 1.0
             },
             "none": {
               "fpr_pipeline": 0.0,
               "fpr_stage1_at_t_low": 0.45454545454545453,
               "n": 49.0,
+              "n_poisoned": 16.0,
               "recall_at_t_low": 0.5
             }
           },
@@ -2011,24 +2428,28 @@
               "fpr_pipeline": 0.0,
               "fpr_stage1_at_t_low": 0.0,
               "n": 13.0,
+              "n_poisoned": 13.0,
               "recall_at_t_low": 0.38461538461538464
             },
             "hard": {
               "fpr_pipeline": 0.0,
               "fpr_stage1_at_t_low": 0.0,
               "n": 2.0,
+              "n_poisoned": 2.0,
               "recall_at_t_low": 1.0
             },
             "medium": {
               "fpr_pipeline": 0.0,
               "fpr_stage1_at_t_low": 0.0,
               "n": 2.0,
+              "n_poisoned": 2.0,
               "recall_at_t_low": 1.0
             },
             "unscored": {
               "fpr_pipeline": 0.0,
               "fpr_stage1_at_t_low": 0.45454545454545453,
               "n": 33.0,
+              "n_poisoned": 0.0,
               "recall_at_t_low": 0.0
             }
           },
@@ -2064,6 +2485,12 @@
             "n": 23,
             "n_undefined": 0,
             "point": 0.2727272727272727
+          },
+          "recall_cp": {
+            "hi": 0.6097425595724211,
+            "k": 3,
+            "lo": 0.06021773417290665,
+            "n": 11
           }
         },
         "real_poisoned": {
@@ -2101,6 +2528,17 @@
         "t_high": 0.85,
         "t_low": 0.3,
         "test_id": {
+          "baseline_fpr_real": {
+            "k": 0,
+            "n": 21,
+            "point": 0.0
+          },
+          "fp_dismissed_real_triage": {
+            "hi": null,
+            "lo": null,
+            "n": 0,
+            "point": null
+          },
           "fpr_by_source": {
             "public_repo": 0.4444444444444444,
             "wild_fp": null
@@ -2179,12 +2617,14 @@
           "fpr_pipeline": 0.0,
           "fpr_stage1_at_t_low": 0.0,
           "n": 1.0,
+          "n_poisoned": 1.0,
           "recall_at_t_low": 1.0
         },
         "none": {
           "fpr_pipeline": 0.0,
           "fpr_stage1_at_t_low": 0.45454545454545453,
           "n": 49.0,
+          "n_poisoned": 16.0,
           "recall_at_t_low": 0.5
         }
       },
@@ -2193,24 +2633,28 @@
           "fpr_pipeline": 0.0,
           "fpr_stage1_at_t_low": 0.0,
           "n": 13.0,
+          "n_poisoned": 13.0,
           "recall_at_t_low": 0.38461538461538464
         },
         "hard": {
           "fpr_pipeline": 0.0,
           "fpr_stage1_at_t_low": 0.0,
           "n": 2.0,
+          "n_poisoned": 2.0,
           "recall_at_t_low": 1.0
         },
         "medium": {
           "fpr_pipeline": 0.0,
           "fpr_stage1_at_t_low": 0.0,
           "n": 2.0,
+          "n_poisoned": 2.0,
           "recall_at_t_low": 1.0
         },
         "unscored": {
           "fpr_pipeline": 0.0,
           "fpr_stage1_at_t_low": 0.45454545454545453,
           "n": 33.0,
+          "n_poisoned": 0.0,
           "recall_at_t_low": 0.0
         }
       },
@@ -2219,6 +2663,12 @@
       "real_poisoned_recall_stage1": 0.3333333333333333,
       "reason": "fixture: the web's measured-benchmark state (training plan I5)",
       "recall": 0.2727272727272727,
+      "recall_cp": {
+        "hi": 0.6097425595724211,
+        "k": 3,
+        "lo": 0.06021773417290665,
+        "n": 11
+      },
       "recall_interval": {
         "hi": 0.6681818181818181,
         "lo": 0.0,
@@ -2255,7 +2705,7 @@
     "test_opened": [
       {
         "dataset_version": "mini-50.jsonl@fixture",
-        "git_sha": "744e15e8ab5968c1fa95d6ad6f05edc6bba18f76",
+        "git_sha": "e6ede54a87a51a4b99981b376aa6f6b732359e46",
         "models": [
           "deberta@s0",
           "deberta@s1"
@@ -2263,7 +2713,7 @@
         "new_version": false,
         "reason": "fixture: the web's measured-benchmark state (training plan I5)",
         "rows_evaluated": 50,
-        "utc": "2026-10-03T19:09:34.245118Z"
+        "utc": "2026-10-05T14:38:02.353315Z"
       }
     ]
   }

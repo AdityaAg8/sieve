@@ -1,6 +1,6 @@
 {
   "dataset_version": "labelled.jsonl@51caf0707f46",
-  "generated_at": "2026-10-04T15:45:31.121838Z",
+  "generated_at": "2026-10-05T14:57:20.943498Z",
   "headline": {
     "confirmed": 6,
     "dismissed": 13,
@@ -18,6 +18,17 @@
         "classes_present": [],
         "classifier": "baseline",
         "cost_usd_per_50": null,
+        "fp_dismissed_real_triage": {
+          "hi": 0.0,
+          "lo": 0.0,
+          "n": 159.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            0.0
+          ],
+          "point": 0.0,
+          "std": null
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.0,
           "absolute_hi": 0.0,
@@ -76,6 +87,15 @@
           "point": 0.25359477124183005,
           "std": null
         },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.2970007185211528,
+          "lo": 0.20961300419090734,
+          "per_seed": [
+            0.2568659127625202
+          ],
+          "point": 0.2568659127625202,
+          "std": null
+        },
         "judge": "none",
         "macro_f1_mean": null,
         "macro_f1_per_seed": [],
@@ -101,31 +121,52 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 0.5833333333333334
           },
           "html_comment": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 20.0,
+            "n_poisoned": 20.0,
             "recall_at_t_low": 0.65
           },
           "none": {
             "fpr_pipeline": 0.25359477124183005,
             "fpr_stage1_at_t_low": 0.25359477124183005,
             "n": 954.0,
+            "n_poisoned": 189.0,
             "recall_at_t_low": 0.6772486772486772
           },
           "whitespace": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 0.75
           },
           "zero_width": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 0.08333333333333333
+          }
+        },
+        "per_length": {
+          "<=512": {
+            "fpr_pipeline": 0.16695352839931152,
+            "fpr_stage1_at_t_low": 0.16695352839931152,
+            "n": 784.0,
+            "n_poisoned": 203.0,
+            "recall_at_t_low": 0.6009852216748769
+          },
+          ">512": {
+            "fpr_pipeline": 0.5271739130434783,
+            "fpr_stage1_at_t_low": 0.5271739130434783,
+            "n": 226.0,
+            "n_poisoned": 42.0,
+            "recall_at_t_low": 0.8571428571428571
           }
         },
         "per_source": {
@@ -133,30 +174,35 @@
             "fpr_pipeline": 0.0021691973969631237,
             "fpr_stage1_at_t_low": 0.0021691973969631237,
             "n": 461.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           },
           "synthetic_mutation/gemma4:26b-a4b-it-qat": {
             "fpr_pipeline": 0.2,
             "fpr_stage1_at_t_low": 0.2,
             "n": 202.0,
+            "n_poisoned": 132.0,
             "recall_at_t_low": 0.5757575757575758
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 17.0,
+            "n_poisoned": 17.0,
             "recall_at_t_low": 0.5294117647058824
           },
           "synthetic_mutation/qwen3.8:27b-2.88bpw-text": {
             "fpr_pipeline": 0.27631578947368424,
             "fpr_stage1_at_t_low": 0.27631578947368424,
             "n": 172.0,
+            "n_poisoned": 96.0,
             "recall_at_t_low": 0.7604166666666666
           },
           "wild_fp/none": {
             "fpr_pipeline": 1.0,
             "fpr_stage1_at_t_low": 1.0,
             "n": 158.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -165,24 +211,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 71.0,
+            "n_poisoned": 71.0,
             "recall_at_t_low": 0.647887323943662
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 73.0,
+            "n_poisoned": 73.0,
             "recall_at_t_low": 0.726027397260274
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 101.0,
+            "n_poisoned": 101.0,
             "recall_at_t_low": 0.5841584158415841
           },
           "unscored": {
             "fpr_pipeline": 0.25359477124183005,
             "fpr_stage1_at_t_low": 0.25359477124183005,
             "n": 765.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -193,6 +243,9 @@
           0
         ],
         "single_seed": false,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.49143005731737005
+        },
         "status": "active",
         "t_high": 0.5,
         "t_low": 0.5
@@ -206,6 +259,17 @@
         ],
         "classifier": "tfidf",
         "cost_usd_per_50": null,
+        "fp_dismissed_real_triage": {
+          "hi": 0.5151921903599755,
+          "lo": 0.313722589627567,
+          "n": 159.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            0.4088050314465409
+          ],
+          "point": 0.4088050314465409,
+          "std": null
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.2418300653594771,
           "absolute_hi": 0.28517644631097727,
@@ -264,6 +328,15 @@
           "point": 0.39869281045751637,
           "std": null
         },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.4029275251234883,
+          "lo": 0.29530119228790086,
+          "per_seed": [
+            0.35218093699515346
+          ],
+          "point": 0.35218093699515346,
+          "std": null
+        },
         "judge": "none",
         "macro_f1_mean": 0.7925075489699767,
         "macro_f1_per_seed": [
@@ -291,30 +364,51 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "html_comment": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 20.0,
+            "n_poisoned": 20.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.011764705882352941,
             "fpr_stage1_at_t_low": 0.39869281045751637,
             "n": 954.0,
+            "n_poisoned": 189.0,
             "recall_at_t_low": 0.9947089947089947
           },
           "whitespace": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "zero_width": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
+            "recall_at_t_low": 1.0
+          }
+        },
+        "per_length": {
+          "<=512": {
+            "fpr_pipeline": 0.013769363166953529,
+            "fpr_stage1_at_t_low": 0.33907056798623064,
+            "n": 784.0,
+            "n_poisoned": 203.0,
+            "recall_at_t_low": 0.9950738916256158
+          },
+          ">512": {
+            "fpr_pipeline": 0.005434782608695652,
+            "fpr_stage1_at_t_low": 0.5869565217391305,
+            "n": 226.0,
+            "n_poisoned": 42.0,
             "recall_at_t_low": 1.0
           }
         },
@@ -323,30 +417,35 @@
             "fpr_pipeline": 0.006507592190889371,
             "fpr_stage1_at_t_low": 0.26898047722342733,
             "n": 461.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           },
           "synthetic_mutation/gemma4:26b-a4b-it-qat": {
             "fpr_pipeline": 0.05714285714285714,
             "fpr_stage1_at_t_low": 0.6571428571428571,
             "n": 202.0,
+            "n_poisoned": 132.0,
             "recall_at_t_low": 0.9924242424242424
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 17.0,
+            "n_poisoned": 17.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/qwen3.8:27b-2.88bpw-text": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.5394736842105263,
             "n": 172.0,
+            "n_poisoned": 96.0,
             "recall_at_t_low": 1.0
           },
           "wild_fp/none": {
             "fpr_pipeline": 0.012658227848101266,
             "fpr_stage1_at_t_low": 0.5949367088607594,
             "n": 158.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -355,24 +454,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 71.0,
+            "n_poisoned": 71.0,
             "recall_at_t_low": 1.0
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 73.0,
+            "n_poisoned": 73.0,
             "recall_at_t_low": 0.9863013698630136
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 101.0,
+            "n_poisoned": 101.0,
             "recall_at_t_low": 1.0
           },
           "unscored": {
             "fpr_pipeline": 0.011764705882352941,
             "fpr_stage1_at_t_low": 0.39869281045751637,
             "n": 765.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -383,6 +486,9 @@
           0
         ],
         "single_seed": false,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.6780379312634165
+        },
         "status": "active",
         "t_high": 0.559645227098121,
         "t_low": 0.17026741513077687
@@ -396,6 +502,17 @@
         ],
         "classifier": "models/deberta-v3-base-desc-s*",
         "cost_usd_per_50": null,
+        "fp_dismissed_real_triage": {
+          "hi": 0.04285933391761612,
+          "lo": 0.0,
+          "n": 159.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            0.018867924528301886
+          ],
+          "point": 0.018867924528301886,
+          "std": null
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.24444444444444444,
           "absolute_hi": 0.2864555290887803,
@@ -454,6 +571,15 @@
           "point": 0.9751633986928104,
           "std": null
         },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.9887499936302812,
+          "lo": 0.962412306072202,
+          "per_seed": [
+            0.975767366720517
+          ],
+          "point": 0.975767366720517,
+          "std": null
+        },
         "judge": "none",
         "macro_f1_mean": 0.7856367161631838,
         "macro_f1_per_seed": [
@@ -481,30 +607,51 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "html_comment": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 20.0,
+            "n_poisoned": 20.0,
             "recall_at_t_low": 0.95
           },
           "none": {
             "fpr_pipeline": 0.009150326797385621,
             "fpr_stage1_at_t_low": 0.9751633986928104,
             "n": 954.0,
+            "n_poisoned": 189.0,
             "recall_at_t_low": 1.0
           },
           "whitespace": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "zero_width": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
+            "recall_at_t_low": 1.0
+          }
+        },
+        "per_length": {
+          "<=512": {
+            "fpr_pipeline": 0.010327022375215147,
+            "fpr_stage1_at_t_low": 0.9862306368330465,
+            "n": 784.0,
+            "n_poisoned": 203.0,
+            "recall_at_t_low": 0.9950738916256158
+          },
+          ">512": {
+            "fpr_pipeline": 0.005434782608695652,
+            "fpr_stage1_at_t_low": 0.9402173913043478,
+            "n": 226.0,
+            "n_poisoned": 42.0,
             "recall_at_t_low": 1.0
           }
         },
@@ -513,30 +660,35 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.9739696312364425,
             "n": 461.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           },
           "synthetic_mutation/gemma4:26b-a4b-it-qat": {
             "fpr_pipeline": 0.05714285714285714,
             "fpr_stage1_at_t_low": 0.9714285714285714,
             "n": 202.0,
+            "n_poisoned": 132.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 17.0,
+            "n_poisoned": 17.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/qwen3.8:27b-2.88bpw-text": {
             "fpr_pipeline": 0.02631578947368421,
             "fpr_stage1_at_t_low": 0.9736842105263158,
             "n": 172.0,
+            "n_poisoned": 96.0,
             "recall_at_t_low": 0.9895833333333334
           },
           "wild_fp/none": {
             "fpr_pipeline": 0.006329113924050633,
             "fpr_stage1_at_t_low": 0.9810126582278481,
             "n": 158.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -545,24 +697,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 71.0,
+            "n_poisoned": 71.0,
             "recall_at_t_low": 0.9859154929577465
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 73.0,
+            "n_poisoned": 73.0,
             "recall_at_t_low": 1.0
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 101.0,
+            "n_poisoned": 101.0,
             "recall_at_t_low": 1.0
           },
           "unscored": {
             "fpr_pipeline": 0.009150326797385621,
             "fpr_stage1_at_t_low": 0.9751633986928104,
             "n": 765.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -573,6 +729,9 @@
           0
         ],
         "single_seed": true,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.5188273175913426
+        },
         "status": "active",
         "t_high": 0.6932887240314465,
         "t_low": 0.05432298926281019
@@ -586,6 +745,19 @@
         ],
         "classifier": "models/deberta-v3-base-s*",
         "cost_usd_per_50": null,
+        "fp_dismissed_real_triage": {
+          "hi": 0.7246068498219289,
+          "lo": 0.5112338893819449,
+          "n": 159.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            0.710691823899371,
+            0.4088050314465409,
+            0.7295597484276729
+          ],
+          "point": 0.6163522012578616,
+          "std": 0.179988528569235
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.2379084967320261,
           "absolute_hi": 0.2816591835824638,
@@ -652,6 +824,17 @@
           "point": 0.31067538126361655,
           "std": 0.16457268882217804
         },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.311527147330672,
+          "lo": 0.21521923569277449,
+          "per_seed": [
+            0.16478190630048464,
+            0.4588045234248788,
+            0.16962843295638125
+          ],
+          "point": 0.26440495422724825,
+          "std": 0.1683724044590587
+        },
         "judge": "none",
         "macro_f1_mean": 0.8918246749296262,
         "macro_f1_per_seed": [
@@ -683,31 +866,52 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "html_comment": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 20.0,
+            "n_poisoned": 20.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.01568627450980392,
             "fpr_stage1_at_t_low": 0.31067538126361655,
             "n": 954.0,
+            "n_poisoned": 189.0,
             "recall_at_t_low": 0.9947089947089948
           },
           "whitespace": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "zero_width": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
+          }
+        },
+        "per_length": {
+          "<=512": {
+            "fpr_pipeline": 0.01950659781985083,
+            "fpr_stage1_at_t_low": 0.27251864601262193,
+            "n": 784.0,
+            "n_poisoned": 203.0,
+            "recall_at_t_low": 0.9967159277504104
+          },
+          ">512": {
+            "fpr_pipeline": 0.0036231884057971015,
+            "fpr_stage1_at_t_low": 0.43115942028985504,
+            "n": 226.0,
+            "n_poisoned": 42.0,
+            "recall_at_t_low": 0.9920634920634921
           }
         },
         "per_source": {
@@ -715,30 +919,35 @@
             "fpr_pipeline": 0.0072306579898770785,
             "fpr_stage1_at_t_low": 0.22415039768618947,
             "n": 461.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           },
           "synthetic_mutation/gemma4:26b-a4b-it-qat": {
             "fpr_pipeline": 0.07619047619047618,
             "fpr_stage1_at_t_low": 0.5285714285714286,
             "n": 202.0,
+            "n_poisoned": 132.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 17.0,
+            "n_poisoned": 17.0,
             "recall_at_t_low": 0.9411764705882352
           },
           "synthetic_mutation/qwen3.8:27b-2.88bpw-text": {
             "fpr_pipeline": 0.02631578947368421,
             "fpr_stage1_at_t_low": 0.4868421052631579,
             "n": 172.0,
+            "n_poisoned": 96.0,
             "recall_at_t_low": 1.0
           },
           "wild_fp/none": {
             "fpr_pipeline": 0.008438818565400843,
             "fpr_stage1_at_t_low": 0.38185654008438813,
             "n": 158.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -747,24 +956,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 71.0,
+            "n_poisoned": 71.0,
             "recall_at_t_low": 0.9953051643192489
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 73.0,
+            "n_poisoned": 73.0,
             "recall_at_t_low": 0.9908675799086758
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 101.0,
+            "n_poisoned": 101.0,
             "recall_at_t_low": 1.0
           },
           "unscored": {
             "fpr_pipeline": 0.01568627450980392,
             "fpr_stage1_at_t_low": 0.31067538126361655,
             "n": 765.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -777,6 +990,9 @@
           2
         ],
         "single_seed": false,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.6681457056232988
+        },
         "status": "active",
         "t_high": 0.3159500026310461,
         "t_low": 0.03163200922487003
@@ -790,6 +1006,19 @@
         ],
         "classifier": "models/modernbert-base-s*",
         "cost_usd_per_50": null,
+        "fp_dismissed_real_triage": {
+          "hi": 0.17827532798041937,
+          "lo": 0.07251880780131555,
+          "n": 159.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            0.025157232704402517,
+            0.06918238993710692,
+            0.27044025157232704
+          ],
+          "point": 0.12159329140461217,
+          "std": 0.13077123835430352
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.24618736383442263,
           "absolute_hi": 0.2886601340061086,
@@ -856,6 +1085,17 @@
           "point": 0.7686274509803921,
           "std": 0.13323718178600932
         },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.7849003473193349,
+          "lo": 0.6904232874202411,
+          "per_seed": [
+            0.8594507269789984,
+            0.778675282714055,
+            0.5831987075928917
+          ],
+          "point": 0.7404415724286483,
+          "std": 0.14203927979740946
+        },
         "judge": "none",
         "macro_f1_mean": 0.7236562640512701,
         "macro_f1_per_seed": [
@@ -887,30 +1127,51 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "html_comment": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 20.0,
+            "n_poisoned": 20.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.007407407407407408,
             "fpr_stage1_at_t_low": 0.7686274509803921,
             "n": 954.0,
+            "n_poisoned": 189.0,
             "recall_at_t_low": 0.9947089947089948
           },
           "whitespace": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "zero_width": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
+            "recall_at_t_low": 1.0
+          }
+        },
+        "per_length": {
+          "<=512": {
+            "fpr_pipeline": 0.008032128514056226,
+            "fpr_stage1_at_t_low": 0.72346528973035,
+            "n": 784.0,
+            "n_poisoned": 203.0,
+            "recall_at_t_low": 0.9950738916256158
+          },
+          ">512": {
+            "fpr_pipeline": 0.005434782608695652,
+            "fpr_stage1_at_t_low": 0.9112318840579711,
+            "n": 226.0,
+            "n_poisoned": 42.0,
             "recall_at_t_low": 1.0
           }
         },
@@ -919,30 +1180,35 @@
             "fpr_pipeline": 0.005784526391901663,
             "fpr_stage1_at_t_low": 0.6934201012292118,
             "n": 461.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           },
           "synthetic_mutation/gemma4:26b-a4b-it-qat": {
             "fpr_pipeline": 0.0047619047619047615,
             "fpr_stage1_at_t_low": 0.8523809523809524,
             "n": 202.0,
+            "n_poisoned": 132.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 17.0,
+            "n_poisoned": 17.0,
             "recall_at_t_low": 0.9411764705882352
           },
           "synthetic_mutation/qwen3.8:27b-2.88bpw-text": {
             "fpr_pipeline": 0.03070175438596491,
             "fpr_stage1_at_t_low": 0.9210526315789473,
             "n": 172.0,
+            "n_poisoned": 96.0,
             "recall_at_t_low": 1.0
           },
           "wild_fp/none": {
             "fpr_pipeline": 0.002109704641350211,
             "fpr_stage1_at_t_low": 0.8776371308016877,
             "n": 158.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -951,24 +1217,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 71.0,
+            "n_poisoned": 71.0,
             "recall_at_t_low": 1.0
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 73.0,
+            "n_poisoned": 73.0,
             "recall_at_t_low": 0.9954337899543378
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 101.0,
+            "n_poisoned": 101.0,
             "recall_at_t_low": 0.9933993399339934
           },
           "unscored": {
             "fpr_pipeline": 0.007407407407407408,
             "fpr_stage1_at_t_low": 0.7686274509803921,
             "n": 765.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -981,6 +1251,9 @@
           2
         ],
         "single_seed": false,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.6563982266286027
+        },
         "status": "active",
         "t_high": 0.7276965833507472,
         "t_low": 0.017772155297323445
@@ -1021,6 +1294,17 @@
         ],
         "classifier": "models/deberta-v3-base-scanner-s*",
         "cost_usd_per_50": null,
+        "fp_dismissed_real_triage": {
+          "hi": 0.3410760947026684,
+          "lo": 0.15974650349650352,
+          "n": 159.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            0.24528301886792453
+          ],
+          "point": 0.24528301886792453,
+          "std": null
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.23790849673202613,
           "absolute_hi": 0.28125096809169764,
@@ -1079,6 +1363,15 @@
           "point": 0.6470588235294118,
           "std": null
         },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.6666666666666666,
+          "lo": 0.5499160599420372,
+          "per_seed": [
+            0.6074313408723748
+          ],
+          "point": 0.6074313408723748,
+          "std": null
+        },
         "judge": "none",
         "macro_f1_mean": 0.9061898409173749,
         "macro_f1_per_seed": [
@@ -1106,30 +1399,51 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "html_comment": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 20.0,
+            "n_poisoned": 20.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.01568627450980392,
             "fpr_stage1_at_t_low": 0.6470588235294118,
             "n": 954.0,
+            "n_poisoned": 189.0,
             "recall_at_t_low": 0.9947089947089947
           },
           "whitespace": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "zero_width": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
+            "recall_at_t_low": 1.0
+          }
+        },
+        "per_length": {
+          "<=512": {
+            "fpr_pipeline": 0.01721170395869191,
+            "fpr_stage1_at_t_low": 0.5903614457831325,
+            "n": 784.0,
+            "n_poisoned": 203.0,
+            "recall_at_t_low": 0.9950738916256158
+          },
+          ">512": {
+            "fpr_pipeline": 0.010869565217391304,
+            "fpr_stage1_at_t_low": 0.8260869565217391,
+            "n": 226.0,
+            "n_poisoned": 42.0,
             "recall_at_t_low": 1.0
           }
         },
@@ -1138,30 +1452,35 @@
             "fpr_pipeline": 0.006507592190889371,
             "fpr_stage1_at_t_low": 0.5574837310195228,
             "n": 461.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           },
           "synthetic_mutation/gemma4:26b-a4b-it-qat": {
             "fpr_pipeline": 0.05714285714285714,
             "fpr_stage1_at_t_low": 0.8428571428571429,
             "n": 202.0,
+            "n_poisoned": 132.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 17.0,
+            "n_poisoned": 17.0,
             "recall_at_t_low": 0.9411764705882353
           },
           "synthetic_mutation/qwen3.8:27b-2.88bpw-text": {
             "fpr_pipeline": 0.02631578947368421,
             "fpr_stage1_at_t_low": 0.7894736842105263,
             "n": 172.0,
+            "n_poisoned": 96.0,
             "recall_at_t_low": 1.0
           },
           "wild_fp/none": {
             "fpr_pipeline": 0.0189873417721519,
             "fpr_stage1_at_t_low": 0.7531645569620253,
             "n": 158.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -1170,24 +1489,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 71.0,
+            "n_poisoned": 71.0,
             "recall_at_t_low": 1.0
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 73.0,
+            "n_poisoned": 73.0,
             "recall_at_t_low": 1.0
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 101.0,
+            "n_poisoned": 101.0,
             "recall_at_t_low": 0.9900990099009901
           },
           "unscored": {
             "fpr_pipeline": 0.01568627450980392,
             "fpr_stage1_at_t_low": 0.6470588235294118,
             "n": 765.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -1198,6 +1521,9 @@
           0
         ],
         "single_seed": true,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.6858388474561268
+        },
         "status": "active",
         "t_high": 0.17476279644188955,
         "t_low": 0.012504405592396375
@@ -1217,6 +1543,19 @@
         "deferred_breakdown_of": [
           6
         ],
+        "fp_dismissed_real_triage": {
+          "hi": 0.7246068498219289,
+          "lo": 0.5112338893819449,
+          "n": 159.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            0.710691823899371,
+            0.4088050314465409,
+            0.7295597484276729
+          ],
+          "point": 0.6163522012578616,
+          "std": 0.179988528569235
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.2379084967320261,
           "absolute_hi": 0.2816591835824638,
@@ -1282,6 +1621,17 @@
           ],
           "point": 0.31067538126361655,
           "std": 0.16457268882217804
+        },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.311527147330672,
+          "lo": 0.21521923569277449,
+          "per_seed": [
+            0.16478190630048464,
+            0.4588045234248788,
+            0.16962843295638125
+          ],
+          "point": 0.26440495422724825,
+          "std": 0.1683724044590587
         },
         "judge": "none",
         "macro_f1_mean": 0.8918246749296262,
@@ -1314,31 +1664,52 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "html_comment": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 20.0,
+            "n_poisoned": 20.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.01568627450980392,
             "fpr_stage1_at_t_low": 0.31067538126361655,
             "n": 954.0,
+            "n_poisoned": 189.0,
             "recall_at_t_low": 0.9947089947089948
           },
           "whitespace": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "zero_width": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
+          }
+        },
+        "per_length": {
+          "<=512": {
+            "fpr_pipeline": 0.01950659781985083,
+            "fpr_stage1_at_t_low": 0.27251864601262193,
+            "n": 784.0,
+            "n_poisoned": 203.0,
+            "recall_at_t_low": 0.9967159277504104
+          },
+          ">512": {
+            "fpr_pipeline": 0.0036231884057971015,
+            "fpr_stage1_at_t_low": 0.43115942028985504,
+            "n": 226.0,
+            "n_poisoned": 42.0,
+            "recall_at_t_low": 0.9920634920634921
           }
         },
         "per_source": {
@@ -1346,30 +1717,35 @@
             "fpr_pipeline": 0.0072306579898770785,
             "fpr_stage1_at_t_low": 0.22415039768618947,
             "n": 461.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           },
           "synthetic_mutation/gemma4:26b-a4b-it-qat": {
             "fpr_pipeline": 0.07619047619047618,
             "fpr_stage1_at_t_low": 0.5285714285714286,
             "n": 202.0,
+            "n_poisoned": 132.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 17.0,
+            "n_poisoned": 17.0,
             "recall_at_t_low": 0.9411764705882352
           },
           "synthetic_mutation/qwen3.8:27b-2.88bpw-text": {
             "fpr_pipeline": 0.02631578947368421,
             "fpr_stage1_at_t_low": 0.4868421052631579,
             "n": 172.0,
+            "n_poisoned": 96.0,
             "recall_at_t_low": 1.0
           },
           "wild_fp/none": {
             "fpr_pipeline": 0.008438818565400843,
             "fpr_stage1_at_t_low": 0.38185654008438813,
             "n": 158.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -1378,24 +1754,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 71.0,
+            "n_poisoned": 71.0,
             "recall_at_t_low": 0.9953051643192489
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 73.0,
+            "n_poisoned": 73.0,
             "recall_at_t_low": 0.9908675799086758
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 101.0,
+            "n_poisoned": 101.0,
             "recall_at_t_low": 1.0
           },
           "unscored": {
             "fpr_pipeline": 0.01568627450980392,
             "fpr_stage1_at_t_low": 0.31067538126361655,
             "n": 765.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -1408,6 +1788,9 @@
           2
         ],
         "single_seed": false,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.6681457056232988
+        },
         "status": "active",
         "t_high": 0.3159500026310461,
         "t_low": 0.03163200922487003
@@ -1427,6 +1810,19 @@
         "deferred_breakdown_of": [
           6
         ],
+        "fp_dismissed_real_triage": {
+          "hi": 0.7246068498219289,
+          "lo": 0.5112338893819449,
+          "n": 159.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            0.710691823899371,
+            0.4088050314465409,
+            0.7295597484276729
+          ],
+          "point": 0.6163522012578616,
+          "std": 0.179988528569235
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.2379084967320261,
           "absolute_hi": 0.2816591835824638,
@@ -1493,6 +1889,17 @@
           "point": 0.31067538126361655,
           "std": 0.16457268882217804
         },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.311527147330672,
+          "lo": 0.21521923569277449,
+          "per_seed": [
+            0.16478190630048464,
+            0.4588045234248788,
+            0.16962843295638125
+          ],
+          "point": 0.26440495422724825,
+          "std": 0.1683724044590587
+        },
         "judge": "none",
         "macro_f1_mean": 0.8918246749296262,
         "macro_f1_per_seed": [
@@ -1524,31 +1931,52 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "html_comment": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 20.0,
+            "n_poisoned": 20.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.01568627450980392,
             "fpr_stage1_at_t_low": 0.31067538126361655,
             "n": 954.0,
+            "n_poisoned": 189.0,
             "recall_at_t_low": 0.9947089947089948
           },
           "whitespace": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "zero_width": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
+          }
+        },
+        "per_length": {
+          "<=512": {
+            "fpr_pipeline": 0.01950659781985083,
+            "fpr_stage1_at_t_low": 0.27251864601262193,
+            "n": 784.0,
+            "n_poisoned": 203.0,
+            "recall_at_t_low": 0.9967159277504104
+          },
+          ">512": {
+            "fpr_pipeline": 0.0036231884057971015,
+            "fpr_stage1_at_t_low": 0.43115942028985504,
+            "n": 226.0,
+            "n_poisoned": 42.0,
+            "recall_at_t_low": 0.9920634920634921
           }
         },
         "per_source": {
@@ -1556,30 +1984,35 @@
             "fpr_pipeline": 0.0072306579898770785,
             "fpr_stage1_at_t_low": 0.22415039768618947,
             "n": 461.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           },
           "synthetic_mutation/gemma4:26b-a4b-it-qat": {
             "fpr_pipeline": 0.07619047619047618,
             "fpr_stage1_at_t_low": 0.5285714285714286,
             "n": 202.0,
+            "n_poisoned": 132.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 17.0,
+            "n_poisoned": 17.0,
             "recall_at_t_low": 0.9411764705882352
           },
           "synthetic_mutation/qwen3.8:27b-2.88bpw-text": {
             "fpr_pipeline": 0.02631578947368421,
             "fpr_stage1_at_t_low": 0.4868421052631579,
             "n": 172.0,
+            "n_poisoned": 96.0,
             "recall_at_t_low": 1.0
           },
           "wild_fp/none": {
             "fpr_pipeline": 0.008438818565400843,
             "fpr_stage1_at_t_low": 0.38185654008438813,
             "n": 158.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -1588,24 +2021,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 71.0,
+            "n_poisoned": 71.0,
             "recall_at_t_low": 0.9953051643192489
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 73.0,
+            "n_poisoned": 73.0,
             "recall_at_t_low": 0.9908675799086758
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 101.0,
+            "n_poisoned": 101.0,
             "recall_at_t_low": 1.0
           },
           "unscored": {
             "fpr_pipeline": 0.01568627450980392,
             "fpr_stage1_at_t_low": 0.31067538126361655,
             "n": 765.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -1618,6 +2055,9 @@
           2
         ],
         "single_seed": false,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.6681457056232988
+        },
         "status": "active",
         "t_high": 0.3159500026310461,
         "t_low": 0.03163200922487003
@@ -1630,6 +2070,17 @@
         ],
         "classifier": "models/deberta-v3-base-2c-s*",
         "cost_usd_per_50": null,
+        "fp_dismissed_real_triage": {
+          "hi": 0.26059291993572165,
+          "lo": 0.06958782136960452,
+          "n": 159.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            0.15723270440251572
+          ],
+          "point": 0.15723270440251572,
+          "std": null
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.23790849673202613,
           "absolute_hi": 0.2811363067407013,
@@ -1688,6 +2139,15 @@
           "point": 0.7764705882352941,
           "std": null
         },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.8245343420234625,
+          "lo": 0.7211081191598949,
+          "per_seed": [
+            0.7722132471728594
+          ],
+          "point": 0.7722132471728594,
+          "std": null
+        },
         "judge": "none",
         "macro_f1_mean": 0.9587472117146851,
         "macro_f1_per_seed": [
@@ -1715,30 +2175,51 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "html_comment": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 20.0,
+            "n_poisoned": 20.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.01568627450980392,
             "fpr_stage1_at_t_low": 0.7764705882352941,
             "n": 954.0,
+            "n_poisoned": 189.0,
             "recall_at_t_low": 0.9947089947089947
           },
           "whitespace": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "zero_width": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
+            "recall_at_t_low": 1.0
+          }
+        },
+        "per_length": {
+          "<=512": {
+            "fpr_pipeline": 0.01721170395869191,
+            "fpr_stage1_at_t_low": 0.7676419965576592,
+            "n": 784.0,
+            "n_poisoned": 203.0,
+            "recall_at_t_low": 0.9950738916256158
+          },
+          ">512": {
+            "fpr_pipeline": 0.010869565217391304,
+            "fpr_stage1_at_t_low": 0.8043478260869565,
+            "n": 226.0,
+            "n_poisoned": 42.0,
             "recall_at_t_low": 1.0
           }
         },
@@ -1747,30 +2228,35 @@
             "fpr_pipeline": 0.008676789587852495,
             "fpr_stage1_at_t_low": 0.7483731019522777,
             "n": 461.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           },
           "synthetic_mutation/gemma4:26b-a4b-it-qat": {
             "fpr_pipeline": 0.04285714285714286,
             "fpr_stage1_at_t_low": 0.7714285714285715,
             "n": 202.0,
+            "n_poisoned": 132.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 17.0,
+            "n_poisoned": 17.0,
             "recall_at_t_low": 0.9411764705882353
           },
           "synthetic_mutation/qwen3.8:27b-2.88bpw-text": {
             "fpr_pipeline": 0.02631578947368421,
             "fpr_stage1_at_t_low": 0.8157894736842105,
             "n": 172.0,
+            "n_poisoned": 96.0,
             "recall_at_t_low": 1.0
           },
           "wild_fp/none": {
             "fpr_pipeline": 0.0189873417721519,
             "fpr_stage1_at_t_low": 0.8417721518987342,
             "n": 158.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -1779,24 +2265,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 71.0,
+            "n_poisoned": 71.0,
             "recall_at_t_low": 1.0
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 73.0,
+            "n_poisoned": 73.0,
             "recall_at_t_low": 0.9863013698630136
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 101.0,
+            "n_poisoned": 101.0,
             "recall_at_t_low": 1.0
           },
           "unscored": {
             "fpr_pipeline": 0.01568627450980392,
             "fpr_stage1_at_t_low": 0.7764705882352941,
             "n": 765.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -1807,6 +2297,9 @@
           0
         ],
         "single_seed": true,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.5411346183636887
+        },
         "status": "active",
         "t_high": 0.9661192796831971,
         "t_low": 0.021493538211876616
@@ -1816,6 +2309,17 @@
         "classes_present": [],
         "classifier": "unicode_hygiene",
         "cost_usd_per_50": null,
+        "fp_dismissed_real_triage": {
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 159.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            1.0
+          ],
+          "point": 1.0,
+          "std": null
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.2496732026143791,
           "absolute_hi": 0.2909700291821121,
@@ -1874,6 +2378,15 @@
           "point": 0.00392156862745098,
           "std": null
         },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.008197057794287867,
+          "lo": 0.0,
+          "per_seed": [
+            0.0032310177705977385
+          ],
+          "point": 0.0032310177705977385,
+          "std": null
+        },
         "judge": "none",
         "macro_f1_mean": null,
         "macro_f1_per_seed": [],
@@ -1899,31 +2412,52 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "html_comment": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 20.0,
+            "n_poisoned": 20.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.00392156862745098,
             "fpr_stage1_at_t_low": 0.00392156862745098,
             "n": 954.0,
+            "n_poisoned": 189.0,
             "recall_at_t_low": 0.0
           },
           "whitespace": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "zero_width": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
+          }
+        },
+        "per_length": {
+          "<=512": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.0,
+            "n": 784.0,
+            "n_poisoned": 203.0,
+            "recall_at_t_low": 0.23645320197044334
+          },
+          ">512": {
+            "fpr_pipeline": 0.016304347826086956,
+            "fpr_stage1_at_t_low": 0.016304347826086956,
+            "n": 226.0,
+            "n_poisoned": 42.0,
+            "recall_at_t_low": 0.19047619047619047
           }
         },
         "per_source": {
@@ -1931,30 +2465,35 @@
             "fpr_pipeline": 0.004338394793926247,
             "fpr_stage1_at_t_low": 0.004338394793926247,
             "n": 461.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           },
           "synthetic_mutation/gemma4:26b-a4b-it-qat": {
             "fpr_pipeline": 0.014285714285714285,
             "fpr_stage1_at_t_low": 0.014285714285714285,
             "n": 202.0,
+            "n_poisoned": 132.0,
             "recall_at_t_low": 0.2878787878787879
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 17.0,
+            "n_poisoned": 17.0,
             "recall_at_t_low": 0.0
           },
           "synthetic_mutation/qwen3.8:27b-2.88bpw-text": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 172.0,
+            "n_poisoned": 96.0,
             "recall_at_t_low": 0.1875
           },
           "wild_fp/none": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 158.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -1963,24 +2502,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 71.0,
+            "n_poisoned": 71.0,
             "recall_at_t_low": 0.22535211267605634
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 73.0,
+            "n_poisoned": 73.0,
             "recall_at_t_low": 0.2191780821917808
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 101.0,
+            "n_poisoned": 101.0,
             "recall_at_t_low": 0.2376237623762376
           },
           "unscored": {
             "fpr_pipeline": 0.00392156862745098,
             "fpr_stage1_at_t_low": 0.00392156862745098,
             "n": 765.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -1991,6 +2534,9 @@
           0
         ],
         "single_seed": false,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.5018091486489477
+        },
         "status": "active",
         "t_high": 0.5,
         "t_low": 0.5
@@ -2012,6 +2558,19 @@
         "deferred_breakdown_of": [
           6
         ],
+        "fp_dismissed_real_triage": {
+          "hi": 0.7246068498219289,
+          "lo": 0.5112338893819449,
+          "n": 159.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            0.710691823899371,
+            0.4088050314465409,
+            0.7295597484276729
+          ],
+          "point": 0.6163522012578616,
+          "std": 0.179988528569235
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.2379084967320261,
           "absolute_hi": 0.2816591835824638,
@@ -2078,6 +2637,17 @@
           "point": 0.31067538126361655,
           "std": 0.16457268882217804
         },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.311527147330672,
+          "lo": 0.21521923569277449,
+          "per_seed": [
+            0.16478190630048464,
+            0.4588045234248788,
+            0.16962843295638125
+          ],
+          "point": 0.26440495422724825,
+          "std": 0.1683724044590587
+        },
         "judge": "none",
         "macro_f1_mean": 0.8918246749296262,
         "macro_f1_per_seed": [
@@ -2109,31 +2679,52 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "html_comment": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 20.0,
+            "n_poisoned": 20.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.01568627450980392,
             "fpr_stage1_at_t_low": 0.31067538126361655,
             "n": 954.0,
+            "n_poisoned": 189.0,
             "recall_at_t_low": 0.9947089947089948
           },
           "whitespace": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "zero_width": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
+          }
+        },
+        "per_length": {
+          "<=512": {
+            "fpr_pipeline": 0.01950659781985083,
+            "fpr_stage1_at_t_low": 0.27251864601262193,
+            "n": 784.0,
+            "n_poisoned": 203.0,
+            "recall_at_t_low": 0.9967159277504104
+          },
+          ">512": {
+            "fpr_pipeline": 0.0036231884057971015,
+            "fpr_stage1_at_t_low": 0.43115942028985504,
+            "n": 226.0,
+            "n_poisoned": 42.0,
+            "recall_at_t_low": 0.9920634920634921
           }
         },
         "per_source": {
@@ -2141,30 +2732,35 @@
             "fpr_pipeline": 0.0072306579898770785,
             "fpr_stage1_at_t_low": 0.22415039768618947,
             "n": 461.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           },
           "synthetic_mutation/gemma4:26b-a4b-it-qat": {
             "fpr_pipeline": 0.07619047619047618,
             "fpr_stage1_at_t_low": 0.5285714285714286,
             "n": 202.0,
+            "n_poisoned": 132.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 17.0,
+            "n_poisoned": 17.0,
             "recall_at_t_low": 0.9411764705882352
           },
           "synthetic_mutation/qwen3.8:27b-2.88bpw-text": {
             "fpr_pipeline": 0.02631578947368421,
             "fpr_stage1_at_t_low": 0.4868421052631579,
             "n": 172.0,
+            "n_poisoned": 96.0,
             "recall_at_t_low": 1.0
           },
           "wild_fp/none": {
             "fpr_pipeline": 0.008438818565400843,
             "fpr_stage1_at_t_low": 0.38185654008438813,
             "n": 158.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -2173,24 +2769,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 71.0,
+            "n_poisoned": 71.0,
             "recall_at_t_low": 0.9953051643192489
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 73.0,
+            "n_poisoned": 73.0,
             "recall_at_t_low": 0.9908675799086758
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 101.0,
+            "n_poisoned": 101.0,
             "recall_at_t_low": 1.0
           },
           "unscored": {
             "fpr_pipeline": 0.01568627450980392,
             "fpr_stage1_at_t_low": 0.31067538126361655,
             "n": 765.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -2203,6 +2803,9 @@
           2
         ],
         "single_seed": false,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.6681457056232988
+        },
         "status": "active",
         "t_high": 0.3159500026310461,
         "t_low": 0.03163200922487003
@@ -2216,6 +2819,17 @@
         ],
         "classifier": "models/modernbert-base-1024-s*",
         "cost_usd_per_50": null,
+        "fp_dismissed_real_triage": {
+          "hi": 0.2201373473917869,
+          "lo": 0.074527950310559,
+          "n": 159.0,
+          "n_undefined": 0.0,
+          "per_seed": [
+            0.13836477987421383
+          ],
+          "point": 0.13836477987421383,
+          "std": null
+        },
         "fp_reduction_all_sources": {
           "absolute": 0.2496732026143791,
           "absolute_hi": 0.290966138762271,
@@ -2274,6 +2888,15 @@
           "point": 0.7947712418300653,
           "std": null
         },
+        "fpr_stage1_real_at_t_low": {
+          "hi": 0.81426428698939,
+          "lo": 0.7177161636046697,
+          "per_seed": [
+            0.7673667205169629
+          ],
+          "point": 0.7673667205169629,
+          "std": null
+        },
         "judge": "none",
         "macro_f1_mean": 0.5880809928873362,
         "macro_f1_per_seed": [
@@ -2301,30 +2924,51 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "html_comment": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 20.0,
+            "n_poisoned": 20.0,
             "recall_at_t_low": 1.0
           },
           "none": {
             "fpr_pipeline": 0.00392156862745098,
             "fpr_stage1_at_t_low": 0.7947712418300653,
             "n": 954.0,
+            "n_poisoned": 189.0,
             "recall_at_t_low": 0.9947089947089947
           },
           "whitespace": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
             "recall_at_t_low": 1.0
           },
           "zero_width": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 12.0,
+            "n_poisoned": 12.0,
+            "recall_at_t_low": 1.0
+          }
+        },
+        "per_length": {
+          "<=512": {
+            "fpr_pipeline": 0.0051635111876075735,
+            "fpr_stage1_at_t_low": 0.7590361445783133,
+            "n": 784.0,
+            "n_poisoned": 203.0,
+            "recall_at_t_low": 0.9950738916256158
+          },
+          ">512": {
+            "fpr_pipeline": 0.0,
+            "fpr_stage1_at_t_low": 0.907608695652174,
+            "n": 226.0,
+            "n_poisoned": 42.0,
             "recall_at_t_low": 1.0
           }
         },
@@ -2333,30 +2977,35 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.735357917570499,
             "n": 461.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           },
           "synthetic_mutation/gemma4:26b-a4b-it-qat": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.9142857142857143,
             "n": 202.0,
+            "n_poisoned": 132.0,
             "recall_at_t_low": 1.0
           },
           "synthetic_mutation/human": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 17.0,
+            "n_poisoned": 17.0,
             "recall_at_t_low": 0.9411764705882353
           },
           "synthetic_mutation/qwen3.8:27b-2.88bpw-text": {
             "fpr_pipeline": 0.02631578947368421,
             "fpr_stage1_at_t_low": 0.9078947368421053,
             "n": 172.0,
+            "n_poisoned": 96.0,
             "recall_at_t_low": 1.0
           },
           "wild_fp/none": {
             "fpr_pipeline": 0.006329113924050633,
             "fpr_stage1_at_t_low": 0.8607594936708861,
             "n": 158.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -2365,24 +3014,28 @@
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 71.0,
+            "n_poisoned": 71.0,
             "recall_at_t_low": 1.0
           },
           "hard": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 73.0,
+            "n_poisoned": 73.0,
             "recall_at_t_low": 1.0
           },
           "medium": {
             "fpr_pipeline": 0.0,
             "fpr_stage1_at_t_low": 0.0,
             "n": 101.0,
+            "n_poisoned": 101.0,
             "recall_at_t_low": 0.9900990099009901
           },
           "unscored": {
             "fpr_pipeline": 0.00392156862745098,
             "fpr_stage1_at_t_low": 0.7947712418300653,
             "n": 765.0,
+            "n_poisoned": 0.0,
             "recall_at_t_low": 0.0
           }
         },
@@ -2393,6 +3046,9 @@
           0
         ],
         "single_seed": true,
+        "source_probe": {
+          "auroc_synthetic_vs_real_negatives": 0.6130192311948127
+        },
         "status": "active",
         "t_high": 0.6850880823562067,
         "t_low": 0.021211034802790907
@@ -2442,10 +3098,10 @@
         "ood-docker-0419"
       ],
       "fp_dismissed_real_triage": {
-        "hi": 0.65,
-        "lo": 0.182,
+        "hi": 0.650054347826087,
+        "lo": 0.18173701298701306,
         "n": 26,
-        "point": 0.385
+        "point": 0.3846153846153846
       },
       "fpr_pipeline_real": {
         "hi": 0.0,
@@ -2515,30 +3171,35 @@
               "fpr_pipeline": 0.0,
               "fpr_stage1_at_t_low": 0.0,
               "n": 4.0,
+              "n_poisoned": 4.0,
               "recall_at_t_low": 1.0
             },
             "html_comment": {
               "fpr_pipeline": 0.0,
               "fpr_stage1_at_t_low": 0.0,
               "n": 2.0,
+              "n_poisoned": 2.0,
               "recall_at_t_low": 1.0
             },
             "none": {
               "fpr_pipeline": 0.0,
               "fpr_stage1_at_t_low": 0.453125,
               "n": 158.0,
+              "n_poisoned": 30.0,
               "recall_at_t_low": 1.0
             },
             "whitespace": {
               "fpr_pipeline": 0.0,
               "fpr_stage1_at_t_low": 0.0,
               "n": 3.0,
+              "n_poisoned": 3.0,
               "recall_at_t_low": 1.0
             },
             "zero_width": {
               "fpr_pipeline": 0.0,
               "fpr_stage1_at_t_low": 0.0,
               "n": 2.0,
+              "n_poisoned": 2.0,
               "recall_at_t_low": 1.0
             }
           },
@@ -2547,24 +3208,28 @@
               "fpr_pipeline": 0.0,
               "fpr_stage1_at_t_low": 0.0,
               "n": 9.0,
+              "n_poisoned": 9.0,
               "recall_at_t_low": 1.0
             },
             "hard": {
               "fpr_pipeline": 0.0,
               "fpr_stage1_at_t_low": 0.0,
               "n": 13.0,
+              "n_poisoned": 13.0,
               "recall_at_t_low": 1.0
             },
             "medium": {
               "fpr_pipeline": 0.0,
               "fpr_stage1_at_t_low": 0.0,
               "n": 19.0,
+              "n_poisoned": 19.0,
               "recall_at_t_low": 1.0
             },
             "unscored": {
               "fpr_pipeline": 0.0,
               "fpr_stage1_at_t_low": 0.453125,
               "n": 128.0,
+              "n_poisoned": 0.0,
               "recall_at_t_low": 0.0
             }
           },
@@ -2632,7 +3297,7 @@
           "recall_cp": {
             "hi": 1.0,
             "k": 41,
-            "lo": 0.914,
+            "lo": 0.9139561637059715,
             "n": 41
           }
         },
@@ -2717,10 +3382,10 @@
             "point": 0.24761904761904763
           },
           "fp_dismissed_real_triage": {
-            "hi": 0.65,
-            "lo": 0.182,
+            "hi": 0.650054347826087,
+            "lo": 0.18173701298701306,
             "n": 26,
-            "point": 0.385
+            "point": 0.3846153846153846
           },
           "fpr_by_source": {
             "public_repo": 0.26582278481012656,
@@ -2799,30 +3464,35 @@
           "fpr_pipeline": 0.0,
           "fpr_stage1_at_t_low": 0.0,
           "n": 4.0,
+          "n_poisoned": 4.0,
           "recall_at_t_low": 1.0
         },
         "html_comment": {
           "fpr_pipeline": 0.0,
           "fpr_stage1_at_t_low": 0.0,
           "n": 2.0,
+          "n_poisoned": 2.0,
           "recall_at_t_low": 1.0
         },
         "none": {
           "fpr_pipeline": 0.0,
           "fpr_stage1_at_t_low": 0.453125,
           "n": 158.0,
+          "n_poisoned": 30.0,
           "recall_at_t_low": 1.0
         },
         "whitespace": {
           "fpr_pipeline": 0.0,
           "fpr_stage1_at_t_low": 0.0,
           "n": 3.0,
+          "n_poisoned": 3.0,
           "recall_at_t_low": 1.0
         },
         "zero_width": {
           "fpr_pipeline": 0.0,
           "fpr_stage1_at_t_low": 0.0,
           "n": 2.0,
+          "n_poisoned": 2.0,
           "recall_at_t_low": 1.0
         }
       },
@@ -2831,24 +3501,28 @@
           "fpr_pipeline": 0.0,
           "fpr_stage1_at_t_low": 0.0,
           "n": 9.0,
+          "n_poisoned": 9.0,
           "recall_at_t_low": 1.0
         },
         "hard": {
           "fpr_pipeline": 0.0,
           "fpr_stage1_at_t_low": 0.0,
           "n": 13.0,
+          "n_poisoned": 13.0,
           "recall_at_t_low": 1.0
         },
         "medium": {
           "fpr_pipeline": 0.0,
           "fpr_stage1_at_t_low": 0.0,
           "n": 19.0,
+          "n_poisoned": 19.0,
           "recall_at_t_low": 1.0
         },
         "unscored": {
           "fpr_pipeline": 0.0,
           "fpr_stage1_at_t_low": 0.453125,
           "n": 128.0,
+          "n_poisoned": 0.0,
           "recall_at_t_low": 0.0
         }
       },
@@ -2860,7 +3534,7 @@
       "recall_cp": {
         "hi": 1.0,
         "k": 41,
-        "lo": 0.914,
+        "lo": 0.9139561637059715,
         "n": 41
       },
       "recall_interval": {
