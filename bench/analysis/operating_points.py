@@ -163,6 +163,11 @@ def main(argv: Sequence[str] | None = None) -> Path:
     from sieve.model.data import load_corpus
 
     selection = _selection(ns.results_dir)
+    if not ns.candidate and "winner" not in selection:
+        raise OperatingPointError(
+            f"no --candidate and no selection.json winner in {ns.results_dir}; run "
+            "`make select` first or name the seed directories"
+        )
     candidates = ns.candidate or [
         Path(d) for d in selection["per_architecture"][selection["winner"]]["directories"]
     ]

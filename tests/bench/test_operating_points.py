@@ -149,3 +149,8 @@ def test_an_uncalibrated_candidate_is_refused(world: dict[str, Any]) -> None:
     with pytest.raises(op.OperatingPointError, match="temperature"):
         op.main(["--corpus", str(world["corpus"]), "--results-dir", str(world["results"]),
                  "--candidate", str(world["dirs"][0])])  # fmt: skip
+
+
+def test_without_candidates_or_a_selection_it_says_what_is_missing(world: dict[str, Any]) -> None:
+    with pytest.raises(op.OperatingPointError, match="selection.json"):
+        op.main(["--corpus", str(world["corpus"]), "--results-dir", str(world["results"])])
