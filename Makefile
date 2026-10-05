@@ -61,6 +61,12 @@ CANDIDATES ?= deberta-v3-base=models/deberta-v3-base-s0,models/deberta-v3-base-s
 HF_REPO ?=
 N_BOOT ?=
 BOOT = $(if $(N_BOOT),--n-boot $(N_BOOT))
+# M6a: BLAS reductions sum in a thread-count-dependent order, so the TF-IDF row's thresholds moved
+# in the 13th digit between machines. A fixed count makes `make bench` byte-reproducible.
+BLAS_THREADS ?= 8
+export OMP_NUM_THREADS ?= $(BLAS_THREADS)
+export OPENBLAS_NUM_THREADS ?= $(BLAS_THREADS)
+export MKL_NUM_THREADS ?= $(BLAS_THREADS)
 # `reproduce-check` (M6b): re-score these rows from the retrained models/ and compare macro-F1
 # against the committed ablations.json within ±0.01.
 REPRO_ROWS ?= 4,5
