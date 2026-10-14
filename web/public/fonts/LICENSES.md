@@ -4,7 +4,7 @@ All three families are self-hosted as static `.woff2` files under `web/public/fo
 text for each family is committed alongside the font files; this document names the licence, the
 download source, and the date each was fetched.
 
-Clash Display and Geist were replaced on 2026-09-16 (the redesign; PRD §14.2 v2.3 amendment) and
+Clash Display and Geist were replaced on 2026-09-16 (the redesign) and
 their files and licence texts removed from the tree. The families below are the ones in use.
 
 ## Plus Jakarta Sans

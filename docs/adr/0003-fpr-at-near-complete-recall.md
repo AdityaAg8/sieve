@@ -2,8 +2,7 @@
 
 ## Status
 
-Proposed — drafted from PRD §4.3, §9.7 and §11.6 by an agent in Phase 3. The human finalises this
-ADR's text.
+Accepted, 2026-10-14.
 
 ## Context
 
@@ -21,10 +20,10 @@ an unqualified point estimate would be a story rather than a result.
 
 **The primary metric is `FPR_pipeline` on the real subset, at a fixed, near-complete recall.**
 
-- M1: the share of real (`public_repo`, `wild_fp`) non-poisoned holdout rows whose final verdict
+- The share of real (`public_repo`, `wild_fp`) non-poisoned holdout rows whose final verdict
   is `confirmed`, at the frozen thresholds with the judge enabled. Target at most 20%, and it
   counts only at holdout poisoned recall of at least 0.95 (point) and 0.90 (lower bound).
-- M2 is reported the same way: relative reduction against the scanner baseline on the **real**
+- The relative reduction is reported the same way: relative reduction against the scanner baseline on the **real**
   subset, with a paired cluster bootstrap and McNemar's exact test. The synthetic-inclusive figure
   is reported second and labelled as easier.
 - Every published number carries a 95% cluster-bootstrap interval that resamples **servers**, not
@@ -52,7 +51,7 @@ an unqualified point estimate would be a story rather than a result.
   few clusters is honest about that; `bench/eval_final.py` writes the limitation into the report
   rather than leaving it for a human to remember.
 - Reporting the real subset as the headline makes the project's own synthetic data unable to
-  flatter it, which is the point (PRD §1.4).
-- M1 as stated is unreachable without a recall gate, so the release gate lives in code
+  flatter it, which is the point.
+- The primary metric as stated is unreachable without a recall gate, so the release gate lives in code
   (`RELEASE_GATE` in `bench/eval_final.py`) and the README's generated block prints whether the
   run passed it.

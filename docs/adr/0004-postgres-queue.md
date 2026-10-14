@@ -2,8 +2,7 @@
 
 ## Status
 
-Proposed — drafted from PRD §7.2, §13.4 and §27 by an agent in Phase 3, against
-`sieve/worker/queue.py` as built. The human finalises this ADR's text.
+Accepted, 2026-10-14.
 
 ## Context
 
@@ -36,7 +35,7 @@ second worker).
   charge commit or roll back together. That is why `spend.charge()` deliberately does not commit.
 - The queue is polled rather than pushed, so a job waits up to one poll interval. Acceptable at
   this scale; visible in the scan's own event timeline if it ever is not.
-- The revisit trigger is written down in PRD §27: throughput beyond roughly 50 jobs per second.
+- The revisit trigger is throughput beyond roughly 50 jobs per second.
   Nothing in the code assumes the trigger will never fire, but nothing anticipates it either.
 - Two correctness traps came out of building it and are now tests, not comments:
   two concurrent claims never return the same job, and a reaped worker can no longer close or fail

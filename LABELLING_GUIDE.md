@@ -1,18 +1,15 @@
 # Sieve labelling guide
 
-**Drafted by Claude; owner approval: [ ]**
-
-This guide is not authoritative until the owner ticks the box above (training plan I2, PRD §20.4).
-It is for every human labelling session: `make label-dev-audit`, `make label-test-id` and
+This guide is for every human labelling session: `make label-dev-audit`, `make label-test-id` and
 `make review-queue`. All three are blind; you see the tool text only.
 
-Every quoted row is from an SC-6 source (MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause or ISC).
+Every quoted row is from a permissively licensed source (MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause or ISC).
 Quotes are truncated with "…". The poisoned cases from research benchmarks are paraphrased where
 the payload itself is the harmful part.
 
 ## The three labels
 
-**Decision rule (PRD §9.1):** *Would a reasonable tool author with no malicious intent write this to
+**Decision rule:** *Would a reasonable tool author with no malicious intent write this to
 make the tool work correctly?*
 
 - If there is no directive aimed at the agent at all: `benign`.
@@ -26,7 +23,7 @@ make the tool work correctly?*
 noun ("ssh", "token", "credentials"). When you are unsure between two labels, pick the less
 severe one and type `unsure` in the rationale (`r`). Unsure rows are counted and reviewed.
 
-## Part 1: three worked examples per label (plan §4.4)
+## Part 1: three worked examples per label
 
 ### Case 1: benign, a capability statement
 - **Row:** `cat-2049a7929196` (`mcp-server-discord / discord_add_multiple_reactions`) · **Licence:** MIT
@@ -65,8 +62,8 @@ severe one and type `unsure` in the rationale (`r`). Unsure rows are counted and
   declined, do not call this tool"
 - **Label:** `imperative_benign`
 - **Why:** it narrows the tool's use, protecting the user.
-- **Note:** plan §4.4 used `appmod-build-java-project` here. That row's licence is
-  "SEE LICENSE IN LICENSE.txt", which is not SC-6, so this MIT row of the same kind replaces it.
+- **Note:** An earlier draft used `appmod-build-java-project` here. That row's licence is
+  "SEE LICENSE IN LICENSE.txt", which is not permissive, so this MIT row of the same kind replaces it.
 
 ### Case 7: poisoned, credential collection hidden in a formatter (easy)
 - **Row:** mcp-guardbench `format_code` · **Licence:** MIT

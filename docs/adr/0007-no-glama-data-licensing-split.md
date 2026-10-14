@@ -2,8 +2,7 @@
 
 ## Status
 
-Proposed — drafted from PRD SC-6, §9.4 and §9.8 by an agent in Phase 3, against `bench/publish.py`
-as built. The human finalises this ADR's text.
+Accepted, 2026-10-14.
 
 ## Context
 
@@ -18,7 +17,7 @@ republish it. A corpus that cannot be redistributed cannot be a benchmark.
 
 ## Decision
 
-- **No Glama data, and no data from any registry API with redistribution restrictions** (SC-6).
+- **No Glama data, and no data from any registry API with redistribution restrictions**.
   The official MCP registry is used for *discovery* only; the licence for each row is fetched from
   the repository itself (`GET /repos/{owner}/{repo}/license`), because registry entries carry no
   SPDX identifier at all.
@@ -26,7 +25,7 @@ republish it. A corpus that cannot be redistributed cannot be a benchmark.
   `capture_method`.** A row missing any of them fails publication.
 - **Publication is an allow-list**, not a deny-list: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause
   and ISC. **MPL-2.0 is excluded** despite appearing on an early draft list, because it is
-  file-level copyleft and SC-6 excludes it. A pointer-derived row is refused whatever its licence
+  file-level copyleft. A pointer-derived row is refused whatever its licence
   string says.
 - **The corpus ships under two licences**: the annotations, taxonomy, splits and schema are CC
   BY 4.0; each row's quoted text stays under that row's own source licence, recorded per record,

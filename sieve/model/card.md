@@ -87,7 +87,7 @@ grouped CV; holdout numbers were produced by a single sealed run (see the log li
 | Scanner false positives dismissed (real subset) | {{fp_dismissed_real_triage}} |
 | `FPR_stage1@T_low`, all non-poisoned rows (synthetic included) | {{fpr_stage1_at_t_low}} |
 | `FPR_pipeline` (auto-confirmed only) | {{fpr_pipeline}} |
-| Minimal-pair accuracy (M11) | {{minimal_pair_accuracy}} |
+| Minimal-pair accuracy | {{minimal_pair_accuracy}} |
 
 Both FPR definitions are reported because they answer different questions.
 `FPR_stage1@T_low` counts a non-poisoned row as a false positive when it was **not
@@ -119,7 +119,7 @@ Per-concealment: {{per_concealment}}
 ### Judge self-defence (injection suites)
 
 Three numbers belong here, and they are reported separately because they answer three different
-questions. A single "injection resistance" figure would be the claim PRD §12.5 refuses to make:
+questions. A single "injection resistance" figure would claim more than any one of them shows:
 
 1. the **dev gate**, `tests/test_judge_injection.py`: the suite the prompt was tuned against,
    which is a gate and must pass;
@@ -131,10 +131,9 @@ questions. A single "injection resistance" figure would be the claim PRD §12.5 
 No prompt change may follow a holdout run for the version it measured; if the result is bad, that
 is the result and the next version is where it is addressed.
 
-**Not yet measured.** No slot is templated above because there is no artefact to fill one from:
-recording the holdout is a one-shot human step (`docs/RUNBOOK.md` §3), and until it has run,
-Sieve's injection resistance is a design claim, as THREAT_MODEL.md's residual risk 8 also says.
-Task 11.6 fills the three in, with slots, once they exist.
+**Not yet measured.** No slot is templated above because no artefact exists to fill one from.
+Until the holdout run is recorded, Sieve's injection resistance is a design claim, as
+THREAT_MODEL.md's residual risk 8 also says.
 
 ### Serving
 

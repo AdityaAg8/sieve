@@ -1,4 +1,4 @@
-"""The documents this lane owns have to keep their promises.
+"""The public documents have to keep their promises.
 
 A threat model is worth exactly the tests it names, so every `tests/...::test_name` it cites is
 checked here against the repository, and every file it points at has to exist. The same goes for
@@ -16,12 +16,11 @@ REPO = Path(__file__).resolve().parents[2]
 README = REPO / "README.md"
 THREAT_MODEL = REPO / "THREAT_MODEL.md"
 ADR_DIR = REPO / "docs" / "adr"
-WRITEUP = REPO / "docs" / "writeup.md"
 ARCHITECTURE = REPO / "docs" / "ARCHITECTURE.md"
 
 LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 TEST_REFERENCE = re.compile(r"`(tests/[^`]+?)`")
-#: Backticked paths whose existence this lane is asserting. `.json` is deliberately absent:
+#: Backticked paths whose existence the documents assert. `.json` is deliberately absent:
 #: `bench/results/*.json` does not exist until `make bench` runs.
 CITED_FILE = re.compile(r"`([\w./-]+\.(?:py|yml|yaml|ts|tsx|css|lock|md))`")
 #: A document may cite a file that does not exist yet only by declaring it, in one place, with
@@ -34,12 +33,12 @@ def _pending(text: str) -> set[str]:
 
 
 def _docs() -> list[Path]:
-    return [README, THREAT_MODEL, WRITEUP, ARCHITECTURE, *sorted(ADR_DIR.glob("*.md"))]
+    return [README, THREAT_MODEL, ARCHITECTURE, *sorted(ADR_DIR.glob("*.md"))]
 
 
 @pytest.mark.parametrize("doc", _docs(), ids=lambda p: p.name)
 def test_every_relative_link_resolves_to_a_file_that_exists(doc: Path) -> None:
-    assert doc.exists(), f"{doc.name} is named by this lane and must exist"
+    assert doc.exists(), f"{doc.name} must exist"
     for target in LINK.findall(doc.read_text(encoding="utf-8")):
         if target.startswith(("http://", "https://", "mailto:", "#", "<")):
             continue
@@ -87,10 +86,8 @@ def test_the_stride_table_is_one_contiguous_block_of_numbered_rows() -> None:
         body.append(line)
     numbers = [int(line.split("|")[1].strip()) for line in body]
     assert numbers == list(range(1, len(numbers) + 1)), f"rows are not 1..n in order: {numbers}"
-    # 27 at the end of Phase 3; 28-30 added by fix round 2 (the Action's expression-injection
-    # sink, job-kind routing for remote scans, and `remote_url` validation + redaction). The
-    # count is a tripwire for a row appended without a test beside it -- `test_every_test_named_
-    # in_the_threat_model_exists` above is what actually resolves the names.
+    # The count is a tripwire for a row appended without a test beside it;
+    # `test_every_test_named_in_the_threat_model_exists` above is what resolves the names.
     assert len(numbers) == 30, f"the STRIDE-lite table has {len(numbers)} rows, expected 30"
 
     # And nothing that looks like a row may sit outside the block it belongs to.
@@ -98,7 +95,7 @@ def test_the_stride_table_is_one_contiguous_block_of_numbered_rows() -> None:
     assert len(rows_in_file) == len(body), "a numbered row is stranded outside the table"
 
 
-def test_the_threat_model_has_every_section_prd_17_3_names() -> None:
+def test_the_threat_model_has_every_expected_section() -> None:
     text = THREAT_MODEL.read_text(encoding="utf-8").lower()
     for heading in ("## assets", "## trust boundaries", "## stride", "## residual risks"):
         assert heading in text, f"missing section {heading}"
@@ -113,57 +110,55 @@ def test_the_threat_model_has_every_section_prd_17_3_names() -> None:
         "dependency risk",
         "install-time code execution",
     ):
-        assert subject in text, f"PRD §17.3 names {subject!r} and the document does not"
+        assert subject in text, f"the threat model does not mention {subject!r}"
 
 
-def test_the_threat_model_names_every_trust_boundary_prd_17_3_lists() -> None:
+def test_the_threat_model_names_every_trust_boundary() -> None:
     text = THREAT_MODEL.read_text(encoding="utf-8").lower()
     for boundary in ("browser", "api", "worker", "sandbox", "anthropic api", "hub"):
         assert boundary in text, f"the trust-boundary chain is missing {boundary!r}"
 
 
 def test_the_threat_model_records_the_mcp_server_has_no_daily_ledger() -> None:
-    """L8's ruling, and the one place a reader would otherwise assume the API's cap applies."""
+    """The one place a reader would otherwise assume the API's cap applies."""
     text = THREAT_MODEL.read_text(encoding="utf-8")
     assert "no daily ledger" in text.lower()
     assert "judge_max_calls_per_scan" in text
 
 
-def test_the_threat_model_lists_the_open_items_the_reviews_deferred() -> None:
+def test_the_threat_model_lists_the_open_items_left_unfixed() -> None:
     text = THREAT_MODEL.read_text(encoding="utf-8")
     for item in ("ip_hash", "getaddrinfo", "server_instructions", "last_usage", "pip-audit"):
         assert item in text, f"the residual risks do not mention {item}"
 
 
 def test_the_threat_model_does_not_claim_the_injection_gate_passed() -> None:
-    """No API key has ever been used here, so the gate is written and unmeasured (L4)."""
+    """No API key has been used for it, so the gate is written and unmeasured."""
     text = THREAT_MODEL.read_text(encoding="utf-8").lower()
     assert "unmeasured" in text
     assert "never run against a real model" in text
 
 
-# ----------------------------------------------------------- the decision records (Task 10.3)
+# ------------------------------------------------------------------ the decision records
 
 
 def test_the_adr_index_lists_every_adr_and_each_one_exists() -> None:
     index = (ADR_DIR / "README.md").read_text(encoding="utf-8")
     files = sorted(p.name for p in ADR_DIR.glob("0*.md"))
-    # PRD §7.3 names ADR-001 to ADR-008; training plan I1 adds ADR-009 (the v1 deviations).
     assert len(files) == 9, f"expected ADR-001 to ADR-009; found {files}"
     for name in files:
         assert name in index, f"{name} is not listed in docs/adr/README.md"
 
 
 @pytest.mark.parametrize("adr", sorted(ADR_DIR.glob("0*.md")), ids=lambda p: p.name)
-def test_every_adr_keeps_the_four_headings_and_says_who_owns_the_text(adr: Path) -> None:
+def test_every_adr_keeps_the_four_headings_and_is_accepted(adr: Path) -> None:
     text = adr.read_text(encoding="utf-8")
     for heading in ("## Status", "## Context", "## Decision", "## Consequences"):
         assert heading in text, f"{adr.name} is missing {heading}"
-    assert "Proposed" in text, f"{adr.name} must still be proposed: the human writes the text"
-    assert "human" in text, f"{adr.name} must say the human finalises it (PRD §7.3)"
+    assert "Accepted" in text, f"{adr.name} must state its status"
 
 
-def test_the_adrs_cover_the_subjects_prd_7_3_names() -> None:
+def test_the_adrs_cover_the_subjects_they_are_about() -> None:
     subjects = {
         "0002": "abstain band",
         "0003": "holdout",
@@ -179,57 +174,3 @@ def test_the_adrs_cover_the_subjects_prd_7_3_names() -> None:
         assert subject in matches[0].read_text(encoding="utf-8").lower(), (
             f"ADR-{number} does not mention {subject!r}"
         )
-
-
-# ------------------------------------------------------------- the write-up skeleton (10.3)
-
-
-def _headings(path: Path) -> list[str]:
-    return [
-        line.lower()
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.startswith("## ")
-    ]
-
-
-def test_the_writeup_follows_prd_17_2_section_order() -> None:
-    order = [
-        "audit",
-        "scanner sees",
-        "taxonomy",
-        "corpus",
-        "baseline",
-        "model",
-        "judge",
-        "gets wrong",
-        "reproduce",
-    ]
-    headings = _headings(WRITEUP)
-    positions = [next((i for i, h in enumerate(headings) if key in h), -1) for key in order]
-    assert all(p >= 0 for p in positions), dict(zip(order, positions, strict=True))
-    assert positions == sorted(positions), f"sections out of PRD §17.2 order: {headings}"
-
-
-def test_the_writeup_places_its_figures_in_bench_results_figures() -> None:
-    text = WRITEUP.read_text(encoding="utf-8")
-    figures = re.findall(r"`(bench/results/figures/[\w.-]+)`", text)
-    assert len(figures) >= 5, f"the skeleton reserves a figure slot per section; found {figures}"
-    assert len(set(figures)) == len(figures), "two figure slots share a filename"
-
-
-def test_the_writeup_quotes_no_sieve_result_and_attributes_the_audit_it_does_quote() -> None:
-    """Nothing has been trained, so no section may carry a number out of `bench/results/`.
-
-    The one quantity the skeleton does quote is the published audit's false-positive rate, and
-    it carries that figure's interval and n, exactly as the document's own rule at the top
-    demands. `95% CI` is the results idiom this project uses for its own measurements.
-    """
-    text = WRITEUP.read_text(encoding="utf-8")
-    assert "<!-- human: rewrite -->" in text
-    assert "skeleton" in text.lower()
-    assert "95% CI" not in text
-    audit = [line for line in text.splitlines() if "78%" in line]
-    assert len(audit) == 1, f"the audit's rate is quoted {len(audit)} times"
-    assert "[59%, 90%]" in audit[0] and "n = 27" in audit[0], (
-        "the audit's rate is only ever quoted with its interval and n (PRD §1.1)"
-    )

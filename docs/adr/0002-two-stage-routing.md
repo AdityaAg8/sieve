@@ -2,8 +2,7 @@
 
 ## Status
 
-Proposed — drafted from PRD §7.2, §11.4 and §12.1 by an agent in Phase 3, against the pipeline as
-built (`sieve/pipeline.py`). The human finalises this ADR's text.
+Accepted, 2026-10-14.
 
 ## Context
 
@@ -24,7 +23,7 @@ are obviously fine or obviously poisoned, and the argument only happens in the m
 ## Decision
 
 Route on calibrated confidence, with an abstain band between two thresholds that come from the
-model artefact and are never hardcoded (`sieve_config.json`, PRD §11.4):
+model artefact and are never hardcoded (`sieve_config.json`):
 
 | Stage-1 `p(poisoned)` | Verdict | `stage` |
 |---|---|---|
@@ -35,17 +34,18 @@ model artefact and are never hardcoded (`sieve_config.json`, PRD §11.4):
 The band is the only path to Stage 2. Everything that cannot reach a judge degrades to
 `needs_review`, never to `dismissed`: the judge disabled by configuration gives
 `stage = classifier`, a judge failure gives `stage = judge_failed`, and an exhausted daily budget
-gives `stage = judge_budget_exhausted` (PRD §12.1, §13.2). The judge must return a structured
+gives `stage = judge_budget_exhausted`. The judge must return a structured
 verdict with an evidence quote, so a Stage-2 answer that cannot point at text is not a verdict.
 
-Ablation rows 6, 7 and 8 of `bench/ablations.yaml` measure what the band buys: classifier plus
-Haiku, classifier plus Sonnet, and the judge alone on every row, with cost and latency beside
-them.
+Ablation rows 6, 7 and 8 of `bench/ablations.yaml` are meant to measure what the band buys:
+classifier plus Haiku, classifier plus Sonnet, and the judge alone on every row, with cost and
+latency beside them. They were never run. The judge is deferred to v1.1 (ADR-009), so those rows
+are marked `deferred` and carry no numbers.
 
 ## Consequences
 
-- The routing rate is a first-class metric (M3, target at most 25% of rows) and the cost model
-  (M4) is a direct function of it. Widening the band buys accuracy with money and latency, and the
+- The routing rate is a first-class metric (target at most 25% of rows) and the cost model is a
+  direct function of it. Widening the band buys accuracy with money and latency, and the
   ablation table has to show the trade rather than assert it.
 - Every failure mode of Stage 2 costs a human a look instead of hiding a finding. That is the only
   safe direction for a security tool to fail in, and it is why the exhausted-budget path is a

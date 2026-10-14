@@ -359,10 +359,10 @@ def test_the_generated_block_carries_the_four_headline_numbers(results: Path, re
     holdout = json.loads((results / "holdout.json").read_text(encoding="utf-8"))
     lines = _block_lines(readme.read_text(encoding="utf-8"))
 
-    # M1: not measured with the judge deferred; the line leads with the review share and the
-    # scanner's rate on the same real tools (audit F1, F2).
+    # Review load: the share of real tools Stage 1 sends to a human, beside the scanner's rate on
+    # the same tools (audit F1, F2).
     review, scanner = holdout["fpr_stage1_real"], holdout["baseline_fpr_real"]
-    assert "not measured" in lines[0]
+    assert "Review load" in lines[0]
     assert f"sends {rn.pct(review['point'])} of the {review['n']} real" in lines[0]
     assert rn.pct(scanner["point"]) in lines[0]
     assert f"{scanner['k']} of {scanner['n']}" in lines[0]
@@ -398,14 +398,14 @@ def test_no_line_calls_an_auto_confirm_rate_a_false_positive_reduction(
     results: Path, readme: Path
 ) -> None:
     """Audit F1: the v1 README compared Stage 1's auto-confirm rate with the scanner's flag rate
-    and called it "97.1% fewer false positives", counting every tool sent to review as a win."""
+    and called it "97.1% fewer false positives", counting every tool sent to review as a win.
+    The auto-confirm rate is not printed against the scanner's rate at all now."""
     assert _run(results, readme) == 0
     text = readme.read_text(encoding="utf-8")
-    assert "fewer false positives" not in _block(text)
-    row = rn.headline_row(json.loads((results / "ablations.json").read_text(encoding="utf-8")))
-    auto = rn.pct(row["fp_reduction_vs_baseline"]["sieve_fpr"])
+    block = _block(text)
+    assert "fewer false positives" not in block and "reduction" not in block.lower()
     development = next(line for line in _block_lines(text) if line.startswith("*Development"))
-    assert auto in development and "not a false-positive reduction" in development
+    assert "auto-confirm" not in development.lower()
 
 
 def test_no_interval_collapsed_to_a_point_is_printed(results: Path, readme: Path) -> None:
@@ -447,15 +447,20 @@ def test_the_labels_line_follows_the_dev50_audit() -> None:
     assert "agreement" not in passed.lower() + failed.lower()
 
 
-def test_the_four_numbers_are_one_per_line_in_prd_17_1_order(results: Path, readme: Path) -> None:
+def test_the_four_numbers_are_one_per_line_in_order(results: Path, readme: Path) -> None:
     assert _run(results, readme) == 0
     lines = _block_lines(readme.read_text(encoding="utf-8"))
     assert len(lines) >= 7
-    assert "M1" in lines[0] and "real subset" in lines[0]
-    assert "M2" in lines[1] and "dismisses" in lines[1]
-    assert "recall" in lines[2].lower() and "lower bound" in lines[2].lower()
-    assert "real_poisoned" in lines[3]
+    assert lines[0].startswith("**Review load (real tools)")
+    assert lines[1].startswith("**Scanner false positives dismissed") and "dismisses" in lines[1]
+    assert lines[2].startswith("**Synthetic attack recall")
+    assert "lower bound" in lines[2].lower()
+    assert lines[3].startswith("**Real-attack benchmark (MCPTox)")
+    assert "collected from the wild" not in lines[3]
     assert lines[4].startswith("*Development")
+    assert lines[5].startswith("**Pre-registered targets")
+    for internal in ("M1", "M2", "M13", "D8", "D14", "ADR-", "PRD"):
+        assert internal not in _block(readme.read_text(encoding="utf-8"))
     assert "make readme" in lines[-1] and "bench/results" in lines[-1]
 
 
@@ -754,10 +759,10 @@ def test_the_development_line_names_its_populations_and_the_published_seed() -> 
     published = rn._published_seed(row, {"published_dir": "models/deberta-v3-base-s1"})
     assert published is not None and published["seed"] == 1
     text = rn._development_line(row, published, 1010)
-    assert "26.5% of real development tools" in text
-    assert "seed 1" in text and "45.9% reviewed" in text and "40.9% dismissed" in text
-    assert "0.8%" in text and "not a false-positive reduction" in text
-    assert "all synthetic" in text and "0.996" in text and "0.941" in text
+    assert "26.5% of real tools" in text
+    assert "seed 1" in text and "45.9% and 40.9%" in text
+    assert "0.8%" not in text and "auto-confirm" not in text.lower()
+    assert "all synthetic" in text and "0.996" in text
 
 
 def test_the_post_hoc_line_is_labelled_and_spans_the_seeds() -> None:
@@ -780,7 +785,8 @@ def test_the_post_hoc_line_is_labelled_and_spans_the_seeds() -> None:
     text = rn._operating_points_line(payload)
     assert text is not None
     assert "not adopted" in text and "new sealed test set" in text
-    assert "7.4% to 17.4%" in text and "73.6% to 89.3%" in text and "0.976 to 0.984" in text
+    assert "7.4% to 17.4%" in text and "0.976 to 0.984" in text
+    assert text.count(". ") == 0, "one short sentence"
     assert rn._operating_points_line(None) is None
 
 
@@ -788,3 +794,30 @@ def test_a_two_class_rows_macro_f1_is_labelled_as_two_classes() -> None:
     row = {"macro_f1_mean": 0.959, "macro_f1_std": None, "num_labels": 2}
     assert rn._f1(row) == "0.959 (2 classes, 1 seed)"
     assert rn._f1({"macro_f1_mean": 0.892, "macro_f1_std": 0.003}) == "0.892 ± 0.003"
+
+
+def test_deferred_judge_rows_are_dropped_from_the_table_and_footnoted(tmp_path: Path) -> None:
+    def scored(row: int) -> dict[str, Any]:
+        return {"row": row, "name": f"scored {row}", "macro_f1_mean": 0.9, "macro_f1_std": 0.01}
+
+    deferred = [{"row": n, "name": f"judge {n}", "status": "deferred"} for n in (6, 7, 8)]
+    payload = {"n_records": 10, "rows": [scored(4), *deferred, scored(9)]}
+    (tmp_path / "ablations.json").write_text(json.dumps(payload), encoding="utf-8", newline="\n")
+    table = rn.render_results(tmp_path)
+    assert "| 4 | scored 4 |" in table and "| 9 | scored 9 |" in table
+    assert "judge 6" not in table and "deferred to v1.1 (D8)" not in table
+    assert "Rows 6-8 (LLM judge) are deferred to v1.1." in table
+
+
+def test_the_targets_line_says_met_or_missed_from_the_numbers() -> None:
+    def holdout(review: float, dismissed: float, lo: float, hi: float) -> dict[str, Any]:
+        return {
+            "fpr_stage1_real": {"point": review, "n": 100},
+            "fp_dismissed_real_triage": {"point": dismissed, "lo": lo, "hi": hi, "n": 20},
+        }
+
+    missed = rn._targets_line(holdout(0.35, 0.385, 0.18, 0.65), judge_deferred=True)
+    assert "misses the target" in missed and "interval spans" in missed
+    assert "judge is deferred to v1.1" in missed
+    met = rn._targets_line(holdout(0.15, 0.7, 0.5, 0.9), judge_deferred=False)
+    assert "misses the target" not in met and "meets" in met and "deferred" not in met

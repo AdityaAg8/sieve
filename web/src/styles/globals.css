@@ -5,7 +5,6 @@
  *   ivory hairlines carry the "jewellery" role red cannot
  * nav: N5 floating glass capsule · footer: brand column + link columns + legal strip
  * tokens: web/src/styles/tokens.css (this file adds no colour of its own)
- * Hallmark · pre-emit critique: P5 H5 E4 S5 R4 V5 — see web/DESIGN.md
  */
 @import "tailwindcss";
 @import "./tokens.css";
@@ -242,7 +241,7 @@ dialog {
    * Interaction is expressed by border and colour only — never by a change of fill.
    * `--ink-3` on `--bg-2` is 4.20:1 and `--ink-2` on `--bg-3` is 4.44:1, both below AA, so a
    * hovered or selected row that changed its background would quietly break the contrast floor
-   * for dismissed findings. See web/DESIGN.md §3.
+   * for dismissed findings.
    */
   .u-interactive {
     transition:

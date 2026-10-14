@@ -8,7 +8,7 @@ endif
 
 help: ## list every target with its one-line purpose
 	@grep -hE '^[a-z][a-z0-9_-]*:.*## ' $(MAKEFILE_LIST) | sed -E 's/^([a-z0-9_-]+):[^#]*## (.*)$$/  \1	\2/' | sort
-	@echo && echo 'Human steps (GPU, keys, deploys): docs/RUNBOOK.md'
+	@echo && echo 'Setup, test and lint commands: CONTRIBUTING.md'
 
 # `train`/`train-all` variables: PROFILE names a `bench/train.yaml` profile; SEED and FOLD are
 # the CLI's own `--seed`/`--fold`. MODEL_OUT follows the "models/<family>-s<seed>/fold<fold>"
@@ -142,13 +142,13 @@ model-dir:  ## print MODEL_DIR for PROFILE= SEED= (models/<family>-s<seed>)
 
 # `probes` (training plan C4, §5.3): the four style-leakage probes on dev rows -- per-stratum
 # source leakage (imperative, benign), surface, length-only, transfer. Exit 1 if any > 0.70.
-probes:  ## the §5.3 leakage probes on dev rows -> bench/results/leakage_probe.json (exit 1 if any > 0.70)
+probes:  ## the leakage probes on dev rows -> bench/results/leakage_probe.json (exit 1 if any > 0.70)
 	uv run python -m bench.analysis.probes --corpus $(BENCH_CORPUS)
 
 # `gpu-bench` (training plan C3, §13 step 7): every speed variant timed on real batches, the
 # pre-registered profile choice printed, residual non-determinism measured. Refuses on the CPU
 # path and on a busy card (FORCE=1 overrides the latter only).
-gpu-bench:  ## time every profile variant, print the §6.4 choice, measure non-determinism (GPU)
+gpu-bench:  ## time every profile variant, print the chosen profile, measure non-determinism (GPU)
 	uv run python -m bench.gpu_bench $(if $(FORCE),--force) $(if $(GPU_IDLE_MIB),--idle-mib $(GPU_IDLE_MIB))
 
 # `sweep` (training plan C2): the whole per-seed recipe, resumable, refusing a busy GPU before
@@ -167,7 +167,7 @@ calibrate:  ## temperature, T_low and T_high from the five folds' pooled OOF log
 # The judge is deferred (D8), so judge agreement is not a v1 step. The HTTP latency of a live
 # deployment stays available as `make latency-http`.
 SELECT = uv run python -m sieve.model.select $(foreach c,$(CANDIDATES),--candidate $(c)) --corpus $(BENCH_CORPUS) --results-dir $(RESULTS_DIR)
-bench:  ## regenerate bench/results/* offline, no server (baseline ... selection; training plan C7)
+bench:  ## regenerate bench/results/* offline, no server (baseline ... selection)
 	uv run python -m bench.baseline.run --corpus $(BENCH_CORPUS) --results-dir $(RESULTS_DIR)
 	uv run python -m bench.split.pairs --corpus $(BENCH_CORPUS) --out $(RESULTS_DIR)/minimal_pairs.json
 	$(SELECT)
@@ -191,14 +191,14 @@ select:  ## the pre-registered architecture choice from CANDIDATES' OOF arrays -
 # ADR-009 amends ADR-005: dynamic int8 failed parity on DeBERTa-v3 (max |dp| 0.77), so the fp32
 # graph is exported and served. EXPORT_FLAGS= (empty) restores the int8 attempt.
 EXPORT_FLAGS ?= --no-quantize
-export:  ## ONNX export of PUBLISHED_DIR with dev-set parity -> export_parity.json (H6)
+export:  ## ONNX export of PUBLISHED_DIR with dev-set parity -> export_parity.json
 	uv run python -m sieve.model.export $(PUBLISHED) $(EXPORT_FLAGS) --corpus $(BENCH_CORPUS) --results-dir $(RESULTS_DIR)
 
 push:  ## card + Hub upload of PUBLISHED_DIR to HF_REPO; a dry run unless CONFIRM=1
 	@test -n "$(HF_REPO)" || (echo "make push needs HF_REPO=<owner/name>" && exit 2)
 	uv run python -m sieve.model.push --model-dir $(PUBLISHED) --repo $(HF_REPO) --results-dir $(RESULTS_DIR) $(if $(filter 1,$(CONFIRM)),,--dry-run)
 
-reproduce-check:  ## M6b: re-score REPRO_ROWS from models/ and compare macro-F1 to the committed rows (±0.01)
+reproduce-check:  ## re-score REPRO_ROWS from models/ and compare macro-F1 to the committed rows (±0.01)
 	uv run python -m bench.ablations.run --matrix $(ABLATIONS_MATRIX) --corpus $(BENCH_CORPUS) --results-dir $(RESULTS_DIR) --rows $(REPRO_ROWS) --out $(REPRO_OUT) $(BOOT)
 	uv run python -m bench.reproduce --committed $(RESULTS_DIR)/ablations.json --regenerated $(REPRO_OUT) --rows $(REPRO_ROWS) --tolerance 0.01
 
@@ -245,7 +245,7 @@ dedup-cross:  ## eval-vs-dev dedup of every OOD set -> bench/results/dedup_cross
 corpus-stats:  ## corpus statistics report
 	uv run python -m bench.stats
 
-# `plan-evidence`: every measured number in SIEVE_TRAINING_PLAN.md (task A3). Fetches the pinned
+# `plan-evidence`: every measured number in the training plan. Fetches the pinned
 # third-party clones into the gitignored bench/data/external/ first; CPU only, HF cache offline.
 plan-evidence:  ## regenerate the training plan's measured numbers (bench/data/external/plan_evidence/)
 	uv run python -m bench.collect.external

@@ -1,20 +1,20 @@
 # Judge self-defence cassettes
 
-Judge-level JSONL recordings for the two-sided injection gate (PRD §12.5, §12.4):
+Judge-level JSONL recordings for the two-sided injection gate:
 
-- `dev.jsonl` — `tests/test_judge_injection.py` (the release gate)
-- `holdout.jsonl` — `tests/test_judge_injection_holdout.py` (sealed, run once in Phase 4)
+- `dev.jsonl`: `tests/test_judge_injection.py` (the release gate)
+- `holdout.jsonl`: `tests/test_judge_injection_holdout.py` (sealed, run once per version)
 
 Each line is one call: `{request_hash, model, usage, output}`. No tool text, no headers, no
-credentials — so there is nothing here to filter an API key out of, and the file is safe to
+credentials, so there is nothing here to filter an API key out of and the file is safe to
 commit. `sieve/judge/record.py` writes and replays them; `make bench` uses the same mechanism.
 
 ## Why not vcrpy / respx
 
 Both patch `httpx`. The installed `anthropic` (1.5.0) is built on `httpx2`, so neither
 intercepts a single request — verified: a VCR cassette recorded zero interactions while the
-call went to the live network. Recording at the judge boundary works and is the layer the
-PRD already specifies for `bench/results/judge_outputs.jsonl`. HTTP behaviour is unit-tested
+call went to the live network. Recording at the judge boundary works and is the layer
+`bench/results/judge_outputs.jsonl` also uses. HTTP behaviour is unit-tested
 against `httpx2.MockTransport` in `tests/judge/test_client.py`.
 
 ## Recording (once, with a key)

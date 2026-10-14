@@ -141,6 +141,10 @@ def headline_row(ablations: dict[str, Any], winner: str | None = None) -> dict[s
     return min(candidates, key=lambda row: row.get("row", 0))
 
 
+def _judge_deferred(ablations: dict[str, Any]) -> bool:
+    return any(row.get("status") == "deferred" for row in ablations.get("rows") or [])
+
+
 def baseline_name(baseline: Any) -> str:
     """`cisco_yara 4.8.0`, from the committed baseline report; never guessed."""
     if isinstance(baseline, list) and baseline:
@@ -178,9 +182,9 @@ def _headline_report(holdout: dict[str, Any]) -> dict[str, Any]:
 
 
 def _fpr_line(holdout: dict[str, Any], baseline: Any) -> str:
-    """M1. PRD M1 is defined with the judge running; v1 defers it (D8), so M1 is not measured
-    and the line leads with what a user actually gets: the share of real tools sent to a human,
-    beside the share the scanner flags (audit F1, F2)."""
+    """The share of real tools Stage 1 sends to a human, beside the share the scanner flags
+    (audit F1, F2). The auto-confirm rate is validated but not printed: it leaves out the review
+    band and read as a false-positive win in v1."""
     review = holdout.get("fpr_stage1_real") or {}
     scanner = holdout.get("baseline_fpr_real") or {}
     confirmed = holdout.get("fpr_pipeline_real") or {}
@@ -195,14 +199,11 @@ def _fpr_line(holdout: dict[str, Any], baseline: Any) -> str:
             "tools is the comparison the review share needs; run `make bench`"
         )
     return (
-        "**M1 · `FPR_pipeline` on the real subset:** not measured in v1, because the PRD defines "
-        "it with the LLM judge running and the judge is deferred to v1.1 (D8). What a user gets "
-        f"instead: **Stage 1 sends {pct(review['point'])} of the {int(review['n'])} real "
-        f"non-poisoned holdout tools to human review**{_interval(review)}, where "
+        f"**Review load (real tools):** Stage 1 sends {pct(review['point'])} of the "
+        f"{int(review['n'])} real non-poisoned holdout tools to human review{_interval(review)}. "
         f"{baseline_name(baseline)} flags {pct(scanner['point'])} "
-        f"({int(scanner['k'])} of {int(scanner['n'])}) of the same tools. It auto-confirms "
-        f"{pct(confirmed['point'])} of them. Frozen thresholds T_low = {ratio(holdout['t_low'])}, "
-        f"T_high = {ratio(holdout['t_high'])}."
+        f"({int(scanner['k'])} of {int(scanner['n'])}) of the same tools. "
+        f"Thresholds: T_low = {ratio(holdout['t_low'])}, T_high = {ratio(holdout['t_high'])}."
     )
 
 
@@ -264,23 +265,20 @@ def _reduction_line(holdout: dict[str, Any], baseline: Any) -> str:
     else:
         all_part = (
             f"Across all {negatives} non-poisoned holdout rows, synthetic included, it dismisses "
-            f"{pct(triage['relative'])} of the scanner's false positives (95% cluster-bootstrap "
+            f"{pct(triage['relative'])} (95% cluster-bootstrap "
             f"CI {pct(triage['relative_lo'])} to {pct(triage['relative_hi'])}; "
             f"{_tests(triage)})."
         )
     standalone_part = ""
     if standalone.get("sieve_fpr") is not None and standalone.get("baseline_fpr") is not None:
         standalone_part = (
-            f" On its own it is not a scanner replacement: Stage 1 flags "
-            f"{pct(standalone['sieve_fpr'])} of those rows against the scanner's "
-            f"{pct(standalone['baseline_fpr'])}, at recall {ratio(standalone['sieve_recall'])} "
-            f"against {ratio(standalone['baseline_recall'])} on the synthetic attacks; the real "
-            "holdout holds no poisoned row, so no recall exists on real tools."
+            " Used as a scanner on its own, it would flag "
+            f"{pct(standalone['sieve_fpr'])} of those rows against the "
+            f"scanner's {pct(standalone['baseline_fpr'])}, at recall "
+            f"{ratio(standalone['sieve_recall'])} against {ratio(standalone['baseline_recall'])} "
+            "on the synthetic attacks (the real holdout has no poisoned row)."
         )
-    return (
-        f"**M2 · Scanner false positives Stage 1 dismisses, real holdout tools:** {real_part} "
-        f"{all_part}{standalone_part}"
-    )
+    return f"**Scanner false positives dismissed:** {real_part} {all_part}{standalone_part}"
 
 
 def _recall_line(holdout: dict[str, Any]) -> str:
@@ -294,20 +292,18 @@ def _recall_line(holdout: dict[str, Any]) -> str:
         )
     gate = holdout.get("release_gate") or {}
     floor = gate.get("recall_lower_bound")
-    exact_clears = floor is not None and exact["lo"] >= floor
+    clears = holdout.get("release_gate_passed") and floor is not None and exact["lo"] >= floor
     return (
-        f"**Holdout poisoned recall (synthetic attacks; the real holdout holds none):** "
+        f"**Synthetic attack recall (holdout; the real holdout has no attacks):** "
         f"{int(exact['k'])} of {int(exact['n'])} caught at T_low, recall "
-        f"{ratio(holdout['recall'])} with an exact (Clopper-Pearson) 95% lower bound of "
-        f"{ratio(exact['lo'])}. The release gate is {ratio(gate.get('recall_point'))} point and "
-        f"{ratio(floor)} lower bound; this run "
-        f"{'passes' if holdout.get('release_gate_passed') else 'does not pass'} it, and the "
-        f"exact bound {'clears' if exact_clears else 'does not clear'} the floor too."
+        f"{ratio(holdout['recall'])}, exact (Clopper-Pearson) 95% lower bound "
+        f"{ratio(exact['lo'])}. The release gate ({ratio(gate.get('recall_point'))} point, "
+        f"{ratio(floor)} lower bound) is {'passed' if clears else 'not passed'}."
     )
 
 
 def _real_poisoned_line(holdout: dict[str, Any], val_ood: Any) -> str:
-    """M13, printed beside what its recall costs on clean out-of-distribution tools (F8)."""
+    """The MCPTox recall, printed beside its cost on clean out-of-distribution tools (F8)."""
     stage1 = holdout.get("real_poisoned_recall_stage1")
     pipeline = holdout.get("real_poisoned_recall_pipeline")
     if stage1 is None or pipeline is None:
@@ -318,14 +314,13 @@ def _real_poisoned_line(holdout: dict[str, Any], val_ood: Any) -> str:
     ood = _headline_report(holdout).get("test_ood") or {}
     clean, docker = ood.get("mcptox_clean") or {}, ood.get("docker") or {}
     line = (
-        f"**M13 · `real_poisoned` recall:** {ratio(stage1)} at Stage 1 (not dismissed at "
-        f"T_low) and {ratio(pipeline)} auto-confirmed, {ratio(stage1 - pipeline)} going to "
-        f"human review, over {int(holdout['n_eval_only'])} MCPTox attacks collected from the "
-        "wild."
+        f"**Real-attack benchmark (MCPTox):** Stage 1 recall is {ratio(stage1)} over "
+        f"{int(holdout['n_eval_only'])} MCPTox benchmark attacks (none dismissed; "
+        f"{ratio(pipeline)} confirmed outright, {ratio(stage1 - pipeline)} sent to review)."
     )
     if clean.get("point") is not None and docker.get("point") is not None:
         line += (
-            f" The cost at the same threshold: Stage 1 also flags {pct(clean['point'])} of "
+            f" Cost at the same threshold: it also flags {pct(clean['point'])} of "
             f"MCPTox's {int(clean['n'])} clean tools and {pct(docker['point'])} of "
             f"{int(docker['n'])} Docker catalogue tools."
         )
@@ -337,8 +332,8 @@ def _real_poisoned_line(holdout: dict[str, Any], val_ood: Any) -> str:
     independent = row.get("all_but_stress") or {}
     if independent.get("recall_at_t_low") is not None:
         line += (
-            " On independent attack sets (val-OOD; labels from each source's metadata; "
-            f"report-only) recall at T_low is {ratio(independent['recall_at_t_low'])} over "
+            " On independent attack sets (report-only) recall at T_low is "
+            f"{ratio(independent['recall_at_t_low'])} over "
             f"{int(independent['n_poisoned'])} attacks."
         )
     return line
@@ -359,36 +354,26 @@ def _development_line(row: dict[str, Any], published: Any, n_records: int) -> st
     F5, F20). Development holds no real poisoned row, so every recall here is synthetic."""
     real = row.get("fpr_stage1_real_at_t_low") or {}
     dismissed = row.get("fp_dismissed_real_triage") or {}
-    confirm = row.get("fp_reduction_vs_baseline") or {}
     if real.get("point") is None or dismissed.get("point") is None:
         raise Refused(
             "the headline ablation row carries no `fpr_stage1_real_at_t_low` / "
             "`fp_dismissed_real_triage`; run `make bench`"
         )
     line = (
-        f"*Development, pooled out-of-fold over {n_records:,} rows, ablation row {row['row']} "
-        f"averaged over three seeds: Stage 1 sends {pct(real['point'])} of real development "
-        f"tools to review and dismisses {pct(dismissed['point'])} of the scanner's false "
-        "positives on them. "
+        f"*Development (pooled out-of-fold, {n_records:,} rows, ablation row {row['row']}, "
+        f"mean of three seeds): Stage 1 sends {pct(real['point'])} of real tools to review and "
+        f"dismisses {pct(dismissed['point'])} of the scanner's false positives on them. "
     )
     if published is not None:
         own = published.get("fpr_stage1_real_at_t_low") or {}
         own_dismissed = published.get("fp_dismissed_real_triage") or {}
         if own.get("point") is not None and own_dismissed.get("point") is not None:
             line += (
-                f"The published artefact is seed {published['seed']} (the median seed by "
-                f"macro-F1, D14): {pct(own['point'])} reviewed, {pct(own_dismissed['point'])} "
-                "dismissed. "
+                f"The published model (seed {published['seed']}, the median by macro-F1) gets "
+                f"{pct(own['point'])} and {pct(own_dismissed['point'])}. "
             )
     recall = row.get("oof_recall_at_t_low") or {}
-    auto = (row.get("fp_reduction_all_sources") or {}).get("sieve_recall")
-    line += (
-        "Counting only auto-confirmed tools as flagged, the row's false-positive rate is "
-        f"{pct(confirm.get('sieve_fpr'))} against the scanner's "
-        f"{pct(confirm.get('baseline_fpr'))}; that comparison leaves out the review band, so it "
-        "is not a false-positive reduction. Recall on development attacks, all synthetic: "
-        f"{ratio(recall.get('point'))} at T_low, {ratio(auto)} auto-confirmed.*"
-    )
+    line += f"Recall on development attacks, all synthetic: {ratio(recall.get('point'))}.*"
     return line
 
 
@@ -411,25 +396,58 @@ def _operating_points_line(points_file: Any) -> str | None:
         return low if low == high else f"{low} to {high}"
 
     return (
-        "*Post-hoc and not adopted for v1 (`operating_points.json`; development out-of-fold "
-        "only, each threshold chosen on four folds and applied to the fifth): a point-recall "
-        f"rule of 0.98 would send {span('real_negative_review_share', pct)} of real "
-        f"development tools to review and dismiss {span('yara_fp_dismissed', pct)} of the "
-        f"scanner's false positives, at recall {span('recall', ratio)} across the "
-        f"{len(chosen)} seeds. Adopting it would be a new version, measured on a new sealed "
-        "test set.*"
+        "*Post-hoc and not adopted (`operating_points.json`): a 0.98-recall rule would review "
+        f"{span('real_negative_review_share', pct)} of real development tools at recall "
+        f"{span('recall', ratio)}; adopting it needs a new sealed test set.*"
     )
 
 
+#: Pre-registered targets, as shares of real tools. The first is lower-is-better.
+TARGET_REVIEW_SHARE = 0.20
+TARGET_FP_DISMISSED = 0.40
+
+
+def _targets_line(holdout: dict[str, Any], *, judge_deferred: bool) -> str:
+    """Met or missed for each pre-registered target, decided here from the numbers, not typed.
+
+    The review target was set for the full pipeline with the judge; Stage 1 alone is an upper
+    bound on it, so with the judge deferred the line says the target assumed the judge and
+    reports that Stage 1 alone misses or meets it.
+    """
+    review = (holdout.get("fpr_stage1_real") or {})["point"]
+    verdict = "meets" if review <= TARGET_REVIEW_SHARE else "misses"
+    first = (
+        f"pipeline false-positive rate at most {TARGET_REVIEW_SHARE:.0%} of real tools, counting "
+        f"every tool sent to review as flagged: Stage 1 alone flags {pct(review)}, so it "
+        f"{verdict} the target"
+    )
+    if judge_deferred:
+        first += " (the target assumed the LLM judge, and the judge is deferred to v1.1)"
+    dismissed = holdout.get("fp_dismissed_real_triage") or {}
+    point, lo, hi = dismissed.get("point"), dismissed.get("lo"), dismissed.get("hi")
+    if point is None:
+        second = "scanner false positives dismissed: undefined, the scanner flagged no real tool"
+    else:
+        outcome = "meets" if point >= TARGET_FP_DISMISSED else "misses"
+        spans = lo is not None and hi is not None and lo < TARGET_FP_DISMISSED <= hi
+        second = (
+            f"scanner false positives dismissed at least {TARGET_FP_DISMISSED:.0%}: Stage 1 "
+            f"dismisses {pct(point)} on real tools, so it {outcome} the target on the point "
+            "estimate" + (", but the interval spans the target" if spans else "")
+        )
+    head = "**Pre-registered targets** ([preregistration](bench/PREREGISTRATION.md)):"
+    return f"{head} {first}. {second[0].upper() + second[1:]}."
+
+
 def _labels_line(label_audit: Any) -> str:
-    """ADR-009: every number carries the labels caveat until the dev-50 human audit is recorded
+    """Every number carries the labels caveat until the dev-50 human audit is recorded
     in `label_audit.json` (`python -m bench.label.audit --gate dev50`), and says so if it fails."""
     dev50 = (label_audit or {}).get("dev50") if isinstance(label_audit, dict) else None
     if not isinstance(dev50, dict) or not dev50.get("ready"):
         return (
-            "*Labels: a three-model LLM ensemble. The dev-50 human audit and the test-ID gold "
-            "labels are still pending (ADR-009), and every figure above carries that caveat "
-            "until they are recorded.*"
+            "*Labels come from a three-model LLM ensemble. The human audit of 50 development "
+            "rows and the test-ID gold labels are still pending, so every figure above carries "
+            "that caveat.*"
         )
     kappa = (
         f"Cohen's kappa {dev50['kappa']:.2f} (95% CI {dev50['kappa_lo']:.2f} to "
@@ -439,8 +457,8 @@ def _labels_line(label_audit: Any) -> str:
     if not dev50.get("passed"):
         return (
             f"*Labels: a three-model LLM ensemble whose dev-50 human audit FAILED its "
-            f"pre-registered gate ({kappa}, below {dev50['gate']:.2f}). Under ADR-009 the "
-            "trained models are void until the labels are corrected and the models retrained.*"
+            f"pre-registered gate ({kappa}, below {dev50['gate']:.2f}). The trained models are "
+            "void until the labels are corrected and the models retrained.*"
         )
     test_id = "recorded" if (label_audit or {}).get("test_id") else "still pending"
     return (
@@ -461,32 +479,20 @@ def _required(payload: dict[str, Any], key: str, source: str) -> Any:
     return value
 
 
-def _provenance_line(
-    holdout: dict[str, Any], ablations: dict[str, Any], selection: Any, curves: Any
-) -> str:
+def _provenance_line(holdout: dict[str, Any], ablations: dict[str, Any]) -> str:
     dataset = holdout.get("dataset_version") or _required(
         ablations, "dataset_version", "ablations.json"
     )
-    parts = [
-        f"dataset `{dataset}`",
-        f"{int(_required(ablations, 'n_boot', 'ablations.json'))} bootstrap resamples",
-    ]
-    if isinstance(selection, dict) and selection.get("winner"):
-        parts.append(f"encoder `{selection['winner']}` (`selection.json`)")
-    if isinstance(curves, dict) and curves.get("recall_vs_threshold"):
-        parts.append(
-            f"{len(curves['recall_vs_threshold'])} threshold points in `curves.json`",
-        )
-    parts.append(f'holdout opened once for "{_required(holdout, "reason", "holdout.json")}"')
+    n_boot = int(_required(ablations, "n_boot", "ablations.json"))
     return (
-        "*Every figure above is written by `make readme` from `bench/results/` and none of it "
-        "is typed by hand: " + "; ".join(parts) + ".*"
+        f"*Generated by `make readme` from `bench/results/` (dataset `{dataset}`, "
+        f"{n_boot} bootstrap resamples).*"
     )
 
 
 def render_block(results_dir: Path) -> str:
-    """The four headline lines (M1, M2, recall, M13), then the labelled development, post-hoc,
-    labels and provenance lines. No em dash is ever emitted."""
+    """The four headline lines, then the development, targets, post-hoc, labels and provenance
+    lines. No em dash is ever emitted."""
     holdout = _read(
         results_dir,
         "holdout.json",
@@ -503,7 +509,6 @@ def render_block(results_dir: Path) -> str:
         hint=": run `make bench` first; the development figures live there",
     )
     baseline = _read(results_dir, "baseline.json", required=False)
-    curves = _read(results_dir, "curves.json", required=False)
     selection = _read(results_dir, "selection.json", required=False)
     val_ood = _read(results_dir, "val_ood.json", required=False)
     points_file = _read(results_dir, "operating_points.json", required=False)
@@ -517,11 +522,12 @@ def render_block(results_dir: Path) -> str:
         _recall_line(holdout),
         _real_poisoned_line(holdout, val_ood),
         _development_line(row, _published_seed(row, selection), n_records),
+        _targets_line(holdout, judge_deferred=_judge_deferred(ablations)),
     ]
     post_hoc = _operating_points_line(points_file)
     if post_hoc:
         lines.append(post_hoc)
-    lines += [_labels_line(label_audit), _provenance_line(holdout, ablations, selection, curves)]
+    lines += [_labels_line(label_audit), _provenance_line(holdout, ablations)]
     return "\n" + "\n\n".join(lines) + "\n"
 
 
@@ -563,12 +569,9 @@ def render_results(results_dir: Path) -> str:
         "|---:|---|---:|---:|---:|---:|---:|",
     ]
     for row in sorted(ablations.get("rows") or [], key=lambda r: r.get("row", 0)):
-        if row.get("breakdown_of"):
+        if row.get("breakdown_of") or row.get("status") == "deferred":
             continue
         head = f"| {row['row']} | {row['name']} |"
-        if row.get("status") == "deferred":
-            lines.append(f"{head} deferred to v1.1 (D8) | | | | |")
-            continue
         # The column reads the real-only rate: `fpr_stage1_at_t_low` also counts synthetic
         # negatives, which the column's name excludes (audit F20).
         lines.append(
@@ -579,18 +582,25 @@ def render_results(results_dir: Path) -> str:
         )
     lines += [
         "",
-        f"*Written by `make readme` from `bench/results/ablations.json`: pooled out-of-fold "
-        f"predictions over {int(_required(ablations, 'n_records', 'ablations.json'))} "
-        "development rows, "
-        "mean ± sample std over three seeds unless marked. Rows 1 and 13 are rules, not "
-        "classifiers, so they have no macro-F1. Development holds no real poisoned row, so the "
-        "recall column is measured on synthetic attacks only.*",
+        f"*From `bench/results/ablations.json`: pooled out-of-fold predictions over "
+        f"{int(_required(ablations, 'n_records', 'ablations.json'))} development rows, mean ± "
+        "sample std over three seeds unless marked. Rows 1 and 13 are rules, so they have no "
+        "macro-F1. Development has no real poisoned row, so recall is on synthetic attacks only.*",
     ]
+    skipped = sorted(r["row"] for r in ablations.get("rows") or [] if r.get("status") == "deferred")
+    if skipped:
+        lines += ["", f"*{_row_range(skipped)} (LLM judge) are deferred to v1.1.*"]
     published = _published_line(ablations, selection)
     if published:
         lines += ["", published]
     lines.append("")
     return "\n".join(lines)
+
+
+def _row_range(rows: list[int]) -> str:
+    if len(rows) > 1 and rows[-1] - rows[0] == len(rows) - 1:
+        return f"Rows {rows[0]}-{rows[-1]}"
+    return ("Row " if len(rows) == 1 else "Rows ") + ", ".join(str(n) for n in rows)
 
 
 def _published_line(ablations: dict[str, Any], selection: Any) -> str | None:
@@ -609,8 +619,8 @@ def _published_line(ablations: dict[str, Any], selection: Any) -> str | None:
     )
     return (
         f"*Row {row['row']} per seed, real development tools sent to review: {spread}. The "
-        f"published artefact (`{selection['published_dir']}`, the median seed by macro-F1, "
-        f"pre-registered as D14) uses T_low = {ratio(published.get('t_low'))} and routes "
+        f"published model (`{selection['published_dir']}`, the median seed by macro-F1) uses "
+        f"T_low = {ratio(published.get('t_low'))} and routes "
         f"{_cell(published.get('routing_rate'), pct)} of development rows to review.*"
     )
 

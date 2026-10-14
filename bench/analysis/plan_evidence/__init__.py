@@ -1,4 +1,4 @@
-"""Regenerate every measured number in `SIEVE_TRAINING_PLAN.md` (task A3; `make plan-evidence`).
+"""Regenerate every measured number in the training plan (`make plan-evidence`).
 
 A port of the 2026-10-02 audit scripts. Inputs: the corpus, the pinned catalog, and the pinned
 third-party clones in `bench/data/external/` (`python -m bench.collect.external`). Intermediate

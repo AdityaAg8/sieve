@@ -1,43 +1,43 @@
-# ADR-009: Training v1 deviations from the PRD
+# ADR-009: Training v1 deviations from the original design
 
 ## Status
 
-Proposed. Drafted by Claude on 2026-10-03 while implementing `SIEVE_TRAINING_PLAN.md` (task I1),
-on branch `training-v1`. The owner finalises the text (PRD §7.3). Every item below is something
-v1 does differently from PRD v2, or a decision the plan made that a reviewer could challenge.
-Each item names the commit or file that carries it.
+Accepted, 2026-10-14. Every item below is something v1 does differently from the original
+design, or a decision a reviewer could challenge. Each item names the commit or file that carries
+it.
 
 ## Context
 
-PRD v2 was written for a project with a second human annotator, a paid judge, hand-written
-payloads and a budget for three seeds of every ablation. The v1 training run has none of those:
-one owner with no labelling time, a $0 budget, one local 12 GB GPU and a weekend (plan §14, D3–D5).
-The plan's §14 decision table records the owner's choices. This record lists their consequences
-for the PRD's metrics and protocol, so that no published number rests on an unstated change.
+The original design assumed a second human annotator, a paid judge, hand-written payloads and a
+budget for three seeds of every ablation. The v1 training run had none of those: one developer
+with limited labelling time, no budget, and one local 12 GB GPU. This record lists the
+consequences for the metrics and the protocol, so that no published number rests on an unstated
+change.
 
 ## Decision
 
 ### Labelling
 
-- **Ensemble labels instead of second-human κ (M8).** Real rows are labelled by a three-vote
+- **Ensemble labels instead of second-human κ.** Real rows are labelled by a three-vote
   ensemble: two local models (`qwen3.8:27b-2.88bpw-text`, `gemma4:26b-a4b-it-qat`; see
   `bench/label/ensemble.py`) and the existing Sonnet provisional label (`bench/label/vote.py`).
   Any poisoned vote, or a split after a parse failure, goes to the human review queue
-  (`make review-queue`). M8 is reported as ensemble agreement plus the dev-50 human audit. It is
-  not reported as an inter-rater κ, because there is no second human (D4).
-- **The intra-rater retest is dropped.** The PRD's retest of the same annotator on a re-shuffled
-  sample needs owner hours that v1 does not have. It is not run, and nothing claims it.
+  (`make review-queue`). Label quality is reported as ensemble agreement plus the dev-50 human
+  audit. It is not reported as an inter-rater κ, because there is no second human.
+- **The intra-rater retest is dropped.** The original design retested the same annotator on a re-shuffled
+  sample. That needs labelling hours v1 does not have. It is not run, and nothing claims it.
 - **Synthetic rows are audited by the ensemble.** Each synthetic row is checked by the model
   family that did *not* write its payload (hand-written rows by both). The published statistic is
-  **ensemble-vs-generator agreement**, in place of the PRD's blind-human-vs-generator agreement.
+  **ensemble-vs-generator agreement**, in place of a blind human-vs-generator agreement.
   It is labelled as its own statistic, never as κ.
-- **The dev-50 gate did not run before training.** D10 makes the dev-50 human audit
-  (`make label-dev-audit`) gate training. The owner directed the run to proceed end to end without
-  stopping (2026-10-03), so training starts on ensemble labels and the dev-50 audit is done
-  afterwards. If the audit then fails its pre-registered threshold, the trained models are void:
-  the labels are corrected and the GPU phase is re-run. No number from the void run is published.
-- **The test-ID gold labels are report-only.** The real test-ID rows are blind-labelled by the
-  owner into `bench/data/holdout_gold.jsonl` (`make label-test-id`). Those labels are reported
+- **The dev-50 human audit is pending.** Labels come from the model ensemble, and training ran on
+  them. The 50-row human audit (`make label-dev-audit`) of real development rows has not been
+  done. If it fails its pre-registered threshold, the labels get corrected and the models are
+  retrained. Until the audit is recorded, every published number is provisional and is labelled
+  "labels: ensemble, dev-50 audit pending". The numbers are published with that label because
+  hiding them would help nobody; they may change after the audit.
+- **The test-ID gold labels are report-only.** The real test-ID rows are blind-labelled by hand
+  into `bench/data/holdout_gold.jsonl` (`make label-test-id`). Those labels are reported
   beside the ensemble's, but never used to select, threshold or gate anything. The planned
   sealed audit is 104 rows; the rebuilt corpus (2026-10-03) has 105 real test-ID rows, and the
   report states the actual count.
@@ -47,17 +47,18 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
   `bench/eval_val_ood.py`, `bench/report_final.py`). On them the ensemble would only estimate
   label noise, at about 3 GPU hours. That check is deferred to v1.1, and the datasheet's label-noise
   line covers dev and synthetic only.
-- **`LABELLING_GUIDE.md` is drafted by Claude.** It is headed "Drafted by Claude; owner approval:
-  [ ]" and is not authoritative until the owner ticks it (task I2).
+- **`LABELLING_GUIDE.md` has not been used yet.** No labelling session has run against it and no
+  second labeller has checked it.
 
 ### Synthetic data
 
-- **6% hand-written share.** The owner wrote no new payloads (D3). The hand-written share of the
-  synthetic rows is the measured **0.061** from the v0 rows that already existed (`make corpus`
-  stats, 2026-10-03). The PRD's target share is not met, and this is disclosed.
+- **6% hand-written share.** No new payloads were written by hand. The hand-written share of the
+  poisoned rows is the measured **0.063**, from the v0 rows that already existed
+  (`bench/results/corpus_stats.json`). The original target was 25%. It is not met, and this is
+  disclosed.
 - **Two local generator families.** Every model-written payload was regenerated by two
-  non-Claude families, Qwen and Gemma, through Ollama on loopback (D7;
-  `bench/generate/generate_local.py`). 542 rows were planned and 4 were dropped after retries
+  non-Claude families, Qwen and Gemma, through Ollama on loopback
+  (`bench/generate/generate_local.py`). 542 rows were planned and 4 were dropped after retries
   (commit `39317e1`). The family that wrote a row never labels it.
 - **Leakage-gate history: 0.929, then v1.** The v0 corpus's synthetic-vs-real source probe scored
   **0.929**, far above the pre-registered 0.70 ceiling. That is why every payload was regenerated.
@@ -73,8 +74,8 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
   occur in a generated payload, be absent from the mutation's host text, not be made only of
   stop-words, and appear in no more than 5% of real rows. The gate was then re-run. The v1 value is
   whatever `bench/results/gate.json` records, regenerated by `make gate`, never typed here.
-- **The gate said STOP, and the run went on.** The re-run (2026-10-03, commit `6a4eb69`) passed every
-  probe:
+- **The gate said stop, and the run went on.** The re-run (2026-10-03, commit `6a4eb69`) passed
+  every probe:
   - imperative 0.669;
   - benign 0.543;
   - transfer 0.514;
@@ -84,21 +85,20 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
   It failed only the minimal-pair floor: 443 dev pairs against the pre-registered 480. The
   tightened lint dropped 38 more regenerated payloads, 42 in all. Every pair lost has a benign or
   imperative_benign mutation. The tightening never regenerates poisoned rows, so the 255 poisoned
-  pairs that M11 scores are unchanged. The pre-registered rule says "stop and ask the owner"; the
-  owner's standing direction (2026-10-03) was to go end to end without stopping, so training
-  proceeds. `gate.json` keeps `"passed": false`, and every published number carries this deviation.
+  pairs that minimal-pair accuracy scores are unchanged. The pre-registered rule says to stop and ask. Training went ahead anyway.
+  `gate.json` keeps `"passed": false`, and every published number carries this deviation.
 - **The step-5 re-check stopped for the same reason** (2026-10-04, commit `5274a4f`). The vote
   regenerated 83 disputed synthetic rows once and dropped 50 that stayed disputed (a rejection rate
   of 0.10). After that, every probe still passed, but the pair floor fell to 395, of which 247 are
-  poisoned. The run proceeds under the same direction.
-- **Payload survival now covers both headline tokenizers** (commits `b3ef367`, `fea7f0a`). Plan D13
-  trains DeBERTa and ModernBERT at 512 tokens, but survival was only ever checked with DeBERTa's
+  poisoned. Training went ahead again.
+- **Payload survival now covers both headline tokenizers** (commits `b3ef367`, `fea7f0a`). Both
+  DeBERTa and ModernBERT train at 512 tokens, but survival was only ever checked with DeBERTa's
   tokenizer. ModernBERT spends more tokens on the same text, and refused four rows at
   `make gpu-bench` (`sb-syn-0147`, `sb-syn-0274`, `sb-syn-0360`, `sb-syn-0389`; two poisoned, two
   imperative_benign). The check now requires both tokenizers. Those four payloads are dropped for
   every model, so both architectures keep one dev set. Minimal pairs: 391.
 - **The 15 review-queue rows train on their Sonnet provisional label.** These are real dev rows
-  where one model voted poisoned. The owner's blind review (`make review-queue`) has not happened
+  where one model voted poisoned. The blind review (`make review-queue`) has not happened
   yet; when it does, any change to these labels means retraining before anything is published.
 
 - **The length probe gates synthetic tells only** (`bench/analysis/probes.py`, `length_probe`).
@@ -107,10 +107,10 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
   by length (0.759 on dev), so no faithful synthetic row could pass it. The gate passes when real
   vs synthetic is not separable by length inside either non-poisoned stratum, and the synthetic
   rows widen the real rows' own gap by at most `LENGTH_MARGIN`.
-- **The dedup twin rule** (C8, `bench/split/dedup.py`). A pair is scored by max(cosine of the full
+- **The dedup twin rule** (`bench/split/dedup.py`). A pair is scored by max(cosine of the full
   serialisation, cosine of the description alone), plus an exact NFKC key. The parameters are
   never a twin signal on their own: short shared schemas (`path: string`) put 4,943 unrelated
-  pairs at cosine ≥ 0.92. **PRD §9.7's gate is amended** (`bench/stats.py`). It still fails on a
+  pairs at cosine ≥ 0.92. **The original duplicate gate is amended** (`bench/stats.py`). It still fails on a
   poisoned row dropped as a near-duplicate, but a dev row that twins a sealed row (and that host's
   mutations) is dropped on purpose to keep the sealed splits clean, and is listed instead.
 
@@ -118,20 +118,20 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
 
 - **Unit (c) is evaluation slicing.** The classifier scores every tool, and the "triage" (scanner-
   flagged negatives) and "miss-catch" (unflagged poisoned) numbers are two slices of the same
-  predictions (plan §3.2). `sieve/pipeline.py` is unchanged.
+  predictions . `sieve/pipeline.py` is unchanged.
 - **Test-ID is real-only, and holdout-synthetic is the release gate.** The sealed test-ID split
-  holds only real rows (G5, `SyntheticLeakError`). Synthetic held-out rows are their own sealed set,
+  holds only real rows (`SyntheticLeakError`). Synthetic held-out rows are their own sealed set,
   holdout-synthetic, and the release gate is its poisoned recall: at least 0.95, with a lower bound
-  of at least 0.90 (D11). MCPTox is reported and never gated.
-- **The judge is deferred to v1.1 (D8).** M1 is reported for Stage 1 (the classifier alone). M3 is
-  reported as the share of rows in the [`T_low`, `T_high`) band, the rows a judge *would* see.
-  M4 (judge cost) is n/a. Ablation rows 6, 7 and 8 are emitted with `status: deferred` and no
-  numbers (H5); rows 10, 11 and 14 name their deferred halves in `deferred_breakdown_of`.
-- **Ablation seeds (D9).** Rows 4 and 5 (both architectures) run at three seeds. Rows 3, 9, 12 and
-  the new row 15 (ModernBERT at 1,024 tokens, §6.3) run at one seed and are flagged
+  of at least 0.90 . MCPTox is reported and never gated.
+- **The judge is deferred to v1.1.** The false-positive rate is reported for Stage 1 (the
+  classifier alone). The routing rate is reported as the share of rows in the [`T_low`, `T_high`)
+  band, the rows a judge *would* see. Judge cost does not apply. Ablation rows 6, 7 and 8 were
+  never run: they are emitted with `status: deferred` and no numbers. Rows 10, 11 and 14 name their deferred halves in `deferred_breakdown_of`.
+- **Ablation seeds.** Rows 4 and 5 (both architectures) run at three seeds. Rows 3, 9, 12 and
+  the new row 15 (ModernBERT at 1,024 tokens) run at one seed and are flagged
   `single_seed`. Rows 4 and 5 name `{primary}` / `{secondary}`, resolved from
   `bench/results/selection.json`.
-- **ModernBERT fine-tunes at lr 8e-5, not 3e-5** (commit `9f3273b`). At the PRD §11.3 rate of
+- **ModernBERT fine-tunes at lr 8e-5, not 3e-5** (commit `9f3273b`). At the originally planned rate of
   3e-5 ModernBERT underfit:
   - its pooled OOF macro-F1 was 0.609, 0.641 and 0.582 (seeds 0, 1, 2; DeBERTa scored
     0.890–0.895);
@@ -153,8 +153,7 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
   The 3e-5 artefacts are kept, unpublished, under `models/_superseded_lr3e-5/`. DeBERTa was not
   re-tuned: its first sweep already peaked inside the horizon.
   `profile.classifier_pooling` (commit `4126159`) stays available and unused.
-- **MCPTox and Docker are eval-only pointers.** Neither is redistributed. MCPTox has no licence
-  (D2; a licence request is drafted in `docs/outreach/mcptox-licence-request.md`). Docker's MIT
+- **MCPTox and Docker are eval-only pointers.** Neither is redistributed. MCPTox has no licence. Docker's MIT
   rows are kept as test-OOD negatives under the same pointer-and-hash discipline
   (`bench/data/*.pointers.json`, `bench/collect/ood_negatives.py`).
 - **Val-OOD labels for MCPSecBench and the When-attack set come from rules, not humans.** They are
@@ -175,30 +174,30 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
 
 ### Measurement
 
-- **`make bench` needs no server** (C7). Latency is measured in-process on the classifier: at least
-  1,000 iterations after 50 warm-up runs, 2 threads, with the CPU model recorded (H6, M6c). The HTTP
+- **`make bench` needs no server.** Latency is measured in-process on the classifier: at least
+  1,000 iterations after 50 warm-up runs, 2 threads, with the CPU model recorded. The HTTP
   latency of a live deployment remains as `make latency-http`. Judge agreement is no longer a
-  `bench` step (D8). Selection runs *before* the ablations, not last as plan C7 listed, because
-  rows 4 and 5 read `selection.json` (Z2 review, commit `e28c80e`).
+  `bench` step. Selection runs *before* the ablations, not last, because rows 4 and 5 read
+  `selection.json` (commit `e28c80e`).
 - **The published artefact is named by `selection.json`.** Its `published_dir` is the winner's
-  median-seed `FOLD=all` model (D14). `make export`, `make push`, the in-process latency and the demo
+  median-seed `FOLD=all` model. `make export`, `make push`, the in-process latency and the demo
   use it unless `PUBLISHED_DIR=` overrides it. Each calibration writes `curves.json` into its own
   artefact, and `make bench` publishes the published artefact's copy (commit `645a7ac`).
-- **M6b is checked within ±0.01 macro-F1** (`make reproduce-check`, `bench/reproduce.py
-  --tolerance`), not byte for byte. M6a, the byte-identical regeneration of metrics from committed
-  predictions, is unchanged.
+- **Reproduction is checked within ±0.01 macro-F1** (`make reproduce-check`,
+  `bench/reproduce.py --tolerance`), not byte for byte. The byte-identical regeneration of metrics
+  from committed predictions is unchanged.
 - **int8 ONNX outputs depend on the batch.** Dynamic quantisation computes a per-batch activation
   scale, so the same text scored alone or in a batch of 32 differs by about 0.0035 in probability.
   Export parity is checked against a 0.01 tolerance over the whole dev set, with threshold flips
-  at `T_low` and `T_high` reported (H6, `bench/results/export_parity.json`).
-- **The pooled OOF arrays are pushed with each artefact.** Plan H6 listed `*.npy` and
-  `oof_ids.json` among the push ignore patterns. `bench/artefacts.json` (H5), however, pins those
+  at `T_low` and `T_high` reported (`bench/results/export_parity.json`).
+- **The pooled OOF arrays are pushed with each artefact.** The first push config ignored `*.npy` and
+  `oof_ids.json`. `bench/artefacts.json`, however, pins those
   arrays so the clean-clone reproduction can verify them. Ignoring them would have made every
   pinned manifest unverifiable. They hold dev-set logits and record ids, with no text, so they are
   uploaded. Only `fold*/**` and `_checkpoints/**` stay local (commit `3069736`).
 - **A key mismatch in the minimal-pair index was fixed.** `bench.split.pairs` writes
   `host`/`mutation`, while the ablation runner read `host_id`/`mutation_id`. The two had never met
-  until the tiny-fixture `make bench` test (C7). The reader now accepts both.
+  until the tiny-fixture `make bench` test. The reader now accepts both.
 - **The OOF arrays were saved out of order, and were repaired without retraining**
   (commits `69f8c39`, `1e69672`, `08e8485`, `16e62b9`).
   - **The bug.** transformers 4.57 gives `trainer.predict` a `LengthGroupedSampler` whenever
@@ -209,7 +208,7 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
     selection. Neither does anything scored through the inference path: the sealed opening and
     val-OOD.
   - **What it broke.** Every metric that joins a prediction to its record by id: the first
-    `make bench`'s ablation rows, per-tier and per-concealment breakdowns, M11 and the error
+    `make bench`'s ablation rows, per-tier and per-concealment breakdowns, minimal-pair accuracy and the error
     analysis. The symptom was row 4 at macro-F1 0.32 against the 0.89 its own arrays give.
   - **The fix.** `WeightedTrainer` now evaluates and predicts sequentially, and
     `_logits_and_labels` refuses any reordering.
@@ -248,11 +247,11 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
   - fp32 ONNX matched PyTorch to 6.7e-6 on all 1,010 dev rows, with 0 flips.
   `make export` passes `EXPORT_FLAGS=--no-quantize`. The parity figure is now `onnx_parity`, with
   `onnx_graph` naming the graph, and the card prints both. Latency is measured on the fp32 graph,
-  so M5 is judged against it.
+  so the latency target is judged against it.
   - In-process, one 512-token tool on 2 threads runs at roughly 1 s (`latency.json` holds the
     current p50/p95; the first run measured p95 2.08 s on a contended machine, the `make bench`
     after the OOF repair 1.30 s), several times the provisional 200 ms target.
-  - M5 is missed, and that is reported.
+  - The latency target is missed, and that is reported.
   - The v1.1 options are shorter serialisation, distillation, and quantisation that keeps the
     attention layers in fp32.
 - **Tools whose names break MCP's name rule are excluded and reported**
@@ -270,37 +269,37 @@ for the PRD's metrics and protocol, so that no published number rests on an unst
     `bench/data/real_poisoned.jsonl` did not exist. The first `make eval-final` refused in
     preflight, before the log line, so the seal held.
   - The CLI now writes the slice, and `make eval-final` rebuilds it first: 485 rows, of which 483
-    form the M13 slice after G4 drops.
-  - The file is gitignored, because MCPTox has no licence (SC-3, D2).
+    form the real-poisoned slice after the cross-set dedup drops.
+  - The file is gitignored, because MCPTox has no licence.
   - `bench/results/test_opened.log` was itself caught by `*.log` and is now committed, since the
     card quotes its line.
 - **The headline defaults to the published artefact** (commit `b20c7e3`). With several models
   scored, `bench.report_final` used to refuse unless `--headline` was passed. It now reads
-  `selection.json`'s `published_dir` (D14), which is the pre-registered choice and not a new one.
+  `selection.json`'s `published_dir`, which is the pre-registered choice and not a new one.
 - **The release gate passes on 41 of 41.** The headline `deberta-v3-base-s1` caught all 41
   poisoned holdout-synthetic rows at `T_low`. The pre-registered bootstrap interval collapses to
   [1, 1] when every row is a hit, so it overstates certainty. An exact Clopper–Pearson 95% lower
-  bound for 41/41 is 0.914 two-sided (0.930 one-sided), which still clears D11's 0.90 floor. The
+  bound for 41/41 is 0.914 two-sided (0.930 one-sided), which still clears the 0.90 floor. The
   recall comes at a price: `T_low` is 0.018, and on the 105 real test-ID tools Stage 1 sends 35%
-  to review (FPR 0.35, interval 0.22–0.49). MCPTox (M13, 483 rows) Stage-1 recall is 1.0 at the
+  to review (FPR 0.35, interval 0.22–0.49). MCPTox (483 rows) Stage-1 recall is 1.0 at the
   same threshold, and is reported, never gated.
-- **The published seed is the D14 median, not the best seed.** The median-seed rule picked
+- **The published seed is the median, not the best seed.** The median-seed rule picked
   `deberta-v3-base-s1`. Its OOF macro-F1 is 0.890, and its routing rate is the highest of the
   three seeds (0.38 against 0.16 and 0.17). The rule was registered before any number existed, so
   it stands, and the spread is published as mean ± std.
 
 ### v1 audit corrections (2026-10-05)
 
-A post-release audit of v1's claims (owner-requested; the working notes live in the gitignored
-`docs/handoffs/`) found the trained models and the sealed run sound, and the published claims
+A post-release audit of v1's claims found the trained models and the sealed run sound, and the published claims
 not. Nothing was retrained, no threshold or prediction moved, and the holdout was not re-opened.
 
-- **The M2 headline compared unlike rates.** `fp_reduction_vs_baseline` divides Stage 1's
+- **The headline reduction compared unlike rates.** `fp_reduction_vs_baseline` divides Stage 1's
   auto-confirm rate (≥ `T_high`) by YARA's flag rate. With the judge deferred, every tool in the
   [`T_low`, `T_high`) band goes to a human, so the "97.1% fewer false positives" counted the
-  review band as a success. The README, card, web and plan §9 now state M2 as triage (the share of
+  review band as a success. The README, card and web app now state it as triage (the share of
   YARA's false positives on real tools that Stage 1 dismisses) beside the standalone comparison.
-  M1 is stated as not measured, because PRD M1 is defined with the judge running.
+  The full-pipeline false-positive rate is stated as not measured, because it is defined with the
+  judge running.
 - **A "real" column counted synthetic rows.** `fpr_stage1_at_t_low` is computed over every
   non-poisoned row (`bench/ablations/run.py`); the README's "Real non-poisoned sent to review"
   column read it. The new key `fpr_stage1_real_at_t_low` is real-only, and the column reads it.
@@ -311,12 +310,12 @@ not. Nothing was retrained, no threshold or prediction moved, and the holdout wa
   `baseline_fpr_real`, `fp_dismissed_real_triage` and `recall_cp`. `operating_points.json` is
   new: a cross-fitted, post-hoc table of other `T_low` rules on development OOF only, labelled
   not adopted.
-- **Reading of PRD §11.6.** §11.6 forbids any change "for that version" after the sealed run. A
+- **Reporting changes after the sealed run.** The protocol forbids any change "for that version" after the sealed run. A
   change that moves no prediction, threshold, model, data or decision, and only labels, slices or
   bounds predictions that already exist, is reporting, not a change to the version. The check:
   every value already present in `holdout.json` and `ablations.json` is byte-identical after the
   re-render, and nothing is chosen from a holdout figure. `bench/eval_final.py` is untouched.
-- **Not changed by the audit.** The D14 median-seed rule stands, though seed 1 turned out the
+- **Not changed by the audit.** The median-seed rule stands, though seed 1 turned out the
   least selective of the three; the README states it per seed. Adopting a different operating
   point is v1.1 work and needs a new sealed test set.
 
@@ -329,45 +328,45 @@ allowlist in `tests/bench/test_eval_final.py`) landed alone in a `contracts:` co
 
 | Commit | Change |
 |---|---|
-| `b08c7d4` | the ensemble's report-only test-ID votes (F1) |
-| `07c5825` | the report-only test-ID audit, `bench/label/holdout_gold.py` (F3) |
-| `c5a3016` | `bench/report_final.py` (reads saved predictions) and `bench/PREREGISTRATION.md` (H3, H7) |
-| `acca8d3` | `bench/eval_val_ood.py`'s dev dry run (H4) |
+| `b08c7d4` | the ensemble's report-only test-ID votes |
+| `07c5825` | the report-only test-ID audit, `bench/label/holdout_gold.py` |
+| `c5a3016` | `bench/report_final.py` (reads saved predictions) and `bench/PREREGISTRATION.md` |
+| `acca8d3` | `bench/eval_val_ood.py`'s dev dry run |
 
 **Makefile, `.gitignore` and `sieve/types.py` commits:**
 
 | Commit | Change |
 |---|---|
-| `3e13a9b` | `make plan-evidence` (A3) |
-| `c2062c9` | frozen `split_map.json` (A4) |
-| `6f44368` | blind labelling targets (F4) |
-| `afaedb2` | artefact family names (C1) |
-| `6b5cef5` | `make sweep` (C2) |
-| `d58d8da` | `make gpu-bench` (C3) |
-| `6b074c7` | `make probes` (C4) |
-| `5405e42` | record-id keyed baseline and `make tfidf-ood` (C5) |
-| `ea66a79` | `make corpus` merge (C6) |
-| `6820521` | dedup over the mutation graph (C8) |
-| `bcb5d00` | the v1 synthetic build (E3) |
-| `f061817` | `make gate` (E4) |
-| `ae8bf0e` | `make review-queue` and `make pairs` (F2) |
-| `b3213d0` | gitignore the test-OOD rows (G2) |
-| `a3a61ab` | `make dedup-cross` (G4) |
-| `60442c5` | `CorpusRecord.is_synthetic` (G5) |
-| `8d98c46` | `make eval-final MODEL_DIRS=` (H2) |
-| `022aee7` | `report_final` in `eval-final` and `bench` (H3) |
-| `eba0013` | the server-free `make bench`, plus `select` / `export` / `push` / `reproduce-check` (C7) |
+| `3e13a9b` | `make plan-evidence` |
+| `c2062c9` | frozen `split_map.json` |
+| `6f44368` | blind labelling targets |
+| `afaedb2` | artefact family names |
+| `6b5cef5` | `make sweep` |
+| `d58d8da` | `make gpu-bench` |
+| `6b074c7` | `make probes` |
+| `5405e42` | record-id keyed baseline and `make tfidf-ood` |
+| `ea66a79` | `make corpus` merge |
+| `6820521` | dedup over the mutation graph |
+| `bcb5d00` | the v1 synthetic build |
+| `f061817` | `make gate` |
+| `ae8bf0e` | `make review-queue` and `make pairs` |
+| `b3213d0` | gitignore the test-OOD rows |
+| `a3a61ab` | `make dedup-cross` |
+| `60442c5` | `CorpusRecord.is_synthetic` |
+| `8d98c46` | `make eval-final MODEL_DIRS=` |
+| `022aee7` | `report_final` in `eval-final` and `bench` |
+| `eba0013` | the server-free `make bench`, plus `select` / `export` / `push` / `reproduce-check` |
 
 `pyproject.toml` changed once on this branch, in `36f4d7c`: the v0 dependencies, committed before
-the plan's `contracts:` rule existed. Nothing in `sieve/protocols.py` or `sieve/serialise.py` was
+the `contracts:` rule existed. Nothing in `sieve/protocols.py` or `sieve/serialise.py` was
 redefined.
 
 ## Consequences
 
-- M8, the blind-vs-generator statistic, the intra-rater retest, the hand-written share and the
-  judge metrics (M1 for the full pipeline, M3, M4) are reported in their weaker v1 form, labelled
-  as such. None is silently omitted.
-- The v1 model's validity depends on the dev-50 audit run after training. Until the owner records
-  it, every published number carries "labels: ensemble, dev-50 audit pending".
-- A v1.1 that enables the judge fills ablation rows 6–8 without changing the matrix file. A
+- Label agreement, the blind-vs-generator statistic, the intra-rater retest, the hand-written
+  share and the judge metrics (full-pipeline false-positive rate, routing cost) are reported in
+  their weaker v1 form, labelled as such. None is silently omitted.
+- The v1 model's validity depends on the dev-50 audit. Until it is recorded, every published
+  number carries "labels: ensemble, dev-50 audit pending" and is provisional.
+- A v1.1 that enables the judge fills ablation rows 6 to 8 without changing the matrix file. A
   licence from the MCPTox authors would let its rows be published rather than pointed to.

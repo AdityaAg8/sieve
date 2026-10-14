@@ -1,8 +1,8 @@
 /**
  * Outbound destinations.
  *
- * None of these exist yet: the repository has no remote, the dataset and the model cards are not
- * published, and the write-up is not written. Rather than ship a plausible-looking URL that 404s,
+ * None of these are set by default: the dataset and the model cards are not published, and the
+ * write-up is not written. (The repository itself is github.com/AdityaAg8/sieve.) Rather than ship a plausible-looking URL that 404s,
  * every one is read from a `NEXT_PUBLIC_*` variable and is `null` until a deployment sets it.
  * A `null` destination renders as plain text with "not published yet" beside it — the same
  * discipline the numbers get (PRD §14.2: no invented metrics).

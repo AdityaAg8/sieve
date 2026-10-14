@@ -19,7 +19,7 @@ type Props = {
 /**
  * One row of the triage list. Hover and selection move the row's border and its left marker —
  * never its fill — because `--ink-3` (dismissed) is only contrast-safe on `--bg-0` and
- * `--bg-1`. See web/DESIGN.md §3.
+ * `--bg-1`.
  *
  * `sm:min-h-28`, not `sm:h-28`: the row's own content measures 138–141 px once the sub-label
  * list and the dismissal reason are present, so a hard 112 px box clipped its last line from

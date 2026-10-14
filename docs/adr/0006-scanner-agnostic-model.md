@@ -2,8 +2,7 @@
 
 ## Status
 
-Proposed — drafted from PRD §7.2, §11.2 and §11.5 by an agent in Phase 3. The human finalises this
-ADR's text.
+Accepted, 2026-10-14.
 
 ## Context
 

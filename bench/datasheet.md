@@ -8,7 +8,7 @@ This sheet describes the **v1** pipeline as built on branch `training-v1` (2026-
 `bench/publish.py` fills the Composition numbers from `bench/results/corpus_stats.json` and
 the agreement numbers from `bench/results/agreement.json` when it builds the dataset card.
 Nothing in `bench/results/` is ever edited by hand: `make bench` regenerates it. Where v1
-departs from the PRD, [ADR-009](../docs/adr/0009-training-v1-deviations.md) says so.
+departs from the original design, [ADR-009](../docs/adr/0009-training-v1-deviations.md) says so.
 
 ## Motivation
 
@@ -52,24 +52,23 @@ dominates.
 
 1. **Source.** The real rows come from `automatelab/mcp-servers-tool-catalog`, pinned at
    revision `a413afb7`. Its authors installed and ran each npm-published MCP server and recorded
-   the `tools/list` reply. Sieve reads that published artefact and **runs no server** (SC-1).
+   the `tools/list` reply. Sieve reads that published artefact and **runs no server**.
    Every real row therefore has `capture_method = "published_artifact"`, `source_repo` = the
    catalog, and `source_commit` = the pinned revision. The catalog's own CC BY 4.0 covers its
    curation and is credited.
 2. **Licence.** A row's licence is the **npm `license` field** of its package. It was fetched from
    `https://registry.npmjs.org/<package>/latest` on 2026-09-21 for all 357 packages and recorded,
-   with provenance, in `bench/data/catalog/licences.json`. Only SC-6 licences are kept: MIT,
+   with provenance, in `bench/data/catalog/licences.json`. Only permissive licences are kept: MIT,
    Apache-2.0, BSD-2-Clause, BSD-3-Clause and ISC. A missing field, a failed lookup, a non-SPDX
    string ("SEE LICENSE IN …") and every copyleft licence drop the package. **MPL-2.0 is
    excluded** (file-level copyleft), and `publish.py` fails if an MPL-2.0 row reaches it.
 3. **Clean-up.** Dropped and counted: duplicate names, empty descriptions, invalid schemas, and
    exact text duplicates across forks (one copy kept). Secrets are redacted before anything is
-   written to disk (SC-5, `redact_tool`).
+   written to disk (`redact_tool`).
 4. **Provenance.** Every record carries `source_repo`, `source_commit`, `source_license`,
    `capture_method` and `server_name`, which is the npm package, so `NOTICE` can attribute it.
 
-No registry with redistribution restrictions contributes data, and there is no Glama data
-(SC-6).
+No registry with redistribution restrictions contributes data, and there is no Glama data.
 
 ## Synthesis protocol
 
@@ -96,7 +95,8 @@ with `mutation_of` and `payload_fields` recorded so each pair is a controlled co
     failures the row is dropped and counted.
   - v1 planned 542 payloads and dropped 4.
 - **Hand-authored share.** The hand-written rows (`generator_model = "human"`, `sb-hum-*`) are the
-  v0 rows. They are **6.1%** of the synthetic rows, below the PRD's 25% target (ADR-009).
+  v0 rows. They are **6.3%** of the poisoned rows, below the 25% target the original design set
+  (ADR-009).
 - **No detection rules in the prompt.** The generation prompt is never shown a detection rule or
   a rule name. A generator shown the rules writes payloads that trip the rules, and any
   false-positive reduction measured against those rules would then be circular.
@@ -121,7 +121,7 @@ slice are hashed; the citation is not.
 ## Labelling protocol
 
 Labels are split into two binary decisions, because every headline metric is binary
-(poisoned vs not). Human time goes where it changes a published number (training plan §4.1).
+(poisoned vs not). Human time goes where it changes a published number.
 
 - **Real rows: an ensemble of three.**
   - The votes are the Sonnet provisional label, Qwen and Gemma (`bench/label/ensemble.py`,
@@ -146,8 +146,8 @@ Labels are split into two binary decisions, because every headline metric is bin
   - **ensemble-vs-generator agreement** on synthetic rows. This is a property of the
     generators, not an inter-rater statistic, and it is never reported as κ.
 
-  There is no second human annotator and no intra-rater retest. PRD M8 is not met and is
-  replaced as above (ADR-009).
+  There is no second human annotator and no intra-rater retest. The original design asked for
+  both; ADR-009 explains the replacement above.
 
 <!-- AGREEMENT -->
 
@@ -224,6 +224,9 @@ The `NOTICE` file lists every source, revision and licence, and reproduces the a
 Apache-2.0 requires. Eval-only sets with no licence (MCPTox) are never redistributed. Sealed
 splits are not published until the first line of `bench/results/test_opened.log` exists
 (`bench/publish.py`).
+
+The sealed test rows published under `bench/results/` include MCPTox-derived rows. They hold only hashed server
+names, labels and risk categories, with no tool text.
 
 Relicensing someone else's tool descriptions under CC BY would have been a licensing error,
 which is why the corpus carries two licences rather than one.

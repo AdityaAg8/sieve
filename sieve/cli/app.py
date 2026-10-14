@@ -98,7 +98,7 @@ def _ingest(
     if static and config is None:
         _error("--static requires --config PATH")
     if config is not None and not static:
-        _error("--config requires --static (Sieve never spawns an MCP server; SC-1)")
+        _error("--config requires --static (Sieve never spawns an MCP server)")
     if config is None and input_arg is None:
         _error("provide INPUT (a file path or '-') or --config PATH --static")
     if config is not None and from_ is not None:
@@ -202,7 +202,7 @@ def triage(
         None, "--config", help="An mcp.json config to parse (requires --static)."
     ),
     static: bool = typer.Option(
-        False, "--static", help="Parse --config only; never spawns or connects (SC-1)."
+        False, "--static", help="Parse --config only; never spawns or connects."
     ),
     format: str | None = typer.Option(None, "--format", help="pretty|json|sarif"),
     output: Path | None = typer.Option(  # noqa: B008 - Typer's own documented pattern

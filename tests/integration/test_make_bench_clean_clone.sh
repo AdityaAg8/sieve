@@ -65,7 +65,7 @@ skip() {
   echo "SKIP: $1" >&2
   shift
   printf '  - %s\n' "$@" >&2
-  echo "Nothing was reproduced. See docs/RUNBOOK.md, section 2." >&2
+  echo "Nothing was reproduced. See CONTRIBUTING.md." >&2
   exit 3
 }
 

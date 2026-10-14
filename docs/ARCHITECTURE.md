@@ -1,7 +1,6 @@
 # Architecture
 
-A plain-language walkthrough of how Sieve is put together and why. Start with the
-[README](../README.md) for what it is; this document is the tour underneath.
+How Sieve is put together and why. The [README](../README.md) says what it is.
 
 ## 1. The one-sentence version
 
@@ -22,8 +21,8 @@ pattern scanner flags those too, and the result is an alert list where most entr
 reviewer who has learned that the list is mostly noise stops reading the list, which is worse
 than having no list.
 
-So Sieve's job is not detection. It is **separating two kinds of imperative text that look
-identical to a regular expression**: instructions aimed at the user's workflow, and instructions
+Sieve does not detect anything itself. It separates two kinds of imperative text that look
+identical to a regular expression: instructions aimed at the user's workflow, and instructions
 aimed at the agent's behaviour behind the user's back.
 
 ## 3. Three classes, not two
@@ -34,10 +33,9 @@ aimed at the agent's behaviour behind the user's back.
 | `imperative_benign` | Directive but legitimate. This is the false-positive class |
 | `poisoned` | Instructions intended to steer the agent against the user's interest |
 
-Collapsing the middle class into "benign" would train a model that cannot explain itself: it
-would learn that imperative text is fine, which is exactly the wrong lesson. Keeping it separate
-means a dismissal can say *which* kind of harmless it is, and a reviewer can disagree with a
-specific claim. The reasoning is recorded in [ADR-001](adr/0001-three-class-taxonomy.md).
+If the middle class were folded into `benign`, the model would learn that imperative text is
+fine, which is the wrong lesson. Keeping it separate lets a dismissal say which kind of harmless
+it is, so a reviewer can disagree with a specific claim. The reasoning is in [ADR-001](adr/0001-three-class-taxonomy.md).
 
 ## 4. Two stages and an abstain band
 
@@ -58,21 +56,21 @@ score: `sieve/model/calibrate.py` fits a temperature on held-out folds so that "
 something close to "nine times out of ten".
 
 **Stage 2** is an LLM judge (`claude-haiku-4-5` by default). It is slower and costs money per
-call, so it only sees the tools Stage 1 is unsure about. It must **quote the span it objects
-to** — a verdict with no quote is not accepted. That single rule is what keeps the judge from
-hand-waving, and it is what produces the evidence the UI highlights.
+call, so it only sees the tools Stage 1 is unsure about. It must quote the span it objects to,
+and a verdict with no quote is rejected. That rule produces the evidence the UI highlights. The
+judge is implemented but its evaluation is deferred to v1.1 ([ADR-009](adr/0009-training-v1-deviations.md)),
+so the v1 numbers describe Stage 1 alone.
 
-**The band itself is the interesting part.** `T_low` and `T_high` are not hardcoded anywhere.
-They are chosen during calibration to hit a pre-registered target — a false-positive rate at
-near-complete recall ([ADR-003](adr/0003-fpr-at-near-complete-recall.md)) — and are written into
-the trained artefact's `sieve_config.json`. The serving code reads them from there. Retuning the
-system is a retraining decision, not a code edit. Full rationale in
-[ADR-002](adr/0002-two-stage-routing.md).
+`T_low` and `T_high` are not hardcoded anywhere. Calibration chooses them to hit a pre-registered
+target, a false-positive rate at near-complete recall
+([ADR-003](adr/0003-fpr-at-near-complete-recall.md)), and writes them into the trained artefact's
+`sieve_config.json`. The serving code reads them from there, so retuning is a retraining
+decision, not a code edit. Full rationale in [ADR-002](adr/0002-two-stage-routing.md).
 
 **Three verdicts come out:** `confirmed`, `needs_review`, `dismissed` (`sieve/types.py`). A
 fourth field, the stage, records *how* the verdict was reached: `classifier`, `judge`,
 `judge_failed`, or `judge_budget_exhausted`. When the judge errors or the budget runs out, the
-answer is `needs_review` — never a guess in either direction.
+answer is `needs_review`, never a guess in either direction.
 
 ## 5. What happens when you submit a scan
 
@@ -110,24 +108,22 @@ Four details in that picture carry most of the engineering weight:
 **The queue is Postgres, not Redis.** `sieve/worker/queue.py` claims work with
 `FOR UPDATE SKIP LOCKED` inside a CTE: one statement, one round trip, and a worker that loses the
 race simply selects nothing. Workers hold their claim with a heartbeat and are fenced on
-`locked_by`, so a stalled worker cannot finish a job another worker has taken over. One database
-instead of two services, and the whole thing is explainable in an interview
-([ADR-004](adr/0004-postgres-queue.md)).
+`locked_by`, so a stalled worker cannot finish a job another worker has taken over. That is one
+database instead of two services ([ADR-004](adr/0004-postgres-queue.md)).
 
 **Jobs have kinds.** An ordinary scan is `scan`; a scan that must *enumerate* an untrusted remote
-server is `scan.remote`, and only the sandboxed worker image claims that kind. Without the
-distinction, a plain worker wins the race, refuses the work, and the scan eventually dies.
+server is `scan.remote`, and only the sandboxed worker image claims that kind. Otherwise a plain
+worker would win the race, refuse the work, and the scan would eventually die.
 
 **Verdicts are written in batches, bounded two ways.** Up to 25 rows, or 250 ms, whichever comes
-first (`sieve/worker/scan_job.py`). Batching keeps a 500-tool scan from becoming 500 round trips;
+first (`sieve/worker/scan_job.py`). Batching keeps a 500-tool scan from becoming 500 round trips, and
 the time bound keeps a small scan from feeling frozen. On failure the transaction rolls back
-*before* the failure row is written, so the system never banks a verdict it charged for but did
+before the failure row is written, so the system never banks a verdict it charged for but did
 not commit.
 
 **Progress is pushed, not polled.** The worker's `NOTIFY` becomes a Server-Sent Event
 (`sieve/api/sse.py`). Concurrent streams are capped per process, and a stream slot is released
-both when the generator finishes and by a background task if it never starts — an easy place to
-leak a resource forever, and one the review process caught.
+both when the generator finishes and by a background task if it never starts.
 
 ## 6. The map
 
@@ -175,7 +171,7 @@ flowchart LR
     TR --> OOF["Pooled out-of-fold<br/>predictions"]
     OOF --> CAL["Calibrate<br/>temperature + thresholds"]
     CAL --> ART["Artefact<br/>weights + sieve_config.json"]
-    ART --> EXP["ONNX int8 export"]
+    ART --> EXP["ONNX fp32 export"]
     HO -. "opened once, by bench/eval_final.py" .-> FIN["Final report"]
 ```
 
@@ -187,34 +183,34 @@ Three rules keep the numbers honest:
 2. **The holdout is opened exactly once**, by `bench/eval_final.py` under an explicit
    `SIEVE_FINAL=1`, and the run appends a reason to a log. Splitting is grouped *by server*, so
    two tools from the same server can never land on both sides.
-3. **No number is typed by a human.** `make bench` regenerates every published figure offline by
-   replaying recorded judge outputs and re-reading committed prediction artefacts;
+3. **No number is typed by hand.** `make bench` regenerates every published figure offline by
+   replaying recorded judge outputs and re-reading committed prediction artefacts.
    `bench/results/` is never hand-edited, and `make readme` is the only writer of the README's
-   number block. Today those numbers are dashes, because no model has been trained yet. A dash is
-   a true statement; an invented number is not.
+   number block.
 
-Serving uses an ONNX int8 export for latency, with the PyTorch path kept as the reference
+Serving uses an fp32 ONNX export, with the PyTorch path kept as the reference. Dynamic int8
+quantisation was tried and rejected because it failed parity
 ([ADR-005](adr/0005-onnx-int8-serving.md)). The model reads tool text only, never scanner rule
 names, so swapping the upstream scanner does not invalidate it
 ([ADR-006](adr/0006-scanner-agnostic-model.md)).
 
 ## 8. Security model
 
-The founding assumption is that **everything inside a tool definition is attacker-controlled
-text**, including field names. From that, five properties:
+Everything inside a tool definition is treated as attacker-controlled text, field names
+included. Five properties follow:
 
 | Property | How it is enforced |
 |---|---|
 | Nothing untrusted is executed | Configs are parsed, never started. Remote enumeration is off by default and runs only in a separate sandboxed image gated on its own environment flag |
-| Secrets never land anywhere | `sieve/redact.py` runs before storage, before the judge prompt, before SARIF and before logs — on values and on JSON property names, with collision-safe placeholders |
+| Secrets never land anywhere | `sieve/redact.py` runs before storage, before the judge prompt, before SARIF and before logs, on values and on JSON property names, with collision-safe placeholders |
 | The judge cannot be talked into a verdict | Untrusted content is delimited with a nonce, structured output is required, and a verdict without a quoted span is rejected |
 | Outbound requests cannot be redirected | DNS is resolved once and the connection is pinned to that address, with private ranges refused, so a rebinding attack has nothing to swap |
 | Spend is bounded before the call | Per-scan and per-day budgets are checked ahead of each judge call; exhaustion routes to `needs_review` |
 
-Even logs are covered: a traceback is redacted before it is written, because an exception message
-is a writer like any other. [`THREAT_MODEL.md`](../THREAT_MODEL.md) lists thirty rows, each naming
-the test that proves it, plus the residual risks that are *not* yet proven — the unmeasured
-injection gate and the un-pinned artefact digest among them.
+Tracebacks are redacted before they are written too, since an exception message can carry a
+secret. [`THREAT_MODEL.md`](../THREAT_MODEL.md) lists thirty rows, each naming the test that
+proves it, plus the residual risks that are not yet proven, including the unmeasured injection
+gate and the unpinned artefact digest.
 
 ## 9. Running it
 
@@ -252,9 +248,9 @@ injection gate and the un-pinned artefact digest among them.
 |---|---|
 | Tables in the database | 9 |
 | API endpoints | 11 |
-| Ablation rows the benchmark will fill | 14 |
+| Ablation rows | 15 (rows 6 to 8 deferred) |
 | Rows in the threat model | 30 |
-| Architecture decision records | 8 |
+| Architecture decision records | 9 |
 | Max tools per scan | 500 |
 | Judge calls capped per scan / per day | 50 / a USD budget |
 | Concurrent live streams per API process | 64 |

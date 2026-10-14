@@ -4,12 +4,12 @@
 
 ## Status
 
-Proposed — drafted from PRD §9.1 in Phase 0. The human finalises this ADR's text.
+Accepted, 2026-10-14.
 
 ## Context
 
 Sieve triages MCP tool-poisoning scanner findings for a human reviewer. The scanner's YARA-style
-output is binary (flagged / not flagged) and, per the fixture corpus (PRD SC-3), carries both false
+output is binary (flagged / not flagged) and, per the fixture corpus, carries both false
 positives (directive but legitimate tool documentation) and false negatives (poisoned tools with
 subtle payloads). A binary label cannot separate "the scanner was right to flag this" from "the
 scanner was wrong to flag this," which is the distinction a triage layer exists to make. Sieve
@@ -36,11 +36,11 @@ aggressive its wording. If it serves something other than the tool's own functio
 ## Consequences
 
 - `imperative_benign` is a first-class label, not a subtype of `benign` or a scanner-agnostic
-  "maybe" bucket — it is the class the whole triage layer exists to separate from `poisoned`, so it
+  "maybe" bucket. It is the class the whole triage layer exists to separate from `poisoned`, so it
   must appear in every confusion matrix and every ablation.
 - The decision rule is a single sentence so it can be applied consistently by different labellers
   and cited directly in `LABELLING_GUIDE.md`'s worked cases; disagreements about a specific tool are
   disagreements about applying that one rule, not about a longer rubric.
 - `sieve/types.py`'s label enum, the corpus schema, and the model's output classes all key off these
-  exact three strings; changing the taxonomy after Phase 0 is a contracts PR (PRD §19), not a lane
-  edit.
+  exact three strings, so changing the taxonomy means changing the shared contracts, not one
+  module.

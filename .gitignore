@@ -38,7 +38,7 @@ models/
 bench/data/raw/
 # `make corpus` output: rebuilt from the pinned catalog and the committed plans, labels and
 # payloads. Every file below holds third-party tool text (MIT/Apache/BSD/ISC), which is
-# published only with a NOTICE (RUNBOOK §4). `corpus.jsonl` is also where the labelling tool
+# published only with a NOTICE. `corpus.jsonl` is also where the labelling tool
 # saves your labels, so back it up yourself until then.
 bench/data/real.jsonl
 bench/data/constructed.jsonl
@@ -102,3 +102,11 @@ web/CLAUDE.md
 Thumbs.db
 .idea/
 .vscode/
+
+# Internal notes kept locally, not published
+SIEVE_TRAINING_PLAN.md
+docs/writeup.md
+docs/RUNBOOK.md
+docs/outreach/
+docs/resume-kit/
+web/DESIGN.md

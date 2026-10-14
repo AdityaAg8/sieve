@@ -135,7 +135,7 @@ def _oof_family(models: Path, name: str, corpus: Path, results: Path, *, skill: 
 @pytest.mark.filterwarnings("ignore::torch.jit.TracerWarning")
 def test_make_bench_on_tiny_fixtures_writes_every_file_the_readers_read(tmp_path: Path) -> None:
     if shutil.which("mcp-scanner") is None:
-        pytest.skip("the baseline step needs mcp-scanner (docs/RUNBOOK.md)")
+        pytest.skip("the baseline step needs mcp-scanner (CONTRIBUTING.md, Setup)")
     from tests.model.artefacts import build_calibrated_tiny
 
     (tmp_path / "tiny").mkdir()
