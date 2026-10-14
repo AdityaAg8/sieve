@@ -35,7 +35,7 @@ for no user who has asked for it, and a colour that is used both for "danger" an
 
 - The contrast gate overruled the original design spec three times:
   1. Three token hex values (`ink-3`, `line-2`, `red-fill`) failed the WCAG gate as first
-     written and were corrected (commit `44f9987`).
+     written and were corrected (commit `0016b13`).
   2. Dismissed tiles at 60% opacity render `--ink-3` at 2.54:1 on `--bg-0`, below AA, so
      the tiles keep the 0.92 scale and drop the fade.
   3. Rows cannot change fill on hover or selection (`--ink-3` on `--bg-2` is 4.20:1), so state
